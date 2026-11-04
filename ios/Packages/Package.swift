@@ -8,14 +8,29 @@ let package = Package(
     products: [
         .library(name: "Core", targets: ["Core"]),
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
+        .library(name: "API", targets: ["API"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.8.0"),
+        .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.1.0"),
     ],
     targets: [
         .target(name: "Core"),
+        .target(
+            name: "API",
+            dependencies: [
+                "Core",
+                .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
+                .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
+            ],
+            exclude: ["openapi.json", "openapi-generator-config.yaml"]
+        ),
         .target(
             name: "DesignSystem",
             resources: [.copy("Resources/Fonts")],
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
         .testTarget(name: "CoreTests", dependencies: ["Core"]),
+        .testTarget(name: "APITests", dependencies: ["API"]),
     ]
 )

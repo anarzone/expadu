@@ -25,7 +25,8 @@ class SignInResource extends JsonResource
             'challenge' => $this->resource['challenge'] ?? null,
             'token' => $this->resource['token'] ?? null,
             'expires_at' => $this->resource['expires_at'] ?? null,
-            'user' => isset($this->resource['user']) ? new UserResource($this->resource['user']) : null,
+            // Left out with a challenge, not null: the Swift generator drops a nullable reference.
+            'user' => $this->when(isset($this->resource['user']), fn () => new UserResource($this->resource['user'])),
         ];
     }
 }

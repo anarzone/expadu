@@ -34,6 +34,10 @@ extension Components {
             public var token: Swift.String?
             /// - Remark: Generated from `#/components/schemas/SignInResource/expires_at`.
             public var expiresAt: Swift.String?
+            /// Left out with a challenge, not null: the Swift generator drops a nullable reference.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SignInResource/user`.
+            public var user: Components.Schemas.UserResource?
             /// Creates a new `SignInResource`.
             ///
             /// - Parameters:
@@ -41,22 +45,26 @@ extension Components {
             ///   - challenge:
             ///   - token:
             ///   - expiresAt:
+            ///   - user: Left out with a challenge, not null: the Swift generator drops a nullable reference.
             public init(
                 twoFactor: Swift.Bool,
                 challenge: Swift.String? = nil,
                 token: Swift.String? = nil,
-                expiresAt: Swift.String? = nil
+                expiresAt: Swift.String? = nil,
+                user: Components.Schemas.UserResource? = nil
             ) {
                 self.twoFactor = twoFactor
                 self.challenge = challenge
                 self.token = token
                 self.expiresAt = expiresAt
+                self.user = user
             }
             public enum CodingKeys: String, CodingKey {
                 case twoFactor = "two_factor"
                 case challenge
                 case token
                 case expiresAt = "expires_at"
+                case user
             }
         }
         /// - Remark: Generated from `#/components/schemas/UserResource`.

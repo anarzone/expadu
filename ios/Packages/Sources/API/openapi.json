@@ -509,22 +509,15 @@
                         ]
                     },
                     "user": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/UserResource"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
+                        "description": "Left out with a challenge, not null: the Swift generator drops a nullable reference.",
+                        "$ref": "#/components/schemas/UserResource"
                     }
                 },
                 "required": [
                     "two_factor",
                     "challenge",
                     "token",
-                    "expires_at",
-                    "user"
+                    "expires_at"
                 ],
                 "title": "SignInResource"
             },
