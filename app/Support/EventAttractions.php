@@ -38,9 +38,11 @@ final class EventAttractions
                 ->whereRaw("tags::jsonb @> '[\"Ausstellungen\"]'::jsonb")
                 ->pluck('id');
 
+            // Its whole run, past days included: judged only by the days left, every exhibition running
+            // through 1 November looked wholly in winter, so it stayed a daily listing all winter.
             $openingHours = DB::table('events')
                 ->whereIn('source', self::SOURCES)
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'expired'])
                 ->whereNull('recurrence')
                 ->whereRaw("ends_at - starts_at >= interval '6 hours'")
                 // Stored in the app's own time (Europe/Berlin): the hour as listed.
