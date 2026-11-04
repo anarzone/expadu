@@ -8,6 +8,7 @@ use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Privacy\ForgetAccount;
 use App\Services\LocationDataRetention;
+use Dedoc\Scramble\Attributes\BodyParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -37,6 +38,8 @@ class AccountController extends Controller
     }
 
     /** Deletes the account for good, with everything ForgetAccount and the web's Delete account remove. */
+    #[BodyParameter('password', 'The password, for an account that has one.', required: false, type: 'string')]
+    #[BodyParameter('code', 'The emailed code, for an account without a password.', required: false, type: 'string')]
     public function destroy(ProfileDeleteRequest $request, LocationDataRetention $retention, ForgetAccount $forget): Response
     {
         $user = $request->user();

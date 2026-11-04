@@ -76,7 +76,13 @@ class SignInController extends Controller
     /** A new account, signed in, its verification link on the way (as the web's). */
     public function register(Request $request, CreateNewUser $creator): SignInResource
     {
-        $request->validate(['device_name' => ['required', 'string', 'max:255']]);
+        $request->validate([
+            'name' => ['required', 'string'],
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+            'password_confirmation' => ['required', 'string'],
+            'device_name' => ['required', 'string', 'max:255'],
+        ]);
 
         $user = $creator->create($request->only(['name', 'email', 'password', 'password_confirmation']));
         event(new Registered($user));

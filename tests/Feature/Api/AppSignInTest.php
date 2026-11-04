@@ -244,10 +244,10 @@ test('🔒 deleting asks for the password, then the account and its tokens are g
     $token = $this->postJson('/api/v1/auth/token', signInBody($user))->json('token');
     $auth = ['Authorization' => "Bearer {$token}"];
 
-    $this->deleteJson('/api/v1/me', ['password' => 'nope'], $auth)->assertUnprocessable();
+    $this->postJson('/api/v1/me/delete', ['password' => 'nope'], $auth)->assertUnprocessable();
     expect($user->fresh())->not->toBeNull();
 
-    $this->deleteJson('/api/v1/me', ['password' => 'password'], $auth)->assertNoContent();
+    $this->postJson('/api/v1/me/delete', ['password' => 'password'], $auth)->assertNoContent();
 
     expect(User::find($user->id))->toBeNull()->and(PersonalAccessToken::count())->toBe(0);
 });
@@ -267,10 +267,10 @@ test('🔒 an account with no password deletes with the emailed code, bound to i
     });
 
     $this->app['auth']->forgetGuards();
-    $this->deleteJson('/api/v1/me', ['code' => $sent], ['Authorization' => "Bearer {$other}"])->assertUnprocessable();
+    $this->postJson('/api/v1/me/delete', ['code' => $sent], ['Authorization' => "Bearer {$other}"])->assertUnprocessable();
     expect(User::find($user->id))->not->toBeNull();
 
     $this->app['auth']->forgetGuards();
-    $this->deleteJson('/api/v1/me', ['code' => $sent], ['Authorization' => "Bearer {$mine}"])->assertNoContent();
+    $this->postJson('/api/v1/me/delete', ['code' => $sent], ['Authorization' => "Bearer {$mine}"])->assertNoContent();
     expect(User::find($user->id))->toBeNull();
 });

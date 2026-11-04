@@ -20,6 +20,7 @@ class SignInResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            /** @var bool */
             'two_factor' => isset($this->resource['challenge']),
             'challenge' => $this->resource['challenge'] ?? null,
             'token' => $this->resource['token'] ?? null,

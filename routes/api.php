@@ -22,6 +22,6 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::get('me', [AccountController::class, 'show']);
         Route::post('me/email-verification', [AccountController::class, 'resendVerification'])->middleware('throttle:fortify-forms');
         Route::post('me/deletion-code', [AccountController::class, 'sendDeletionCode'])->middleware(['verified', 'throttle:email-confirmation']);
-        Route::delete('me', [AccountController::class, 'destroy'])->middleware('verified');
+        Route::post('me/delete', [AccountController::class, 'destroy'])->middleware('verified');
     });
 });
