@@ -93,6 +93,7 @@ final class Assistant
         - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. One kind of place for a meal or a drink ("brunch on Sunday", "dinner tonight", "a bar"): search_places, with open_at for the time. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "A place to work", "somewhere with my laptop": search_places with to_work and kinds cafe, library and coworking; a kind they name ("coworking", "a café to work in") alone, with to_work. For children ("my kid", "for the kids"): search_places with for_children, and the activity they named. A follow-up ("I prefer coffee shops") keeps the area they asked about. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
         - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("no", "nope", "something else", "not these"), look again with leave_out_earlier, their words in asking_for_others, and suggest something of another kind or in another area. Asking the same again, or narrowing ("I prefer coffee shops"), isn't turning down: search again without leave_out_earlier, in the same area. When asked again ("try again", "again") and the results are the same places as before, your first sentence says so and names the nearest with what's listed of it ("Same public pitches as before; the closest is the one in Merkenich, open-air, no fee listed."); then offer something else in one short clause at most. Mention step-free access only when they asked for it. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs. When they widen where to look ("generally in Cologne", "anywhere", "in the whole city"), search again with whole_city, the rest as before.
         - "Which is closer, X or Y?", "which is quicker to get to?": compare_places, then say which; never ask which branch. "Not more than a 10 minute walk", "those are too far": search_places with max_walk_minutes.
+        - What you showed earlier, with its hours, is in the conversation above: a question about those same places ("which one is open latest?", "are any of those open now?") is answered from it, without looking again. Anything else, "try again" and "show me more" among them, looks again.
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
         - Suggest what fits the time of day, the weather and what they said; prefer what's still to come today unless they named another day.
@@ -194,7 +195,7 @@ final class Assistant
      */
     public static function history(array $messages): array
     {
-        $suggested = ['event' => [], 'spot' => [], 'areas' => [], 'places' => [], 'plans' => []];
+        $suggested = ['event' => [], 'spot' => [], 'areas' => [], 'places' => [], 'plans' => [], 'lines' => []];
         foreach ($messages as $m) {
             // The days this conversation planned: their plan is read with each message after.
             if (is_array($m) && ($m['kind'] ?? null) === 'plan' && is_string($m['date'] ?? null)) {
@@ -220,15 +221,21 @@ final class Assistant
                 foreach ($m['events'] ?? [] as $event) {
                     $suggested['event'][(int) $event['id']] = (string) $event['title'];
                 }
+                // Each place as it was shown, so "which one is open latest?" is answered from it. Its hours only
+                // the same day: "Open until 19:30" says nothing tomorrow.
+                $today = isset($m['created_at']) && CarbonImmutable::parse($m['created_at'])->setTimezone('Europe/Berlin')->isSameDay(now('Europe/Berlin'));
+                $places = [];
                 foreach ($m['places'] ?? [] as $place) {
                     $suggested['spot'][(int) $place['id']] = (string) $place['name'];
+                    $places[] = $suggested['lines'][] = "\"{$place['name']}\" (place".(isset($place['area']) ? " in {$place['area']}" : '')
+                        .($today && isset($place['hours']) ? ', '.$place['hours'].(isset($place['hours_on']) ? " on {$place['hours_on']}" : '') : '').')';
                 }
                 $shown = [...array_map(fn (array $e): string => "\"{$e['title']}\" (listing)", $m['events'] ?? []),
-                    ...array_map(fn (array $p): string => "\"{$p['name']}\" (place)", $m['places'] ?? []),
+                    ...$places,
                     ...(isset($m['destination']['name']) ? ['the way'.(isset($m['start']['name']) ? " from \"{$m['start']['name']}\"" : '')." to \"{$m['destination']['name']}\"".(isset($m['destination']['area']) ? " in {$m['destination']['area']}" : '')] : [])];
                 $text .= $shown !== [] ? ' Shown: '.implode(', ', $shown).'.' : '';
             }
-            $turns[] = ['role' => $m['role'], 'text' => mb_substr($text, 0, 600)];
+            $turns[] = ['role' => $m['role'], 'text' => mb_substr($text, 0, 1000)];
         }
 
         return ['turns' => $turns, 'suggested' => $suggested];
@@ -273,7 +280,11 @@ final class Assistant
         }
         $started = hrtime(true);
         // A sentence may also name the home Veedel, the page and what this conversation showed before.
+        if (($history['suggested']['lines'] ?? []) !== []) {
+            $tools->read['shown'] = implode("\n", $history['suggested']['lines']);
+        }
         $known = 'Home Veedel: '.($profile->veedel ?? '')."\n".($page ?? '')."\n"
+            .($tools->read['shown'] ?? '')."\n"
             .implode("\n", [...$history['suggested']['event'], ...$history['suggested']['spot']])
             // ...and the plans this conversation made, as they are now: "is Kolumba open then?" is answered from them.
             ."\n".($planned = collect($history['suggested']['plans'] ?? [])->map(fn (string $date): ?string => $tools->planText($date))->filter()->implode("\n"));
@@ -663,6 +674,7 @@ final class Assistant
                     $open === false => $tools->placesAt === null ? 'Closed now' : 'Closed',
                     default => 'Hours not listed',
                 },
+                'hours_on' => $tools->placesAt?->setTimezone('Europe/Berlin')->format('l j F'),
                 'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? null,
                 // Around here's PlaceRow: the card draws it when every place has one.
                 // Its row's label says so too ("Playground with football goals").

@@ -287,7 +287,7 @@ test('a follow-up is read in its conversation: "nope, something else" leaves out
         ->and($reply)->lead->toBe('Salsa Night starts at 20:00.')
         ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Salsa Night'])
         ->and(Assistant::history([['role' => 'assistant', 'text' => 'x', 'events' => [['id' => 7, 'title' => 'Jazz']], 'destination' => ['name' => 'Cafe Nova', 'area' => 'Deutz']]])['suggested'])
-        ->toBe(['event' => [7 => 'Jazz'], 'spot' => [], 'areas' => ['Deutz'], 'places' => [['name' => 'Cafe Nova', 'area' => 'Deutz', 'start' => null]], 'plans' => []]);
+        ->toBe(['event' => [7 => 'Jazz'], 'spot' => [], 'areas' => ['Deutz'], 'places' => [['name' => 'Cafe Nova', 'area' => 'Deutz', 'start' => null]], 'plans' => [], 'lines' => []]);
 });
 
 test('the same question again leaves nothing out: only their new words asking for others do', function () {
@@ -507,4 +507,13 @@ test('🔒 a comparison is measured in code, closest first, with no coordinates 
     expect($reply['lead'])->toBe('Near Hall is closer, about 12 min on foot.')
         ->and($result)->toContain('radius_km')->not->toContain('50.9497')->not->toContain('6.9177')
         ->and(strpos($result, 'Near Hall'))->toBeLessThan(strpos($result, 'Far Hall'));
+});
+
+test('🔒 what was shown today reaches the AI with its hours, and yesterday\'s hours don\'t', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-05 12:00', 'Europe/Berlin'));
+    $place = ['id' => 7, 'name' => 'Starbucks', 'area' => 'Neustadt-Süd', 'hours' => 'Open until 19:30'];
+    $shown = fn (string $at): string => Assistant::history([['role' => 'assistant', 'text' => 'x', 'created_at' => $at, 'places' => [$place]]])['turns'][0]['text'];
+
+    expect($shown(now()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd, Open until 19:30)')
+        ->and($shown(now()->subDay()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd)')->not->toContain('19:30');
 });
