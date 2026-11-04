@@ -181,7 +181,7 @@
 }
 .tl-chip.is-best {
     background: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
 }
 .tl-chips {
     display: flex;
@@ -834,7 +834,7 @@
 }
 .line-row .nearby-pin[aria-pressed='true'] {
     background: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
 }
 .line-row .nearby-pin[aria-pressed='true'] svg {
     fill: currentColor;
