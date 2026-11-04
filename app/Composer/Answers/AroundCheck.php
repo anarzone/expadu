@@ -15,7 +15,7 @@ final class AroundCheck
     public const MAX_LENGTH = 300;
 
     /** Capitalised words that name nothing to check: the speaker, the app and its parts, the city, days and months. */
-    private const ALWAYS = ['i', "i'm", "i'll", "i've", "i'd", 'expadu', 'composer', 'paperwork', 'travel', 'events', 'cologne', 'köln', 'germany', 'kvb',
+    private const ALWAYS = ['i', "i'm", "i'll", "i've", "i'd", 'expadu', 'composer', 'paperwork', 'travel', 'events', 'cologne', 'köln', 'germany', 'kvb', 'deutschlandticket', 'english', 'german', 'english-speaking', 'german-speaking',
         'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
         'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'ok'];
 
@@ -63,7 +63,7 @@ final class AroundCheck
      */
     private const UNLISTED = '/\b(wi-?fi|laptops?|sockets?|vegan|vegetarian|gluten[- ]free|live music|outdoor seating|terrace|open (right )?now|open (all day|late|24))\b/u';
 
-    private const NOT = '/\b(not|no|none|nothing|nowhere|neither|nor|never|isn\'t|aren\'t|can\'t|cannot|don\'t|doesn\'t|unknown|without)\b/u';
+    private const NOT = '/\b(not|no|none|nothing|nowhere|neither|nor|never|isn\'t|aren\'t|can\'t|cannot|couldn\'t|don\'t|doesn\'t|didn\'t|wasn\'t|weren\'t|won\'t|haven\'t|hasn\'t|unknown|without)\b/u';
 
     /** Counts are claims too: kept only as the number of things the sentence itself names (`$named`). */
     private const COUNTS = '/\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|dozens?|hundreds?|thousands?)\b/u';
@@ -73,8 +73,14 @@ final class AroundCheck
     /** Hedged facts aren't facts. */
     private const HEDGES = '/\b(might|probably|likely|usually|often|typically|apparently|reportedly|rumou?red|supposedly)\b/u';
 
-    /** The person's own day: the AI is never sent it, so it can't speak of it. Only "your evening", "your umbrella" and the like. */
-    private const PERSONAL = '/(?<!plan )\byour (?!(evening|night|afternoon|morning|weekend|umbrella|jacket|coat|way|home)\b)|\byou have (a|an|no|nothing|\d)|\byou\'re (meeting|seeing|due|booked)\b/u';
+    /** The person's own day and papers: the AI is never sent them, so it can't speak of them. "Your wallet" or "your nearest stop" says nothing it doesn't know. */
+    private const PERSONAL = '/(?<!plan )\byour (?:plans?|day|schedule|calendar|diary|appointments?|meetings?|bookings?|reservations?|permit|visa|deadlines?|(?:\w+ )?hours)\b|\byour \w+ (?:is|starts|begins|ends) (?:later|earlier|soon|at|on|in|today|tomorrow|tonight)\b|\byou have (a|an|no|nothing|\d)|\byou\'re (meeting|seeing|due|booked)\b/u';
+
+    /** A sentence that only says what it can't do or didn't find ("I can't book tables", "I couldn't find a pharmacy open now"). */
+    private const LIMIT = '/^(?:sorry,?\s+)?(?:i|composer|expadu)\s+(?:can\'t|cannot|can not|couldn\'t|could not|don\'t|didn\'t|did not|won\'t|am not able|\'m not able)\b/u';
+
+    /** A lone name doing something ("Flora is open"), which an ordinary first word doesn't ("Hours aren't listed", "Those are close"). */
+    private const NAME_DOING = '/^\s*\S+\s+(?:is|has|opens|closes|serves|offers|sells|runs|stays|starts)\b/u';
 
     /**
      * @param  string  $sentence  one sentence as written
@@ -82,18 +88,20 @@ final class AroundCheck
      * @param  bool  $personal  it cites the person's own facts (their taste or their day, with the
      *                          opt-in), so it may speak of them, as softly as those facts are
      * @param  int  $named  how many listed things it may count: those it names, or its lookups found ("two events" among them)
+     * @param  string  $theirs  the person's own words: a name they used may be said back, and nothing else in them counts as a fact
      */
-    public function holds(string $sentence, string $source, bool $personal = false, int $named = 0): bool
+    public function holds(string $sentence, string $source, bool $personal = false, int $named = 0, string $theirs = ''): bool
     {
-        return $this->why($sentence, $source, $personal, $named) === null;
+        return $this->why($sentence, $source, $personal, $named, $theirs) === null;
     }
 
     /** Why a sentence doesn't hold, in a few words (composer:eval and the logs read it), or null when it does. */
-    public function why(string $sentence, string $source, bool $personal = false, int $named = 0): ?string
+    public function why(string $sentence, string $source, bool $personal = false, int $named = 0, string $theirs = ''): ?string
     {
         $sentence = trim(str_replace(['’', '‘'], "'", $sentence));
         $lower = mb_strtolower($sentence);
         $source = mb_strtolower(str_replace(['’', '‘'], "'", $source));
+        $theirs = mb_strtolower(str_replace(['’', '‘'], "'", $theirs));
 
         if ($sentence === '' || mb_strlen($sentence) > self::MAX_LENGTH || preg_match('/https?:|www\.|[*_#`<>\n]/u', $sentence)
             || (! $personal && (preg_match(self::HEDGES, $lower) || preg_match(self::PERSONAL, $lower)))) {
@@ -105,9 +113,14 @@ final class AroundCheck
                 default => 'about their own day',
             };
         }
+        // Saying what it can't do claims nothing, as long as it gives no price and its names and numbers are
+        // known or their own ("for 7 people"); what follows a "but" is checked as any sentence is.
+        $limit = preg_match(self::LIMIT, $lower) === 1 && ! str_contains($sentence, '€');
+        $claiming = $limit ? (preg_split('/\b(?:but|however|though|although|yet)\b/u', $lower, 2)[1] ?? '') : $lower;
+
         // A count holds when it's how many things the sentence names, or a number its results give ("3 places nearby").
         // A length of time ("your two hours", "a two-hour walk") counts nothing.
-        preg_match_all(self::COUNTS, preg_replace('/'.substr(self::COUNTS, 1, -2).'[ -](?:hours?|minutes?|mins?|days?|nights?|weeks?|months?|years?)\b/u', '', $lower), $counts);
+        preg_match_all(self::COUNTS, preg_replace('/'.substr(self::COUNTS, 1, -2).'[ -](?:hours?|minutes?|mins?|days?|nights?|weeks?|months?|years?)\b/u', '', $claiming), $counts);
         if (collect($counts[0])->contains(fn (string $count): bool => (self::NUMBERS[$count] ?? PHP_INT_MAX) > $named
             && (! isset(self::NUMBERS[$count]) || preg_match('/\b'.self::NUMBERS[$count].'\b/u', $source) !== 1))) {
             return 'a count: '.implode(', ', $counts[0]);
@@ -115,7 +128,7 @@ final class AroundCheck
 
         // Every number and time, as written in the items.
         preg_match_all('/\d+(?:[:.,]\d+)*/u', $sentence, $numbers);
-        preg_match_all('/\d+(?:[:.,]\d+)*/u', $source, $known);
+        preg_match_all('/\d+(?:[:.,]\d+)*/u', $limit ? $source."\n".$theirs : $source, $known);
         // A price as either writes it: "€27.50" for a listing's "27,50 €", "€48" for "48.00".
         $price = fn (string $n): string => preg_replace(['/^(\d+),(\d{1,2})$/u', '/^(\d+)\.0+$/u'], ['$1.$2', '$1'], $n);
         if (($unknown = array_diff(array_map($price, $numbers[0]), array_map($price, $known[0]))) !== []) {
@@ -129,14 +142,14 @@ final class AroundCheck
         $fact = fn (string $phrase): string => preg_replace(['/wi-?fi/u', '/s$/u'], ['wifi', ''], $phrase);
         preg_match_all(self::UNLISTED, $said, $listed);
         $listed = array_map($fact, $listed[0]);
-        preg_match_all(self::UNLISTED, $lower, $claimed);
-        if (preg_match(self::NOT, $lower) !== 1 && ($unlistedClaim = collect($claimed[0])->first(fn (string $phrase): bool => ! in_array($fact($phrase), $listed, true))) !== null) {
+        preg_match_all(self::UNLISTED, $claiming, $claimed);
+        if (preg_match(self::NOT, $claiming) !== 1 && ($unlistedClaim = collect($claimed[0])->first(fn (string $phrase): bool => ! in_array($fact($phrase), $listed, true))) !== null) {
             return 'not listed: '.$unlistedClaim;
         }
         $excused = [];
         foreach (self::CLAIMS as $claim) {
-            if (preg_match($claim, $lower, $made) && ! preg_match($claim, $source)) {
-                if (! self::saysUnknown($lower, $made[0])) {
+            if (preg_match($claim, $claiming, $made) && ! preg_match($claim, $source)) {
+                if (! self::saysUnknown($claiming, $made[0])) {
                     return 'a claim its results don\'t make: '.$made[0];
                 }
                 $excused[] = $made[0];
@@ -154,7 +167,10 @@ final class AroundCheck
             $word = preg_replace("/'s$/u", '', rtrim(mb_strtolower($name), "'-"));
             $before = rtrim(substr($sentence, 0, $offset), " \t\"'(“");
             $first = $before === '' || preg_match('/[.!?:;–—]$/u', $before) === 1;
-            if (in_array($word, self::ALWAYS, true) || ($first && in_array($word, self::STARTERS, true)) || str_contains($source, $word) || in_array($word, $unlisted, true)) {
+            // The sentence's first word is capitalised anyway ("Closer", "Plugs", "Diese"), unless it's a name doing something.
+            $opening = $before === '' && preg_match(self::NAME_DOING, $sentence) !== 1;
+            if (in_array($word, self::ALWAYS, true) || ($first && in_array($word, self::STARTERS, true)) || $opening
+                || str_contains($source, $word) || str_contains($theirs, $word) || in_array($word, $unlisted, true)) {
                 continue;
             }
 
