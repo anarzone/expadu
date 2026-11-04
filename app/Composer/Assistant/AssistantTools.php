@@ -138,6 +138,9 @@ final class AssistantTools
     /** @var array<string, bool> whether a place's distance was measured from where the person is (so its card may show it) */
     public array $measured = [];
 
+    /** When the places just looked up were asked about another day: their hours are that day's; null for now. */
+    public ?CarbonImmutable $placesAt = null;
+
     /** @var array<string, array{name: string, lat: float, lng: float}> the point each place was searched from (its card's distance and Get there) */
     public array $from = [];
 
@@ -271,6 +274,7 @@ final class AssistantTools
                 ], 'required' => ['day']]],
             ['name' => 'find_place', 'description' => 'One place they name ("Café Wohnraum", "Rheinpark"), from Expadu\'s catalogue, with what\'s listed of it: its hours, what it has, what its website and people say of laptop work, and who may use it. Whenever they ask about a place they name, look it up with this, not search_places; to save, mark or plan one, use that action with its name straight away instead. When several places have that name, it says so and you ask which (show the choice); when none has, it says so.',
                 'input_schema' => ['type' => 'object', 'properties' => [
+                    'day' => ['type' => 'string', 'description' => 'the day asked about, when it isn\'t today ("tomorrow", "on Sunday"): tomorrow, a weekday (Sunday) or YYYY-MM-DD; hours are then that day\'s, from the weekly hours listed'],
                     'name' => ['type' => 'string', 'description' => 'the place as they named it'],
                     'area' => ['type' => 'string', 'description' => 'its Veedel, or a square, stop or place they said it is near ("near Neumarkt"), when they said one'],
                 ], 'required' => ['name']]],
@@ -287,7 +291,8 @@ final class AssistantTools
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
                     'for_children' => ['type' => 'boolean', 'description' => 'for a child to play ("my kid", "for the kids"): playgrounds, those with the activity\'s gear (football goals) first'],
                     'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
-                    'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
+                    'open_at' => ['type' => 'string', 'description' => 'HH:MM, today or on day: only places open then, by their listed hours'],
+                    'day' => ['type' => 'string', 'description' => 'the day asked about, when it isn\'t today ("tomorrow", "on Sunday"): tomorrow, a weekday (Sunday) or YYYY-MM-DD; hours are then that day\'s, from the weekly hours listed'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'they want it free: a place with a listed fee, or restricted, is left out; nearest first. Answer in the results\' words: "free" only for "Free to use (listed)", else "public, no fee listed".'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out, with asking_for_others. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
@@ -868,16 +873,18 @@ final class AssistantTools
             return $this->line($id, "More than one place is called \"{$named}\": ".implode('; ', array_map($in, $found)).'. Ask which.');
         }
         [$lat, $lng] = $near !== null ? [$near->lat, $near->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG];
+        $day = $this->askedDay($input['day'] ?? null);
         // The fact subqueries trip Postgres's JIT (3–4 s); see CandidateRepository::spotCandidates.
-        $c = DB::transaction(function () use ($found, $lat, $lng): ?Candidate {
+        $c = DB::transaction(function () use ($found, $lat, $lng, $day): ?Candidate {
             DB::statement('SET LOCAL jit = off');
 
-            return $this->catalogue->byIds(["spot:{$found[0]['spot']}"], $this->now, $lat, $lng)[0] ?? null;
+            return $this->catalogue->byIds(["spot:{$found[0]['spot']}"], $day ?? $this->now, $lat, $lng)[0] ?? null;
         });
         if (! $c instanceof Candidate) {
             return $this->line('n'.(++$this->count), "\"{$in($found[0])}\" isn't listed any more.");
         }
         $this->places[$c->id] = $c;
+        $this->placesAt = $day;
         $this->measured[$c->id] = $this->location->hasOrigin() && $this->location->source !== LocationSource::Area;
         $this->from[$c->id] = ['name' => $this->origin(), 'lat' => $lat, 'lng' => $lng];
         $groups = app(FacilityGroups::class);
@@ -889,7 +896,7 @@ final class AssistantTools
         $from = $nearPlace === null ? '' : ' About '.self::distance(111.32 * sqrt(($c->lat - $nearPlace['lat']) ** 2
             + (($c->lng - $nearPlace['lng']) * cos(deg2rad($c->lat))) ** 2))." from {$nearPlace['name']}.";
 
-        return $this->line($c->id, self::placeText($c, $this->now, true, (bool) $this->user->needs_step_free, $has, $use['value'] !== 'unknown' || $use['free'] !== 'unknown').$from
+        return $this->line($c->id, self::placeText($c, $day ?? $this->now, $day === null, (bool) $this->user->needs_step_free, $has, $use['value'] !== 'unknown' || $use['free'] !== 'unknown', onDay: $day).$from
             // Laptop work, where it's listed or the kind of place is one people work in.
             .($laptop !== 'Laptop work isn\'t listed yet.' || in_array($c->category, ['cafe', 'library', 'coworking'], true) ? ' '.$laptop : '')
             .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (The same place as shown before in this conversation.)' : ''));
@@ -918,8 +925,13 @@ final class AssistantTools
 
     private function searchPlaces(array $input): string
     {
-        $asked = $this->clock($input['open_at'] ?? null, $this->now);
-        $at = $asked ?? $this->now;
+        $day = $this->askedDay($input['day'] ?? null);
+        $asked = $this->clock($input['open_at'] ?? null, $day ?? $this->now);
+        // Another day with no time named: the whole of that day.
+        $at = $asked ?? $day ?? $this->now;
+        $wholeDay = $day !== null && $asked === null;
+        $this->placesAt = $day === null ? null : $at;
+        $open = fn (Candidate $c): ?bool => OpeningAnswer::isOpenAt($c, $wholeDay ? ($c->opensAt ?? $at) : $at);
         // "Open now" or "open at 19:30": only places whose listed hours say so (OpeningAnswer).
         $mustBeOpen = $asked !== null || ($input['open_now'] ?? false) === true;
         // All of Cologne ("generally in Cologne"): no area or place to look around (owner, 26 Oct 2026).
@@ -991,11 +1003,11 @@ final class AssistantTools
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
         $free = ($input['free'] ?? false) === true;
         // Few places list hours, facts, a playground's goals or what they say of laptops: for those, the search reads further.
-        $deep = $mustBeOpen || $features !== [] || $plays !== null || $work;
+        $deep = $mustBeOpen || $day !== null || $features !== [] || $plays !== null || $work;
         $stepFree = $stepFree || in_array('wheelchair', $features, true);
         $constraints = new Constraints(
             windowStart: $at,
-            windowEnd: $at->addHours(2)->min($at->endOfDay()),
+            windowEnd: $wholeDay ? $at->endOfDay() : $at->addHours(2)->min($at->endOfDay()),
             areas: $areas,
             categories: $kinds,
             activities: array_values(array_filter([$activity])),
@@ -1040,9 +1052,14 @@ final class AssistantTools
             - ($whole && $work ? 100 * self::workScore($c, $at) : 0)
             // Listed open first; asked for free ones, nearest first (coordinator, 24 Oct 2026: the cards
             // show distances, never why one further on comes first).
-            + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0);
-        $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true || ($c->outdoor && OpeningAnswer::isOpenAt($c, $at) === null)
-            : OpeningAnswer::isOpenAt($c, $at) !== false)
+            + ($mustBeOpen && $open($c) !== true ? 0.5 : 0)
+            // Another day: those open first, and the closed ones stay, said closed ("are supermarkets open on Sunday?").
+            + ($wholeDay ? match ($open($c)) {
+                true => 0,
+                null => 1,
+                false => 2,
+            } : 0);
+        $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? $open($c) === true || ($c->outdoor && $open($c) === null) : $wholeDay || $open($c) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
             ->sortBy($rank)
             // One per place: two pitches in one park are the park once, its nearest; a chain's
@@ -1067,7 +1084,7 @@ final class AssistantTools
         }
         if ($found->isEmpty()) {
             // Places of that kind, none open then: why ("closed on Sundays", "no hours listed").
-            $why = $mustBeOpen ? OpeningAnswer::whyNoneOpen($matches, $at, $kinds !== [] && count($kinds) === 1 ? self::kindName($kinds[0], plural: true) : 'places') : null;
+            $why = $mustBeOpen || $day !== null ? OpeningAnswer::whyNoneOpen($matches, $at, $kinds !== [] && count($kinds) === 1 ? self::kindName($kinds[0], plural: true) : 'places') : null;
 
             $thing = $kinds !== [] && count($kinds) === 1 ? self::kindName($kinds[0]) : 'place';
             $lists = $features !== [] ? ' lists '.self::featureWords($features) : ' is listed for that';
@@ -1082,7 +1099,7 @@ final class AssistantTools
         $before = $found->take(Assistant::PLACES_SHOWN)->takeWhile(fn (Candidate $c): bool => isset($this->earlier['spot'][(int) substr($c->id, 5)]))->count();
         $same = $before > 0 && ($before === min(Assistant::PLACES_SHOWN, $found->count()) || $again)
             ? $this->line('s'.(++$this->count), 'The same places as shown before'.($before < min(Assistant::PLACES_SHOWN, $found->count()) ? ' (the first '.$before.'; the others are new)' : '').'. The nearest: '
-                .self::placeText($found->first(), $at, $at->equalTo($this->now), $stepFree, $this->parks[$found->first()->id]['has'] ?? null, $free, $this->parks[$found->first()->id]['matched'] ?? null))."\n"
+                .self::placeText($found->first(), $at, $at->equalTo($this->now), $stepFree, $this->parks[$found->first()->id]['has'] ?? null, $free, $this->parks[$found->first()->id]['matched'] ?? null, $day))."\n"
             : '';
 
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
@@ -1098,7 +1115,7 @@ final class AssistantTools
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
-        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $around, $stepFree, $features, $work, $free): string {
+        }."\n".$found->map(function (Candidate $c) use ($at, $day, $measured, $lat, $lng, $areas, $around, $stepFree, $features, $work, $free): string {
             $this->places[$c->id] = $c;
             $this->measured[$c->id] = $measured;
             if ($areas !== []) {
@@ -1116,7 +1133,7 @@ final class AssistantTools
             }, 'lat' => $lat, 'lng' => $lng];
 
             // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
-            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null, $free, $this->parks[$c->id]['matched'] ?? null)
+            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null, $free, $this->parks[$c->id]['matched'] ?? null, $day)
                 // To work there: what its sources say of laptops, and that nothing is listed when nothing is.
                 .($work ? ' '.self::laptopSaid($c) : '')
                 // Near a place they named: how far from it, so "near Neumarkt" is said as found.
@@ -1896,12 +1913,19 @@ final class AssistantTools
 
     /** A place as the assistant reads it: name, kind, Veedel, its verified hours and its listed character. */
     /** @param  ?string  $matched  for a park answered for a facility in it, that facility ("Football pitch"), which its public use is about */
-    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null, bool $free = false, ?string $matched = null): string
+    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null, bool $free = false, ?string $matched = null, ?CarbonImmutable $onDay = null): string
     {
         $kind = self::kindOf($c);
         // Open only from its listed hours; assumed hours are never "open" (OpeningAnswer).
-        $open = $at === null ? null : OpeningAnswer::isOpenAt($c, $at);
+        $wholeDay = $onDay !== null && $at !== null && $at->equalTo($onDay);
+        $open = $at === null ? null : OpeningAnswer::isOpenAt($c, $wholeDay ? ($c->opensAt ?? $at) : $at);
+        $time = fn (?CarbonImmutable $t): string => $t?->setTimezone('Europe/Berlin')->format('H:i') ?? '';
+        $on = $onDay?->setTimezone('Europe/Berlin')->format('l j F');
         $hours = match (true) {
+            // Another day: said with its date, closed included, so "are those open tomorrow?" has its answer.
+            $wholeDay && $open === true => " On {$on}: open".($c->opensAt !== null || $c->closesAt !== null ? " {$time($c->opensAt)}–{$time($c->closesAt)}" : '').'.',
+            $onDay !== null && $open === false => " Closed on {$on}".($wholeDay ? '' : ' at '.$time($at)).', by its listed hours.',
+            $onDay !== null && $open === true => " Open at {$time($at)} on {$on}".($c->closesAt !== null ? ", until {$time($c->closesAt)}" : '').'.',
             $open === true => ' Open '.($now ? 'now' : 'at '.$at->setTimezone('Europe/Berlin')->format('H:i')).($c->closesAt !== null ? ', until '.$c->closesAt->setTimezone('Europe/Berlin')->format('H:i').' today' : '').'.',
             // A public pitch or park has no opening hours to list: it's said as what it is.
             $open === null => $c->outdoor ? ' Open-air, no set hours listed.' : ' Opening hours not listed.',
@@ -1935,6 +1959,14 @@ final class AssistantTools
         $this->read[$id] = $text;
 
         return "[{$id}] {$text}";
+    }
+
+    /** The day a place's hours are asked for, when it's still to come and isn't today. */
+    private function askedDay(mixed $named): ?CarbonImmutable
+    {
+        $day = is_string($named) ? PlanDay::dayOf($named, $this->now) : null;
+
+        return $day !== null && $day->greaterThan($this->now->setTimezone('Europe/Berlin')->endOfDay()) ? $day : null;
     }
 
     private function clock(mixed $value, CarbonImmutable $day): ?CarbonImmutable
