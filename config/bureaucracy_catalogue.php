@@ -7,5 +7,7 @@ return [
     'topic_labels' => ['address' => 'Address', 'residence' => 'Residence', 'tax' => 'Tax', 'health' => 'Health insurance',
         'money' => 'Money', 'family' => 'Family', 'work' => 'Work', 'education' => 'Education', 'driving' => 'Driving'],
     // Directory navigation does not confer legal-content approval.
-    'action_hosts' => ['stadt-koeln.de', 'gesetze-im-internet.de', 'bamf.de', 'make-it-in-germany.com', 'eur-lex.europa.eu', 'recht.bund.de', 'bzst.de'],
+    'action_hosts' => ['stadt-koeln.de', 'gesetze-im-internet.de', 'bamf.de', 'make-it-in-germany.com', 'eur-lex.europa.eu', 'recht.bund.de', 'bzst.de',
+        // The offices people file with: Familienkasse, BAföG, tax, and recognising a foreign degree.
+        'arbeitsagentur.de', 'bafoeg-digital.de', 'elster.de', 'anabin.kmk.org', 'anerkennung-in-deutschland.de'],
 ];
