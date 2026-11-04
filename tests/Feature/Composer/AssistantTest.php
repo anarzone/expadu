@@ -530,3 +530,32 @@ test('a failed call after lookups keeps the places they found', function () {
 
     expect(collect(collect($reply['blocks'])->firstWhere('type', 'places')['places'] ?? [])->pluck('name')->all())->toBe(['Café Wohnraum']);
 });
+
+test('🔒 with the opt-in their taste reorders a nearby search and says why; without it the list stays by distance', function () {
+    Spot::factory()->create(['name' => 'Nearest Bar', 'category' => 'bar', 'veedel' => 'Ehrenfeld', 'is_active' => true, 'lat' => 50.9498, 'lng' => 6.9180]);
+    $near = Spot::factory()->create(['name' => 'Near Museum', 'category' => 'museum', 'veedel' => 'Ehrenfeld', 'is_active' => true, 'lat' => 50.9520, 'lng' => 6.9220]);
+    Spot::factory()->create(['name' => 'Far Museum', 'category' => 'museum', 'veedel' => 'Porz', 'is_active' => true, 'lat' => 50.8800, 'lng' => 7.0600]);
+    $turns = Http::sequence();
+    foreach ([1, 2] as $run) {
+        $turns->push(assistantTurn([['search_places', []]]))
+            ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Here are some places.', 'uses' => []]], 'show' => ["spot:{$near->id}"]]]]));
+    }
+    Http::fake(['processor.example.test/*' => $turns]);
+    $ask = function (User $user): array {
+        $this->actingAs($user);
+
+        return collect(assistantAsk($this, 'something to do', ['lat' => 50.9497, 'lng' => 6.9177])['blocks'] ?? [])->firstWhere('type', 'places')['places'] ?? [];
+    };
+    $shown = fn (array $places): array => array_values(array_intersect(array_column($places, 'name'), ['Nearest Bar', 'Near Museum', 'Far Museum']));
+
+    expect($shown($ask(User::factory()->onboarded()->create())))->toBe(['Nearest Bar', 'Near Museum', 'Far Museum']);
+
+    $user = User::factory()->onboarded()->create();
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
+    DB::table('user_affinities')->insert(array_map(fn (array $row): array => ['subject_key' => Pseudonym::for($user), 'dimension' => 'category', 'key' => $row[0],
+        'context' => 'all', 'score' => $row[1], 'signals_count' => 6, 'updated_at' => now()], [['museum', 12.0], ['bar', -4.0]]));
+    $places = $ask($user);
+
+    expect($shown($places))->toBe(['Near Museum', 'Nearest Bar', 'Far Museum'])
+        ->and(collect($places)->firstWhere('name', 'Near Museum')['because'])->toBe('You like museums');
+});

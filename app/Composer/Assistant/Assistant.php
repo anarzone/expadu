@@ -684,7 +684,7 @@ final class Assistant
                     default => 'Hours not listed',
                 },
                 'hours_on' => $tools->placesAt?->setTimezone('Europe/Berlin')->format('l j F'),
-                'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? null,
+                'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? $tools->reasons[$c->id] ?? null,
                 // Around here's PlaceRow: the card draws it when every place has one.
                 // Its row's label says so too ("Playground with football goals").
                 'row' => ($row = $rows->get($key($c))) !== null && AssistantTools::kindOf($c) === 'Playground with football goals' ? [...$row, 'label' => AssistantTools::kindOf($c)] : $row,
