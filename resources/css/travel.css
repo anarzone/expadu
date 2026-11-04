@@ -1935,6 +1935,10 @@
     margin: 0;
     font: inherit;
 }
+/* Dark: a quiet card with a red mark, so a major notice stands out without a red block. */
+:root.dark .tl-headline {
+    background: var(--color-bg-surface);
+}
 .tl-headline-bar {
     display: flex;
     align-items: center;
