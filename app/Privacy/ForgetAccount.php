@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Redis;
 /**
  * What deleting an account must also remove that no foreign key cascades
  * (privacy review, 26 Oct 2026): its notifications and push devices (both
- * polymorphic), its sessions on every device, and the person's keys in
+ * polymorphic), its app tokens, its sessions on every device, and the person's keys in
  * Redis and the cache (mutes, pending actions, Composer's private plan
  * copies). Location keys go through LocationDataRetention::purgeUser.
  */
@@ -20,6 +20,7 @@ final class ForgetAccount
     {
         $user->notifications()->delete();
         $user->pushSubscriptions()->delete();
+        $user->tokens()->delete();
         DB::table((string) config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
 
         Redis::del("pending_actions:{$user->id}");

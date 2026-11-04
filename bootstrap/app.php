@@ -26,6 +26,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -74,7 +75,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // These are JSON commands even when Accept is missing/spoofed. A
         // validation redirect must not flash personal prompts into a session.
-        $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $error): bool => $request->is('composer/ask', 'composer/apply', 'composer/undo', 'composer/act', 'composer/compose', 'paperwork/v2/*', 'privacy/processing/*')
+        $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $error): bool => $request->is('composer/ask', 'composer/apply', 'composer/undo', 'composer/act', 'composer/compose', 'paperwork/v2/*', 'privacy/processing/*', 'api/v1/*')
             || $request->expectsJson());
         // `code`: an emailed confirmation code (EmailConfirmation) never sits in the session.
         $exceptions->dontFlash(['text', 'message', 'answer', 'answers', 'payload', 'value', 'facts', 'processing', 'token', 'label', 'evidence_reference', 'question', 'code']);

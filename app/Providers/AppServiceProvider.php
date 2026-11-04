@@ -197,6 +197,11 @@ class AppServiceProvider extends ServiceProvider
             ? Limit::none()
             : Limit::perMinute(60 * $scale)->by('writes:'.$userOrIp($request)));
 
+        // The iPhone app's API, as the web's ceiling is for its pages.
+        RateLimiter::for('app-api', function (Request $request) use ($userOrIp, $scale): Limit {
+            return Limit::perMinute(300 * $scale)->by('app-api:'.$userOrIp($request));
+        });
+
         // Typeahead + geocoding endpoints hit MOTIS/Photon per request; a
         // debounced client peaks around 2/s while typing.
         RateLimiter::for('search', fn (Request $request): Limit => Limit::perMinute(60)

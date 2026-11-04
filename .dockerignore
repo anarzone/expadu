@@ -17,3 +17,4 @@ docker/pgsql/
 phpunit.xml
 vite.config.ts.timestamp*
 *.md
+ios/

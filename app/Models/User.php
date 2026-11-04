@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
 #[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'has_deutschlandticket', 'transport_mode', 'needs_step_free', 'bureaucracy_path', 'profile_attributes', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
@@ -27,7 +28,7 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
+    use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
 
     protected static function booted(): void
     {
@@ -36,6 +37,12 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         static::deleting(fn (User $user) => app(PlaceWorkAnswers::class)->forget($user));
         // A Paperwork answer kept on the profile (German level) changed: Paperwork's after-change steps.
         static::updated(fn (User $user) => ProfileFacts::profileChanged($user, array_keys($user->getChanges())));
+        // A new password signs the phones out, as it would anyone who had the old one.
+        static::updated(function (User $user): void {
+            if ($user->wasChanged('password')) {
+                $user->tokens()->delete();
+            }
+        });
     }
 
     public function canAccessPanel(Panel $panel): bool

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 use RuntimeException;
 use Throwable;
 
@@ -25,9 +26,9 @@ use Throwable;
  * the bar for these accounts: a password reset goes there too.
  *
  * The code is kept server-side as an HMAC, bound to the account and to the
- * session that asked for it (a one-time nonce held in that session), for one
- * use within ten minutes, and dies after five wrong tries. An account with a
- * password always uses its password.
+ * session that asked for it (a one-time nonce held in that session), or the
+ * app token that asked for it, for one use within ten minutes, and dies after
+ * five wrong tries. An account with a password always uses its password.
  */
 final class EmailConfirmation
 {
@@ -62,10 +63,12 @@ final class EmailConfirmation
         }
 
         $code = str_pad((string) random_int(0, 999_999), 6, '0', STR_PAD_LEFT);
-        $nonce = Str::random(40);
         $ttl = now()->addMinutes(self::TTL_MINUTES);
 
-        $request->session()->put(self::SESSION_KEY, $nonce);
+        if ($request->hasSession()) {
+            $request->session()->put(self::SESSION_KEY, Str::random(40));
+        }
+        $nonce = (string) $this->holder($request);
         Cache::put($this->key($user), [
             'session' => hash('sha256', $nonce),
             'code' => $this->hash($user, $code),
@@ -98,7 +101,7 @@ final class EmailConfirmation
             return false;
         }
 
-        $nonce = $request->session()->get(self::SESSION_KEY);
+        $nonce = $this->holder($request);
         $entry = Cache::get($this->key($user));
         if (! is_string($nonce) || ! is_array($entry)
             || ($entry['expires'] ?? 0) < now()->getTimestamp()
@@ -122,9 +125,23 @@ final class EmailConfirmation
         }
 
         $this->forget($request, $user);
-        $request->session()->passwordConfirmed();
+        if ($request->hasSession()) {
+            $request->session()->passwordConfirmed();
+        }
 
         return true;
+    }
+
+    /** What the code is bound to: the session's nonce, or the app token making the request. */
+    private function holder(Request $request): ?string
+    {
+        if ($request->hasSession()) {
+            return $request->session()->get(self::SESSION_KEY);
+        }
+
+        $token = $request->user()?->currentAccessToken();
+
+        return $token instanceof PersonalAccessToken ? 'token:'.$token->getKey() : null;
     }
 
     /**
@@ -145,7 +162,9 @@ final class EmailConfirmation
 
     private function forget(Request $request, User $user): void
     {
-        $request->session()->forget(self::SESSION_KEY);
+        if ($request->hasSession()) {
+            $request->session()->forget(self::SESSION_KEY);
+        }
         Cache::forget($this->key($user));
         Cache::forget($this->triesKey($user));
     }
