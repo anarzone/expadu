@@ -5,7 +5,8 @@
 #
 # A failing step fails the deploy; without it the catalogue steps hit missing
 # tables and the deploy still showed green.
-set -euo pipefail
+# -E: the rollback below also catches a step failing inside artisan().
+set -Eeuo pipefail
 
 # One deploy at a time on this box, staging's and production's alike, whoever started it
 # (CI or bin/deploy): a second one replacing the container kills the first one's steps, even
@@ -27,6 +28,35 @@ fi
 # The app only: production plans its routes on this file's motis, which a staging
 # deploy mustn't restart. motis has its own weekly swap (infra/motis/swap.sh).
 docker compose up -d --no-deps --force-recreate --pull never app
+
+artisan() { docker exec -u www-data staging-app php artisan "$@"; }
+
+# Back to the image that was running, set up again as a deploy sets it up, its catalogue
+# rebuilt so it matches that image (a mismatch takes Today and Paperwork down).
+# Migrations stay: only the image goes back.
+rollback() {
+  trap - ERR
+  set +e
+  if [ -z "$PREVIOUS" ]; then
+    echo "No previous image to go back to." >&2
+    exit 1
+  fi
+  docker tag "$PREVIOUS" "$(docker inspect --format '{{.Config.Image}}' staging-app)"
+  docker compose up -d --no-deps --force-recreate --pull never app
+  sleep 5
+  artisan config:cache
+  artisan route:cache
+  artisan view:cache
+  artisan bureaucracy:import-tasks --retire-missing \
+    && artisan bureaucracy:verify-sources \
+    && artisan bureaucracy:compile-catalogue --deploy \
+    || echo "The catalogue didn't rebuild on the previous image: check Today and Paperwork." >&2
+  exit 1
+}
+# Any step that fails from here brings the previous image back, instead of leaving the new
+# one running half set up (4 Nov 2026: the catalogue step stopped, Today answered 500).
+trap 'echo "A deploy step failed; rolling back." >&2; rollback' ERR
+
 sleep 5
 
 # Staging's compose replaces the image entrypoint (fix-nginx.sh), so nothing
@@ -34,7 +64,6 @@ sleep 5
 # image's entrypoint does on prod), before the deploy-time catalogue steps
 # (import, source check, release, dossiers), all run as www-data so the files
 # they write stay writable by the app.
-artisan() { docker exec -u www-data staging-app php artisan "$@"; }
 artisan migrate --force
 artisan config:cache
 artisan route:cache
@@ -57,9 +86,5 @@ for attempt in $(seq 1 12); do
   sleep 5
 done
 
-echo "Staging did not answer /up after the deploy; rolling back."
-if [ -n "$PREVIOUS" ]; then
-  docker tag "$PREVIOUS" "$(docker inspect --format '{{.Config.Image}}' staging-app)"
-  docker compose up -d --no-deps --force-recreate --pull never app
-fi
-exit 1
+echo "Staging did not answer /up after the deploy; rolling back." >&2
+rollback
