@@ -59,6 +59,15 @@ final class DayActions implements ComposerAction
                 return ['date' => $date, 'edit' => ['action' => 'edit', 'date' => $date, 'id' => $slot['id'], 'start' => $start, 'end' => $end],
                     'name' => $slot['name'], 'propose' => "Move {$slot['name']} to {$start}–{$end}?", 'sub' => self::span($slot)];
             })(),
+            'shift_day' => (function () use ($input, $plan, $date, $where): array {
+                if ($plan === null) {
+                    throw new ActionRefused('There’s nothing planned '.($where === 'My day' ? 'today' : 'then').'.');
+                }
+                $start = self::clock($input['start'] ?? null) ?? throw new ActionRefused('Say the time to start at.');
+
+                return ['date' => $date, 'edit' => ['action' => 'shift', 'date' => $date, 'start' => $start], 'name' => $where,
+                    'propose' => "Start {$where} at {$start}?", 'sub' => count($plan['slots']).' '.(count($plan['slots']) === 1 ? 'thing' : 'things').' planned'];
+            })(),
             // Their own appointment ("dentist at 3"), as Plans' Add your own does: a personal plan at its time.
             'add_appointment' => (function () use ($input, $date, $where): array {
                 $name = trim((string) ($input['name'] ?? ''));
@@ -105,7 +114,7 @@ final class DayActions implements ComposerAction
         try {
             $made = $this->workspace->change($user, $prepared['edit']);
         } catch (WorkspaceRefusal $refusal) {
-            throw new ActionRefused($refusal->getMessage());
+            throw new ActionRefused(($action === 'shift_day' ? "Can’t start it at {$prepared['edit']['start']}: " : '').$refusal->getMessage());
         }
         $change = $made['change'];
         $row = $change['rows'][0] ?? null;
@@ -116,6 +125,7 @@ final class DayActions implements ComposerAction
             'remove_from_day' => "Took {$prepared['name']} off {$where}",
             'swap_in_day' => "Swapped {$prepared['was']} for {$prepared['name']}".(isset($row['to']) ? ", {$row['to']}" : ''),
             'move_in_day' => "Moved {$prepared['name']} to {$prepared['edit']['start']}–{$prepared['edit']['end']}",
+            'shift_day' => "{$where} now starts at {$prepared['edit']['start']}",
             default => "Cleared {$where}",
         };
 

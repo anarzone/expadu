@@ -512,6 +512,21 @@ class WorkspaceStore
                     $slots[$index] = [...$slots[$index], ...$this->placePoint($input['location'], $input['lat'] ?? null, $input['lng'] ?? null)];
                 }
                 break;
+            case 'shift':
+                // The day starts then and everything that can move moves with it, keeping the gaps; events and
+                // appointments keep their time. One change, so one Undo.
+                $movable = collect($slots)->reject(fn (array $slot): bool => in_array($slot['type'], ['event', 'appointment'], true))->sortBy('start_at');
+                $this->require($movable->isNotEmpty(), 'fixed_time', 'Everything in this day has a fixed time.');
+                $first = CarbonImmutable::parse($movable->first()['start_at'])->setTimezone('Europe/Berlin');
+                $by = (int) $first->diffInMinutes(CarbonImmutable::parse("{$date} {$input['start']}", 'Europe/Berlin'), false);
+                foreach ($movable->keys() as $i) {
+                    $from = CarbonImmutable::parse($slots[$i]['start_at'])->setTimezone('Europe/Berlin')->addMinutes($by);
+                    $to = CarbonImmutable::parse($slots[$i]['end_at'])->setTimezone('Europe/Berlin')->addMinutes($by);
+                    $this->require($from->format('Y-m-d') === $date && $to->format('Y-m-d') === $date, 'invalid_time', 'That would run past the end of the day.');
+                    $slots[$i] = $this->setTime($slots[$i], $date, $from->format('H:i'), $to->format('H:i'));
+                }
+                $label = "Moved the day to start at {$input['start']}";
+                break;
             case 'remove':
                 $displaced = $slots[$index];
                 $label = "Removed {$displaced['name']}";
