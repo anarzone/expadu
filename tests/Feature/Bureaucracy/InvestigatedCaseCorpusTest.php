@@ -121,3 +121,18 @@ test('every limited permit has a renewal step dated from its expiry; a settlemen
     }
     expect($plan('settlement_permit_9'))->not->toContain('residence.renew_permit');
 });
+
+test('child benefit and school follow having children, for any purpose', function () {
+    $plan = function (array $facts): array {
+        $user = User::factory()->onboarded()->create();
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        foreach ($facts as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return array_column(app(PlanReadModel::class)->for($user, $case->person, 'de-nrw-cologne')['actions'], 'source_rule_id');
+    };
+
+    expect($plan(['citizenship_group' => 'non_eu', 'purpose' => 'employment', 'has_children' => true]))->toContain('fam.kindergeld', 'fam.school_kita')
+        ->and($plan(['citizenship_group' => 'non_eu', 'purpose' => 'family', 'has_children' => false]))->not->toContain('fam.kindergeld')->not->toContain('fam.school_kita');
+});

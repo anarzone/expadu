@@ -63,6 +63,14 @@ family_residence_permit_held_since:
   priority: 85
   reconfirm_after_days: 180
 
+has_children:
+  type: boolean
+  question: Do you have children who live with you, or will join you, in Germany?
+  why: Child benefit and school or Kita registration apply only if you do.
+  sensitivity: high
+  priority: 60
+  reconfirm_after_days: 365
+
 marital_household_continues:
   type: boolean
   question: Do you and your spouse still live together as a married household in Germany?
