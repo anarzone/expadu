@@ -17,6 +17,7 @@ function leftoversFor(User $user): void
 {
     DB::table('notifications')->insert(['id' => (string) Str::uuid(), 'type' => 'Test', 'notifiable_type' => $user->getMorphClass(), 'notifiable_id' => $user->id, 'data' => '{}', 'created_at' => now(), 'updated_at' => now()]);
     $user->updatePushSubscription("https://push.example/{$user->id}", 'key', 'token');
+    $user->createToken('iPhone');
     foreach (['phone', 'laptop'] as $device) {
         DB::table('sessions')->insert(['id' => "{$device}-{$user->id}", 'user_id' => $user->id, 'payload' => '', 'last_activity' => now()->timestamp]);
     }
@@ -49,6 +50,7 @@ test('🔒 deleting the account removes its notifications, push devices, every s
     expect(User::find($user->id))->toBeNull()
         ->and(DB::table('notifications')->where('notifiable_id', $user->id)->count())->toBe(0)
         ->and(DB::table('push_subscriptions')->where('subscribable_id', $user->id)->count())->toBe(0)
+        ->and(DB::table('personal_access_tokens')->where('tokenable_id', $user->id)->count())->toBe(0)
         ->and(DB::table('sessions')->where('user_id', $user->id)->count())->toBe(0)
         ->and(Redis::exists("mute:{$user->id}:line:16"))->toBe(0)
         ->and(Redis::exists("pending_actions:{$user->id}"))->toBe(0)
@@ -58,6 +60,7 @@ test('🔒 deleting the account removes its notifications, push devices, every s
 
     expect(DB::table('notifications')->where('notifiable_id', $other->id)->count())->toBe(1)
         ->and(DB::table('push_subscriptions')->where('subscribable_id', $other->id)->count())->toBe(1)
+        ->and(DB::table('personal_access_tokens')->where('tokenable_id', $other->id)->count())->toBe(1)
         ->and(DB::table('sessions')->where('user_id', $other->id)->count())->toBe(2)
         ->and(Redis::exists("mute:{$other->id}:line:16"))->toBe(1)
         ->and(Cache::has("composer:plan:{$other->id}"))->toBeTrue();

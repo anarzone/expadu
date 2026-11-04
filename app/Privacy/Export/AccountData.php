@@ -86,6 +86,8 @@ final class AccountData
             'needs' => ['step_free' => (bool) $user->needs_step_free],
             'notification_preferences' => $this->rows('notification_preferences', 'user_id', $user->id),
             'push_devices' => $this->morph('push_subscriptions', 'subscribable', $user),
+            // The phones signed in, never the token's hash.
+            'app_devices' => $user->tokens()->get(['name', 'last_used_at', 'expires_at', 'created_at'])->map->toArray()->all(),
         ];
     }
 

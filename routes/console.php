@@ -166,3 +166,6 @@ Schedule::command('places:build-features')->dailyAt('04:15')->withoutOverlapping
 
 // "Download your data" files are kept 24 hours, then deleted with their rows.
 Schedule::command('account-exports:prune')->hourly()->withoutOverlapping()->onOneServer();
+
+// Expired app tokens already fail; this removes the rows a day later.
+Schedule::command('sanctum:prune-expired --hours=24')->daily();
