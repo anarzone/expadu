@@ -25,7 +25,7 @@ class MarketEvaluator implements ShouldQueue
     public function handle(MarketClosureDetected $event): void
     {
         User::query()
-            ->whereNotNull('onboarded_at')
+            ->whereNotNull('email_verified_at')
             ->chunkById(100, function ($users) use ($event): void {
                 foreach ($users as $user) {
                     $score = $this->scorer->score(

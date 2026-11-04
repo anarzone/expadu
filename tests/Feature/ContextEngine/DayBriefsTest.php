@@ -11,6 +11,8 @@ use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Models\UserPlace;
 use App\Notifications\DayBriefNotification;
+use App\Services\DisruptionService;
+use App\Services\UserTransitLinesService;
 use App\Support\NotificationThrottle;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Notification;
@@ -82,7 +84,26 @@ test('an important day has a brief the evening before too, at 19:00, with shops 
 
     // The evening before a Sunday: shops are closed tomorrow.
     expect(collect($this->briefs->items($this->user, briefAt('00:00', '2026-11-15'), DayBriefs::EVENING))->pluck('text')->all())
-        ->toContain('Shops are closed tomorrow (Sunday).');
+        ->toContain('Most shops are closed tomorrow (Sunday).');
+
+    // On Today from the morning before.
+    expect(collect($this->briefs->items($this->user, briefAt('00:00', '2026-11-14'), DayBriefs::MORNING))->pluck('text')->all())
+        ->toContain('Most shops are closed tomorrow (Sunday).');
+});
+
+test('a major problem open on their lines is said to someone who hasn\'t finished Paperwork, everyday ones aren\'t', function () {
+    $this->travelTo(briefAt('09:00'));
+    $user = User::factory()->create(['onboarded_at' => null]);
+    $this->mock(UserTransitLinesService::class)->shouldReceive('getRelevantLines')->andReturn(['lines' => collect(['18']), 'stops' => collect(), 'context' => []]);
+    $this->mock(DisruptionService::class)->shouldReceive('getLineDisruptions')->andReturn([
+        ['id' => 'news_1', 'scale' => 'major', 'affected_lines' => ['18', '1'], 'title' => 'Linie 18 getrennt', 'brief' => ['headline' => 'Line 18 is split until 23 November']],
+        ['id' => 'news_2', 'scale' => 'minor', 'affected_lines' => ['18'], 'title' => 'Hohes Verkehrsaufkommen', 'brief' => null],
+        ['id' => 'news_3', 'scale' => 'major', 'affected_lines' => ['7'], 'title' => 'Linie 7 getrennt', 'brief' => null],
+    ]);
+
+    $texts = collect(app(DayBriefs::class)->items($user, briefAt('00:00'), DayBriefs::MORNING))->where('kind', 'disruption')->pluck('text')->all();
+
+    expect($texts)->toBe(['Line 18 is split until 23 November']);
 });
 
 test('the brief says what threatens the day first, then the day in order, then how many more', function () {

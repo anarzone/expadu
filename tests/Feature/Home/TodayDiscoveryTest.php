@@ -48,17 +48,22 @@ test('today\'s events come first, near the person\'s Veedel before the rest', fu
 
     $result = app(TodayDiscovery::class)->for($user, discoveryNoon());
 
-    expect(collect($result['events'])->pluck('title')->all())->toBe(['Near and later', 'Far and early'])
+    // With few left to start, tomorrow's come after today's.
+    expect(collect($result['events'])->pluck('title')->all())->toBe(['Near and later', 'Far and early', 'Tomorrow near'])
+        ->and($result['events'][2]['day'])->toBe('tomorrow')
         ->and($result['part'])->toBe('afternoon');
 });
 
-test('tomorrow shows only once nothing is left today, and an event still on counts as left', function () {
+test('what starts still ahead comes first, tomorrow\'s join when few are left, and what\'s running comes last', function () {
     $user = User::factory()->create(['veedel' => 'Ehrenfeld']);
     discoveryEvent('Tomorrow', '2026-10-27 19:00');
     discoveryEvent('Exhibition on until six', '2026-10-26 10:00', end: '2026-10-26 18:00');
+    discoveryEvent('Tonight', '2026-10-26 20:00');
 
     expect(collect(app(TodayDiscovery::class)->for($user, discoveryNoon())['events'])->pluck('title')->all())
-        ->toBe(['Exhibition on until six']);
+        ->toBe(['Tonight', 'Tomorrow', 'Exhibition on until six']);
+    Event::query()->where('title', 'Tonight')->delete();
+    Cache::flush();
 
     $evening = CarbonImmutable::parse('2026-10-26 19:00', 'Europe/Berlin');
     $result = app(TodayDiscovery::class)->for($user, $evening);

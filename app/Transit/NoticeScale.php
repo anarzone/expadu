@@ -47,6 +47,10 @@ final class NoticeScale
      */
     public static function of(string $title, ?string $details, array $lines = [], ?string $severity = null): array
     {
+        // Heavy traffic is everyday, whatever its grade: 25 such notices were open on 3 Nov 2026.
+        if (preg_match('/hohes\s+verkehrsaufkommen/iu', $title) === 1) {
+            return ['scale' => 'minor', 'reasons' => ['delays']];
+        }
         $text = $title.' '.(string) $details;
         $reasons = [];
         foreach (self::PATTERNS as $reason => $pattern) {

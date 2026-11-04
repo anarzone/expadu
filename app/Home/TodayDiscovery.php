@@ -57,7 +57,16 @@ final class TodayDiscovery
     private const LISTED = 11;
 
     /** The rule order's version, logged with each list shown (ListImpressions): change it when events() or the places' order changes. */
-    public const RULES = 'rules-1';
+    public const RULES = 'rules-2';
+
+    /** From this hour, tomorrow's listings join today's. */
+    private const TOMORROW_FROM_HOUR = 21;
+
+    /** With fewer than this still to start today, tomorrow's join them at any hour. */
+    private const FEW_AHEAD = 5;
+
+    /** Past the listed ones, for those the person turned down and the one "Also in ‹area›" suggests. */
+    private const SPARE_FOR_HIDDEN = 10;
 
     /** How long a day's listings are kept (listings()). */
     private const LISTINGS_SECONDS = 300;
@@ -246,17 +255,22 @@ final class TodayDiscovery
                 return ! $active->contains(fn (DayItem $plan) => $end !== null && $plan->startAt !== null && $plan->endAt !== null
                     && $start < $plan->endAt->getTimestamp() && $end > $plan->startAt->getTimestamp());
             })
-            ->pluck('event')
             ->values();
 
-        if ($today->isNotEmpty()) {
-            return $this->nearFirst($today, $home);
-        }
+        // Starts still ahead lead; what's already running, the longest last, comes after them (the audit,
+        // 3 Nov 2026: 77% of the phone's five at 14:30 had started, and a day-long festival led all day).
+        [$ahead, $running] = $today->partition(fn (array $listing): bool => $listing['start'] >= $now->getTimestamp());
+        $running = $running->sortBy(fn (array $listing): int => ($listing['end'] ?? $listing['start']) - $listing['start'])->pluck('event');
+        $ahead = $this->nearFirst($ahead->pluck('event')->values(), $home);
+
+        // Late, or with few left to start: tomorrow's too, said to be tomorrow's. One long-running listing
+        // used to keep them out all evening.
+        $tomorrow = $now->setTimezone('Europe/Berlin')->hour >= self::TOMORROW_FROM_HOUR || $ahead->count() < self::FEW_AHEAD
+            ? $this->nearFirst($this->listings($now, $now->addDay())->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])->values(), $home)
+            : collect();
 
         // Today shows eleven at most, so only the first eleven are dressed.
-        return $this->nearFirst($this->listings($now, $now->addDay())
-            ->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])
-            ->values(), $home)->take(self::LISTED)->values();
+        return $ahead->concat($tomorrow)->concat($running)->take(self::LISTED + self::SPARE_FOR_HIDDEN)->values();
     }
 
     /**

@@ -30,7 +30,7 @@ class WeatherEvaluator implements ShouldQueue
         }
 
         User::query()
-            ->whereNotNull('onboarded_at')
+            ->whereNotNull('email_verified_at')
             ->chunkById(100, function ($users) use ($event): void {
                 foreach ($users as $user) {
                     $this->evaluateForUser($user, $event);

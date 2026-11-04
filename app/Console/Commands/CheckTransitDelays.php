@@ -22,7 +22,7 @@ class CheckTransitDelays extends Command
         // Build the set of stops worth polling from users' relevant lines.
         $stops = [];
 
-        User::whereNotNull('onboarded_at')->each(function (User $user) use ($transitLines, &$stops) {
+        User::whereNotNull('email_verified_at')->each(function (User $user) use ($transitLines, &$stops) {
             $relevant = $transitLines->getRelevantLines($user);
 
             foreach ($relevant['stops'] as $stop) {
