@@ -282,6 +282,9 @@ it('keeps supported investigated rules authoritative, the duplicate retired and 
             'case-settlement-18c-holder',
             'case-settlement-unknown-holder',
             'case-work-permit-renewal',
+            'renew-student-permit',
+            'renew-chancenkarte',
+            'renew-self-employment',
             'case-unsupported-title',
             // Entered visa-free: no residence title yet.
             'case-visa-free-no-title',
