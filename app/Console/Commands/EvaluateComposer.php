@@ -362,7 +362,8 @@ class EvaluateComposer extends Command
         }
         $taste = implode("\n", array_intersect_key($assistant->read, array_flip(preg_grep('/^(t|a|h|w)\d+$/', array_keys($assistant->read)))));
         $unbacked = array_values(array_filter([...array_column($answer['events'] ?? [], 'because'), ...array_column($answer['places'] ?? [], 'because')],
-            fn (string $because): bool => $taste === '' || ! app(AroundCheck::class)->holds($because, $taste, true)));
+            // A reason code wrote from their taste isn't the AI's to back.
+            fn (string $because): bool => ! in_array($because, $assistant->reasons, true) && ($taste === '' || ! app(AroundCheck::class)->holds($because, $taste, true))));
         $repeated = preg_match(self::REFUSAL, $text) === 1 ? [
             ...array_values(array_intersect_key($earlier['event'], array_flip(array_column($answer['events'] ?? [], 'id')))),
             ...array_values(array_intersect_key($earlier['spot'], array_flip(array_column($answer['places'] ?? [], 'id')))),
