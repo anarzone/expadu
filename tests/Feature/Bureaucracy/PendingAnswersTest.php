@@ -59,7 +59,7 @@ it('offers essential orientation without interviewing from unapproved branch rul
     // $route lists registered facts that checked residence cards for this purpose depend on.
     expect($planQuestions)->toEqualCanonicalizing([
         'arrival_planned', 'registration_status', 'health_coverage_confirmed',
-        'tax_id_available', 'bank_account_help_needed', ...$route,
+        'tax_id_available', 'bank_account_help_needed', 'has_children', ...$route,
     ], "{$label}: only approved preparation and checked routes should ask follow-ups");
 
     expect(app(PendingAnswers::class)->forCase($case))->toContain('residence_title_expires_at')
@@ -76,7 +76,7 @@ it('offers essential orientation without interviewing from unapproved branch rul
     'freelancer' => ['freelancer', [
         'citizenship_group' => 'non_eu', 'purpose' => 'freelance',
         'current_residence_title' => 'national_d_visa',
-    ]],
+    ], ['entry_mode']],
 ]);
 
 it('stops asking once the answer is given', function () {

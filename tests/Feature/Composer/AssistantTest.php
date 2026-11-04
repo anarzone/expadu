@@ -559,3 +559,22 @@ test('🔒 with the opt-in their taste reorders a nearby search and says why; wi
     expect($shown($places))->toBe(['Near Museum', 'Nearest Bar', 'Far Museum'])
         ->and(collect($places)->firstWhere('name', 'Near Museum')['because'])->toBe('You like museums');
 });
+
+test('who to ask comes from the checked list, shown with its official link, and its words hold', function () {
+    $user = User::factory()->onboarded()->create();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['who_to_ask', ['topic' => 'night_pharmacy']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'At night, the pharmacy emergency service (Apothekennotdienst) finds the pharmacy on duty nearest you.', 'uses' => ['g1']]], 'show' => ['g1']]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'pharmacy open now?');
+
+    expect($reply['lead'])->toContain('Apothekennotdienst')
+        ->and(collect($reply['blocks'])->firstWhere('type', 'facts')['sources'][0]['href'])->toBe('https://www.aponet.de/notdienstsuche');
+    foreach (config('who_to_ask') as $entry) {
+        expect($entry['links'])->not->toBeEmpty();
+        foreach ($entry['links'] as $link) {
+            expect($link['href'])->toStartWith('https://');
+        }
+    }
+});

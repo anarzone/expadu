@@ -291,3 +291,43 @@ tasks:
         body: Search for "Privathaftpflicht", the short name for this insurance. In each offer, read what it covers, what it excludes and the most it pays per claim before you sign.
       - title: Note your policy number
         body: Keep it somewhere you can find it. You'll need it when you report damage to your insurer.
+
+  - title: Renew your residence permit before it expires
+    key: residence.renew_permit
+    description: |
+      A residence permit is only issued on application, so it won't renew by itself. File the
+      renewal before your permit expires; it then counts as still valid until the office decides.
+      If you apply late, the office can only keep it in effect to avoid undue hardship. Check what
+      Cologne needs for your kind of permit and allow time for an appointment. The office decides;
+      Expadu doesn't decide whether you qualify.
+    phase: arrival
+    urgency: critical
+    deadline_type: fact_date
+    deadline_fact_key: residence_title_expires_at
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+      current_residence_title: {in: [standard_work_permit, blue_card, student_permit, chancenkarte, self_employment_permit]}
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
+      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-11-04.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+    claims:
+      - id: on-application
+        states: A residence permit is only issued on application
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Ein Aufenthaltstitel wird einem Ausländer nur auf seinen Antrag erteilt
+      - id: apply-before-expiry
+        states: File the renewal before your permit expires; it then counts as still valid until the office decides
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.
+      - id: late-application
+        states: If you apply late, the office can only keep it in effect to avoid undue hardship
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: kann die Ausländerbehörde zur Vermeidung einer unbilligen Härte die Fortgeltungswirkung anordnen

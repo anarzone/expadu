@@ -1,6 +1,6 @@
 # Structural mapping only. This does not approve prose or declare complete eligibility.
 # `position` is the reviewed display order of a unit's step within its process (1 = first).
-version: '2026-10-30.1'
+version: '2026-11-04.1'
 entries:
   core.anmeldung: {process_id: address.registration, position: 1, topic: address, kind: preparation, coverage: partial, occurrence_fact: moved_in_at}
   core.steuer_id: {process_id: tax.identification, position: 1, topic: tax, kind: preparation, coverage: partial}
@@ -34,6 +34,9 @@ entries:
   stu.work_rules: {process_id: residence.student.work, position: 1, topic: work, kind: context, coverage: partial}
   stu.post_graduation: {process_id: residence.student.job_search, position: 1, topic: residence, kind: context, coverage: partial}
   stu.tax_return: {process_id: tax.income_tax_return, position: 2, topic: tax, kind: context, coverage: partial}
+  residence.renew_permit: {process_id: residence.limited_title.renewal, position: 1, topic: residence, kind: action, coverage: partial, occurrence_fact: current_residence_title}
+  fre.residence_permit.d_visa: {process_id: residence.self_employment.first, position: 1, topic: residence, kind: action, coverage: partial, occurrence_fact: entry_mode}
+  fre.residence_permit.visa_free: {process_id: residence.self_employment.first, position: 2, topic: residence, kind: action, coverage: partial, occurrence_fact: entry_mode}
   fre.gewerbe_check: {process_id: tax.self_employment.registration, position: 1, topic: tax, kind: preparation, coverage: partial}
   fre.fragebogen: {process_id: tax.self_employment.registration, position: 2, topic: tax, kind: action, coverage: partial}
   fre.kleinunternehmer: {process_id: tax.self_employment.registration, position: 3, topic: tax, kind: option, coverage: partial}

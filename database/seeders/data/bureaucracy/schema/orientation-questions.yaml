@@ -9,4 +9,4 @@ questions:
       - citizenship_group: non_eu
   - fact_key: residence_title_expires_at
     when:
-      - current_residence_title: [national_d_visa, standard_work_permit, blue_card, family_reunification]
+      - current_residence_title: [national_d_visa, standard_work_permit, blue_card, student_permit, chancenkarte, self_employment_permit, family_reunification]

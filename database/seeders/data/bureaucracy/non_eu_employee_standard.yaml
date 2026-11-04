@@ -264,10 +264,13 @@ tasks:
   - title: 'After 3 years: permanent residence instead of another renewal (§18c)'
     key: nee.ne_check
     depends_on: []
+    # Not for someone who already holds a settlement permit.
+    applies_if:
+      current_residence_title: {in: [national_d_visa, standard_work_permit]}
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-11-04.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}

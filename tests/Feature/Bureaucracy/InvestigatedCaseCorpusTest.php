@@ -85,3 +85,69 @@ test('each investigated scenario receives the same bounded decisions in preview 
         expect($copy)->not->toContain(strtolower($phrase));
     }
 })->with('investigated case corpus');
+
+test('non-EU freelancers get a permit step on the route they entered by; others don\'t', function () {
+    $actions = function (array $facts): array {
+        $user = User::factory()->onboarded()->create();
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        foreach ($facts as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return array_column(app(PlanReadModel::class)->for($user, $case->person, 'de-nrw-cologne')['actions'], 'source_rule_id');
+    };
+
+    expect($actions(['citizenship_group' => 'non_eu', 'purpose' => 'freelance', 'entry_mode' => 'd_visa', 'visa_expires_at' => '2027-01-20']))
+        ->toContain('fre.residence_permit.d_visa')->not->toContain('fre.residence_permit.visa_free')
+        ->and($actions(['citizenship_group' => 'non_eu', 'purpose' => 'freelance', 'entry_mode' => 'visa_free']))
+        ->toContain('fre.residence_permit.visa_free')->not->toContain('fre.residence_permit.d_visa')
+        ->and($actions(['citizenship_group' => 'eu', 'purpose' => 'freelance']))
+        ->not->toContain('fre.residence_permit.d_visa')->not->toContain('fre.residence_permit.visa_free');
+});
+
+test('every limited permit has a renewal step dated from its expiry; a settlement permit doesn\'t', function () {
+    $plan = function (string $title): array {
+        $user = User::factory()->onboarded()->create();
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        foreach (['citizenship_group' => 'non_eu', 'purpose' => 'employment', 'current_residence_title' => $title, 'residence_title_expires_at' => '2027-03-01'] as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return array_column(app(PlanReadModel::class)->for($user, $case->person, 'de-nrw-cologne')['actions'], 'source_rule_id');
+    };
+
+    foreach (['standard_work_permit', 'blue_card', 'student_permit', 'chancenkarte', 'self_employment_permit'] as $title) {
+        expect($plan($title))->toContain('residence.renew_permit');
+    }
+    expect($plan('settlement_permit_9'))->not->toContain('residence.renew_permit');
+});
+
+test('child benefit and school follow having children, for any purpose', function () {
+    $plan = function (array $facts): array {
+        $user = User::factory()->onboarded()->create();
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        foreach ($facts as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return array_column(app(PlanReadModel::class)->for($user, $case->person, 'de-nrw-cologne')['actions'], 'source_rule_id');
+    };
+
+    expect($plan(['citizenship_group' => 'non_eu', 'purpose' => 'employment', 'has_children' => true]))->toContain('fam.kindergeld', 'fam.school_kita')
+        ->and($plan(['citizenship_group' => 'non_eu', 'purpose' => 'family', 'has_children' => false]))->not->toContain('fam.kindergeld')->not->toContain('fam.school_kita');
+});
+
+test('the road to permanent residence isn\'t shown to someone who already has it', function () {
+    $guidance = function (string $title): array {
+        $user = User::factory()->onboarded()->create();
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        foreach (['citizenship_group' => 'non_eu', 'purpose' => 'employment', 'permit_track' => 'standard', 'current_residence_title' => $title] as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return collect(app(PlanReadModel::class)->for($user, $case->person, 'de-nrw-cologne')['guidance'])->pluck('id')->all();
+    };
+
+    expect($guidance('standard_work_permit'))->toContain('nee.ne_check')
+        ->and($guidance('settlement_permit_9'))->not->toContain('nee.ne_check');
+});

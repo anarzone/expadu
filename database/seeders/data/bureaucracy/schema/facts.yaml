@@ -1,7 +1,7 @@
 current_residence_title:
   type: enum
   # none: entered visa-free or not arrived yet, so no German visa or residence title is held.
-  options: [national_d_visa, standard_work_permit, blue_card, family_reunification, settlement_permit_9, settlement_permit_18c, settlement_permit_unknown, other, none]
+  options: [national_d_visa, standard_work_permit, blue_card, student_permit, chancenkarte, self_employment_permit, family_reunification, settlement_permit_9, settlement_permit_18c, settlement_permit_unknown, other, none]
   question: Which German visa or residence title do you currently hold?
   why: Your current title changes the application route and which deadline applies.
   sensitivity: high
@@ -62,6 +62,14 @@ family_residence_permit_held_since:
   sensitivity: high
   priority: 85
   reconfirm_after_days: 180
+
+has_children:
+  type: boolean
+  question: Do you have children who live with you, or will join you, in Germany?
+  why: Child benefit and school or Kita registration apply only if you do.
+  sensitivity: high
+  priority: 60
+  reconfirm_after_days: 365
 
 marital_household_continues:
   type: boolean

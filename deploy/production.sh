@@ -2,7 +2,8 @@
 # Production's deploy, run on the box: CI pipes it over SSH after pushing the image,
 # and `bin/deploy production` does the same after loading an image it built itself
 # (PULL=0, so the loaded image isn't replaced by the registry's).
-set -euo pipefail
+# -E: the rollback below also catches a step failing inside artisan().
+set -Eeuo pipefail
 
 # One deploy at a time on this box, staging's and production's alike, whoever started it
 # (CI or bin/deploy): a second one replacing the container kills the first one's steps, even
@@ -25,12 +26,37 @@ fi
 # Production's compose says pull_policy: always, so a plain `up` would fetch the
 # registry's image again: over a loaded image (PULL=0) or a rolled-back one.
 docker compose up -d --pull never app
+
+artisan() { docker exec -u www-data "$APP_CONTAINER" php artisan "$@"; }
+
+# Back to the image that was running, its catalogue rebuilt so it matches that image again
+# (the catalogue is checked against the code: a mismatch takes Today and Paperwork down).
+# Migrations stay, as they always have: only the image goes back.
+rollback() {
+  trap - ERR
+  set +e
+  if [ -z "$PREVIOUS" ]; then
+    echo "No previous image to go back to." >&2
+    exit 1
+  fi
+  docker tag "$PREVIOUS" ghcr.io/anarzone/expadu/app:latest
+  docker compose up -d --pull never app
+  sleep 5
+  artisan bureaucracy:import-tasks --retire-missing \
+    && artisan bureaucracy:verify-sources \
+    && artisan bureaucracy:compile-catalogue --deploy \
+    || echo "The catalogue didn't rebuild on the previous image: check Today and Paperwork." >&2
+  exit 1
+}
+# Any step that fails from here brings the previous image back, instead of leaving the new
+# one running half set up (staging, 4 Nov 2026: the catalogue step stopped, Today answered 500).
+trap 'echo "A deploy step failed; rolling back." >&2; rollback' ERR
+
 sleep 5
 
 # The entrypoint migrates before PHP-FPM starts; these are the deploy-time
 # catalogue steps (import, source check, release, dossiers), run as www-data so
 # the log files they create stay writable by the app.
-artisan() { docker exec -u www-data "$APP_CONTAINER" php artisan "$@"; }
 artisan bureaucracy:import-tasks --retire-missing
 artisan bureaucracy:verify-sources
 artisan bureaucracy:compile-catalogue --deploy
@@ -46,9 +72,5 @@ for attempt in $(seq 1 12); do
   sleep 5
 done
 
-echo "Production did not answer /up after the deploy; rolling back."
-if [ -n "$PREVIOUS" ]; then
-  docker tag "$PREVIOUS" ghcr.io/anarzone/expadu/app:latest
-  docker compose up -d --pull never app
-fi
-exit 1
+echo "Production did not answer /up after the deploy; rolling back." >&2
+rollback

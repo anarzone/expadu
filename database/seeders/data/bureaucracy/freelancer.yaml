@@ -318,3 +318,151 @@ tasks:
         link: https://www.rundfunkbeitrag.de/welcome/english/companies-institutions-and-public-interest-bodies
       - title: Set up direct debit
         body: Quarterly invoices are easy to miss while you're buried in setup admin — SEPA direct debit removes the risk of reminder fees.
+
+  - title: Apply for the permit to work for yourself before your visa expires
+    key: fre.residence_permit.d_visa
+    description: |
+      As a non-EU citizen you need a residence permit to work for yourself. File the application
+      before your national visa expires; it then counts as still valid until the office decides.
+      A business (Gewerbe) can be granted one when there is an economic interest or a regional need,
+      the business is expected to have positive effects on the economy, and its financing is secured
+      by your own capital or a loan commitment. A liberal profession (freier Beruf) can be granted
+      one without those conditions, but any licence the profession needs must be granted or promised.
+      Cologne's special service desk for the self-employed checks and decides after you arrive;
+      Expadu doesn't decide whether you qualify.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: fact_date
+    deadline_fact_key: visa_expires_at
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+      purpose: freelance
+      entry_mode: d_visa
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00947/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__21.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-11-04.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§21 AufenthG — Selbständige Tätigkeit', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__21.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: implementation, label: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen', url: 'https://www.stadt-koeln.de/service/produkte/00947/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Ausländische Akademikerinnen, Akademiker und Selbstständige', url: 'https://www.stadt-koeln.de/leben-in-koeln/soziales/flucht-einwanderung/auslaendische-akademikerinnen-akademiker-und-selbststaendige'}
+    claims:
+      - id: permit-needed
+        states: As a non-EU citizen you need a residence permit to work for yourself
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Für diese selbstständige Erwerbstätigkeit benötigen Sie eine Erlaubnis
+      - id: economic-interest
+        states: there is an economic interest or a regional need
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: ein wirtschaftliches Interesse oder ein regionales Bedürfnis besteht
+      - id: positive-effects
+        states: the business is expected to have positive effects on the economy
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: die Tätigkeit positive Auswirkungen auf die Wirtschaft erwarten lässt
+      - id: financing-secured
+        states: its financing is secured by your own capital or a loan commitment
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: die Finanzierung der Umsetzung durch Eigenkapital oder durch eine Kreditzusage gesichert ist
+      - id: liberal-profession
+        states: A liberal profession (freier Beruf) can be granted one without those conditions
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: Einem Ausländer kann eine Aufenthaltserlaubnis zur Ausübung einer freiberuflichen Tätigkeit abweichend von Absatz 1 erteilt werden.
+      - id: licence
+        states: any licence the profession needs must be granted or promised
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: Eine erforderliche Erlaubnis zur Ausübung des freien Berufes muss erteilt worden oder ihre Erteilung zugesagt sein.
+      - id: service-desk-decides
+        states: Cologne's special service desk for the self-employed checks and decides after you arrive
+        source: 'Stadt Köln — Ausländische Akademikerinnen, Akademiker und Selbstständige'
+        quote: Hier werden nach Ihrer Einreise die Erteilung einer Beschäftigungserlaubnis und Aufenthaltserlaubnis geprüft und entschieden.
+      - id: apply-before-expiry
+        states: File the application before your national visa expires; it then counts as still valid until the office decides
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.
+
+  - title: Apply for the permit to work for yourself soon after you arrive
+    key: fre.residence_permit.visa_free
+    description: |
+      As a non-EU citizen you need a residence permit to work for yourself. Citizens of Australia,
+      Israel, Japan, Canada, South Korea, New Zealand, the UK or the USA can enter visa-free and
+      get the permit here, and must apply within 90 days of entry. If you entered visa-free as a
+      citizen of another country, ask the service desk what applies before you start.
+      A business (Gewerbe) can be granted one when there is an economic interest or a regional need,
+      the business is expected to have positive effects on the economy, and its financing is secured
+      by your own capital or a loan commitment. A liberal profession (freier Beruf) can be granted
+      one without those conditions, but any licence the profession needs must be granted or promised.
+      Cologne's special service desk for the self-employed checks and decides after you arrive;
+      Expadu doesn't decide whether you qualify.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: permit_window
+    deadline_days: 90
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+      purpose: freelance
+      entry_mode: visa_free
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00947/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__21.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-11-04.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§21 AufenthG — Selbständige Tätigkeit', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__21.html'}
+      - {kind: primary, label: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
+      - {kind: implementation, label: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen', url: 'https://www.stadt-koeln.de/service/produkte/00947/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Ausländische Akademikerinnen, Akademiker und Selbstständige', url: 'https://www.stadt-koeln.de/leben-in-koeln/soziales/flucht-einwanderung/auslaendische-akademikerinnen-akademiker-und-selbststaendige'}
+    claims:
+      - id: permit-needed
+        states: As a non-EU citizen you need a residence permit to work for yourself
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Für diese selbstständige Erwerbstätigkeit benötigen Sie eine Erlaubnis
+      - id: economic-interest
+        states: there is an economic interest or a regional need
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: ein wirtschaftliches Interesse oder ein regionales Bedürfnis besteht
+      - id: positive-effects
+        states: the business is expected to have positive effects on the economy
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: die Tätigkeit positive Auswirkungen auf die Wirtschaft erwarten lässt
+      - id: financing-secured
+        states: its financing is secured by your own capital or a loan commitment
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: die Finanzierung der Umsetzung durch Eigenkapital oder durch eine Kreditzusage gesichert ist
+      - id: liberal-profession
+        states: A liberal profession (freier Beruf) can be granted one without those conditions
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: Einem Ausländer kann eine Aufenthaltserlaubnis zur Ausübung einer freiberuflichen Tätigkeit abweichend von Absatz 1 erteilt werden.
+      - id: licence
+        states: any licence the profession needs must be granted or promised
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: Eine erforderliche Erlaubnis zur Ausübung des freien Berufes muss erteilt worden oder ihre Erteilung zugesagt sein.
+      - id: service-desk-decides
+        states: Cologne's special service desk for the self-employed checks and decides after you arrive
+        source: 'Stadt Köln — Ausländische Akademikerinnen, Akademiker und Selbstständige'
+        quote: Hier werden nach Ihrer Einreise die Erteilung einer Beschäftigungserlaubnis und Aufenthaltserlaubnis geprüft und entschieden.
+      - id: visa-free-countries
+        states: Citizens of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK or the USA can enter visa-free
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs Großbritannien und Nordirland im Sinne des § 1 Absatz 2 Nummer 6 des Freizügigkeitsgesetzes/EU und der Vereinigten Staaten von Amerika können auch für einen Aufenthalt, der kein Kurzaufenthalt ist, visumfrei in das Bundesgebiet einreisen und sich darin aufhalten.
+      - id: permit-in-germany
+        states: get the permit here
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel kann im Bundesgebiet eingeholt werden.
+      - id: visa-free-90-days
+        states: must apply within 90 days of entry
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: deadline
+        covers: deadline
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
