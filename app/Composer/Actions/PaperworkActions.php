@@ -59,6 +59,7 @@ final class PaperworkActions implements ComposerAction
      */
     private const WORDS = [
         'national_d_visa' => 'National D visa', 'standard_work_permit' => 'Work permit', 'blue_card' => 'EU Blue Card', 'blue_card_pending' => 'Blue Card applied for',
+        'student_permit' => 'Student permit', 'chancenkarte' => 'Chancenkarte', 'self_employment_permit' => 'Self-employment permit',
         'family_reunification' => 'Family reunification', 'settlement_permit_9' => 'Settlement permit · §9', 'settlement_permit_18c' => 'Settlement permit · §18c',
         'settlement_permit_unknown' => 'Settlement permit · type unknown', 'registered' => 'Yes, registered', 'not_registered' => 'Not yet',
         'current_residence_title' => ['other' => 'Another title', 'none' => 'No residence title yet'],
