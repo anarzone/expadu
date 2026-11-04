@@ -47,6 +47,7 @@ import {
     isPublicPlace,
     EVENT_MARGIN_MIN,
     marginOf,
+    majorOf,
     rankOptions,
     scheduleSummary,
 } from './plan-model';
@@ -2143,6 +2144,10 @@ export function PlanPanel({
                                                 }
                                             />
                                             <PlanChecks
+                                                headlined={
+                                                    answer !== null &&
+                                                    majorOf(answer) !== null
+                                                }
                                                 onTicket={(held) =>
                                                     void sayTicket(held)
                                                 }

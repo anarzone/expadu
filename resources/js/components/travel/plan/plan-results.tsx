@@ -152,17 +152,39 @@ export function PlanLoading() {
     );
 }
 
+/** "We checked" chips on its one line. */
+const CHIPS_SHOWN = 2;
+
+const CHECK_ORDER: Record<Check['tone'], number> = {
+    conflict: 0,
+    attention: 1,
+    unsure: 2,
+    calm: 3,
+};
+
 export function PlanChecks({
     checks,
     onTicket,
     ticketBusy = false,
+    headlined = false,
 }: {
     checks: Check[];
+    /** A major notice already heads the page: its chip would say it twice. */
+    headlined?: boolean;
     /** "I have a Deutschlandticket" (or not): said here, then planned again. */
     onTicket?: (held: boolean) => void;
     ticketBusy?: boolean;
 }) {
     const [open, setOpen] = useState(false);
+    // One line: what needs a look first, and the rest counted, under Details.
+    const chips = checks
+        .filter(
+            (check) =>
+                !check.ticket &&
+                !(headlined && check.tone === 'conflict' && check.notices),
+        )
+        .sort((a, b) => CHECK_ORDER[a.tone] - CHECK_ORDER[b.tone]);
+    const rest = chips.length - CHIPS_SHOWN;
 
     return (
         <section className="plan-checks" aria-label="What we checked">
@@ -176,20 +198,23 @@ export function PlanChecks({
                 <strong>We checked today’s conditions</strong>
                 <span className="plan-check-chips tl-chips">
                     {/* The fare is in the list, not a chip: the chips are today's conditions. */}
-                    {checks
-                        .filter((check) => !check.ticket)
-                        .map((check) => (
-                            <TravelChip
-                                key={check.title}
-                                kind={check.tone}
-                                icon={<TravelIcon name={check.icon} />}
-                                className={
-                                    check.pending ? 'plan-skel-chip' : undefined
-                                }
-                            >
-                                {check.short}
-                            </TravelChip>
-                        ))}
+                    {chips.slice(0, CHIPS_SHOWN).map((check) => (
+                        <TravelChip
+                            key={check.title}
+                            kind={check.tone}
+                            icon={<TravelIcon name={check.icon} />}
+                            className={
+                                check.pending ? 'plan-skel-chip' : undefined
+                            }
+                        >
+                            {check.short}
+                        </TravelChip>
+                    ))}
+                    {rest > 0 ? (
+                        <TravelChip kind="calm" hidden={`${rest} more checks`}>
+                            +{rest}
+                        </TravelChip>
+                    ) : null}
                 </span>
                 <span className="plan-checks-more">
                     {open ? 'Hide' : 'Details'}
