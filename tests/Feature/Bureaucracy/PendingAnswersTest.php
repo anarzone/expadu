@@ -76,7 +76,7 @@ it('offers essential orientation without interviewing from unapproved branch rul
     'freelancer' => ['freelancer', [
         'citizenship_group' => 'non_eu', 'purpose' => 'freelance',
         'current_residence_title' => 'national_d_visa',
-    ]],
+    ], ['entry_mode']],
 ]);
 
 it('stops asking once the answer is given', function () {

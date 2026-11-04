@@ -85,3 +85,22 @@ test('each investigated scenario receives the same bounded decisions in preview 
         expect($copy)->not->toContain(strtolower($phrase));
     }
 })->with('investigated case corpus');
+
+test('non-EU freelancers get a permit step on the route they entered by; others don\'t', function () {
+    $actions = function (array $facts): array {
+        $user = User::factory()->onboarded()->create();
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        foreach ($facts as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return array_column(app(PlanReadModel::class)->for($user, $case->person, 'de-nrw-cologne')['actions'], 'source_rule_id');
+    };
+
+    expect($actions(['citizenship_group' => 'non_eu', 'purpose' => 'freelance', 'entry_mode' => 'd_visa', 'visa_expires_at' => '2027-01-20']))
+        ->toContain('fre.residence_permit.d_visa')->not->toContain('fre.residence_permit.visa_free')
+        ->and($actions(['citizenship_group' => 'non_eu', 'purpose' => 'freelance', 'entry_mode' => 'visa_free']))
+        ->toContain('fre.residence_permit.visa_free')->not->toContain('fre.residence_permit.d_visa')
+        ->and($actions(['citizenship_group' => 'eu', 'purpose' => 'freelance']))
+        ->not->toContain('fre.residence_permit.d_visa')->not->toContain('fre.residence_permit.visa_free');
+});
