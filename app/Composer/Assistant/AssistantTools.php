@@ -409,7 +409,10 @@ final class AssistantTools
      */
     private function askedForOthers(array $input): bool
     {
-        return $this->theySaid((string) ($input['asking_for_others'] ?? ''));
+        // "Try again" asks again; it turns nothing down.
+        $words = (string) ($input['asking_for_others'] ?? '');
+
+        return preg_match('/^\W*(?:please\s+)?(?:try|look|search|do it|check)?\s*(?:again|once more)\W*$/iu', $words) !== 1 && $this->theySaid($words);
     }
 
     /**
