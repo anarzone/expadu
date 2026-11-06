@@ -125,7 +125,8 @@ struct DepartureRow: View {
     let departure: Board.Departure
 
     var body: some View {
-        let color = Color(hexString: departure.color)
+        // KVB's colour as a gradient (LineLook), its type picked to read on it.
+        let look = LineLook(hex: departure.color)
         HStack(spacing: 10) {
             Text(departure.badge)
                 .font(.posterGrotesque(departure.badge.count > 2 ? 22 : 29)).tracking(-0.6)
@@ -146,10 +147,10 @@ struct DepartureRow: View {
             }
             .opacity(departure.cancelled ? 0.45 : 1)
         }
-        .foregroundStyle(color.onColor)
+        .foregroundStyle(look.ink)
         .padding(.leading, 14).padding(.trailing, 16)
         .frame(height: 56)
-        .background(color)
+        .background(look.fill)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
     }
@@ -209,7 +210,8 @@ final class TravelModel {
     var leadLine: String? { line ?? board?.departures.first?.line }
     var leadColor: Color { colors[leadLine ?? ""] ?? Color(hex: 0xA01E5A) }
     var colors: [String: Color] {
-        Dictionary(board?.departures.map { ($0.line, Color(hexString: $0.color)) } ?? [], uniquingKeysWith: { first, _ in first })
+        // The deep shade: light official colours (3, 4, 17) still carry the page's white type.
+        Dictionary(board?.departures.map { ($0.line, LineLook(hex: $0.color).deep) } ?? [], uniquingKeysWith: { first, _ in first })
     }
 
     var status: String {

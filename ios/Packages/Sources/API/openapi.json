@@ -1812,6 +1812,83 @@
                                         },
                                         "live": {
                                             "type": "boolean"
+                                        },
+                                        "legs": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "mode": {
+                                                        "type": "string"
+                                                    },
+                                                    "line": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "color": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "headsign": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "from": {
+                                                        "type": "string"
+                                                    },
+                                                    "to": {
+                                                        "type": "string"
+                                                    },
+                                                    "depart_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "arrive_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "depart_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "arrive_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "minutes": {
+                                                        "type": "integer"
+                                                    },
+                                                    "stops": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "polyline": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "mode",
+                                                    "line",
+                                                    "color",
+                                                    "headsign",
+                                                    "from",
+                                                    "to",
+                                                    "depart_at",
+                                                    "arrive_at",
+                                                    "depart_time",
+                                                    "arrive_time",
+                                                    "minutes",
+                                                    "stops",
+                                                    "polyline"
+                                                ]
+                                            }
                                         }
                                     },
                                     "required": [
@@ -1827,7 +1904,8 @@
                                         "transfers",
                                         "minutes",
                                         "in_plan",
-                                        "live"
+                                        "live",
+                                        "legs"
                                     ]
                                 }
                             }
@@ -1924,6 +2002,12 @@
                                                 "integer",
                                                 "null"
                                             ]
+                                        },
+                                        "polyline": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -1938,7 +2022,8 @@
                                         "depart_time",
                                         "arrive_time",
                                         "minutes",
-                                        "stops"
+                                        "stops",
+                                        "polyline"
                                     ]
                                 }
                             }

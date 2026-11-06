@@ -817,6 +817,99 @@ extension Components {
                     public var inPlan: Swift.Bool
                     /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/live`.
                     public var live: Swift.Bool
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload`.
+                    public struct LegsPayloadPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/mode`.
+                        public var mode: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/line`.
+                        public var line: Swift.String?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/color`.
+                        public var color: Swift.String?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/headsign`.
+                        public var headsign: Swift.String?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/from`.
+                        public var from: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/to`.
+                        public var to: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/depart_at`.
+                        public var departAt: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/arrive_at`.
+                        public var arriveAt: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/depart_time`.
+                        public var departTime: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/arrive_time`.
+                        public var arriveTime: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/minutes`.
+                        public var minutes: Swift.Int
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/stops`.
+                        public var stops: Swift.Int?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/polyline`.
+                        public var polyline: Swift.String?
+                        /// Creates a new `LegsPayloadPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - mode:
+                        ///   - line:
+                        ///   - color:
+                        ///   - headsign:
+                        ///   - from:
+                        ///   - to:
+                        ///   - departAt:
+                        ///   - arriveAt:
+                        ///   - departTime:
+                        ///   - arriveTime:
+                        ///   - minutes:
+                        ///   - stops:
+                        ///   - polyline:
+                        public init(
+                            mode: Swift.String,
+                            line: Swift.String? = nil,
+                            color: Swift.String? = nil,
+                            headsign: Swift.String? = nil,
+                            from: Swift.String,
+                            to: Swift.String,
+                            departAt: Swift.String,
+                            arriveAt: Swift.String,
+                            departTime: Swift.String,
+                            arriveTime: Swift.String,
+                            minutes: Swift.Int,
+                            stops: Swift.Int? = nil,
+                            polyline: Swift.String? = nil
+                        ) {
+                            self.mode = mode
+                            self.line = line
+                            self.color = color
+                            self.headsign = headsign
+                            self.from = from
+                            self.to = to
+                            self.departAt = departAt
+                            self.arriveAt = arriveAt
+                            self.departTime = departTime
+                            self.arriveTime = arriveTime
+                            self.minutes = minutes
+                            self.stops = stops
+                            self.polyline = polyline
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case mode
+                            case line
+                            case color
+                            case headsign
+                            case from
+                            case to
+                            case departAt = "depart_at"
+                            case arriveAt = "arrive_at"
+                            case departTime = "depart_time"
+                            case arriveTime = "arrive_time"
+                            case minutes
+                            case stops
+                            case polyline
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/legs`.
+                    public typealias LegsPayload = [Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload]
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/legs`.
+                    public var legs: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayload
                     /// Creates a new `WaysPayloadPayload`.
                     ///
                     /// - Parameters:
@@ -833,6 +926,7 @@ extension Components {
                     ///   - minutes:
                     ///   - inPlan:
                     ///   - live:
+                    ///   - legs:
                     public init(
                         leaveTime: Swift.String,
                         arriveTime: Swift.String,
@@ -846,7 +940,8 @@ extension Components {
                         transfers: Swift.Int,
                         minutes: Swift.Int,
                         inPlan: Swift.Bool,
-                        live: Swift.Bool
+                        live: Swift.Bool,
+                        legs: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayload
                     ) {
                         self.leaveTime = leaveTime
                         self.arriveTime = arriveTime
@@ -861,6 +956,7 @@ extension Components {
                         self.minutes = minutes
                         self.inPlan = inPlan
                         self.live = live
+                        self.legs = legs
                     }
                     public enum CodingKeys: String, CodingKey {
                         case leaveTime = "leave_time"
@@ -876,6 +972,7 @@ extension Components {
                         case minutes
                         case inPlan = "in_plan"
                         case live
+                        case legs
                     }
                 }
                 /// - Remark: Generated from `#/components/schemas/TodayResource/leave/ways`.
@@ -991,6 +1088,8 @@ extension Components {
                     public var minutes: Swift.Int
                     /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/stops`.
                     public var stops: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/polyline`.
+                    public var polyline: Swift.String?
                     /// Creates a new `LegsPayloadPayload`.
                     ///
                     /// - Parameters:
@@ -1006,6 +1105,7 @@ extension Components {
                     ///   - arriveTime:
                     ///   - minutes:
                     ///   - stops:
+                    ///   - polyline:
                     public init(
                         mode: Swift.String,
                         line: Swift.String? = nil,
@@ -1018,7 +1118,8 @@ extension Components {
                         departTime: Swift.String,
                         arriveTime: Swift.String,
                         minutes: Swift.Int,
-                        stops: Swift.Int? = nil
+                        stops: Swift.Int? = nil,
+                        polyline: Swift.String? = nil
                     ) {
                         self.mode = mode
                         self.line = line
@@ -1032,6 +1133,7 @@ extension Components {
                         self.arriveTime = arriveTime
                         self.minutes = minutes
                         self.stops = stops
+                        self.polyline = polyline
                     }
                     public enum CodingKeys: String, CodingKey {
                         case mode
@@ -1046,6 +1148,7 @@ extension Components {
                         case arriveTime = "arrive_time"
                         case minutes
                         case stops
+                        case polyline
                     }
                 }
                 /// - Remark: Generated from `#/components/schemas/TodayResource/trip/legs`.

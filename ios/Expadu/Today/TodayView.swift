@@ -1,6 +1,7 @@
 import API
 import Core
 import CoreLocation
+import MapKit
 import DesignSystem
 import SafariServices
 import SwiftUI
@@ -423,8 +424,10 @@ private struct Stop: View {
             }
             // The trip goes under the plan it's for: the next one, or a later one while this one is under way.
             if let trip = page.trip, forThis {
+                // lvlive in, tlaway out.
                 LiveTrip(trip: trip).padding(.top, 12)
-                    .transition(.asymmetric(insertion: .scale(scale: 0.96).combined(with: .opacity), removal: .opacity))
+                    .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
+                                            removal: .opacity.combined(with: .offset(y: -10)).combined(with: .scale(scale: 0.97))))
             } else if page.trip == nil, let leave = page.leave, leave.isKnown, forThis {
                 LeaveCard(leave: leave, place: plan.shortPlace).padding(.top, 12)
                     .transition(.opacity)
@@ -470,7 +473,7 @@ private struct DeadlineNote: View {
 /// What to bring, from Paperwork: "1 of 5 documents ready".
 private struct BringCard: View {
     let bring: TodayPage.Plan.Bring
-    private let ink = Color(hex: 0x4E3774)
+    private let ink = Palette.bringText
 
     var body: some View {
         HStack(spacing: 12) {
@@ -484,55 +487,132 @@ private struct BringCard: View {
         }
         .foregroundStyle(ink)
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(Palette.avatarBackground, in: .rect(cornerRadius: 16))
+        .background(Palette.bringBackground, in: .rect(cornerRadius: 16))
+    }
+}
+
+/// The canvas's motion curves (today.css): --ios, and the springs its flips and notes use.
+enum Motion {
+    static let ios = Animation.timingCurve(0.32, 0.72, 0, 1, duration: 0.4)
+    static func ios(_ duration: Double) -> Animation { .timingCurve(0.32, 0.72, 0, 1, duration: duration) }
+    static let spring = Animation.spring(duration: 0.6, bounce: 0.35)
+    static let green = Color(hex: 0x2F9E5B)
+    static let ink = Color(hex: 0x211D15)
+}
+
+/// A value turning over into place (lvflip: rotateX from -90°), each after the one before.
+private struct Flip: ViewModifier {
+    let trigger: Int
+    var order = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var angle = 0.0
+
+    func body(content: Content) -> some View {
+        content
+            .rotation3DEffect(.degrees(angle), axis: (x: 1, y: 0, z: 0), anchor: UnitPoint(x: 0.5, y: 0.6), perspective: 0.6)
+            .opacity(angle == 0 ? 1 : 0)
+            .onChange(of: trigger) {
+                guard !reduceMotion else { return }
+                angle = -90
+                withAnimation(Motion.spring.delay(0.06 + 0.08 * Double(order))) { angle = 0 }
+            }
+    }
+}
+
+/// Rising in after the card turns live (tlup: 8pt up, fading in), each part a little after the last.
+private struct Rise: ViewModifier {
+    let order: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown || reduceMotion ? 1 : 0)
+            .offset(y: shown || reduceMotion ? 0 : 8)
+            .onAppear { withAnimation(Motion.ios.delay(0.06 * Double(order))) { shown = true } }
+    }
+}
+
+/// The card's own note (the canvas's .lv-say): green, dropped in at its top, with Undo when it can.
+private struct CardSay: View {
+    let note: TodayModel.Note
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: note.symbol).font(.system(size: 13, weight: .bold))
+            Text(note.text).font(.geist(13.5, .semibold)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            if note.undo != nil {
+                Button("Undo") { Task { await model.undoCard(session.api) } }
+                    .font(.geist(13.5, .bold))
+                    .padding(.horizontal, 12).frame(height: 30)
+                    .background(Color(hex: 0x17603A, opacity: 0.12), in: .capsule)
+                    .contentShape(.rect.inset(by: -7))
+            }
+        }
+        .foregroundStyle(Color(hex: 0x17603A))
+        .padding(.vertical, 8).padding(.leading, 12).padding(.trailing, 8)
+        .background(Color(hex: 0xE4F4E8), in: .rect(cornerRadius: 14))
+        .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: -8)).combined(with: .scale(scale: 0.97, anchor: .top)), removal: .opacity))
     }
 }
 
 /// When to leave: a ring counting down, the line, when you're there, the minutes to spare,
-/// the walk to the platform, and the trip's two actions.
+/// the walk to the platform, and the trip's two actions. A changed way turns its values over and
+/// the card glows green (lvflip, lvglow); its note sits at its top.
 private struct LeaveCard: View {
     let leave: TodayPage.Leave
     let place: String?
     private let warn = Color(hex: 0xC98208)
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var starting = false
     @State private var othersOpen = false
     @State private var replaceAsked = false
+    @State private var glow = 0.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if let say = model.cardNote {
+                CardSay(note: say).padding(.top, -2)
+            }
             HStack(spacing: 12) {
                 ZStack {
                     Circle().stroke(Palette.quiet, lineWidth: 4)
                     Circle().trim(from: 0, to: ringFill).stroke(warn, style: StrokeStyle(lineWidth: 4, lineCap: .round)).rotationEffect(.degrees(-90))
+                        .animation(Motion.ios(0.8), value: ringFill)
+                    // Minutes in the last hour; further off, hours ("10 h").
+                    let minutes = leave.leaveInMinutes ?? 0
                     VStack(spacing: -1) {
-                        Text("\(leave.leaveInMinutes ?? 0)").font(.posterGrotesque(15)).contentTransition(.numericText(countsDown: true))
-                        Text("min").font(.geist(9, .semibold)).foregroundStyle(Palette.textSoft)
+                        Text(minutes >= 60 ? "\(minutes / 60)" : "\(minutes)").font(.posterGrotesque(15)).contentTransition(.numericText(countsDown: true))
+                        Text(minutes >= 60 ? "h" : "min").font(.geist(9, .semibold)).foregroundStyle(Palette.textSoft)
                     }
                 }
                 .frame(width: 46, height: 46)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Leave at \(leave.leaveTime ?? "")").font(.geist(17, .bold))
+                    Text("Leave at \(leave.leaveTime ?? "")").font(.geist(17, .bold)).modifier(Flip(trigger: model.cardFlips))
                     if leave.live {
                         HStack(spacing: 5) {
                             Circle().frame(width: 7, height: 7)
                             Text("Live · KVB").font(.geist(12.5, .bold))
                         }
-                        .foregroundStyle(Color(hex: 0x2F9E5B))
+                        .foregroundStyle(Motion.green)
                     }
                 }
             }
             HStack(spacing: 6) {
                 if let line = leave.line, let departs = leave.departs {
-                    tile(label: nil, badge: Board.badge(line), color: Color(hexString: leave.color ?? "#1A4CD4"), value: departs, note: leave.from ?? "")
+                    tile(label: nil, badge: Board.badge(line), line: LineLook(hex: leave.color ?? "#1A4CD4"), value: departs, note: leave.from ?? "", order: 1)
                 }
-                tile(label: "There", badge: nil, color: .clear, value: leave.arriveTime ?? "", note: place ?? leave.to)
+                tile(label: "There", badge: nil, line: nil, value: leave.arriveTime ?? "", note: place ?? leave.to, order: 2)
                 if let spare = leave.spareMinutes, spare < 0 {
                     // Late: by how much, in the warning colour, never a negative spare.
-                    tile(label: "Late", badge: nil, color: .clear, value: "\(-spare) min", note: leave.start.map { "after \($0)" } ?? "", warning: true)
+                    tile(label: "Late", badge: nil, line: nil, value: "\(-spare) min", note: leave.start.map { "after \($0)" } ?? "", warning: true, order: 3)
                 } else if let spare = leave.spareMinutes {
-                    tile(label: "Spare", badge: nil, color: .clear, value: "\(spare) min", note: leave.start.map { "before \($0)" } ?? "")
+                    tile(label: "Spare", badge: nil, line: nil, value: "\(spare) min", note: leave.start.map { "before \($0)" } ?? "", order: 3)
                 }
             }
             if let note = leave.note {
@@ -566,11 +646,19 @@ private struct LeaveCard: View {
                 .disabled(leave.ways.count < 2)
             }
             .labelStyle(Tight())
-            .sensoryFeedback(.success, trigger: model.page?.trip != nil)
         }
         .padding(14)
         .background(Palette.surface, in: .rect(cornerRadius: 20))
         .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(warn.opacity(0.55), lineWidth: 1.5) }
+        // lvglow: green for a moment after the way changed, the halo fading out.
+        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green, lineWidth: 2).opacity(glow) }
+        .background { RoundedRectangle(cornerRadius: 20).stroke(Motion.green.opacity(0.14), lineWidth: 12).opacity(glow) }
+        .animation(Motion.spring, value: model.cardNote)
+        .onChange(of: model.cardFlips) {
+            guard !reduceMotion else { return }
+            glow = 1
+            withAnimation(.easeOut(duration: 1.0).delay(0.4)) { glow = 0 }
+        }
         .sheet(isPresented: $othersOpen) { OtherWaysSheet(leave: leave) }
         .confirmationDialog("Replace the trip you’re on?", isPresented: $replaceAsked, titleVisibility: .visible) {
             Button("Replace") { start(replace: true) }
@@ -596,17 +684,18 @@ private struct LeaveCard: View {
         max(0.04, 1 - Double(min(leave.leaveInMinutes ?? 15, 15)) / 15)
     }
 
-    private func tile(label: String?, badge: String?, color: Color, value: String, note: String, warning: Bool = false) -> some View {
+    private func tile(label: String?, badge: String?, line: LineLook?, value: String, note: String, warning: Bool = false, order: Int) -> some View {
         VStack(alignment: .leading, spacing: 1) {
-            if let badge {
+            if let badge, let line {
                 Label(badge, systemImage: "tram.fill").labelStyle(.titleAndIcon)
-                    .font(.geist(12, .bold)).foregroundStyle(color.onColor)
+                    .font(.geist(12, .bold)).foregroundStyle(line.ink)
                     .padding(.horizontal, 6).frame(height: 20)
-                    .background(color, in: .rect(cornerRadius: 5))
+                    .background(line.fill, in: .rect(cornerRadius: 5))
             } else if let label {
                 Text(label.uppercased()).font(.geist(10.5, .bold)).tracking(0.4).foregroundStyle(warning ? Palette.conflictText : Palette.textSoft)
             }
             Text(value).font(.posterGrotesque(19)).monospacedDigit().foregroundStyle(warning ? Palette.conflictText : Palette.text)
+                .modifier(Flip(trigger: model.cardFlips, order: order))
             Text(note).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1).minimumScaleFactor(0.85)
         }
         .padding(.vertical, 9).padding(.horizontal, 10)
@@ -615,140 +704,290 @@ private struct LeaveCard: View {
     }
 }
 
-/// On your way, live (the canvas's .trip-l): a bar for each leg, the step they're on by the clock
-/// with how long it has left, every step when asked, and I'm there.
+/// On your way, live (the canvas's .trip-l): progress bars for the steps, the step they're on by the
+/// clock in its line's colour, every step when asked, the way on a map, and End. It turns live in
+/// place: the card settles in, its parts rise one after another, the dot pulses.
 private struct LiveTrip: View {
     let trip: TodayPage.Trip
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var picked: Int?
     @State private var steps = false
     @State private var ending = false
-    private let green = Color(hex: 0x2F9E5B)
+    @State private var mapOpen = false
+    @State private var pulse = false
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 20)) { timeline in
-            let now = trip.now(at: timeline.date)
-            let shown = picked.map { trip.step($0, at: timeline.date) } ?? now
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 6) {
-                    Circle().fill(green).frame(width: 7, height: 7)
-                    Text("On your way · live").font(.geist(12.5, .bold)).foregroundStyle(green)
-                    Spacer(minLength: 0)
-                    if let arrive = trip.arriveTime {
-                        Text("There \(arrive)").font(.geist(13, .semibold)).foregroundStyle(Palette.text)
-                    }
-                }
-                bars(current: now?.index ?? trip.legs.count, at: timeline.date)
-                if let shown {
-                    stepCard(shown)
-                        .id(shown.index)
-                        .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
-                } else {
-                    Label("You’re there. Enjoy it.", systemImage: "checkmark.circle.fill")
-                        .font(.geist(15, .semibold)).foregroundStyle(green)
-                        .padding(.vertical, 6)
-                }
-                if steps {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(Array(trip.legs.enumerated()), id: \.offset) { index, leg in
-                            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                                Circle().fill(colour(leg)).frame(width: 9, height: 9)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(leg.rides ? "\(leg.name) to \(leg.to)" : "Walk to \(leg.to.isEmpty ? trip.to : leg.to)").font(.geist(14, .semibold))
-                                    Text(leg.rides ? "From \(leg.from)\(leg.stops.map { " · \($0) stops" } ?? "")" : "\(leg.minutes) min").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
-                                }
-                                Spacer(minLength: 0)
-                                Text(leg.departTime).font(.geist(13, .semibold)).monospacedDigit()
-                            }
-                            .opacity(index < (now?.index ?? trip.legs.count) ? 0.45 : 1)
-                        }
-                    }
-                    .foregroundStyle(Palette.text)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+            let live = trip.live(at: timeline.date, picked: picked)
+            let all = trip.steps
+            let last = live.current == all.count - 1
+            VStack(alignment: .leading, spacing: 0) {
+                if let say = model.cardNote {
+                    CardSay(note: say).padding(.bottom, 12)
                 }
                 HStack(spacing: 8) {
-                    Button { withAnimation(.snappy) { steps.toggle() } } label: {
-                        Label(steps ? "Hide steps" : "Steps", systemImage: "list.bullet")
-                            .font(.geist(15, .medium)).foregroundStyle(Palette.text)
-                            .frame(maxWidth: .infinity).frame(height: 44)
-                            .background(Palette.quiet, in: .capsule)
+                    HStack(spacing: 5) {
+                        Circle().fill(Motion.green).frame(width: 7, height: 7)
+                            .background { Circle().fill(Motion.green.opacity(0.25)).scaleEffect(pulse ? 2.4 : 1).opacity(pulse ? 0 : 1) }
+                        Text("On your way · live").font(.geist(13.5, .bold))
                     }
-                    .buttonStyle(PressStyle())
-                    Button {
+                    .foregroundStyle(Motion.green)
+                    Spacer(minLength: 0)
+                    if let arrive = trip.arriveTime {
+                        Text("There \(arrive)").font(.geist(13.5, .semibold)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                    }
+                }
+                .modifier(Rise(order: 0))
+                bars(all, current: live.current)
+                    .padding(.top, 12).padding(.bottom, 4)
+                    .modifier(Rise(order: 1))
+                nowCard(live)
+                    .id(live.index)
+                    .transition(.opacity.combined(with: .offset(y: 8)))
+                    .modifier(Rise(order: 2))
+                if steps {
+                    StepList(steps: all, current: live.current)
+                        .padding(.top, 14).padding(.horizontal, 2)
+                        .transition(.opacity.combined(with: .offset(y: -6)))
+                }
+                HStack(spacing: 8) {
+                    action(steps ? "Hide" : "Steps", symbol: "list.bullet", grow: true) { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
+                    action("Map", symbol: "map") { mapOpen = true }
+                    action(last ? "Done" : "End", symbol: last ? "checkmark" : "stop.circle") {
                         ending = true
-                        Task { await model.endTrip(session.api, arrived: now == nil || now?.index == trip.legs.count - 1); ending = false }
-                    } label: {
-                        Label(now == nil || now?.index == trip.legs.count - 1 ? "I’m there" : "End trip",
-                              systemImage: now == nil || now?.index == trip.legs.count - 1 ? "checkmark" : "xmark")
-                            .font(.geist(15, .medium)).foregroundStyle(Palette.text)
-                            .padding(.horizontal, 16).frame(height: 44)
-                            .background(Palette.quiet, in: .capsule)
+                        Task { await model.endTrip(session.api, arrived: last); ending = false }
                     }
-                    .buttonStyle(PressStyle())
                     .disabled(ending)
                 }
-                .labelStyle(Tight())
+                .padding(.top, 12)
+                .modifier(Rise(order: 3))
             }
-            .animation(.snappy, value: shown?.index)
+            .animation(Motion.ios(0.35), value: live.index)
         }
         .padding(14)
         .background(Palette.surface, in: .rect(cornerRadius: 20))
-        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(green, lineWidth: 2) }
-        .shadow(color: green.opacity(0.14), radius: 6)
+        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green.opacity(0.6), lineWidth: 1.5) }
+        .animation(Motion.spring, value: model.cardNote)
+        .sheet(isPresented: $mapOpen) { WayMap(title: "Your way to \(trip.to)", legs: trip.legs) }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: false)) { pulse = true }
+        }
     }
 
-    /// One bar per leg, as long as the leg; past ones faded, the one they're on full, a tap shows that step.
-    private func bars(current: Int, at date: Date) -> some View {
-        let total = max(1, trip.legs.reduce(0) { $0 + max(1, $1.minutes) })
-        return GeometryReader { proxy in
-            HStack(spacing: 4) {
-                ForEach(Array(trip.legs.enumerated()), id: \.offset) { index, leg in
-                    Button { withAnimation(.snappy) { picked = picked == index || index == current ? nil : index } } label: {
-                        Capsule()
-                            .fill(colour(leg))
-                            .opacity(index < current ? 0.35 : 1)
-                            .frame(width: max(14, (proxy.size.width - CGFloat(trip.legs.count - 1) * 4) * CGFloat(max(1, leg.minutes)) / CGFloat(total)), height: index == (picked ?? current) ? 10 : 6)
-                            .frame(height: 22)
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(leg.rides ? "\(leg.name) to \(leg.to)" : "Walk to \(leg.to)")
+    /// The steps as bars: done ones full, the one they're on running, the rest empty; a tap shows that step.
+    private func bars(_ all: [TodayPage.Step], current: Int) -> some View {
+        HStack(spacing: 4) {
+            ForEach(Array(all.enumerated()), id: \.offset) { index, step in
+                Button { withAnimation(Motion.ios(0.35)) { picked = picked == index || index == current ? nil : index } } label: {
+                    BarFill(colour: StepColour.of(step), state: index < current ? .done : index == current ? .on : .ahead)
+                        .frame(height: 24)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(step.title)
+            }
+        }
+    }
+
+    private func nowCard(_ live: TodayPage.Live) -> some View {
+        let colour = StepColour.of(live.step)
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(live.label.uppercased()).font(.geist(11.5, .bold)).tracking(0.3).foregroundStyle(Palette.textSoft)
+                Text(live.step.title).font(.geist(17, .bold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+                if !live.step.sub.isEmpty {
+                    Text(live.step.sub).font(.geist(13)).foregroundStyle(Palette.textSoft)
                 }
             }
-        }
-        .frame(height: 22)
-    }
-
-    private func stepCard(_ step: TodayPage.Trip.Now) -> some View {
-        let leg = trip.legs[step.index]
-        return HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(step.kind.uppercased()).font(.geist(10.5, .bold)).tracking(0.4).foregroundStyle(Palette.textSoft)
-                Text(step.title).font(.geist(17, .bold)).foregroundStyle(Palette.text)
-                Text(step.sub).font(.geist(13)).foregroundStyle(Palette.textSoft)
-            }
             Spacer(minLength: 0)
-            VStack(alignment: .trailing, spacing: 0) {
-                Text(step.big).font(.posterGrotesque(24)).monospacedDigit().foregroundStyle(Palette.text)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(live.big).font(.posterGrotesque(28)).monospacedDigit().foregroundStyle(colour)
                     .contentTransition(.numericText(countsDown: true))
-                Text(step.bigNote).font(.geist(11.5)).foregroundStyle(Palette.textSoft)
+                Text(live.bigNote).font(.geist(12, .semibold)).foregroundStyle(Palette.textSoft)
             }
         }
-        .padding(12)
-        .background(Palette.quiet, in: .rect(cornerRadius: 14))
+        .padding(.vertical, 12).padding(.leading, 14).padding(.trailing, 12)
+        .background(colour.opacity(0.09), in: .rect(cornerRadius: 16))
+        .background(Palette.surface, in: .rect(cornerRadius: 16))
         .overlay(alignment: .leading) {
-            UnevenRoundedRectangle(topLeadingRadius: 14, bottomLeadingRadius: 14).fill(colour(leg)).frame(width: 4)
+            UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 16).fill(colour).frame(width: 3)
         }
     }
 
-    private func colour(_ leg: TodayPage.Trip.Leg) -> Color {
-        leg.color.map { Color(hexString: $0) } ?? Color(hex: 0xB8AE9C)
+    private func action(_ title: String, symbol: String, grow: Bool = false, run: @escaping () -> Void) -> some View {
+        Button(action: run) {
+            Label(title, systemImage: symbol).labelStyle(Tight())
+                .font(.geist(15, .medium)).foregroundStyle(Palette.text)
+                .padding(.horizontal, 14).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
+                .background(Palette.quiet, in: .capsule)
+                .contentShape(.capsule)
+        }
+        .buttonStyle(PressStyle())
     }
 }
 
-/// Other ways (the canvas's sheet): each way with its lines, when it leaves and gets there, how much
-/// time it leaves, the walking and changes; Use this makes it the card's.
+/// A step's colour: its line's, the ink for walking, the red-orange of arriving.
+enum StepColour {
+    /// LINE_LOOK.walk.
+    static let walk = Color(hex: 0x6A6253)
+
+    static func of(_ step: TodayPage.Step) -> Color {
+        step.color.map { LineLook(hex: $0).deep } ?? walk
+    }
+}
+
+/// One progress bar (.lv-bar): a quiet track, full once done, running while it's the step they're on.
+private struct BarFill: View {
+    enum State { case done, on, ahead }
+    let colour: Color
+    let state: State
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @SwiftUI.State private var run = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            let fill: Double = switch state {
+            case .done: 1
+            case .on: run ? 0.62 : 0.4
+            case .ahead: 0
+            }
+            ZStack(alignment: .leading) {
+                Capsule().fill(Palette.quiet)
+                Capsule().fill(colour).frame(width: proxy.size.width * fill)
+            }
+            .frame(height: 5)
+            .clipShape(.capsule)
+            .frame(maxHeight: .infinity)
+        }
+        .animation(Motion.ios(0.5), value: state == .done)
+        .onAppear {
+            guard state == .on, !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) { run = true }
+        }
+    }
+}
+
+/// Every step of a way (.way .w-s): a ring in its colour, the line to the next (dotted for walking),
+/// the step and when; past ones faded, the one they're on in its colour.
+private struct StepList: View {
+    let steps: [TodayPage.Step]
+    var current: Int?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                let colour = StepColour.of(step)
+                let isLast = index == steps.count - 1
+                HStack(alignment: .top, spacing: 12) {
+                    Circle().strokeBorder(step.kind == .walk ? Palette.textSoft : colour, lineWidth: 3)
+                        .background(Circle().fill(Palette.surface))
+                        .frame(width: 17, height: 17)
+                        .padding(.top, 1)
+                        .background(alignment: .top) {
+                            if !isLast {
+                                connector(step.kind == .walk, colour: colour).frame(width: 3).padding(.top, 10).frame(maxHeight: .infinity, alignment: .top)
+                                    .offset(y: 0)
+                            }
+                        }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(step.title).font(.geist(14, .semibold)).foregroundStyle(index == current ? colour : Palette.text)
+                        if !step.sub.isEmpty { Text(step.sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft) }
+                    }
+                    Spacer(minLength: 8)
+                    Text(step.time).font(.geist(13)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                }
+                .padding(.bottom, isLast ? 0 : 14)
+                .background(alignment: .topLeading) {
+                    if !isLast {
+                        connector(step.kind == .walk, colour: colour).frame(width: 3).padding(.leading, 7).padding(.top, 10).offset(y: 6)
+                    }
+                }
+                .opacity(current.map { index < $0 ? 0.5 : 1 } ?? 1)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func connector(_ walking: Bool, colour: Color) -> some View {
+        if walking {
+            Rectangle().fill(.clear).overlay {
+                GeometryReader { proxy in
+                    Path { path in
+                        path.move(to: CGPoint(x: 1.5, y: 0))
+                        path.addLine(to: CGPoint(x: 1.5, y: proxy.size.height))
+                    }
+                    .stroke(Palette.textSoft, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.1, 6]))
+                }
+            }
+        } else {
+            Capsule().fill(colour)
+        }
+    }
+}
+
+/// The way on a map, in place: each leg in its line's colour, walking dotted, start and end marked.
+private struct WayMap: View {
+    let title: String
+    let legs: [TodayPage.Trip.Leg]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Map {
+                ForEach(Array(legs.enumerated()), id: \.offset) { _, leg in
+                    let points = (leg.polyline.map { Polyline.decode($0) } ?? []).map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+                    if points.count > 1 {
+                        MapPolyline(coordinates: points)
+                            .stroke(leg.rides ? LineLook(hex: leg.color ?? "#1A4CD4").deep : Palette.textSoft,
+                                    style: StrokeStyle(lineWidth: leg.rides ? 6 : 4, lineCap: .round, lineJoin: .round, dash: leg.rides ? [] : [1, 7]))
+                    }
+                    if leg.rides, let first = points.first {
+                        Annotation(leg.from, coordinate: first) {
+                            let look = LineLook(hex: leg.color ?? "#1A4CD4")
+                            Text(leg.line.map { Board.badge($0) } ?? "")
+                                .font(.geist(12, .bold)).foregroundStyle(look.ink)
+                                .padding(.horizontal, 6).frame(height: 20)
+                                .background(look.fill, in: .rect(cornerRadius: 5))
+                        }
+                    }
+                }
+                if let end = legs.last?.polyline.map { Polyline.decode($0) }?.last {
+                    Marker(legs.last?.to ?? "", systemImage: "flag.fill", coordinate: CLLocationCoordinate2D(latitude: end.latitude, longitude: end.longitude))
+                        .tint(Color(hex: 0xE6421F))
+                }
+            }
+            .mapStyle(.standard(pointsOfInterest: .excludingAll))
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
+        }
+        .presentationDetents([.large])
+    }
+}
+
+/// A ticket's half (.tk-top / .tk-bot): rounded outer corners and the two notches the perforation runs between.
+nonisolated private struct TicketHalf: Shape {
+    let top: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let radius: CGFloat = 26
+        let body = Path(roundedRect: rect, cornerRadii: top
+            ? RectangleCornerRadii(topLeading: radius, bottomLeading: 0, bottomTrailing: 0, topTrailing: radius)
+            : RectangleCornerRadii(topLeading: 0, bottomLeading: radius, bottomTrailing: radius, topTrailing: 0))
+        let y = top ? rect.maxY : rect.minY
+        let notches = Path { path in
+            path.addEllipse(in: CGRect(x: rect.minX - 11, y: y - 11, width: 22, height: 22))
+            path.addEllipse(in: CGRect(x: rect.maxX - 11, y: y - 11, width: 22, height: 22))
+        }
+        return body.subtracting(notches)
+    }
+}
+
+/// Other ways (the canvas's sheet of tickets): each way printed in its line's colour, the one the card
+/// shows stamped "Your way"; Use this makes another the card's, and the sheet slides away.
 private struct OtherWaysSheet: View {
     let leave: TodayPage.Leave
     @Environment(Session.self) private var session
@@ -756,97 +995,210 @@ private struct OtherWaysSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var busy: Int?
     @State private var problem: (way: Int, text: String)?
+    @State private var open: Set<Int> = []
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 10) {
-                    ForEach(leave.ways) { way in row(way) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Other ways").font(.posterGrotesque(28)).tracking(-0.4).foregroundStyle(Palette.text)
+                        Text("To \(leave.to)" + (leave.start.map { " · be there by \($0)" } ?? "")).font(.geist(13.5)).foregroundStyle(Palette.textSoft)
+                    }
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
+                            .frame(width: 44, height: 44)
+                            .glassEffect(.regular.interactive(), in: .circle)
+                    }
+                    .buttonStyle(PressStyle())
+                    .accessibilityLabel("Close")
                 }
-                .padding(16)
+                ForEach(Array(leave.ways.enumerated()), id: \.element.id) { index, way in
+                    ticket(way).modifier(Rise(order: index))
+                }
             }
-            .background(Palette.canvas)
-            .navigationTitle("Ways to \(leave.to)")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
+            .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 30)
         }
-        .presentationDetents([.medium, .large])
+        .scrollIndicators(.hidden)
+        .background(Palette.canvas)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
     }
 
-    private func row(_ way: TodayPage.Way) -> some View {
+    private func ticket(_ way: TodayPage.Way) -> some View {
         let mine = way.id == 0
-        let tone: Color = way.spareMinutes < 0 ? Palette.conflictText : way.spareMinutes <= 2 ? Color(hex: 0xA86A00) : way.spareMinutes >= 10 ? Color(hex: 0x2F9E5B) : Palette.textSoft
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                if way.lines.isEmpty {
-                    Label(way.mode == "bike" ? "Bike" : "Walk", systemImage: way.mode == "bike" ? "bicycle" : "figure.walk")
-                        .font(.geist(12, .bold)).padding(.horizontal, 7).frame(height: 22)
-                        .background(Palette.quiet, in: .rect(cornerRadius: 6))
+        // TRIP_LOOK: the line's colour; a change runs from the first line into the second; bike teal, walking soft brown.
+        let look = LineLook(hex: way.lines.first?.color ?? (way.mode == "bike" ? "#00768B" : "#6A6253"))
+        let fill = way.lines.count > 1 ? LineLook.fill(from: look, to: LineLook(hex: way.lines[1].color)) : look.fill
+        let ink = look.ink
+        let spareTone: (Color, Color) = way.spareMinutes < 0 ? (Palette.conflictText, Palette.conflictBackground)
+            : way.spareMinutes <= 2 ? (Palette.warnText, Palette.warnBackground)
+            : way.spareMinutes >= 10 ? (Color(hex: 0x17603A), Color(hex: 0xE4F4E8)) : (Palette.text, Palette.quiet)
+        return VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                if mine {
+                    Text("YOUR WAY").font(.posterMarker(15)).foregroundStyle(Motion.ink)
+                        .padding(.horizontal, 10).padding(.top, 3).padding(.bottom, 2)
+                        .background(Color(hex: 0xFFE363))
+                        .rotationEffect(.degrees(-2))
+                        .padding(.bottom, 10)
                 }
-                ForEach(Array(way.lines.enumerated()), id: \.offset) { index, line in
-                    if index > 0 { Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundStyle(Palette.textSoft) }
-                    let colour = Color(hexString: line.color)
-                    Label(Board.badge(line.line), systemImage: "tram.fill").labelStyle(.titleAndIcon)
-                        .font(.geist(12, .bold)).foregroundStyle(colour.onColor)
-                        .padding(.horizontal, 7).frame(height: 22)
-                        .background(colour, in: .rect(cornerRadius: 6))
+                HStack(spacing: 8) {
+                    if way.lines.isEmpty {
+                        plate(way.mode == "bike" ? "Bike" : "Walk", symbol: way.mode == "bike" ? "bicycle" : "figure.walk", colour: look.deep)
+                    }
+                    ForEach(Array(way.lines.enumerated()), id: \.offset) { index, line in
+                        if index > 0 { Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)) }
+                        plate(Board.badge(line.line), symbol: "tram.fill", colour: LineLook(hex: line.color).deep)
+                    }
+                    if let departs = way.departs, !way.lines.isEmpty {
+                        Text("at \(departs)").font(.geist(16, .bold))
+                    }
                 }
-                Spacer(minLength: 0)
-                Text(way.spareWords).font(.geist(12.5, .semibold)).foregroundStyle(tone)
-                    .padding(.horizontal, 9).frame(height: 24)
-                    .background(tone.opacity(0.12), in: .capsule)
+                HStack(alignment: .bottom, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Leave").font(.geist(12.5, .semibold)).opacity(0.9)
+                        Text(way.leaveTime).font(.posterGrotesque(42)).tracking(-1).monospacedDigit()
+                    }
+                    Image(systemName: "arrow.right").font(.system(size: 20, weight: .semibold)).padding(.bottom, 10)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("There").font(.geist(12.5, .semibold)).opacity(0.9)
+                        Text(way.arriveTime).font(.posterGrotesque(42)).tracking(-1).monospacedDigit()
+                    }
+                }
+                .padding(.top, 12)
             }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("LEAVE").font(.geist(10.5, .bold)).tracking(0.4).foregroundStyle(Palette.textSoft)
-                    Text(way.leaveTime).font(.posterGrotesque(22)).monospacedDigit()
-                }
-                Image(systemName: "arrow.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.textSoft)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("THERE").font(.geist(10.5, .bold)).tracking(0.4).foregroundStyle(Palette.textSoft)
-                    Text(way.arriveTime).font(.posterGrotesque(22)).monospacedDigit()
-                }
-                Spacer(minLength: 0)
-                Text("\(way.minutes) min").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
+            .foregroundStyle(ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 16).padding(.horizontal, 18).padding(.bottom, 18)
+            .background(alignment: .topTrailing) {
+                Text(way.lines.count == 1 ? Board.badge(way.lines[0].line) : "")
+                    .font(.posterGrotesque(170)).foregroundStyle(ink.opacity(0.13))
+                    .offset(x: 8, y: -18)
+                    .lineLimit(1).fixedSize()
             }
-            .foregroundStyle(Palette.text)
-            Label(way.note + (way.departs.map { " · \($0) from \(way.from ?? "the stop")" } ?? ""), systemImage: "figure.walk")
-                .labelStyle(Tight()).font(.geist(12.5)).foregroundStyle(Palette.textSoft)
-            if mine {
-                Label("The way your card shows", systemImage: "checkmark.circle.fill").labelStyle(Tight())
-                    .font(.geist(14, .semibold)).foregroundStyle(Color(hex: 0x2F9E5B))
-                    .frame(height: 40)
-            } else {
-                Button {
-                    busy = way.id
-                    Task {
-                        if let why = await model.keepWay(session.api, way: way) {
-                            withAnimation(.snappy) { problem = (way.id, why) }
-                        } else {
-                            dismiss()
+            .overlay(alignment: .topTrailing) {
+                Text("\(way.minutes) min").font(.geist(13, .bold)).foregroundStyle(ink)
+                    .padding(.horizontal, 11).frame(height: 28)
+                    .background(.black.opacity(0.28), in: .capsule)
+                    .padding(16)
+            }
+            .background(fill)
+            .clipShape(TicketHalf(top: true))
+            // The perforation.
+            Line().stroke(Color(hex: 0x211D15, opacity: 0.28), style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
+                .frame(height: 2).padding(.horizontal, 14)
+                .background(Palette.surface)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(way.spareWords).font(.geist(13, .bold)).foregroundStyle(spareTone.0)
+                    .padding(.horizontal, 10).frame(height: 26)
+                    .background(spareTone.1, in: .capsule)
+                WhyLines(way: way, start: leave.start)
+                if open.contains(way.id) {
+                    StepList(steps: TodayPage.Step.of(way.legs, to: leave.to, start: leave.start))
+                        .padding(.top, 6)
+                        .transition(.opacity.combined(with: .offset(y: -6)))
+                }
+                Group {
+                    if mine {
+                        Label("Your way", systemImage: "checkmark").labelStyle(Tight())
+                            .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                            .background(Palette.quiet, in: .capsule)
+                    } else {
+                        Button {
+                            busy = way.id
+                            Task {
+                                if let why = await model.keepWay(session.api, way: way) {
+                                    withAnimation(.snappy) { problem = (way.id, why) }
+                                } else {
+                                    dismiss()
+                                }
+                                busy = nil
+                            }
+                        } label: {
+                            Group {
+                                if busy == way.id { ProgressView().tint(.white) } else { Text("Use this") }
+                            }
+                            .font(.geist(15, .semibold)).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                            .background(Palette.action, in: .capsule)
+                            .contentShape(.capsule)
                         }
-                        busy = nil
+                        .buttonStyle(PressStyle())
+                        .disabled(busy != nil)
                     }
-                } label: {
-                    Group {
-                        if busy == way.id { ProgressView() } else { Text("Use this") }
-                    }
-                    .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
-                    .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(Palette.quiet, in: .capsule)
                 }
-                .buttonStyle(PressStyle())
-                .disabled(busy != nil)
+                .padding(.top, 4)
                 if let problem, problem.way == way.id {
                     Label(problem.text, systemImage: "exclamationmark.circle").labelStyle(Tight())
                         .font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(.opacity.combined(with: .offset(y: -6)))
+                }
+                if !way.legs.isEmpty {
+                    Button { withAnimation(Motion.ios(0.4)) { if open.contains(way.id) { open.remove(way.id) } else { open.insert(way.id) } } } label: {
+                        HStack(spacing: 5) {
+                            Text("Journey details")
+                            Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold)).rotationEffect(.degrees(open.contains(way.id) ? 180 : 0))
+                        }
+                        .font(.geist(14, .semibold)).foregroundStyle(TodayLink.ink)
+                        .frame(minHeight: 36)
+                    }
+                    .buttonStyle(PressStyle())
                 }
             }
+            .padding(.top, 14).padding(.horizontal, 18).padding(.bottom, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Palette.surface)
+            .clipShape(TicketHalf(top: false))
         }
-        .padding(14)
-        .background(Palette.surface, in: .rect(cornerRadius: 18))
-        .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(mine ? Color(hex: 0x2F9E5B).opacity(0.6) : Palette.border, lineWidth: mine ? 1.5 : 1) }
+        .shadow(color: Color(hex: 0x19140C, opacity: 0.22), radius: 9, y: 10)
+    }
+
+    private func plate(_ text: String, symbol: String, colour: Color) -> some View {
+        Label(text, systemImage: symbol).labelStyle(Tight())
+            .font(.posterGrotesque(20)).foregroundStyle(colour)
+            .padding(.leading, 8).padding(.trailing, 10).frame(height: 32)
+            .background(Color(hex: 0xFFF8E6), in: .rect(cornerRadius: 8))
+    }
+}
+
+/// A ticket's reasons (.tk-why): changes, walking, and how close it cuts it.
+private struct WhyLines: View {
+    let way: TodayPage.Way
+    let start: String?
+
+    var body: some View {
+        let lines: [(String, String)] = [
+            way.lines.isEmpty ? nil : ("checkmark", way.transfers == 0 ? "No change" : way.transfers == 1 ? "1 change" : "\(way.transfers) changes"),
+            way.walkMinutes > 0 ? ("figure.walk", "\(way.walkMinutes) min walking") : nil,
+            way.spareMinutes < 0 ? ("exclamationmark.triangle.fill", "\(-way.spareMinutes) min after your \(start ?? "start")")
+                : way.spareMinutes <= 2 ? ("exclamationmark.triangle.fill", "Only \(way.spareMinutes) min before your \(start ?? "start")") : nil,
+        ].compactMap { $0 }
+        FlowLines(lines: lines)
+    }
+}
+
+private struct FlowLines: View {
+    let lines: [(String, String)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                Label(line.1, systemImage: line.0).labelStyle(Tight())
+                    .font(.geist(13.5, .medium)).foregroundStyle(Palette.text)
+            }
+        }
+    }
+}
+
+nonisolated private struct Line: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { path in
+            path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        }
     }
 }
 
@@ -859,7 +1211,7 @@ private struct LinkLine: View {
         Label(words.line, systemImage: words.tone == .conflict ? "exclamationmark.triangle.fill" : "arrow.down")
             .labelStyle(Tight())
             .font(.geist(13, words.tone == .ok ? .regular : .semibold))
-            .foregroundStyle(words.tone == .conflict ? Palette.conflictText : words.tone == .tight ? Color(hex: 0xA86A00) : Palette.textSoft)
+            .foregroundStyle(words.tone == .conflict ? Palette.conflictText : words.tone == .tight ? Palette.warnText : Palette.textSoft)
             .padding(.bottom, 14)
     }
 }
@@ -1843,6 +2195,21 @@ final class TodayModel {
     }
 
     private(set) var note: Note?
+    /// The Leave card's own note (the canvas's .lv-say): what happened to the trip or its way, with Undo.
+    private(set) var cardNote: Note?
+    /// Each change to the card's way: its values turn over and it glows (lvflip, lvglow).
+    private(set) var cardFlips = 0
+    private var cardTimer: Task<Void, Never>?
+
+    private func sayInCard(_ next: Note) {
+        withAnimation(Motion.spring) { cardNote = next }
+        cardTimer?.cancel()
+        cardTimer = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(7))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.3)) { self?.cardNote = nil }
+        }
+    }
     /// Ideas they said aren't for them: off Today at once (the server keeps them off once Undo has passed).
     private(set) var hidden: Set<Int> = []
     /// Not now on the paused line, for this session (the server keeps it off a week).
@@ -1926,6 +2293,20 @@ final class TodayModel {
         }
     }
 
+    /// Undo from the card's note: the way the plan had before.
+    func undoCard(_ api: AppAPI) async {
+        guard case let .way(undo)? = cardNote?.undo else { return }
+        withAnimation(.easeOut(duration: 0.2)) { cardNote = nil }
+        do throws(APIFailure) {
+            try await api.undoWay(undo)
+            await load(api, quietly: true)
+            cardFlips += 1
+            sayInCard(Note(text: "Back to the way you had.", symbol: "arrow.uturn.backward"))
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
     func undo(_ api: AppAPI) async {
         guard let undo = note?.undo, let page else { return }
         note = nil
@@ -2000,8 +2381,8 @@ final class TodayModel {
         do throws(APIFailure) {
             let started = try await api.startTrip(way: way, latitude: place?.latitude, longitude: place?.longitude, replace: replace)
             if started == .running { return true }
+            cardNote = nil
             await load(api, quietly: true)
-            say(Note(text: "On your way. Leave at \(way.leaveTime).", symbol: "figure.walk"))
         } catch {
             say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
             // The way it asked for has gone (that tram left): the card shows the next one at once.
@@ -2014,7 +2395,12 @@ final class TodayModel {
         do throws(APIFailure) {
             try await api.endTrip()
             await load(api, quietly: true)
-            say(Note(text: arrived ? "You made it." : "Trip ended.", symbol: arrived ? "checkmark.circle.fill" : "xmark.circle"))
+            cardFlips += 1
+            if arrived {
+                sayInCard(Note(text: "You made it.", symbol: "checkmark"))
+            } else {
+                sayInCard(Note(text: page?.leave?.leaveTime.map { "Trip ended. Leave at \($0) still stands." } ?? "Trip ended.", symbol: "checkmark"))
+            }
         } catch {
             say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
         }
@@ -2025,8 +2411,11 @@ final class TodayModel {
         do throws(APIFailure) {
             let undo = try await api.keepWay(way, latitude: place?.latitude, longitude: place?.longitude)
             await load(api, quietly: true)
-            let how = way.lines.isEmpty ? (way.mode == "bike" ? "by bike" : "on foot") : way.lines.map { "line \($0.line)" }.joined(separator: ", then ")
-            say(Note(text: "Changed: leave at \(way.leaveTime), \(how).", symbol: "arrow.triangle.branch", undo: .way(undo)))
+            // "tram 1", "tram 1, then bus 146": the rides as the canvas names them.
+            let rides = way.legs.filter(\.rides).map { $0.name.prefix(1).lowercased() + $0.name.dropFirst() }
+            let how = way.lines.isEmpty ? (way.mode == "bike" ? "by bike" : "on foot") : rides.isEmpty ? way.lines.map { "line \($0.line)" }.joined(separator: ", then ") : rides.joined(separator: ", then ")
+            cardFlips += 1
+            sayInCard(Note(text: "Changed: leave at \(way.leaveTime), \(how).", symbol: "arrow.triangle.branch", undo: .way(undo)))
             return nil
         } catch {
             await load(api, quietly: true)

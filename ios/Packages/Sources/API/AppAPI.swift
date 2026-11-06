@@ -361,15 +361,23 @@ public struct AppAPI: Sendable {
             page.revision = today.revision
             page.leave?.planId = today.leave?.planId
             page.leave?.ways = today.leave?.ways.enumerated().map { index, way in
-                TodayPage.Way(id: index, leaveTime: way.leaveTime, arriveTime: way.arriveTime, spareMinutes: way.spareMin, status: way.status, mode: way.mode,
-                              lines: way.lines.map { .init(line: $0.line, color: $0.color) }, departs: way.departs, from: way.from,
-                              walkMinutes: way.walkMin, transfers: way.transfers, minutes: way.minutes, inPlan: way.inPlan, live: way.live)
+                var mapped = TodayPage.Way(id: index, leaveTime: way.leaveTime, arriveTime: way.arriveTime, spareMinutes: way.spareMin, status: way.status, mode: way.mode,
+                                           lines: way.lines.map { .init(line: $0.line, color: $0.color) }, departs: way.departs, from: way.from,
+                                           walkMinutes: way.walkMin, transfers: way.transfers, minutes: way.minutes, inPlan: way.inPlan, live: way.live)
+                mapped.legs = way.legs.compactMap { leg in
+                    guard let departAt = Self.date(from: leg.departAt), let arriveAt = Self.date(from: leg.arriveAt) else { return nil }
+                    return TodayPage.Trip.Leg(mode: leg.mode, line: leg.line, color: leg.color, headsign: leg.headsign, from: leg.from, to: leg.to,
+                                              departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
+                                              stops: leg.stops, polyline: leg.polyline)
+                }
+                return mapped
             } ?? []
             page.trip = today.trip.map { trip in
                 TodayPage.Trip(to: trip.to, arriveTime: trip.arriveTime, startTime: trip.startTime, legs: trip.legs.compactMap { leg in
                     guard let departAt = Self.date(from: leg.departAt), let arriveAt = Self.date(from: leg.arriveAt) else { return nil }
                     return TodayPage.Trip.Leg(mode: leg.mode, line: leg.line, color: leg.color, headsign: leg.headsign, from: leg.from, to: leg.to,
-                                              departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes, stops: leg.stops)
+                                              departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
+                                              stops: leg.stops, polyline: leg.polyline)
                 })
             }
             page.welcome = today.welcome

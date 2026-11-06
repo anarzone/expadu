@@ -210,6 +210,8 @@ public struct TodayPage: Equatable, Sendable {
         public let minutes: Int
         public let inPlan: Bool
         public let live: Bool
+        /// Journey details on its ticket.
+        public var legs: [Trip.Leg] = []
 
         public init(id: Int, leaveTime: String, arriveTime: String, spareMinutes: Int, status: String, mode: String, lines: [Line], departs: String?, from: String?,
                     walkMinutes: Int, transfers: Int, minutes: Int, inPlan: Bool, live: Bool) {
@@ -257,9 +259,12 @@ public struct TodayPage: Equatable, Sendable {
             public let arriveTime: String
             public let minutes: Int
             public let stops: Int?
+            /// The way it goes, encoded (MOTIS, precision 7): `Polyline.decode`.
+            public let polyline: String?
 
             public init(mode: String, line: String?, color: String?, headsign: String?, from: String, to: String, departAt: Date, arriveAt: Date,
-                        departTime: String, arriveTime: String, minutes: Int, stops: Int?) {
+                        departTime: String, arriveTime: String, minutes: Int, stops: Int?, polyline: String? = nil) {
+                self.polyline = polyline
                 self.mode = mode
                 self.line = line
                 self.color = color
@@ -291,16 +296,6 @@ public struct TodayPage: Equatable, Sendable {
             }
         }
 
-        /// The step the card shows now, in the canvas's words.
-        public struct Now: Equatable, Sendable {
-            public let index: Int
-            public let kind: String
-            public let title: String
-            public let sub: String
-            public let big: String
-            public let bigNote: String
-        }
-
         public let to: String
         public let arriveTime: String?
         public let startTime: String?
@@ -313,33 +308,90 @@ public struct TodayPage: Equatable, Sendable {
             self.legs = legs
         }
 
-        /// Where they are by the clock: the first leg not yet over; past the last, they're there.
-        public func now(at date: Date) -> Now? {
-            guard let index = legs.firstIndex(where: { $0.arriveAt > date }) else { return nil }
-            return step(index, at: date)
+        /// The canvas's steps for this trip: walk, ride, get off, you're there.
+        public var steps: [Step] { Step.of(legs, to: to, start: startTime) }
+
+        /// The live card at this moment: the step they're on by the clock, or the one tapped.
+        public func live(at date: Date, picked: Int? = nil) -> Live {
+            let steps = steps
+            let current = Self.current(steps, at: date)
+            let k = min(picked ?? current, steps.count - 1)
+            let step = steps[k]
+            let last = k == steps.count - 1
+            let next = last ? nil : steps[k + 1]
+            let from = k == current ? max(date, step.at) : step.at
+            let minutes = next.map { max(1, Int(($0.at.timeIntervalSince(from) / 60).rounded(.up))) } ?? 0
+            let note: String
+            if last {
+                let early = startTime.flatMap { start in step.time.isEmpty ? nil : TodayPage.minutes(from: step.time, to: start) }
+                note = early.map { $0 > 0 ? "\($0) min early" : "Enjoy it" } ?? "Enjoy it"
+            } else if step.kind == .walk, let next, next.kind == .ride {
+                note = "\(next.name) at \(next.time)"
+            } else if step.kind == .ride, let next {
+                note = "off at \(next.time)"
+            } else {
+                note = "there at \(steps[steps.count - 1].time)"
+            }
+            return Live(index: k, current: current,
+                        label: last ? "Arrived" : k == 0 ? "Now" : "Step \(k + 1) of \(steps.count)",
+                        step: step, big: last ? "There" : "\(minutes) min", bigNote: note)
         }
 
-        /// A step's words, now or as a later one reads (the bars can show any).
-        public func step(_ index: Int, at date: Date) -> Now {
-            let leg = legs[index]
-            let last = index == legs.count - 1
-            let left = { (until: Date) in max(0, Int((until.timeIntervalSince(date) / 60).rounded(.up))) }
-            if leg.rides {
-                return Now(index: index, kind: [leg.name, leg.headsign.map { "→ \($0)" }].compactMap { $0 }.joined(separator: " "),
-                           title: "Get off at \(leg.to)",
-                           sub: date < leg.departAt ? "Leaves \(leg.from) at \(leg.departTime)" : [leg.stops.map { "\($0) stops" }, "there \(leg.arriveTime)"].compactMap { $0 }.joined(separator: " · "),
-                           big: "\(left(date < leg.departAt ? leg.departAt : leg.arriveAt)) min",
-                           bigNote: date < leg.departAt ? "till it leaves" : "till you get off")
-            }
-            let next = legs.indices.contains(index + 1) ? legs[index + 1] : nil
-            if last || next == nil {
-                return Now(index: index, kind: leg.name, title: "To \(to)", sub: "There at \(leg.arriveTime)",
-                           big: "\(left(leg.arriveAt)) min", bigNote: "till you’re there")
-            }
-            return Now(index: index, kind: leg.name, title: "To \(leg.to)",
-                       sub: next.map { "\($0.name) leaves at \($0.departTime)" } ?? "",
-                       big: "\(left(leg.arriveAt)) min", bigNote: "to the stop")
+        /// The last step whose time has come; the first before any has.
+        static func current(_ steps: [Step], at date: Date) -> Int {
+            steps.lastIndex { $0.at <= date } ?? 0
         }
+    }
+
+    /// One step of a way, as the canvas lists it (Steps, Journey details) and the bars count it.
+    public struct Step: Equatable, Sendable {
+        public enum Kind: Equatable, Sendable { case walk, ride, getOff, there }
+
+        public let kind: Kind
+        public let title: String
+        public let sub: String
+        public let at: Date
+        public let time: String
+        /// `#RRGGBB`: the line's, or nil for walking (the ink).
+        public let color: String?
+        /// "Tram 1", for "Tram 1 at 23:58".
+        public let name: String
+
+        /// Walk to the stop, each ride, get off (with the walk on), and you're there.
+        public static func of(_ legs: [Trip.Leg], to: String, start: String?) -> [Step] {
+            var steps: [Step] = []
+            for (index, leg) in legs.enumerated() {
+                let last = index == legs.count - 1
+                let before = index > 0 ? legs[index - 1] : nil
+                if leg.rides {
+                    let sub = ["From \(leg.from)", leg.headsign.map { "towards \($0)" }, leg.stops.map { "\($0) stops" }].compactMap { $0 }.joined(separator: " · ")
+                    steps.append(Step(kind: .ride, title: "\(leg.name) to \(leg.to)", sub: sub, at: leg.departAt, time: leg.departTime, color: leg.color, name: leg.name))
+                    if last {
+                        steps.append(Step(kind: .getOff, title: "Get off at \(leg.to)", sub: "Then you’re there", at: leg.arriveAt, time: leg.arriveTime, color: leg.color, name: leg.name))
+                    }
+                } else if last, let before, before.rides {
+                    steps.append(Step(kind: .getOff, title: "Get off at \(before.to)", sub: "\(leg.minutes) min walk to \(to)", at: before.arriveAt, time: before.arriveTime, color: before.color, name: before.name))
+                } else {
+                    let place = last || leg.to.isEmpty ? to : leg.to
+                    steps.append(Step(kind: .walk, title: leg.mode == "bike" ? "Cycle to \(place)" : "Walk to \(place)", sub: "\(leg.minutes) min", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name))
+                }
+            }
+            if let end = legs.last {
+                steps.append(Step(kind: .there, title: "You’re there", sub: start.map { "Starts at \($0)" } ?? "", at: end.arriveAt, time: end.arriveTime, color: "#E6421F", name: ""))
+            }
+            return steps
+        }
+    }
+
+    /// The live card's step: "Now", "Step 2 of 4" or "Arrived", how long it has left, and what comes next.
+    public struct Live: Equatable, Sendable {
+        public let index: Int
+        /// The step they're on by the clock (the bars before it are done).
+        public let current: Int
+        public let label: String
+        public let step: Step
+        public let big: String
+        public let bigNote: String
     }
 
     /// Paperwork's most urgent date.

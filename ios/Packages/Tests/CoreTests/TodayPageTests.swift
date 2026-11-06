@@ -71,17 +71,29 @@ struct TodayPageTests {
                                       departTime: "23:07", arriveTime: "23:13", minutes: 6, stops: nil)
         let tram = TodayPage.Trip.Leg(mode: "tram", line: "1", color: "#E2001A", headsign: "Weiden West", from: "Rudolfplatz", to: "Stadtgarten", departAt: t(6), arriveAt: t(17),
                                       departTime: "23:13", arriveTime: "23:24", minutes: 11, stops: 4)
-        let trip = TodayPage.Trip(to: "Dinner with Sara", arriveTime: "23:24", startTime: "23:30", legs: [walk, tram])
+        let after = TodayPage.Trip.Leg(mode: "walk", line: nil, color: nil, headsign: nil, from: "Stadtgarten", to: "Dinner with Sara", departAt: t(17), arriveAt: t(20),
+                                       departTime: "23:24", arriveTime: "23:27", minutes: 3, stops: nil)
+        let trip = TodayPage.Trip(to: "Dinner with Sara", arriveTime: "23:27", startTime: "23:30", legs: [walk, tram, after])
 
-        let walking = trip.now(at: t(2))
-        #expect(walking?.title == "To Rudolfplatz")
-        #expect(walking?.sub == "Tram 1 leaves at 23:13")
-        #expect(walking?.big == "4 min")
-        let riding = trip.now(at: t(8))
-        #expect(riding?.kind == "Tram 1 → Weiden West")
-        #expect(riding?.title == "Get off at Stadtgarten")
-        #expect(riding?.big == "9 min")
-        #expect(trip.now(at: t(20)) == nil)
+        #expect(trip.steps.map(\.title) == ["Walk to Rudolfplatz", "Tram 1 to Stadtgarten", "Get off at Stadtgarten", "You’re there"])
+        #expect(trip.steps[2].sub == "3 min walk to Dinner with Sara")
+        let walking = trip.live(at: t(2))
+        #expect(walking.label == "Now")
+        #expect(walking.big == "4 min")
+        #expect(walking.bigNote == "Tram 1 at 23:13")
+        let riding = trip.live(at: t(8))
+        #expect(riding.label == "Step 2 of 4")
+        #expect(riding.big == "9 min")
+        #expect(riding.bigNote == "off at 23:24")
+        let there = trip.live(at: t(21))
+        #expect(there.label == "Arrived")
+        #expect(there.bigNote == "3 min early")
+    }
+
+    @Test func routeLinesDecodeAtMotisPrecision() {
+        let point = Polyline.decode("wcmpj]kwhmcC").first
+        #expect(abs((point?.latitude ?? 0) - 50.936942) < 0.000001)
+        #expect(abs((point?.longitude ?? 0) - 6.944039) < 0.000001)
     }
 
     @Test func otherWaysSayTheirSpareAndTheirWalk() {
