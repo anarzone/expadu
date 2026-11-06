@@ -22,7 +22,7 @@ test('a point board colours the lines and keeps their minutes', function () {
     // Line 1 is coloured from the KVB map, not the feed's default blue.
     $line1 = collect($board['departures'])->firstWhere('line', '1');
     expect($board['stop_name'])->toBe('Tram Stop')
-        ->and($line1['color'])->toBe('#E2001A')
+        ->and($line1['color'])->toBe('#E0071C')
         ->and($line1['minutes'])->toBe([2, 12, 22]);
 });
 
@@ -43,7 +43,7 @@ test('board departures carry the GTFS direction lane and via stops', function ()
         $m->shouldReceive('getDeparturesNearby')->andReturn([
             'source' => 'trias_rt',
             'departures' => [
-                ['line' => '1', 'direction' => 'Bensberg', 'type' => 'tram', 'color' => '#E2001A', 'departures' => [3, 13], 'delay' => 0],
+                ['line' => '1', 'direction' => 'Bensberg', 'type' => 'tram', 'color' => '#E0071C', 'departures' => [3, 13], 'delay' => 0],
             ],
         ]);
         $m->shouldReceive('routeContext')->with('Neumarkt', '1', 'Bensberg')

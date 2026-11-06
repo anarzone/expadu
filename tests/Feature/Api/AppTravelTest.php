@@ -29,9 +29,9 @@ test('departures come soonest first, in KVB colours, without lines that have non
         ->assertJsonPath('stops.0.name', 'Neumarkt')
         ->assertJsonCount(2, 'departures')
         ->assertJsonPath('departures.0.line', '1')
-        ->assertJsonPath('departures.0.color', '#E2001A')
+        ->assertJsonPath('departures.0.color', '#E0071C')
         ->assertJsonPath('departures.0.delay', 3)
         ->assertJsonPath('departures.0.disrupted', true)
         ->assertJsonPath('departures.1.minutes', [6, 16, 26])
-        ->assertJsonPath('departures.1.color', '#A01E5A');
+        ->assertJsonPath('departures.1.color', '#EA71A5');
 });
