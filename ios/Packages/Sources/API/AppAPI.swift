@@ -188,20 +188,51 @@ public struct AppAPI: Sendable {
             return TodayPage(
                 date: today.date,
                 now: Self.date(from: today.now) ?? .now,
-                weather: today.weather.map { TodayPage.Weather(temperature: $0.temperature, condition: $0.condition, icon: $0.icon) },
-                plans: today.plans.map {
-                    TodayPage.Plan(id: $0.id, title: $0.title, subtitle: $0.subtitle, start: $0.startTime, end: $0.endTime, place: $0.place, state: $0.state, completed: $0.completed)
+                weather: today.weather.map { w in
+                    TodayPage.Weather(temperature: w.temperature, condition: w.condition, icon: w.icon, summary: w.summary, cycling: w.cycling,
+                                      hours: w.hours.map { TodayPage.Weather.Hour(hour: $0.hour, temperature: $0.temperature, icon: $0.icon) })
+                },
+                plans: today.plans.map { p in
+                    TodayPage.Plan(id: p.id, title: p.title, subtitle: p.subtitle, start: p.startTime, end: p.endTime, place: p.place, state: p.state, completed: p.completed,
+                                   editable: p.editable, bring: p.bring.map { TodayPage.Plan.Bring(title: $0.title, ready: $0.ready, total: $0.total, process: $0.process) })
+                },
+                links: today.links.map {
+                    TodayPage.Link(from: $0.fromId, to: $0.toId, reason: $0.reason, basis: $0.basis, travelMinutes: $0.travelMin, gapMinutes: $0.gapMin)
                 },
                 leave: today.leave.map {
                     TodayPage.Leave(to: $0.to, start: $0.startTime, status: $0.status, leaveTime: $0.leaveTime, leaveInMinutes: $0.leaveInMin,
-                                    arriveTime: $0.arriveTime, spareMinutes: $0.spareMin, line: $0.line, color: $0.color, departs: $0.departs, from: $0.from, live: $0.live)
+                                    arriveTime: $0.arriveTime, spareMinutes: $0.spareMin, line: $0.line, color: $0.color, departs: $0.departs, from: $0.from,
+                                    walkMinutes: $0.walkMin, transfers: $0.transfers, live: $0.live)
+                },
+                deadline: today.deadline.map {
+                    TodayPage.Deadline(kind: $0.kind, document: $0.document, title: $0.title, date: $0.date, daysRemaining: $0.daysRemaining, next: $0.next,
+                                       ready: $0.ready, total: $0.total, process: $0.process)
                 },
                 needs: today.needs.map { TodayPage.Need(id: $0.id, kind: $0.kind, severity: $0.severity, headline: $0.headline, detail: $0.detail) },
                 ideas: today.ideas.map {
-                    TodayPage.Idea(id: $0.id, title: $0.title, meta: $0.meta, category: $0.category, emoji: $0.emoji, price: $0.price, place: $0.place, area: $0.area)
+                    TodayPage.Idea(id: $0.id, title: $0.title, category: $0.category, emoji: $0.emoji, startsAt: $0.startsAt.flatMap(Self.date(from:)),
+                                   endsAt: $0.endsAt.flatMap(Self.date(from:)), timed: $0.timed, untimed: $0.untimed, tomorrow: $0.tomorrow,
+                                   price: $0.price, place: $0.place, area: $0.area)
                 },
                 ideasPart: today.ideasPart,
-                tomorrow: today.tomorrow.plans.map { TodayPage.Later(title: $0.title, place: $0.place, start: $0.start) }
+                free: today.free.map { f in
+                    TodayPage.Free(anchorTitle: f.anchor?.title, anchorArea: f.anchor?.area, anchorEnd: f.anchor?.end, near: f.near, at: f.at,
+                                   places: f.places.map { TodayPage.Free.Place(id: $0.id, name: $0.name, kind: $0.kind, label: $0.label, km: $0.km, openUntil: $0.openUntil) })
+                },
+                paperwork: today.paperwork.map {
+                    TodayPage.Paperwork(processTitle: $0.processTitle, title: $0.title, ready: $0.ready, total: $0.total, process: $0.process)
+                },
+                continuation: today.continuation.map {
+                    TodayPage.Continuation(kind: $0.kind, title: $0.title, lastAt: $0.lastAt.flatMap(Self.date(from:)))
+                },
+                saved: today.saved.map { s in
+                    TodayPage.Saved(count: s.count, items: s.items.map {
+                        TodayPage.Saved.Item(type: $0._type, id: $0.id, title: $0.title, date: $0.date, place: $0.place, label: $0.label, area: $0.area)
+                    })
+                },
+                tomorrowDate: today.comingUp.tomorrow.date,
+                tomorrow: today.comingUp.tomorrow.plans.map { TodayPage.Later(title: $0.title, place: $0.place, start: $0.start) },
+                later: today.comingUp.later.map { TodayPage.Later(date: $0.date, title: $0.title, place: $0.place, start: $0.start) }
             )
         case .unauthorized: throw .signedOut
         case let .unprocessableContent(refusal): throw refused(refusal)

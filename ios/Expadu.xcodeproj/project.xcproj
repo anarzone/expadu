@@ -64,6 +64,8 @@
         "INFOPLIST_KEY_CFBundleDisplayName": "Expadu",
         "INFOPLIST_KEY_LSApplicationCategoryType": "public.app-category.travel",
         "INFOPLIST_KEY_NSLocationWhenInUseUsageDescription": "Expadu shows the departures from the stop closest to you.",
+        "INFOPLIST_KEY_NSMicrophoneUsageDescription": "Hold the Composer button and say what you need; Expadu listens only while you hold it.",
+        "INFOPLIST_KEY_NSSpeechRecognitionUsageDescription": "Apple’s speech recognition turns what you say into text, so Composer can answer it. Expadu listens only while you hold the button.",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
         "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
         "INFOPLIST_KEY_UILaunchScreen_Generation": "YES",

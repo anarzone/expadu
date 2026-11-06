@@ -121,7 +121,7 @@ private struct LineChips: View {
 }
 
 /// A line in its own colour: number, where it goes, and the next departure on two flaps.
-private struct DepartureRow: View {
+struct DepartureRow: View {
     let departure: Board.Departure
 
     var body: some View {
