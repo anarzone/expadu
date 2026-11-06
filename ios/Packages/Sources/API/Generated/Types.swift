@@ -65,6 +65,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/refresh`.
     /// - Remark: Generated from `#/paths//auth/refresh/post(signIn.refresh)`.
     func signIn_refresh(_ input: Operations.SignIn_refresh.Input) async throws -> Operations.SignIn_refresh.Output
+    /// Today for the iPhone: the same day, notes and ideas the web's Today reads
+    /// (HomeFeedController), in one answer shaped for the app
+    ///
+    /// - Remark: HTTP `GET /today`.
+    /// - Remark: Generated from `#/paths//today/get(today.show)`.
+    func today_show(_ input: Operations.Today_show.Input) async throws -> Operations.Today_show.Output
     /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
     ///
     /// - Remark: HTTP `GET /travel/nearby`.
@@ -194,6 +200,20 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//auth/refresh/post(signIn.refresh)`.
     public func signIn_refresh(headers: Operations.SignIn_refresh.Input.Headers = .init()) async throws -> Operations.SignIn_refresh.Output {
         try await signIn_refresh(Operations.SignIn_refresh.Input(headers: headers))
+    }
+    /// Today for the iPhone: the same day, notes and ideas the web's Today reads
+    /// (HomeFeedController), in one answer shaped for the app
+    ///
+    /// - Remark: HTTP `GET /today`.
+    /// - Remark: Generated from `#/paths//today/get(today.show)`.
+    public func today_show(
+        query: Operations.Today_show.Input.Query = .init(),
+        headers: Operations.Today_show.Input.Headers = .init()
+    ) async throws -> Operations.Today_show.Output {
+        try await today_show(Operations.Today_show.Input(
+            query: query,
+            headers: headers
+        ))
     }
     /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
     ///

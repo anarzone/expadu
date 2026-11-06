@@ -174,6 +174,408 @@ extension Components {
                 case user
             }
         }
+        /// - Remark: Generated from `#/components/schemas/TodayResource`.
+        public struct TodayResource: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TodayResource/date`.
+            public var date: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TodayResource/now`.
+            public var now: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TodayResource/weather`.
+            public struct WeatherPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/temperature`.
+                public var temperature: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/condition`.
+                public var condition: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/icon`.
+                public var icon: Swift.String
+                /// Creates a new `WeatherPayload`.
+                ///
+                /// - Parameters:
+                ///   - temperature:
+                ///   - condition:
+                ///   - icon:
+                public init(
+                    temperature: Swift.Int,
+                    condition: Swift.String,
+                    icon: Swift.String
+                ) {
+                    self.temperature = temperature
+                    self.condition = condition
+                    self.icon = icon
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case temperature
+                    case condition
+                    case icon
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TodayResource/weather`.
+            public var weather: Components.Schemas.TodayResource.WeatherPayload?
+            /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload`.
+            public struct PlansPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload/title`.
+                public var title: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload/subtitle`.
+                public var subtitle: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload/start_time`.
+                public var startTime: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload/end_time`.
+                public var endTime: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload/place`.
+                public var place: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload/state`.
+                public var state: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/PlansPayload/completed`.
+                public var completed: Swift.Bool
+                /// Creates a new `PlansPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - title:
+                ///   - subtitle:
+                ///   - startTime:
+                ///   - endTime:
+                ///   - place:
+                ///   - state:
+                ///   - completed:
+                public init(
+                    id: Swift.String,
+                    title: Swift.String,
+                    subtitle: Swift.String? = nil,
+                    startTime: Swift.String? = nil,
+                    endTime: Swift.String? = nil,
+                    place: Swift.String? = nil,
+                    state: Swift.String,
+                    completed: Swift.Bool
+                ) {
+                    self.id = id
+                    self.title = title
+                    self.subtitle = subtitle
+                    self.startTime = startTime
+                    self.endTime = endTime
+                    self.place = place
+                    self.state = state
+                    self.completed = completed
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case title
+                    case subtitle
+                    case startTime = "start_time"
+                    case endTime = "end_time"
+                    case place
+                    case state
+                    case completed
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TodayResource/plans`.
+            public typealias PlansPayload = [Components.Schemas.TodayResource.PlansPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/TodayResource/plans`.
+            public var plans: Components.Schemas.TodayResource.PlansPayload
+            /// - Remark: Generated from `#/components/schemas/TodayResource/leave`.
+            public struct LeavePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/to`.
+                public var to: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/start_time`.
+                public var startTime: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/status`.
+                public var status: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/leave_time`.
+                public var leaveTime: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/leave_in_min`.
+                public var leaveInMin: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/arrive_time`.
+                public var arriveTime: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/spare_min`.
+                public var spareMin: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/line`.
+                public var line: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/color`.
+                public var color: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/departs`.
+                public var departs: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/from`.
+                public var from: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/live`.
+                public var live: Swift.Bool
+                /// Creates a new `LeavePayload`.
+                ///
+                /// - Parameters:
+                ///   - to:
+                ///   - startTime:
+                ///   - status:
+                ///   - leaveTime:
+                ///   - leaveInMin:
+                ///   - arriveTime:
+                ///   - spareMin:
+                ///   - line:
+                ///   - color:
+                ///   - departs:
+                ///   - from:
+                ///   - live:
+                public init(
+                    to: Swift.String,
+                    startTime: Swift.String? = nil,
+                    status: Swift.String,
+                    leaveTime: Swift.String? = nil,
+                    leaveInMin: Swift.Int? = nil,
+                    arriveTime: Swift.String? = nil,
+                    spareMin: Swift.Int? = nil,
+                    line: Swift.String? = nil,
+                    color: Swift.String? = nil,
+                    departs: Swift.String? = nil,
+                    from: Swift.String? = nil,
+                    live: Swift.Bool
+                ) {
+                    self.to = to
+                    self.startTime = startTime
+                    self.status = status
+                    self.leaveTime = leaveTime
+                    self.leaveInMin = leaveInMin
+                    self.arriveTime = arriveTime
+                    self.spareMin = spareMin
+                    self.line = line
+                    self.color = color
+                    self.departs = departs
+                    self.from = from
+                    self.live = live
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case to
+                    case startTime = "start_time"
+                    case status
+                    case leaveTime = "leave_time"
+                    case leaveInMin = "leave_in_min"
+                    case arriveTime = "arrive_time"
+                    case spareMin = "spare_min"
+                    case line
+                    case color
+                    case departs
+                    case from
+                    case live
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TodayResource/leave`.
+            public var leave: Components.Schemas.TodayResource.LeavePayload?
+            /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload`.
+            public struct NeedsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/kind`.
+                public var kind: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/severity`.
+                public var severity: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/headline`.
+                public var headline: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/detail`.
+                public var detail: Swift.String?
+                /// Creates a new `NeedsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - kind:
+                ///   - severity:
+                ///   - headline:
+                ///   - detail:
+                public init(
+                    id: Swift.String,
+                    kind: Swift.String,
+                    severity: Swift.String,
+                    headline: Swift.String,
+                    detail: Swift.String? = nil
+                ) {
+                    self.id = id
+                    self.kind = kind
+                    self.severity = severity
+                    self.headline = headline
+                    self.detail = detail
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case kind
+                    case severity
+                    case headline
+                    case detail
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TodayResource/needs`.
+            public typealias NeedsPayload = [Components.Schemas.TodayResource.NeedsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/TodayResource/needs`.
+            public var needs: Components.Schemas.TodayResource.NeedsPayload
+            /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload`.
+            public struct IdeasPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/id`.
+                public var id: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/title`.
+                public var title: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/meta`.
+                public var meta: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/category`.
+                public var category: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/emoji`.
+                public var emoji: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/starts_at`.
+                public var startsAt: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/price`.
+                public var price: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/place`.
+                public var place: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/area`.
+                public var area: Swift.String?
+                /// Creates a new `IdeasPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - title:
+                ///   - meta:
+                ///   - category:
+                ///   - emoji:
+                ///   - startsAt:
+                ///   - price:
+                ///   - place:
+                ///   - area:
+                public init(
+                    id: Swift.Int,
+                    title: Swift.String,
+                    meta: Swift.String,
+                    category: Swift.String,
+                    emoji: Swift.String? = nil,
+                    startsAt: Swift.String? = nil,
+                    price: Swift.String? = nil,
+                    place: Swift.String? = nil,
+                    area: Swift.String? = nil
+                ) {
+                    self.id = id
+                    self.title = title
+                    self.meta = meta
+                    self.category = category
+                    self.emoji = emoji
+                    self.startsAt = startsAt
+                    self.price = price
+                    self.place = place
+                    self.area = area
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case title
+                    case meta
+                    case category
+                    case emoji
+                    case startsAt = "starts_at"
+                    case price
+                    case place
+                    case area
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TodayResource/ideas`.
+            public typealias IdeasPayload = [Components.Schemas.TodayResource.IdeasPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/TodayResource/ideas`.
+            public var ideas: Components.Schemas.TodayResource.IdeasPayload
+            /// - Remark: Generated from `#/components/schemas/TodayResource/ideas_part`.
+            public var ideasPart: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow`.
+            public struct TomorrowPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow/date`.
+                public var date: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow/PlansPayload`.
+                public struct PlansPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow/PlansPayload/title`.
+                    public var title: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow/PlansPayload/place`.
+                    public var place: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow/PlansPayload/start`.
+                    public var start: Swift.String?
+                    /// Creates a new `PlansPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - title:
+                    ///   - place:
+                    ///   - start:
+                    public init(
+                        title: Swift.String,
+                        place: Swift.String? = nil,
+                        start: Swift.String? = nil
+                    ) {
+                        self.title = title
+                        self.place = place
+                        self.start = start
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case title
+                        case place
+                        case start
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow/plans`.
+                public typealias PlansPayload = [Components.Schemas.TodayResource.TomorrowPayload.PlansPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow/plans`.
+                public var plans: Components.Schemas.TodayResource.TomorrowPayload.PlansPayload
+                /// Creates a new `TomorrowPayload`.
+                ///
+                /// - Parameters:
+                ///   - date:
+                ///   - plans:
+                public init(
+                    date: Swift.String? = nil,
+                    plans: Components.Schemas.TodayResource.TomorrowPayload.PlansPayload
+                ) {
+                    self.date = date
+                    self.plans = plans
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case date
+                    case plans
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TodayResource/tomorrow`.
+            public var tomorrow: Components.Schemas.TodayResource.TomorrowPayload
+            /// Creates a new `TodayResource`.
+            ///
+            /// - Parameters:
+            ///   - date:
+            ///   - now:
+            ///   - weather:
+            ///   - plans:
+            ///   - leave:
+            ///   - needs:
+            ///   - ideas:
+            ///   - ideasPart:
+            ///   - tomorrow:
+            public init(
+                date: Swift.String,
+                now: Swift.String,
+                weather: Components.Schemas.TodayResource.WeatherPayload? = nil,
+                plans: Components.Schemas.TodayResource.PlansPayload,
+                leave: Components.Schemas.TodayResource.LeavePayload? = nil,
+                needs: Components.Schemas.TodayResource.NeedsPayload,
+                ideas: Components.Schemas.TodayResource.IdeasPayload,
+                ideasPart: Swift.String,
+                tomorrow: Components.Schemas.TodayResource.TomorrowPayload
+            ) {
+                self.date = date
+                self.now = now
+                self.weather = weather
+                self.plans = plans
+                self.leave = leave
+                self.needs = needs
+                self.ideas = ideas
+                self.ideasPart = ideasPart
+                self.tomorrow = tomorrow
+            }
+            public enum CodingKeys: String, CodingKey {
+                case date
+                case now
+                case weather
+                case plans
+                case leave
+                case needs
+                case ideas
+                case ideasPart = "ideas_part"
+                case tomorrow
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/UserResource`.
         public struct UserResource: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/UserResource/name`.
