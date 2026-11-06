@@ -65,6 +65,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/refresh`.
     /// - Remark: Generated from `#/paths//auth/refresh/post(signIn.refresh)`.
     func signIn_refresh(_ input: Operations.SignIn_refresh.Input) async throws -> Operations.SignIn_refresh.Output
+    /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
+    ///
+    /// - Remark: HTTP `GET /travel/nearby`.
+    /// - Remark: Generated from `#/paths//travel/nearby/get(travel.nearby)`.
+    func travel_nearby(_ input: Operations.Travel_nearby.Input) async throws -> Operations.Travel_nearby.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -189,6 +194,19 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//auth/refresh/post(signIn.refresh)`.
     public func signIn_refresh(headers: Operations.SignIn_refresh.Input.Headers = .init()) async throws -> Operations.SignIn_refresh.Output {
         try await signIn_refresh(Operations.SignIn_refresh.Input(headers: headers))
+    }
+    /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
+    ///
+    /// - Remark: HTTP `GET /travel/nearby`.
+    /// - Remark: Generated from `#/paths//travel/nearby/get(travel.nearby)`.
+    public func travel_nearby(
+        query: Operations.Travel_nearby.Input.Query,
+        headers: Operations.Travel_nearby.Input.Headers = .init()
+    ) async throws -> Operations.Travel_nearby.Output {
+        try await travel_nearby(Operations.Travel_nearby.Input(
+            query: query,
+            headers: headers
+        ))
     }
 }
 

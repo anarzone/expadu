@@ -11,6 +11,121 @@ public import Foundation
 extension Components {
     /// Types generated from the `#/components/schemas` section of the OpenAPI document.
     public enum Schemas {
+        /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource`.
+        public struct NearbyDeparturesResource: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/StopsPayload`.
+            public struct StopsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/StopsPayload/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/StopsPayload/walk_min`.
+                public var walkMin: Swift.Int
+                /// Creates a new `StopsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - name:
+                ///   - walkMin:
+                public init(
+                    name: Swift.String,
+                    walkMin: Swift.Int
+                ) {
+                    self.name = name
+                    self.walkMin = walkMin
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case name
+                    case walkMin = "walk_min"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/stops`.
+            public typealias StopsPayload = [Components.Schemas.NearbyDeparturesResource.StopsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/stops`.
+            public var stops: Components.Schemas.NearbyDeparturesResource.StopsPayload
+            /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload`.
+            public struct DeparturesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/line`.
+                public var line: Swift.String
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/direction`.
+                public var direction: Swift.String
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/stop`.
+                public var stop: Swift.String
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/color`.
+                public var color: Swift.String
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/type`.
+                public var _type: Swift.String
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/minutes`.
+                public var minutes: [Swift.Int]
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/delay`.
+                public var delay: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/cancelled`.
+                public var cancelled: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/DeparturesPayload/disrupted`.
+                public var disrupted: Swift.Bool
+                /// Creates a new `DeparturesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - line:
+                ///   - direction:
+                ///   - stop:
+                ///   - color:
+                ///   - _type:
+                ///   - minutes:
+                ///   - delay:
+                ///   - cancelled:
+                ///   - disrupted:
+                public init(
+                    line: Swift.String,
+                    direction: Swift.String,
+                    stop: Swift.String,
+                    color: Swift.String,
+                    _type: Swift.String,
+                    minutes: [Swift.Int],
+                    delay: Swift.Int,
+                    cancelled: Swift.Bool,
+                    disrupted: Swift.Bool
+                ) {
+                    self.line = line
+                    self.direction = direction
+                    self.stop = stop
+                    self.color = color
+                    self._type = _type
+                    self.minutes = minutes
+                    self.delay = delay
+                    self.cancelled = cancelled
+                    self.disrupted = disrupted
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case line
+                    case direction
+                    case stop
+                    case color
+                    case _type = "type"
+                    case minutes
+                    case delay
+                    case cancelled
+                    case disrupted
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/departures`.
+            public typealias DeparturesPayload = [Components.Schemas.NearbyDeparturesResource.DeparturesPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/departures`.
+            public var departures: Components.Schemas.NearbyDeparturesResource.DeparturesPayload
+            /// Creates a new `NearbyDeparturesResource`.
+            ///
+            /// - Parameters:
+            ///   - stops:
+            ///   - departures:
+            public init(
+                stops: Components.Schemas.NearbyDeparturesResource.StopsPayload,
+                departures: Components.Schemas.NearbyDeparturesResource.DeparturesPayload
+            ) {
+                self.stops = stops
+                self.departures = departures
+            }
+            public enum CodingKeys: String, CodingKey {
+                case stops
+                case departures
+            }
+        }
         /// Deleting the account asks for the password, or, for an account made with
         /// Google that has none, the code just emailed to it (EXP-174).
         ///
