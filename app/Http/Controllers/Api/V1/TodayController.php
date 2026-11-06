@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Day\DayProjection;
 use App\Home\ComingUp;
+use App\Home\TodayContinuation;
 use App\Home\TodayDiscovery;
 use App\Home\TodayNeeds;
+use App\Home\TodayPaperwork;
+use App\Home\TodaySaved;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\TodayResource;
+use App\Models\EventBookmark;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -15,10 +19,11 @@ use Illuminate\Http\Request;
 class TodayController extends Controller
 {
     /**
-     * Today for the iPhone: the same day, notes and ideas the web's Today reads
-     * (HomeFeedController), in one answer shaped for the app.
+     * Today for the iPhone: the same day, notes, ideas, Paperwork, saved things and
+     * what's coming up that the web's Today reads (HomeFeedController), in one answer
+     * shaped for the app.
      */
-    public function show(Request $request, DayProjection $day, TodayNeeds $needs, TodayDiscovery $discovery, ComingUp $comingUp, WeatherService $weather): TodayResource
+    public function show(Request $request, DayProjection $day, TodayNeeds $needs, TodayDiscovery $discovery, ComingUp $comingUp, TodayPaperwork $paperwork, TodaySaved $saved, TodayContinuation $continuation, WeatherService $weather): TodayResource
     {
         // Where the phone is, so the Leave card can say when to go: the trip starts there.
         $request->validate([
@@ -32,7 +37,14 @@ class TodayController extends Controller
             'needs' => $needs->for($user),
             'discovery' => $discovery->for($user, shown: true),
             'coming_up' => $comingUp->for($user),
+            'paperwork' => $paperwork->for($user),
+            'saved' => $saved->for($user),
+            'continuation' => $continuation->for($user),
             'weather' => $weather->getCurrentWeather(),
+            'forecast' => $weather->getForecast(),
+            // Which listings they've saved, so each idea's bookmark shows it.
+            'saved_events' => EventBookmark::query()->where('user_id', $user->id)->get(['event_id', 'occurrence_start'])
+                ->map(fn (EventBookmark $bookmark) => $bookmark->event_id.':'.$bookmark->occurrence_start->getTimestamp())->all(),
         ]);
     }
 }

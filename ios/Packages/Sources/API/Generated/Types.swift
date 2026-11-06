@@ -26,6 +26,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /me/delete`.
     /// - Remark: Generated from `#/paths//me/delete/post(account.destroy)`.
     func account_destroy(_ input: Operations.Account_destroy.Input) async throws -> Operations.Account_destroy.Output
+    /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
+    /// the new revision and what changed, so the app can say so with an Undo; a change that can't
+    /// go in comes back 422 with why, and nothing changes
+    ///
+    /// - Remark: HTTP `POST /day/command`.
+    /// - Remark: Generated from `#/paths//day/command/post(day.command)`.
+    func day_command(_ input: Operations.Day_command.Input) async throws -> Operations.Day_command.Output
+    /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)
+    ///
+    /// - Remark: HTTP `POST /events/saved`.
+    /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
+    func events_save(_ input: Operations.Events_save.Input) async throws -> Operations.Events_save.Output
     /// Email and password. An account with two-step sign-in gets a challenge, not a token
     ///
     /// - Remark: HTTP `POST /auth/token`.
@@ -65,8 +77,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/refresh`.
     /// - Remark: Generated from `#/paths//auth/refresh/post(signIn.refresh)`.
     func signIn_refresh(_ input: Operations.SignIn_refresh.Input) async throws -> Operations.SignIn_refresh.Output
-    /// Today for the iPhone: the same day, notes and ideas the web's Today reads
-    /// (HomeFeedController), in one answer shaped for the app
+    /// Today for the iPhone: the same day, notes, ideas, Paperwork, saved things and
+    /// what's coming up that the web's Today reads (HomeFeedController), in one answer
+    /// shaped for the app
     ///
     /// - Remark: HTTP `GET /today`.
     /// - Remark: Generated from `#/paths//today/get(today.show)`.
@@ -106,6 +119,34 @@ extension APIProtocol {
         body: Operations.Account_destroy.Input.Body? = nil
     ) async throws -> Operations.Account_destroy.Output {
         try await account_destroy(Operations.Account_destroy.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
+    /// the new revision and what changed, so the app can say so with an Undo; a change that can't
+    /// go in comes back 422 with why, and nothing changes
+    ///
+    /// - Remark: HTTP `POST /day/command`.
+    /// - Remark: Generated from `#/paths//day/command/post(day.command)`.
+    public func day_command(
+        headers: Operations.Day_command.Input.Headers = .init(),
+        body: Operations.Day_command.Input.Body
+    ) async throws -> Operations.Day_command.Output {
+        try await day_command(Operations.Day_command.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)
+    ///
+    /// - Remark: HTTP `POST /events/saved`.
+    /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
+    public func events_save(
+        headers: Operations.Events_save.Input.Headers = .init(),
+        body: Operations.Events_save.Input.Body
+    ) async throws -> Operations.Events_save.Output {
+        try await events_save(Operations.Events_save.Input(
             headers: headers,
             body: body
         ))
@@ -201,8 +242,9 @@ extension APIProtocol {
     public func signIn_refresh(headers: Operations.SignIn_refresh.Input.Headers = .init()) async throws -> Operations.SignIn_refresh.Output {
         try await signIn_refresh(Operations.SignIn_refresh.Input(headers: headers))
     }
-    /// Today for the iPhone: the same day, notes and ideas the web's Today reads
-    /// (HomeFeedController), in one answer shaped for the app
+    /// Today for the iPhone: the same day, notes, ideas, Paperwork, saved things and
+    /// what's coming up that the web's Today reads (HomeFeedController), in one answer
+    /// shaped for the app
     ///
     /// - Remark: HTTP `GET /today`.
     /// - Remark: Generated from `#/paths//today/get(today.show)`.

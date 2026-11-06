@@ -165,6 +165,125 @@
                 }
             }
         },
+        "/day/command": {
+            "post": {
+                "operationId": "day.command",
+                "summary": "One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):\nthe new revision and what changed, so the app can say so with an Undo; a change that can't\ngo in comes back 422 with why, and nothing changes",
+                "tags": [
+                    "Day"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DayCommandRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "revision": {
+                                            "type": "integer"
+                                        },
+                                        "change": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "label": {
+                                                    "type": "string"
+                                                },
+                                                "undoable": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "label",
+                                                "undoable"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "revision",
+                                        "change"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/events/saved": {
+            "post": {
+                "operationId": "events.save",
+                "summary": "Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)",
+                "tags": [
+                    "Events"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveEventRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "saved": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "saved"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/auth/token": {
             "post": {
                 "operationId": "signIn.token",
@@ -540,7 +659,7 @@
         "/today": {
             "get": {
                 "operationId": "today.show",
-                "summary": "Today for the iPhone: the same day, notes and ideas the web's Today reads\n(HomeFeedController), in one answer shaped for the app",
+                "summary": "Today for the iPhone: the same day, notes, ideas, Paperwork, saved things and\nwhat's coming up that the web's Today reads (HomeFeedController), in one answer\nshaped for the app",
                 "tags": [
                     "Today"
                 ],
@@ -642,6 +761,102 @@
     },
     "components": {
         "schemas": {
+            "DayCommandRequest": {
+                "type": "object",
+                "description": "A change to the day from the iPhone's Today: the same commands the web's Today sends to the\nComposer workspace, only those Today offers (done, remove, add, a personal plan, undo).",
+                "properties": {
+                    "revision": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "complete",
+                            "uncomplete",
+                            "remove",
+                            "add",
+                            "appointment",
+                            "undo"
+                        ]
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Only a message carries words; its answer is worked out from the stored one (composer/ask).",
+                        "maxLength": 500
+                    },
+                    "kind": {
+                        "type": "string",
+                        "description": "A reply is only ever that the page couldn't get an answer.",
+                        "enum": [
+                            "failed"
+                        ]
+                    },
+                    "token": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "id": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "change": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid",
+                        "description": "Which change to undo (without it, the newest one), or to put back."
+                    },
+                    "candidate": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "start": {
+                        "type": "string"
+                    },
+                    "end": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "location": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 160
+                    },
+                    "lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "The place picked from the suggestions, when one was: its map point.",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -180,
+                        "maximum": 180
+                    }
+                },
+                "required": [
+                    "revision",
+                    "action"
+                ],
+                "title": "DayCommandRequest"
+            },
             "NearbyDeparturesResource": {
                 "type": "object",
                 "properties": {
@@ -724,6 +939,28 @@
                 "description": "Deleting the account asks for the password, or, for an account made with\nGoogle that has none, the code just emailed to it (EXP-174).",
                 "title": "ProfileDeleteRequest"
             },
+            "SaveEventRequest": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "occurrence_start": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "saved": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "event_id",
+                    "occurrence_start",
+                    "saved"
+                ],
+                "title": "SaveEventRequest"
+            },
             "SignInResource": {
                 "type": "object",
                 "properties": {
@@ -770,6 +1007,10 @@
                     "now": {
                         "type": "string"
                     },
+                    "revision": {
+                        "type": "integer",
+                        "description": "The plan's revision a change to the day must send (day/command)."
+                    },
                     "weather": {
                         "type": [
                             "object",
@@ -784,12 +1025,55 @@
                             },
                             "icon": {
                                 "type": "string"
+                            },
+                            "summary": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "cycling": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "hours": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "hour": {
+                                            "type": "string"
+                                        },
+                                        "temperature": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "icon": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "hour",
+                                        "temperature",
+                                        "icon"
+                                    ]
+                                }
                             }
                         },
                         "required": [
                             "temperature",
                             "condition",
-                            "icon"
+                            "icon",
+                            "summary",
+                            "cycling",
+                            "hours"
                         ]
                     },
                     "plans": {
@@ -832,6 +1116,41 @@
                                 },
                                 "completed": {
                                     "type": "boolean"
+                                },
+                                "editable": {
+                                    "type": "boolean"
+                                },
+                                "bring": {
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
+                                    "properties": {
+                                        "title": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "ready": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        },
+                                        "process": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "title",
+                                        "ready",
+                                        "total",
+                                        "process"
+                                    ]
                                 }
                             },
                             "required": [
@@ -842,7 +1161,55 @@
                                 "end_time",
                                 "place",
                                 "state",
-                                "completed"
+                                "completed",
+                                "editable",
+                                "bring"
+                            ]
+                        }
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "from_id": {
+                                    "type": "string"
+                                },
+                                "to_id": {
+                                    "type": "string"
+                                },
+                                "reason": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "basis": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "travel_min": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
+                                "gap_min": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "from_id",
+                                "to_id",
+                                "reason",
+                                "basis",
+                                "travel_min",
+                                "gap_min"
                             ]
                         }
                     },
@@ -912,6 +1279,18 @@
                                     "null"
                                 ]
                             },
+                            "walk_min": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "transfers": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
                             "live": {
                                 "type": "boolean"
                             }
@@ -928,7 +1307,70 @@
                             "color",
                             "departs",
                             "from",
+                            "walk_min",
+                            "transfers",
                             "live"
+                        ]
+                    },
+                    "deadline": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "kind": {
+                                "type": "string"
+                            },
+                            "document": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "date": {
+                                "type": "string"
+                            },
+                            "days_remaining": {
+                                "type": "integer"
+                            },
+                            "next": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "ready": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "total": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "process": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "kind",
+                            "document",
+                            "title",
+                            "date",
+                            "days_remaining",
+                            "next",
+                            "ready",
+                            "total",
+                            "process"
                         ]
                     },
                     "needs": {
@@ -972,10 +1414,13 @@
                                 "id": {
                                     "type": "integer"
                                 },
-                                "title": {
+                                "candidate": {
                                     "type": "string"
                                 },
-                                "meta": {
+                                "saved": {
+                                    "type": "boolean"
+                                },
+                                "title": {
                                     "type": "string"
                                 },
                                 "category": {
@@ -992,6 +1437,24 @@
                                         "string",
                                         "null"
                                     ]
+                                },
+                                "ends_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "timed": {
+                                    "type": "boolean"
+                                },
+                                "untimed": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "tomorrow": {
+                                    "type": "boolean"
                                 },
                                 "price": {
                                     "type": [
@@ -1014,11 +1477,16 @@
                             },
                             "required": [
                                 "id",
+                                "candidate",
+                                "saved",
                                 "title",
-                                "meta",
                                 "category",
                                 "emoji",
                                 "starts_at",
+                                "ends_at",
+                                "timed",
+                                "untimed",
+                                "tomorrow",
                                 "price",
                                 "place",
                                 "area"
@@ -1028,22 +1496,214 @@
                     "ideas_part": {
                         "type": "string"
                     },
-                    "tomorrow": {
-                        "type": "object",
+                    "free": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
-                            "date": {
+                            "anchor": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "area": {
+                                        "type": "string"
+                                    },
+                                    "start": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "end": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "title",
+                                    "area",
+                                    "start",
+                                    "end"
+                                ]
+                            },
+                            "near": {
                                 "type": [
                                     "string",
                                     "null"
                                 ]
                             },
-                            "plans": {
+                            "at": {
+                                "type": "string"
+                            },
+                            "places": {
                                 "type": "array",
                                 "items": {
                                     "type": "object",
                                     "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "candidate": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "kind": {
+                                            "type": "string"
+                                        },
+                                        "label": {
+                                            "type": "string"
+                                        },
+                                        "km": {
+                                            "type": [
+                                                "number",
+                                                "null"
+                                            ]
+                                        },
+                                        "open_until": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "lat": {
+                                            "type": [
+                                                "number",
+                                                "null"
+                                            ]
+                                        },
+                                        "lng": {
+                                            "type": [
+                                                "number",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "candidate",
+                                        "name",
+                                        "kind",
+                                        "label",
+                                        "km",
+                                        "open_until",
+                                        "lat",
+                                        "lng"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "anchor",
+                            "near",
+                            "at",
+                            "places"
+                        ]
+                    },
+                    "paperwork": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "process_title": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "ready": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "total": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "process": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "process_title",
+                            "title",
+                            "ready",
+                            "total",
+                            "process"
+                        ]
+                    },
+                    "continuation": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "kind": {
+                                "type": "string"
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "last_at": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "kind",
+                            "title",
+                            "last_at"
+                        ]
+                    },
+                    "saved": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "id": {
+                                            "type": "integer"
+                                        },
                                         "title": {
                                             "type": "string"
+                                        },
+                                        "date": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
                                         },
                                         "place": {
                                             "type": [
@@ -1051,7 +1711,13 @@
                                                 "null"
                                             ]
                                         },
-                                        "start": {
+                                        "label": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "area": {
                                             "type": [
                                                 "string",
                                                 "null"
@@ -1059,29 +1725,128 @@
                                         }
                                     },
                                     "required": [
+                                        "type",
+                                        "id",
                                         "title",
+                                        "date",
                                         "place",
-                                        "start"
+                                        "label",
+                                        "area"
                                     ]
                                 }
                             }
                         },
                         "required": [
-                            "date",
-                            "plans"
+                            "count",
+                            "items"
+                        ]
+                    },
+                    "coming_up": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "tomorrow": {
+                                "type": "object",
+                                "properties": {
+                                    "date": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "plans": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "place": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "start": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "title",
+                                                "place",
+                                                "start"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "date",
+                                    "plans"
+                                ]
+                            },
+                            "later": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "start": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "place": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "title",
+                                        "start",
+                                        "place"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "tomorrow",
+                            "later"
                         ]
                     }
                 },
                 "required": [
                     "date",
                     "now",
+                    "revision",
                     "weather",
                     "plans",
+                    "links",
                     "leave",
+                    "deadline",
                     "needs",
                     "ideas",
                     "ideas_part",
-                    "tomorrow"
+                    "free",
+                    "paperwork",
+                    "continuation",
+                    "saved",
+                    "coming_up"
                 ],
                 "title": "TodayResource"
             },
@@ -1144,6 +1909,25 @@
             },
             "AuthenticationException": {
                 "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthorizationException": {
+                "description": "Authorization error",
                 "content": {
                     "application/json": {
                         "schema": {

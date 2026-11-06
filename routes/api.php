@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\DayController;
+use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
 use App\Http\Controllers\Api\V1\TravelController;
@@ -28,6 +30,8 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::post('me/delete', [AccountController::class, 'destroy'])->middleware('verified');
 
         Route::get('today', [TodayController::class, 'show'])->middleware('verified');
+        Route::post('day/command', [DayController::class, 'command'])->middleware('verified');
+        Route::post('events/saved', [EventsController::class, 'save'])->middleware(['verified', 'throttle:60,1']);
         Route::get('travel/nearby', [TravelController::class, 'nearby'])->middleware('verified');
     });
 });

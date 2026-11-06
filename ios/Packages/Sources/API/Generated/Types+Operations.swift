@@ -708,6 +708,455 @@ public enum Operations {
             }
         }
     }
+    /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
+    /// the new revision and what changed, so the app can say so with an Undo; a change that can't
+    /// go in comes back 422 with why, and nothing changes
+    ///
+    /// - Remark: HTTP `POST /day/command`.
+    /// - Remark: Generated from `#/paths//day/command/post(day.command)`.
+    public enum Day_command {
+        public static let id: Swift.String = "day.command"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/day/command/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Day_command.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Day_command.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Day_command.Input.Headers
+            /// - Remark: Generated from `#/paths/day/command/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/day/command/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.DayCommandRequest)
+            }
+            public var body: Operations.Day_command.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Day_command.Input.Headers = .init(),
+                body: Operations.Day_command.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content/json/revision`.
+                        public var revision: Swift.Int
+                        /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content/json/change`.
+                        public struct ChangePayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content/json/change/id`.
+                            public var id: Swift.String
+                            /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content/json/change/label`.
+                            public var label: Swift.String
+                            /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content/json/change/undoable`.
+                            public var undoable: Swift.Bool
+                            /// Creates a new `ChangePayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - label:
+                            ///   - undoable:
+                            public init(
+                                id: Swift.String,
+                                label: Swift.String,
+                                undoable: Swift.Bool
+                            ) {
+                                self.id = id
+                                self.label = label
+                                self.undoable = undoable
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case label
+                                case undoable
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content/json/change`.
+                        public var change: Operations.Day_command.Output.Ok.Body.JsonPayload.ChangePayload?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - revision:
+                        ///   - change:
+                        public init(
+                            revision: Swift.Int,
+                            change: Operations.Day_command.Output.Ok.Body.JsonPayload.ChangePayload? = nil
+                        ) {
+                            self.revision = revision
+                            self.change = change
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case revision
+                            case change
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/day/command/POST/responses/200/content/application\/json`.
+                    case json(Operations.Day_command.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Day_command.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Day_command.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Day_command.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//day/command/post(day.command)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Day_command.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Day_command.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//day/command/post(day.command)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//day/command/post(day.command)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//day/command/post(day.command)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)
+    ///
+    /// - Remark: HTTP `POST /events/saved`.
+    /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
+    public enum Events_save {
+        public static let id: Swift.String = "events.save"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/events/saved/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Events_save.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Events_save.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Events_save.Input.Headers
+            /// - Remark: Generated from `#/paths/events/saved/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/events/saved/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.SaveEventRequest)
+            }
+            public var body: Operations.Events_save.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Events_save.Input.Headers = .init(),
+                body: Operations.Events_save.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/events/saved/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/events/saved/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/events/saved/POST/responses/200/content/json/saved`.
+                        public var saved: Swift.Bool
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - saved:
+                        public init(saved: Swift.Bool) {
+                            self.saved = saved
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case saved
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/events/saved/POST/responses/200/content/application\/json`.
+                    case json(Operations.Events_save.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Events_save.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Events_save.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Events_save.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//events/saved/post(events.save)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Events_save.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Events_save.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//events/saved/post(events.save)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//events/saved/post(events.save)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//events/saved/post(events.save)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Email and password. An account with two-step sign-in gets a challenge, not a token
     ///
     /// - Remark: HTTP `POST /auth/token`.
@@ -2020,8 +2469,9 @@ public enum Operations {
             }
         }
     }
-    /// Today for the iPhone: the same day, notes and ideas the web's Today reads
-    /// (HomeFeedController), in one answer shaped for the app
+    /// Today for the iPhone: the same day, notes, ideas, Paperwork, saved things and
+    /// what's coming up that the web's Today reads (HomeFeedController), in one answer
+    /// shaped for the app
     ///
     /// - Remark: HTTP `GET /today`.
     /// - Remark: Generated from `#/paths//today/get(today.show)`.
