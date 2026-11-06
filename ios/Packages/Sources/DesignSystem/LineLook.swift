@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import SwiftUI
 import UIKit
 
@@ -57,3 +58,4 @@ public struct LineLook: Sendable {
         return 0.2126 * red + 0.7152 * green + 0.0722 * blue
     }
 }
+#endif
