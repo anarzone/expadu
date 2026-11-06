@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
 use App\Http\Controllers\Api\V1\TravelController;
+use App\Http\Controllers\TodayRankController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -32,6 +34,11 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::get('today', [TodayController::class, 'show'])->middleware('verified');
         Route::post('day/command', [DayController::class, 'command'])->middleware('verified');
         Route::post('events/saved', [EventsController::class, 'save'])->middleware(['verified', 'throttle:60,1']);
+        // What only the app sees (impressions, Less like this, Not for me), as the web's /api/signals.
+        Route::post('signals', SignalController::class)->middleware(['verified', 'throttle:signals']);
+        // Today's own order after its notice changed: agree, or not now for a week.
+        Route::put('today-rank', [TodayRankController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
+        Route::post('today-rank/later', [TodayRankController::class, 'later'])->middleware('verified');
         Route::get('travel/nearby', [TravelController::class, 'nearby'])->middleware('verified');
     });
 });

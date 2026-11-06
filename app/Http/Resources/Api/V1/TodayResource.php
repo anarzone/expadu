@@ -13,7 +13,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * ideas and places for the time they have, Paperwork's next step, what they saved and what's
  * coming up. Each part is null or empty when there's nothing real to show.
  *
- * @property-read array{day: array<string, mixed>, needs: array<string, mixed>|null, discovery: array<string, mixed>, coming_up: array<string, mixed>, paperwork: array<string, mixed>|null, saved: array<string, mixed>|null, continuation: array<string, mixed>|null, weather: array<string, mixed>|null, forecast: array<string, mixed>|null, saved_events?: array<int, string>} $resource
+ * @property-read array{day: array<string, mixed>, needs: array<string, mixed>|null, discovery: array<string, mixed>, coming_up: array<string, mixed>, paperwork: array<string, mixed>|null, saved: array<string, mixed>|null, continuation: array<string, mixed>|null, weather: array<string, mixed>|null, forecast: array<string, mixed>|null, saved_events?: array<int, string>, welcome?: bool, personalised?: bool, rank_paused?: array<string, mixed>|null} $resource
  */
 class TodayResource extends JsonResource
 {
@@ -32,6 +32,12 @@ class TodayResource extends JsonResource
             'now' => (string) $day['now'],
             // The plan's revision a change to the day must send (day/command).
             'revision' => (int) ($day['revision'] ?? 0),
+            // A first visit: the page leads with Paperwork's way in.
+            'welcome' => (bool) ($this->resource['welcome'] ?? false),
+            // Personalised suggestions on (Settings), for How we rank.
+            'personalised' => (bool) ($this->resource['personalised'] ?? false),
+            /** @var array{notice: array<int, string>, changes: array<int, string>|null, model_changed: bool, notice_version: string, provider_version: string}|null */
+            'rank_paused' => $this->resource['rank_paused'] ?? null,
             /** @var array{temperature: int, condition: string, icon: string, summary: string|null, cycling: string|null, hours: array<int, array{hour: string, temperature: int|null, icon: string|null}>}|null */
             'weather' => $this->weather($this->resource['weather'] ?? null, $this->resource['forecast'] ?? null),
             /** @var array<int, array{id: string, title: string, subtitle: string|null, start_time: string|null, end_time: string|null, place: string|null, state: string, completed: bool, editable: bool, bring: array{title: string|null, ready: int, total: int, process: string|null}|null}> */
@@ -79,7 +85,7 @@ class TodayResource extends JsonResource
                 'headline' => (string) $need['headline'],
                 'detail' => $need['detail'] ?? null,
             ], $this->resource['needs']['items'] ?? []),
-            /** @var array<int, array{id: int, candidate: string, saved: bool, title: string, category: string, emoji: string|null, starts_at: string|null, ends_at: string|null, timed: bool, untimed: string|null, tomorrow: bool, price: string|null, place: string|null, area: string|null}> */
+            /** @var array<int, array{id: int, candidate: string, saved: bool, why: string|null, reasons: array<int, string>, title: string, category: string, emoji: string|null, starts_at: string|null, ends_at: string|null, timed: bool, untimed: string|null, tomorrow: bool, price: string|null, place: string|null, area: string|null}> */
             'ideas' => array_map(fn (array $event) => $this->idea($event), array_slice($this->resource['discovery']['events'] ?? [], 0, 6)),
             'ideas_part' => (string) ($this->resource['discovery']['part'] ?? ''),
             /** @var array{anchor: array{title: string, area: string, start: string|null, end: string|null}|null, near: string|null, at: string, places: array<int, array{id: int, candidate: string, name: string, kind: string, label: string, km: float|null, open_until: string|null, lat: float|null, lng: float|null}>}|null */
@@ -230,6 +236,9 @@ class TodayResource extends JsonResource
             // What Add to a plan sends (CandidateRepository's ids).
             'candidate' => $at === null ? "event:{$event['id']}" : "event:{$event['id']}:{$at}",
             'saved' => $at !== null && in_array("{$event['id']}:{$at}", $this->resource['saved_events'] ?? [], true),
+            // Why their order put it here, and which of their leanings it matches (Why am I seeing this?).
+            'why' => $event['why'] ?? null,
+            'reasons' => array_values($event['reasons'] ?? []),
             'title' => (string) $event['title'],
             'category' => (string) ($event['category_label'] ?? ''),
             'emoji' => $event['emoji'] ?? null,
