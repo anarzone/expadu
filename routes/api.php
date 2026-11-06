@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
+use App\Http\Controllers\Api\V1\TodayTripController;
 use App\Http\Controllers\Api\V1\TravelController;
 use App\Http\Controllers\TodayRankController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,11 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
 
         Route::get('today', [TodayController::class, 'show'])->middleware('verified');
         Route::post('day/command', [DayController::class, 'command'])->middleware('verified');
+        // The Leave card's trip: start it on a way, end it; keep another way for the plan, and undo that.
+        Route::post('today/trip', [TodayTripController::class, 'start'])->middleware(['verified', 'throttle:journey']);
+        Route::delete('today/trip', [TodayTripController::class, 'end'])->middleware('verified');
+        Route::post('today/way', [TodayTripController::class, 'keep'])->middleware(['verified', 'throttle:journey']);
+        Route::delete('today/way/{undo}', [TodayTripController::class, 'undo'])->whereUuid('undo')->middleware('verified');
         Route::post('events/saved', [EventsController::class, 'save'])->middleware(['verified', 'throttle:60,1']);
         // What only the app sees (impressions, Less like this, Not for me), as the web's /api/signals.
         Route::post('signals', SignalController::class)->middleware(['verified', 'throttle:signals']);
