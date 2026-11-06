@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Auth\AppleIdentity;
 use App\Auth\AppSignIn;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\SignInResource;
@@ -68,6 +69,50 @@ class SignInController extends Controller
         $user = $this->signIn->exchange($data['code'], $data['verifier']);
         if (! $user instanceof User) {
             throw ValidationException::withMessages(['code' => __('auth.failed')]);
+        }
+
+        return $this->signedIn($user, $data['device_name'], true);
+    }
+
+    /**
+     * Sign in with Apple: the sheet's identity token, checked against Apple's keys and the nonce
+     * the app made. The same Apple ID always opens the same account; a verified address joins one.
+     */
+    public function apple(Request $request, AppleIdentity $apple): SignInResource
+    {
+        $data = $request->validate([
+            'identity_token' => ['required', 'string', 'max:8192'],
+            'nonce' => ['required', 'string', 'min:32', 'max:128'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'device_name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $identity = $apple->verify($data['identity_token'], $data['nonce']);
+        if ($identity === null) {
+            throw ValidationException::withMessages(['identity_token' => __('auth.failed')]);
+        }
+
+        $user = User::where('apple_id', $identity['sub'])->first();
+        if (! $user && $identity['email_verified']) {
+            $user = User::where('email', $identity['email'])->first();
+            $user?->forceFill(['apple_id' => $identity['sub']])->save();
+        }
+
+        if (! $user) {
+            if ($identity['email'] === null || User::where('email', $identity['email'])->exists()) {
+                throw ValidationException::withMessages(['identity_token' => __('Apple didn’t share an email we can use. Sign in with your email instead.')]);
+            }
+
+            $user = new User;
+            $user->forceFill([
+                'name' => trim((string) ($data['name'] ?? '')) ?: 'User',
+                'email' => $identity['email'],
+                'apple_id' => $identity['sub'],
+                'email_verified_at' => $identity['email_verified'] ? now() : null,
+            ])->save();
+            if (! $identity['email_verified']) {
+                event(new Registered($user));
+            }
         }
 
         return $this->signedIn($user, $data['device_name'], true);

@@ -7,15 +7,7 @@
 #if compiler(>=6.4)
 @diagnose(UnusedImportAccess, as: ignored)
 #endif
-public import struct Foundation.URL
-#if compiler(>=6.4)
-@diagnose(UnusedImportAccess, as: ignored)
-#endif
-public import struct Foundation.Data
-#if compiler(>=6.4)
-@diagnose(UnusedImportAccess, as: ignored)
-#endif
-public import struct Foundation.Date
+public import Foundation
 /// A type that performs HTTP operations defined by the OpenAPI document.
 public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /me`.
@@ -52,6 +44,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/exchange`.
     /// - Remark: Generated from `#/paths//auth/exchange/post(signIn.exchange)`.
     func signIn_exchange(_ input: Operations.SignIn_exchange.Input) async throws -> Operations.SignIn_exchange.Output
+    /// Sign in with Apple: the sheet's identity token, checked against Apple's keys and the nonce
+    /// the app made. The same Apple ID always opens the same account; a verified address joins one
+    ///
+    /// - Remark: HTTP `POST /auth/apple`.
+    /// - Remark: Generated from `#/paths//auth/apple/post(signIn.apple)`.
+    func signIn_apple(_ input: Operations.SignIn_apple.Input) async throws -> Operations.SignIn_apple.Output
     /// A new account, signed in, its verification link on the way (as the web's)
     ///
     /// - Remark: HTTP `POST /auth/register`.
@@ -67,6 +65,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/refresh`.
     /// - Remark: Generated from `#/paths//auth/refresh/post(signIn.refresh)`.
     func signIn_refresh(_ input: Operations.SignIn_refresh.Input) async throws -> Operations.SignIn_refresh.Output
+    /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
+    ///
+    /// - Remark: HTTP `GET /travel/nearby`.
+    /// - Remark: Generated from `#/paths//travel/nearby/get(travel.nearby)`.
+    func travel_nearby(_ input: Operations.Travel_nearby.Input) async throws -> Operations.Travel_nearby.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -145,6 +148,20 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// Sign in with Apple: the sheet's identity token, checked against Apple's keys and the nonce
+    /// the app made. The same Apple ID always opens the same account; a verified address joins one
+    ///
+    /// - Remark: HTTP `POST /auth/apple`.
+    /// - Remark: Generated from `#/paths//auth/apple/post(signIn.apple)`.
+    public func signIn_apple(
+        headers: Operations.SignIn_apple.Input.Headers = .init(),
+        body: Operations.SignIn_apple.Input.Body
+    ) async throws -> Operations.SignIn_apple.Output {
+        try await signIn_apple(Operations.SignIn_apple.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// A new account, signed in, its verification link on the way (as the web's)
     ///
     /// - Remark: HTTP `POST /auth/register`.
@@ -177,6 +194,19 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//auth/refresh/post(signIn.refresh)`.
     public func signIn_refresh(headers: Operations.SignIn_refresh.Input.Headers = .init()) async throws -> Operations.SignIn_refresh.Output {
         try await signIn_refresh(Operations.SignIn_refresh.Input(headers: headers))
+    }
+    /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
+    ///
+    /// - Remark: HTTP `GET /travel/nearby`.
+    /// - Remark: Generated from `#/paths//travel/nearby/get(travel.nearby)`.
+    public func travel_nearby(
+        query: Operations.Travel_nearby.Input.Query,
+        headers: Operations.Travel_nearby.Input.Headers = .init()
+    ) async throws -> Operations.Travel_nearby.Output {
+        try await travel_nearby(Operations.Travel_nearby.Input(
+            query: query,
+            headers: headers
+        ))
     }
 }
 

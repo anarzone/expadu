@@ -38,12 +38,21 @@ struct ExpaduApp: App {
 
 struct RootView: View {
     @Environment(Session.self) private var session
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
-        if session.isSignedIn {
-            ShellView()
-        } else {
-            SignInView()
+        Group {
+            if session.isReady {
+                ShellView()
+            } else {
+                SignInView()
+            }
+        }
+        // Each return to the app: the token renewed in good time, and a just-confirmed address let in.
+        .onChange(of: phase, initial: true) {
+            if phase == .active {
+                Task { await session.check() }
+            }
         }
     }
 }

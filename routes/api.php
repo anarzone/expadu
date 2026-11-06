@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\SignInController;
+use App\Http\Controllers\Api\V1\TravelController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -12,6 +13,7 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
     Route::post('auth/token', [SignInController::class, 'token'])->middleware('throttle:login');
     Route::post('auth/two-factor', [SignInController::class, 'twoFactor'])->middleware('throttle:app-two-factor');
     Route::post('auth/exchange', [SignInController::class, 'exchange'])->middleware('throttle:login');
+    Route::post('auth/apple', [SignInController::class, 'apple'])->middleware('throttle:login');
     Route::post('auth/register', [SignInController::class, 'register'])->middleware('throttle:fortify-forms');
     Route::post('auth/forgot-password', [SignInController::class, 'forgotPassword'])->middleware('throttle:fortify-forms');
 
@@ -23,5 +25,7 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::post('me/email-verification', [AccountController::class, 'resendVerification'])->middleware('throttle:fortify-forms');
         Route::post('me/deletion-code', [AccountController::class, 'sendDeletionCode'])->middleware(['verified', 'throttle:email-confirmation']);
         Route::post('me/delete', [AccountController::class, 'destroy'])->middleware('verified');
+
+        Route::get('travel/nearby', [TravelController::class, 'nearby'])->middleware('verified');
     });
 });
