@@ -67,6 +67,18 @@ public struct AppAPI: Sendable {
         }
     }
 
+    /// Sign in with Apple: the sheet's identity token and the nonce whose hash it carries.
+    public func signInWithApple(identityToken: String, nonce: String, name: String?) async throws(APIFailure) -> SignInOutcome {
+        let output = try await calling {
+            try await client.signIn_apple(body: .json(.init(identityToken: identityToken, nonce: nonce, name: name, deviceName: device)))
+        }
+        switch output {
+        case let .ok(ok): return try outcome(try body { try ok.body.json })
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
     public func register(name: String, email: String, password: String) async throws(APIFailure) -> SignInOutcome {
         let output = try await calling {
             try await client.signIn_register(body: .json(.init(name: name, email: email, password: password, passwordConfirmation: password, deviceName: device)))
@@ -144,6 +156,25 @@ public struct AppAPI: Sendable {
         case .noContent: return
         case let .unprocessableContent(refusal): throw refused(refusal)
         case .unauthorized: throw .signedOut
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
+    /// Travel's board around a place.
+    public func nearby(latitude: Double, longitude: Double) async throws(APIFailure) -> Board {
+        let output = try await calling { try await client.travel_nearby(query: .init(lat: latitude, lng: longitude)) }
+        switch output {
+        case let .ok(ok):
+            let board = try body { try ok.body.json }
+            return Board(
+                stops: board.stops.map { Board.Stop(name: $0.name, walkMinutes: $0.walkMin) },
+                departures: board.departures.map {
+                    Board.Departure(line: $0.line, direction: $0.direction, stop: $0.stop, color: $0.color, minutes: $0.minutes,
+                                    delay: $0.delay, cancelled: $0.cancelled, disrupted: $0.disrupted)
+                }
+            )
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
         case let .undocumented(status, _): throw failure(status)
         }
     }

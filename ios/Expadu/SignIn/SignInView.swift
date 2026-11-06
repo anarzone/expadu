@@ -1,3 +1,6 @@
+import API
+import AuthenticationServices
+import Core
 import DesignSystem
 import SwiftUI
 
@@ -5,7 +8,7 @@ import SwiftUI
 /// poster taped to the wall. Each state is drawn from the mock's own wording.
 struct SignInView: View {
     enum Step: Equatable {
-        case signIn, mismatch, create, checkEmail, forgot, sent
+        case signIn, mismatch, twoFactor, create, checkEmail, forgot, sent
     }
 
     @Environment(Session.self) private var session
@@ -16,9 +19,15 @@ struct SignInView: View {
     @State private var password = ""
     @State private var keepSignedIn = true
     @State private var pasted = true
+    @State private var busy = false
+    @State private var problem: String?
+    @State private var challenge: String?
+    @State private var code = ""
+    @State private var appleNonce = ""
     @FocusState private var focus: Field?
+    @Environment(\.webAuthenticationSession) private var webAuth
 
-    enum Field { case name, email, password }
+    enum Field { case name, email, password, code }
 
     var body: some View {
         GeometryReader { outer in
@@ -40,7 +49,17 @@ struct SignInView: View {
             .background(Palette.street)
         }
         .environment(\.colorScheme, .light)
-        .onChange(of: step) { paste() }
+        .onChange(of: step) {
+            problem = nil
+            paste()
+        }
+        .onAppear {
+            // Signed in with an address still to confirm: the poster says so.
+            if session.isSignedIn {
+                email = session.email
+                step = .checkEmail
+            }
+        }
         .onChange(of: MotionStore.shared.replays[.posterPaste]) { paste() }
     }
 
@@ -105,6 +124,8 @@ struct SignInView: View {
             heading("Welcome back")
             if step == .mismatch {
                 MismatchMessage { step = .forgot }
+            } else if let problem {
+                ProblemMessage(text: problem)
             } else {
                 lead("Sign in to see your day.")
             }
@@ -112,17 +133,36 @@ struct SignInView: View {
             emailField
             passwordField(label: "Password", forgot: true, content: .password)
             KeepSignedIn(isOn: $keepSignedIn)
-            primary("Sign in", action: submitSignIn)
+            primary(busy ? "Signing in…" : "Sign in", action: submitSignIn)
+        case .twoFactor:
+            back
+            label("Noch ein Schritt")
+            heading("Enter your code")
+            if let problem { ProblemMessage(text: problem) } else { lead("Open your authenticator app and type the six-digit code.") }
+            PosterField(label: "Code", text: $code, focus: $focus, field: .code, content: .oneTimeCode, keyboard: .numberPad)
+            primary(busy ? "Checking…" : "Continue") {
+                let challenge = challenge ?? ""
+                let code = code
+                run { [api = session.api] () async throws(APIFailure) -> SignInOutcome in
+                    try await api.answerTwoFactor(challenge: challenge, code: code, recoveryCode: nil)
+                }
+            }
         case .create:
             label("Willkommen in Köln")
             heading("New in Cologne? Start here.")
-            lead("Free to start. Cologne, for now.")
+            if let problem { ProblemMessage(text: problem) } else { lead("Free to start. Cologne, for now.") }
             social
             PosterField(label: "Name", text: $name, focus: $focus, field: .name, content: .name)
             emailField
             passwordField(label: "Password", forgot: false, content: .newPassword)
             Text("At least 8 characters.").font(.geist(14)).foregroundStyle(Palette.textSoft).padding(.top, -6)
-            primary("Create account") { step = .checkEmail }
+            primary(busy ? "Creating…" : "Create account") {
+                focus = nil
+                let (name, email, password) = (name, email, password)
+                run { [api = session.api] () async throws(APIFailure) -> SignInOutcome in
+                    try await api.register(name: name, email: email, password: password)
+                }
+            }
             Text("We handle your details as our [privacy policy](https://app.expadu.com/datenschutz) describes.")
                 .font(.geist(14)).foregroundStyle(Palette.textSoft).tint(Palette.text)
         case .checkEmail:
@@ -131,15 +171,21 @@ struct SignInView: View {
             Text("We sent a link to \(Text(email).font(.geist(16, .bold))). Open it to finish creating your account.")
                 .font(.geist(16)).lineSpacing(4)
             Text("It works for 60 minutes. Not there? Look in spam.").font(.geist(14)).foregroundStyle(Palette.textSoft)
-            secondary("Send the link again") {}
-            quiet("Wrong email? Start again") { step = .create }
+            if let problem { ProblemMessage(text: problem) }
+            secondary("Send the link again") {
+                attempt { [api = session.api] () async throws(APIFailure) in try await api.resendVerification() }
+            }
+            quiet("Wrong email? Start again") {
+                session.forget()
+                step = .create
+            }
         case .forgot:
             back
             label("Kein Problem")
             heading("Reset your password")
-            lead("We’ll email you a link to choose a new one.")
+            if let problem { ProblemMessage(text: problem) } else { lead("We’ll email you a link to choose a new one.") }
             emailField
-            primary("Send the link") { step = .sent }
+            primary(busy ? "Sending…" : "Send the link", action: sendReset)
         case .sent:
             back
             label("Kein Problem")
@@ -148,7 +194,7 @@ struct SignInView: View {
                 .font(.geist(15)).padding(.vertical, 12).padding(.horizontal, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Palette.quiet, in: .rect(cornerRadius: 12))
-            secondary("Send it again") {}
+            secondary("Send it again", action: sendReset)
         }
     }
 
@@ -178,9 +224,17 @@ struct SignInView: View {
 
     private var social: some View {
         Group {
-            Button {
-                // Connected in the sign-in step.
-            } label: {
+            SignInWithAppleButton(.continue) { request in
+                appleNonce = SignInProof.nonce()
+                request.requestedScopes = [.fullName, .email]
+                request.nonce = SignInProof.hashed(appleNonce)
+            } onCompletion: { result in
+                apple(result)
+            }
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: 50)
+            .clipShape(.rect(cornerRadius: 12))
+            Button(action: google) {
                 HStack(spacing: 8) {
                     Image(.signinGoogle).resizable().frame(width: 18, height: 18)
                     Text("Continue with Google").font(.geist(16, .semibold))
@@ -245,7 +299,111 @@ struct SignInView: View {
 
     private func submitSignIn() {
         focus = nil
-        session.signIn(initial: String(email.prefix(1)).uppercased())
+        let (email, password, remember) = (email, password, keepSignedIn)
+        run(wrongPasswordIsMismatch: true) { [api = session.api] () async throws(APIFailure) -> SignInOutcome in
+            try await api.signIn(email: email, password: password, remember: remember)
+        }
+    }
+
+    private func sendReset() {
+        focus = nil
+        let email = email
+        attempt({ [api = session.api] () async throws(APIFailure) in try await api.forgotPassword(email: email) }) { step = .sent }
+    }
+
+    /// Google's own page in a sheet; its answer comes back as a one-time code only this app can use.
+    private func google() {
+        let verifier = SignInProof.verifier()
+        var start = URLComponents(url: AppConfig.server.appending(path: "auth/google/native"), resolvingAgainstBaseURL: false)!
+        start.queryItems = [URLQueryItem(name: "challenge", value: SignInProof.challenge(for: verifier))]
+        Task {
+            guard let back = try? await webAuth.authenticate(using: start.url!, callback: .customScheme("expadu"), preferredBrowserSession: .ephemeral, additionalHeaderFields: [:]) else {
+                return // Closed by the person: nothing to say.
+            }
+            let query = URLComponents(url: back, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            guard let code = query.first(where: { $0.name == "code" })?.value else {
+                problem = "Signing in with Google didn’t finish. Try again, or use your email."
+                return
+            }
+            run { [api = session.api] () async throws(APIFailure) -> SignInOutcome in
+                try await api.exchange(code: code, verifier: verifier)
+            }
+        }
+    }
+
+    private func apple(_ result: Result<ASAuthorization, any Error>) {
+        switch result {
+        case let .success(authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let data = credential.identityToken, let token = String(data: data, encoding: .utf8)
+            else {
+                problem = "Signing in with Apple didn’t finish. Try again, or use your email."
+                return
+            }
+            // Apple gives the name once, on the first sign-in only.
+            let name = credential.fullName.map { PersonNameComponentsFormatter().string(from: $0) }.flatMap { $0.isEmpty ? nil : $0 }
+            let nonce = appleNonce
+            run { [api = session.api] () async throws(APIFailure) -> SignInOutcome in
+                try await api.signInWithApple(identityToken: token, nonce: nonce, name: name)
+            }
+        case let .failure(error):
+            if (error as? ASAuthorizationError)?.code != .canceled {
+                problem = "Signing in with Apple didn’t finish. Try again, or use your email."
+            }
+        }
+    }
+
+    /// A sign-in call: signed in, asked for the two-step code, or told why not.
+    private func run(wrongPasswordIsMismatch: Bool = false, _ call: @escaping () async throws(APIFailure) -> SignInOutcome) {
+        guard !busy else { return }
+        busy = true
+        problem = nil
+        Task {
+            defer { busy = false }
+            do throws(APIFailure) {
+                switch try await call() {
+                case let .signedIn(stored):
+                    session.adopt(stored)
+                    if !stored.account.emailVerified {
+                        email = stored.account.email
+                        step = .checkEmail
+                    }
+                case let .twoFactor(next):
+                    challenge = next
+                    code = ""
+                    step = .twoFactor
+                }
+            } catch .refused where wrongPasswordIsMismatch {
+                step = .mismatch
+            } catch {
+                problem = Self.say(error)
+            }
+        }
+    }
+
+    /// Any other call: done, or told why not.
+    private func attempt(_ call: @escaping () async throws(APIFailure) -> Void, then done: @escaping () -> Void = {}) {
+        guard !busy else { return }
+        busy = true
+        problem = nil
+        Task {
+            defer { busy = false }
+            do throws(APIFailure) {
+                try await call()
+                done()
+            } catch {
+                problem = Self.say(error)
+            }
+        }
+    }
+
+    private static func say(_ failure: APIFailure) -> String {
+        switch failure {
+        case let .refused(reason): reason
+        case .tooManyTries: "Too many tries. Wait a minute, then try again."
+        case .signedOut: "You’ve been signed out. Sign in again."
+        case .unreachable: "Couldn’t reach Expadu. Check your connection and try again."
+        }
     }
 
     private func paste() {
@@ -306,6 +464,21 @@ private struct MismatchMessage: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Palette.conflictBackground, in: .rect(cornerRadius: 12))
         .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.conflictBorder) }
+    }
+}
+
+private struct ProblemMessage: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.geist(15))
+            .foregroundStyle(Palette.conflictText)
+            .padding(.vertical, 12).padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Palette.conflictBackground, in: .rect(cornerRadius: 12))
+            .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.conflictBorder) }
+            .transition(.opacity.combined(with: .move(edge: .top)))
     }
 }
 

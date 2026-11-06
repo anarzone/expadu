@@ -34,12 +34,20 @@ struct ShellView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ShellHeader()
+            // Travel is its line's colour to the top, with its own header (the canvas, 6 Nov).
+            if tab != .travel {
+                ShellHeader()
+            }
             TabView(selection: $tab) {
                 ForEach(AppTab.allCases) { section in
                     Tab(value: section) {
-                        SectionPage(title: section.title)
-                            .toolbarVisibility(.hidden, for: .tabBar)
+                        Group {
+                            switch section {
+                            case .travel: TravelView()
+                            default: SectionPage(title: section.title)
+                            }
+                        }
+                        .toolbarVisibility(.hidden, for: .tabBar)
                     }
                 }
             }
@@ -86,17 +94,7 @@ private struct ShellHeader: View {
             Image(.headerSaved).resizable().frame(width: 22, height: 22)
                 .frame(width: 44, height: 44)
                 .accessibilityLabel("Saved")
-            Button {
-                session.signOut()
-            } label: {
-                Text(session.initial)
-                    .font(.geist(13, .semibold))
-                    .foregroundStyle(Palette.avatarText)
-                    .frame(width: 32, height: 32)
-                    .background(Palette.avatarBackground, in: .circle)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel("Your account")
+            AccountButton()
         }
         .foregroundStyle(Palette.text)
         .padding(.horizontal, 16)
@@ -107,6 +105,26 @@ private struct ShellHeader: View {
                 .shadow(color: Color(hex: 0x514538, opacity: 0.08), radius: 0, y: 1)
         }
         .zIndex(1)
+    }
+}
+
+/// The account: for now, signing out.
+struct AccountButton: View {
+    @Environment(Session.self) private var session
+
+    var body: some View {
+        Menu {
+            Text(session.email)
+            Button("Sign out", role: .destructive) { Task { await session.signOut() } }
+        } label: {
+            Text(session.initial)
+                .font(.geist(13, .semibold))
+                .foregroundStyle(Palette.avatarText)
+                .frame(width: 32, height: 32)
+                .background(Palette.avatarBackground, in: .circle)
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityLabel("Your account")
     }
 }
 
