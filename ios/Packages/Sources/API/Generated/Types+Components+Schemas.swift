@@ -258,6 +258,91 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/schemas/ProfileDeleteRequest`.
         public typealias ProfileDeleteRequest = OpenAPIRuntime.OpenAPIObjectContainer
+        /// A client batch for the signal ledger: allow-listed actions and surfaces,
+        /// catalogue item ids that exist, no free text and no coordinates.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest`.
+        public struct RecordSignalsRequest: Codable, Hashable, Sendable {
+            /// Only these keys: anything else (a name, a point, a note) fails.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload`.
+            public struct SignalsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload/action`.
+                @frozen public enum ActionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case impression = "impression"
+                    case detailViewed = "detail_viewed"
+                    case notNow = "not_now"
+                    case shared = "shared"
+                    case notForMe = "not_for_me"
+                    case lessLikeThis = "less_like_this"
+                }
+                /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload/action`.
+                public var action: Components.Schemas.RecordSignalsRequest.SignalsPayloadPayload.ActionPayload
+                /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload/surface`.
+                public var surface: Components.Schemas.SignalSurface
+                /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload/item_type`.
+                @frozen public enum ItemTypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case spot = "spot"
+                    case event = "event"
+                }
+                /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload/item_type`.
+                public var itemType: Components.Schemas.RecordSignalsRequest.SignalsPayloadPayload.ItemTypePayload
+                /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload/item_id`.
+                public var itemId: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload/position`.
+                public var position: Swift.Int?
+                /// A detail view counts from 10 seconds; shorter ones aren't sent.
+                ///
+                /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/SignalsPayload/dwell_seconds`.
+                public var dwellSeconds: Swift.Int?
+                /// Creates a new `SignalsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - action:
+                ///   - surface:
+                ///   - itemType:
+                ///   - itemId:
+                ///   - position:
+                ///   - dwellSeconds: A detail view counts from 10 seconds; shorter ones aren't sent.
+                public init(
+                    action: Components.Schemas.RecordSignalsRequest.SignalsPayloadPayload.ActionPayload,
+                    surface: Components.Schemas.SignalSurface,
+                    itemType: Components.Schemas.RecordSignalsRequest.SignalsPayloadPayload.ItemTypePayload,
+                    itemId: Swift.Int,
+                    position: Swift.Int? = nil,
+                    dwellSeconds: Swift.Int? = nil
+                ) {
+                    self.action = action
+                    self.surface = surface
+                    self.itemType = itemType
+                    self.itemId = itemId
+                    self.position = position
+                    self.dwellSeconds = dwellSeconds
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case action
+                    case surface
+                    case itemType = "item_type"
+                    case itemId = "item_id"
+                    case position
+                    case dwellSeconds = "dwell_seconds"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/signals`.
+            public typealias SignalsPayload = [Components.Schemas.RecordSignalsRequest.SignalsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/RecordSignalsRequest/signals`.
+            public var signals: Components.Schemas.RecordSignalsRequest.SignalsPayload
+            /// Creates a new `RecordSignalsRequest`.
+            ///
+            /// - Parameters:
+            ///   - signals:
+            public init(signals: Components.Schemas.RecordSignalsRequest.SignalsPayload) {
+                self.signals = signals
+            }
+            public enum CodingKeys: String, CodingKey {
+                case signals
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/SaveEventRequest`.
         public struct SaveEventRequest: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/SaveEventRequest/event_id`.
@@ -330,6 +415,21 @@ extension Components {
                 case user
             }
         }
+        /// Where in the app the action happened.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/SignalSurface`.
+        @frozen public enum SignalSurface: String, Codable, Hashable, Sendable, CaseIterable {
+            case today = "today"
+            case places = "places"
+            case events = "events"
+            case composer = "composer"
+            case travel = "travel"
+            case search = "search"
+            case alerts = "alerts"
+            case placeSheet = "place_sheet"
+            case eventSheet = "event_sheet"
+        }
         /// - Remark: Generated from `#/components/schemas/TodayResource`.
         public struct TodayResource: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/TodayResource/date`.
@@ -340,6 +440,57 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TodayResource/revision`.
             public var revision: Swift.Int
+            /// A first visit: the page leads with Paperwork's way in.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayResource/welcome`.
+            public var welcome: Swift.Bool
+            /// Personalised suggestions on (Settings), for How we rank.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayResource/personalised`.
+            public var personalised: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused`.
+            public struct RankPausedPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused/notice`.
+                public var notice: [Swift.String]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused/changes`.
+                public var changes: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused/model_changed`.
+                public var modelChanged: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused/notice_version`.
+                public var noticeVersion: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused/provider_version`.
+                public var providerVersion: Swift.String
+                /// Creates a new `RankPausedPayload`.
+                ///
+                /// - Parameters:
+                ///   - notice:
+                ///   - changes:
+                ///   - modelChanged:
+                ///   - noticeVersion:
+                ///   - providerVersion:
+                public init(
+                    notice: [Swift.String],
+                    changes: [Swift.String]? = nil,
+                    modelChanged: Swift.Bool,
+                    noticeVersion: Swift.String,
+                    providerVersion: Swift.String
+                ) {
+                    self.notice = notice
+                    self.changes = changes
+                    self.modelChanged = modelChanged
+                    self.noticeVersion = noticeVersion
+                    self.providerVersion = providerVersion
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case notice
+                    case changes
+                    case modelChanged = "model_changed"
+                    case noticeVersion = "notice_version"
+                    case providerVersion = "provider_version"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused`.
+            public var rankPaused: Components.Schemas.TodayResource.RankPausedPayload?
             /// - Remark: Generated from `#/components/schemas/TodayResource/weather`.
             public struct WeatherPayload: Codable, Hashable, Sendable {
                 /// - Remark: Generated from `#/components/schemas/TodayResource/weather/temperature`.
@@ -798,6 +949,10 @@ extension Components {
                 public var candidate: Swift.String
                 /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/saved`.
                 public var saved: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/why`.
+                public var why: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/reasons`.
+                public var reasons: [Swift.String]
                 /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/title`.
                 public var title: Swift.String
                 /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/category`.
@@ -826,6 +981,8 @@ extension Components {
                 ///   - id:
                 ///   - candidate:
                 ///   - saved:
+                ///   - why:
+                ///   - reasons:
                 ///   - title:
                 ///   - category:
                 ///   - emoji:
@@ -841,6 +998,8 @@ extension Components {
                     id: Swift.Int,
                     candidate: Swift.String,
                     saved: Swift.Bool,
+                    why: Swift.String? = nil,
+                    reasons: [Swift.String],
                     title: Swift.String,
                     category: Swift.String,
                     emoji: Swift.String? = nil,
@@ -856,6 +1015,8 @@ extension Components {
                     self.id = id
                     self.candidate = candidate
                     self.saved = saved
+                    self.why = why
+                    self.reasons = reasons
                     self.title = title
                     self.category = category
                     self.emoji = emoji
@@ -872,6 +1033,8 @@ extension Components {
                     case id
                     case candidate
                     case saved
+                    case why
+                    case reasons
                     case title
                     case category
                     case emoji
@@ -1318,6 +1481,9 @@ extension Components {
             ///   - date:
             ///   - now:
             ///   - revision: The plan's revision a change to the day must send (day/command).
+            ///   - welcome: A first visit: the page leads with Paperwork's way in.
+            ///   - personalised: Personalised suggestions on (Settings), for How we rank.
+            ///   - rankPaused:
             ///   - weather:
             ///   - plans:
             ///   - links:
@@ -1335,6 +1501,9 @@ extension Components {
                 date: Swift.String,
                 now: Swift.String,
                 revision: Swift.Int,
+                welcome: Swift.Bool,
+                personalised: Swift.Bool,
+                rankPaused: Components.Schemas.TodayResource.RankPausedPayload? = nil,
                 weather: Components.Schemas.TodayResource.WeatherPayload? = nil,
                 plans: Components.Schemas.TodayResource.PlansPayload,
                 links: Components.Schemas.TodayResource.LinksPayload,
@@ -1352,6 +1521,9 @@ extension Components {
                 self.date = date
                 self.now = now
                 self.revision = revision
+                self.welcome = welcome
+                self.personalised = personalised
+                self.rankPaused = rankPaused
                 self.weather = weather
                 self.plans = plans
                 self.links = links
@@ -1370,6 +1542,9 @@ extension Components {
                 case date
                 case now
                 case revision
+                case welcome
+                case personalised
+                case rankPaused = "rank_paused"
                 case weather
                 case plans
                 case links

@@ -250,6 +250,10 @@ public struct TodayPage: Equatable, Sendable {
         /// What Add to a plan sends.
         public let candidate: String
         public var saved: Bool
+        /// Why their own order put it here; nil in the usual order.
+        public let why: String?
+        /// Which of their leanings it matches (Why am I seeing this?).
+        public let reasons: [String]
         public let title: String
         public let category: String
         public let emoji: String?
@@ -263,10 +267,12 @@ public struct TodayPage: Equatable, Sendable {
         public let place: String?
         public let area: String?
 
-        public init(id: Int, candidate: String = "", saved: Bool = false, title: String, category: String, emoji: String?, startsAt: Date?, endsAt: Date?, timed: Bool, untimed: String?, tomorrow: Bool, price: String?, place: String?, area: String?) {
+        public init(id: Int, candidate: String = "", saved: Bool = false, why: String? = nil, reasons: [String] = [], title: String, category: String, emoji: String?, startsAt: Date?, endsAt: Date?, timed: Bool, untimed: String?, tomorrow: Bool, price: String?, place: String?, area: String?) {
             self.id = id
             self.candidate = candidate
             self.saved = saved
+            self.why = why
+            self.reasons = reasons
             self.title = title
             self.category = category
             self.emoji = emoji
@@ -445,6 +451,48 @@ public struct TodayPage: Equatable, Sendable {
     public let now: Date
     /// The plan's revision a change to the day sends.
     public var revision: Int = 0
+    /// A first visit: the page leads with Paperwork's way in.
+    public var welcome = false
+    /// Personalised suggestions are on (How we rank says so).
+    public var personalised = false
+    /// Their own order waits for a yes to a changed notice.
+    public var rankPaused: RankPause?
+
+    /// The notice that changed since their yes, for the Agree sheet.
+    public struct RankPause: Equatable, Sendable {
+        public let notice: [String]
+        public let changes: [String]?
+        public let modelChanged: Bool
+        public let noticeVersion: String
+        public let providerVersion: String
+
+        public init(notice: [String], changes: [String]?, modelChanged: Bool, noticeVersion: String, providerVersion: String) {
+            self.notice = notice
+            self.changes = changes
+            self.modelChanged = modelChanged
+            self.noticeVersion = noticeVersion
+            self.providerVersion = providerVersion
+        }
+
+        /// What changed, in words; the model's change last.
+        public var changed: [String] {
+            (changes ?? []) + (modelChanged ? ["The AI service’s model or its instructions changed."] : [])
+        }
+    }
+
+    /// What the page puts first (the web's priority.ts): the day while plans are ahead; on a first
+    /// visit, or with no ideas left, Paperwork's way in; any other free day, the ideas.
+    public enum Lead: Equatable, Sendable { case day, ideas, paperwork }
+
+    public var lead: Lead {
+        if !ahead.isEmpty { return .day }
+        return welcome || (ideas.isEmpty && free == nil) ? .paperwork : .ideas
+    }
+
+    /// What keeps the lead steady: it moves only when plans or whether there are ideas change, never on the clock.
+    public var leadKey: String {
+        plans.map { "\($0.id):\($0.completed)" }.joined(separator: "|") + "#\(!ideas.isEmpty || free != nil)#\(welcome)"
+    }
     public let weather: Weather?
     public let plans: [Plan]
     public let links: [Link]
@@ -596,5 +644,20 @@ public struct DayChange: Equatable, Sendable {
         self.id = id
         self.label = label
         self.undoable = undoable
+    }
+}
+
+/// What only the app sees, for personalisation: an idea shown at a place in the list, or turned down.
+public struct Signal: Equatable, Sendable {
+    public enum Action: String, Sendable { case impression, notForMe = "not_for_me", lessLikeThis = "less_like_this" }
+
+    public let action: Action
+    public let event: Int
+    public let position: Int?
+
+    public init(action: Action, event: Int, position: Int? = nil) {
+        self.action = action
+        self.event = event
+        self.position = position
     }
 }

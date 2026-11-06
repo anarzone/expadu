@@ -656,6 +656,38 @@
                 }
             }
         },
+        "/signals": {
+            "post": {
+                "operationId": "signal",
+                "tags": [
+                    "Signal"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordSignalsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": ""
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/today": {
             "get": {
                 "operationId": "today.show",
@@ -702,6 +734,118 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/today-rank": {
+            "put": {
+                "operationId": "todayRank.update",
+                "tags": [
+                    "TodayRank"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "notice_version": {
+                                        "type": "string",
+                                        "description": "The notice they were shown (TodayRankPause's), to agree to it.",
+                                        "maxLength": 100
+                                    },
+                                    "provider_version": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "notice_version",
+                                    "provider_version"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "enabled"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Today\u2019s AI order isn\u2019t waiting for you."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/today-rank/later": {
+            "post": {
+                "operationId": "todayRank.later",
+                "tags": [
+                    "TodayRank"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "until": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "until"
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -939,6 +1083,73 @@
                 "description": "Deleting the account asks for the password, or, for an account made with\nGoogle that has none, the code just emailed to it (EXP-174).",
                 "title": "ProfileDeleteRequest"
             },
+            "RecordSignalsRequest": {
+                "type": "object",
+                "description": "A client batch for the signal ledger: allow-listed actions and surfaces,\ncatalogue item ids that exist, no free text and no coordinates.",
+                "properties": {
+                    "signals": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "description": "Only these keys: anything else (a name, a point, a note) fails.",
+                            "properties": {
+                                "action": {
+                                    "type": "string",
+                                    "enum": [
+                                        "impression",
+                                        "detail_viewed",
+                                        "not_now",
+                                        "shared",
+                                        "not_for_me",
+                                        "less_like_this"
+                                    ]
+                                },
+                                "surface": {
+                                    "$ref": "#/components/schemas/SignalSurface"
+                                },
+                                "item_type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "spot",
+                                        "event"
+                                    ]
+                                },
+                                "item_id": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 999999999999
+                                },
+                                "position": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 0,
+                                    "maximum": 500
+                                },
+                                "dwell_seconds": {
+                                    "type": "integer",
+                                    "description": "A detail view counts from 10 seconds; shorter ones aren't sent.",
+                                    "minimum": 10,
+                                    "maximum": 86400
+                                }
+                            },
+                            "required": [
+                                "action",
+                                "surface",
+                                "item_type",
+                                "item_id"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 50
+                    }
+                },
+                "required": [
+                    "signals"
+                ],
+                "title": "RecordSignalsRequest"
+            },
             "SaveEventRequest": {
                 "type": "object",
                 "properties": {
@@ -998,6 +1209,22 @@
                 ],
                 "title": "SignInResource"
             },
+            "SignalSurface": {
+                "type": "string",
+                "description": "Where in the app the action happened.\n",
+                "enum": [
+                    "today",
+                    "places",
+                    "events",
+                    "composer",
+                    "travel",
+                    "search",
+                    "alerts",
+                    "place_sheet",
+                    "event_sheet"
+                ],
+                "title": "SignalSurface"
+            },
             "TodayResource": {
                 "type": "object",
                 "properties": {
@@ -1010,6 +1237,53 @@
                     "revision": {
                         "type": "integer",
                         "description": "The plan's revision a change to the day must send (day/command)."
+                    },
+                    "welcome": {
+                        "type": "boolean",
+                        "description": "A first visit: the page leads with Paperwork's way in."
+                    },
+                    "personalised": {
+                        "type": "boolean",
+                        "description": "Personalised suggestions on (Settings), for How we rank."
+                    },
+                    "rank_paused": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "notice": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "changes": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "model_changed": {
+                                "type": "boolean"
+                            },
+                            "notice_version": {
+                                "type": "string"
+                            },
+                            "provider_version": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "notice",
+                            "changes",
+                            "model_changed",
+                            "notice_version",
+                            "provider_version"
+                        ]
                     },
                     "weather": {
                         "type": [
@@ -1420,6 +1694,18 @@
                                 "saved": {
                                     "type": "boolean"
                                 },
+                                "why": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "reasons": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
                                 "title": {
                                     "type": "string"
                                 },
@@ -1479,6 +1765,8 @@
                                 "id",
                                 "candidate",
                                 "saved",
+                                "why",
+                                "reasons",
                                 "title",
                                 "category",
                                 "emoji",
@@ -1838,6 +2126,9 @@
                     "date",
                     "now",
                     "revision",
+                    "welcome",
+                    "personalised",
+                    "rank_paused",
                     "weather",
                     "plans",
                     "links",

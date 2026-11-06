@@ -193,6 +193,46 @@ public struct AppAPI: Sendable {
         }
     }
 
+    /// Impressions and turned-down ideas from Today, as the web's /api/signals; dropped unless they opted in.
+    public func send(_ signals: [Signal]) async throws(APIFailure) {
+        guard !signals.isEmpty else { return }
+        let input = Components.Schemas.RecordSignalsRequest(signals: signals.map {
+            .init(action: .init(rawValue: $0.action.rawValue) ?? .impression, surface: .today, itemType: .event, itemId: $0.event, position: $0.position)
+        })
+        let output = try await calling { try await client.signal(body: .json(input)) }
+        switch output {
+        case .accepted: return
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case .forbidden: throw .refused("Confirm your email address first.")
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
+    /// Their yes to the changed notice they were shown; Today is put in their order again.
+    public func agreeToOrder(_ pause: TodayPage.RankPause) async throws(APIFailure) {
+        let output = try await calling {
+            try await client.todayRank_update(body: .json(.init(noticeVersion: pause.noticeVersion, providerVersion: pause.providerVersion)))
+        }
+        switch output {
+        case .ok: return
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case let .undocumented(status, _): throw status == 409 ? .refused("Nothing is waiting for you to agree to.") : failure(status)
+        default: throw .unreachable
+        }
+    }
+
+    /// Not now: the line stays off Today for a week.
+    public func orderLater() async throws(APIFailure) {
+        let output = try await calling { try await client.todayRank_later() }
+        switch output {
+        case .ok: return
+        case .unauthorized: throw .signedOut
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
     public func nearby(latitude: Double, longitude: Double) async throws(APIFailure) -> Board {
         let output = try await calling { try await client.travel_nearby(query: .init(lat: latitude, lng: longitude)) }
         switch output {
@@ -242,7 +282,7 @@ public struct AppAPI: Sendable {
                 },
                 needs: today.needs.map { TodayPage.Need(id: $0.id, kind: $0.kind, severity: $0.severity, headline: $0.headline, detail: $0.detail) },
                 ideas: today.ideas.map {
-                    TodayPage.Idea(id: $0.id, candidate: $0.candidate, saved: $0.saved, title: $0.title, category: $0.category, emoji: $0.emoji, startsAt: $0.startsAt.flatMap(Self.date(from:)),
+                    TodayPage.Idea(id: $0.id, candidate: $0.candidate, saved: $0.saved, why: $0.why, reasons: $0.reasons, title: $0.title, category: $0.category, emoji: $0.emoji, startsAt: $0.startsAt.flatMap(Self.date(from:)),
                                    endsAt: $0.endsAt.flatMap(Self.date(from:)), timed: $0.timed, untimed: $0.untimed, tomorrow: $0.tomorrow,
                                    price: $0.price, place: $0.place, area: $0.area)
                 },
@@ -267,6 +307,11 @@ public struct AppAPI: Sendable {
                 later: today.comingUp.later.map { TodayPage.Later(date: $0.date, title: $0.title, place: $0.place, start: $0.start) }
             )
             page.revision = today.revision
+            page.welcome = today.welcome
+            page.personalised = today.personalised
+            page.rankPaused = today.rankPaused.map {
+                TodayPage.RankPause(notice: $0.notice, changes: $0.changes, modelChanged: $0.modelChanged, noticeVersion: $0.noticeVersion, providerVersion: $0.providerVersion)
+            }
             return page
         case .unauthorized: throw .signedOut
         case let .unprocessableContent(refusal): throw refused(refusal)

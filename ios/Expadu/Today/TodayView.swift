@@ -21,6 +21,21 @@ struct TodayView: View {
     @State private var pull: CGFloat = 0
     @State private var refresh = Refresh.idle
     @State private var loadingSince = Date.now
+    /// The lead, steady while the page is read (the web's useSteadyLead): set on load and when plans
+    /// or whether there are ideas change, never because the clock moved.
+    @State private var lead = (key: "", lead: TodayPage.Lead.day)
+
+    enum Part: Hashable { case day, ideas, city, paperwork, pickUp, saved, comingUp, links }
+
+    /// The canvas's order per lead (Today.dc.html ORDER): what leads, then the city, then the rest.
+    static func parts(_ lead: TodayPage.Lead) -> [Part] {
+        let first: [Part] = switch lead {
+        case .day: [.day, .ideas]
+        case .ideas: [.ideas, .day]
+        case .paperwork: [.paperwork, .ideas, .day]
+        }
+        return first + [.city] + (lead == .paperwork ? [] : [.paperwork]) + [.pickUp, .saved, .comingUp, .links]
+    }
 
     /// Pull to check again, as the canvas's .ptr: the mark grows with the pull, waves while it
     /// checks, then says when it last did.
@@ -54,14 +69,18 @@ struct TodayView: View {
                             Greeting(page: page, name: session.name, intro: intro)
                             Chips(page: page, sheet: $sheet, intro: intro)
                         }
-                        YourDay(page: page)
-                        if !page.ideas.isEmpty { Ideas(page: page, sheet: $sheet) }
-                        CologneToday(page: page, sheet: $sheet)
-                        PaperworkCard(paperwork: page.paperwork)
-                        if let continuation = page.continuation { PickUp(continuation: continuation) }
-                        if let saved = page.saved { SavedForLater(saved: saved, date: page.date) }
-                        ComingUp(page: page)
-                        CityLinks(sheet: $sheet)
+                        ForEach(Self.parts(lead.lead), id: \.self) { part in
+                            switch part {
+                            case .day: YourDay(page: page)
+                            case .ideas: if !model.shownIdeas.isEmpty { Ideas(page: page, sheet: $sheet) }
+                            case .city: CologneToday(page: page, sheet: $sheet)
+                            case .paperwork: PaperworkCard(paperwork: page.paperwork)
+                            case .pickUp: if let continuation = page.continuation { PickUp(continuation: continuation) }
+                            case .saved: if let saved = page.saved { SavedForLater(saved: saved, date: page.date) }
+                            case .comingUp: ComingUp(page: page)
+                            case .links: CityLinks(sheet: $sheet)
+                            }
+                        }
                     }
                 }
             }
@@ -85,6 +104,10 @@ struct TodayView: View {
             guard phase == .ready, !intro else { return }
             withAnimation(reduceMotion ? nil : .spring(duration: 0.55, bounce: 0.3)) { intro = true }
         }
+        .onChange(of: model.page?.leadKey) { _, key in
+            guard let page = model.page, let key, key != lead.key else { return }
+            withAnimation(reduceMotion || lead.key.isEmpty ? nil : .spring(duration: 0.5, bounce: 0.2)) { lead = (key, page.lead) }
+        }
         .onChange(of: model.topRequests) { withAnimation(.snappy) { position.scrollTo(edge: .top) } }
         .overlay(alignment: .bottom) {
             if let note = model.note {
@@ -101,6 +124,9 @@ struct TodayView: View {
             case let .ideas(page): IdeasSheet(page: page)
             case let .link(url): SafariView(url: url).ignoresSafeArea()
             case let .addPlan(date): AddPlanSheet(date: date)
+            case let .why(idea, when): WhySheet(idea: idea, when: when, sheet: $sheet)
+            case let .howWeRank(on): HowWeRankSheet(personalised: on)
+            case let .agree(pause): AgreeSheet(pause: pause)
             }
         }
     }
@@ -159,6 +185,9 @@ enum TodaySheet: Identifiable {
     case ideas(TodayPage)
     case link(URL)
     case addPlan(String)
+    case why(TodayPage.Idea, String)
+    case howWeRank(Bool)
+    case agree(TodayPage.RankPause)
 
     var id: String {
         switch self {
@@ -166,6 +195,9 @@ enum TodaySheet: Identifiable {
         case .ideas: "ideas"
         case let .link(url): url.absoluteString
         case let .addPlan(date): "add-\(date)"
+        case let .why(idea, _): "why-\(idea.id)"
+        case .howWeRank: "how-we-rank"
+        case .agree: "agree"
         }
     }
 }
@@ -479,7 +511,10 @@ private struct LeaveCard: View {
                     tile(label: nil, badge: Board.badge(line), color: Color(hexString: leave.color ?? "#1A4CD4"), value: departs, note: leave.from ?? "")
                 }
                 tile(label: "There", badge: nil, color: .clear, value: leave.arriveTime ?? "", note: place ?? leave.to)
-                if let spare = leave.spareMinutes {
+                if let spare = leave.spareMinutes, spare < 0 {
+                    // Late: by how much, in the warning colour, never a negative spare.
+                    tile(label: "Late", badge: nil, color: .clear, value: "\(-spare) min", note: leave.start.map { "after \($0)" } ?? "", warning: true)
+                } else if let spare = leave.spareMinutes {
                     tile(label: "Spare", badge: nil, color: .clear, value: "\(spare) min", note: leave.start.map { "before \($0)" } ?? "")
                 }
             }
@@ -509,7 +544,7 @@ private struct LeaveCard: View {
         max(0.04, 1 - Double(min(leave.leaveInMinutes ?? 15, 15)) / 15)
     }
 
-    private func tile(label: String?, badge: String?, color: Color, value: String, note: String) -> some View {
+    private func tile(label: String?, badge: String?, color: Color, value: String, note: String, warning: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             if let badge {
                 Label(badge, systemImage: "tram.fill").labelStyle(.titleAndIcon)
@@ -517,9 +552,9 @@ private struct LeaveCard: View {
                     .padding(.horizontal, 6).frame(height: 20)
                     .background(color, in: .rect(cornerRadius: 5))
             } else if let label {
-                Text(label.uppercased()).font(.geist(10.5, .bold)).tracking(0.4).foregroundStyle(Palette.textSoft)
+                Text(label.uppercased()).font(.geist(10.5, .bold)).tracking(0.4).foregroundStyle(warning ? Palette.conflictText : Palette.textSoft)
             }
-            Text(value).font(.posterGrotesque(19)).monospacedDigit()
+            Text(value).font(.posterGrotesque(19)).monospacedDigit().foregroundStyle(warning ? Palette.conflictText : Palette.text)
             Text(note).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1).minimumScaleFactor(0.85)
         }
         .padding(.vertical, 9).padding(.horizontal, 10)
@@ -703,6 +738,7 @@ private struct AddButton: View {
 private struct Ideas: View {
     let page: TodayPage
     @Binding var sheet: TodaySheet?
+    @Environment(TodayModel.self) private var model
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -717,14 +753,28 @@ private struct Ideas: View {
             if let sub {
                 Text(sub).font(.geist(13.5)).foregroundStyle(Palette.textSoft).padding(.horizontal, 4).padding(.top, -6)
             }
+            if let pause = page.rankPaused, !model.pauseSetAside {
+                PausedLine(pause: pause, sheet: $sheet).padding(.top, 10)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
             VStack(spacing: 0) {
-                ForEach(Array(page.ideas.prefix(4).enumerated()), id: \.element.id) { index, idea in
+                ForEach(Array(model.shownIdeas.prefix(4).enumerated()), id: \.element.id) { index, idea in
                     if index > 0 { Divider().overlay(Palette.border) }
-                    IdeaRow(idea: idea, now: page.now, tilt: [-3, 2, -2, 3][index % 4], date: page.date, tomorrow: page.tomorrowDate)
+                    IdeaRow(idea: idea, now: page.now, tilt: [-3, 2, -2, 3][index % 4], date: page.date, tomorrow: page.tomorrowDate,
+                            onWhy: { sheet = .why(idea, idea.whenLine(at: page.now)) })
+                        .transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .move(edge: .trailing))))
                 }
             }
             .card(radius: 22)
             .padding(.top, 12)
+            // UWG § 5b: every ranked list says how it's put in order.
+            Button { sheet = .howWeRank(page.personalised) } label: {
+                Label("How we rank", systemImage: "list.number").labelStyle(Tight())
+                    .font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
+                    .frame(minHeight: 36)
+            }
+            .buttonStyle(PressStyle())
+            .padding(.horizontal, 4).padding(.top, 4)
         }
     }
 
@@ -740,6 +790,7 @@ private struct IdeaRow: View {
     let tilt: Double
     var date: String = ""
     var tomorrow: String?
+    var onWhy: (() -> Void)?
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
 
@@ -749,6 +800,16 @@ private struct IdeaRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(idea.title).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
                 Text(idea.whenLine(at: now)).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(2)
+                if let why = idea.why, let onWhy {
+                    Button(action: onWhy) {
+                        Label(why, systemImage: "info.circle").labelStyle(Tight())
+                            .font(.geist(12.5, .medium)).foregroundStyle(TodayLink.ink)
+                            .multilineTextAlignment(.leading).lineLimit(2)
+                    }
+                    .buttonStyle(PressStyle())
+                    .padding(.top, 2)
+                    .accessibilityLabel("Why am I seeing this? \(why)")
+                }
             }
             Spacer(minLength: 0)
             HStack(spacing: 4) {
@@ -794,6 +855,166 @@ private struct Poster: View {
             .shadow(color: Color(hex: 0x211D15, opacity: 0.18), radius: 3, y: 2)
             .rotationEffect(.degrees(tilt))
             .accessibilityHidden(true)
+    }
+}
+
+/// Their order waits for a yes to a changed notice (the web's AiOrderPausedLine; no AI words outside Settings).
+private struct PausedLine: View {
+    let pause: TodayPage.RankPause
+    @Binding var sheet: TodaySheet?
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "clock").font(.system(size: 13, weight: .semibold))
+            Text("In the usual order until you agree to a change.").font(.geist(13)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            Button("Review") { sheet = .agree(pause) }.font(.geist(13, .semibold)).foregroundStyle(TodayLink.ink)
+            Button("Not now") { Task { await model.orderLater(session.api) } }.font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
+        }
+        .foregroundStyle(Palette.textSoft)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(Palette.quiet, in: .rect(cornerRadius: 14))
+    }
+}
+
+/// Why am I seeing this? (the web's WhySheet): which of their leanings it matches, and what they can do,
+/// each with Undo: fewer like this, or not for me (off Today).
+private struct WhySheet: View {
+    let idea: TodayPage.Idea
+    let when: String
+    @Binding var sheet: TodaySheet?
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(idea.title).font(.geist(16, .semibold))
+                        Text(when).font(.geist(13)).foregroundStyle(Palette.textSoft)
+                    }
+                }
+                if !idea.reasons.isEmpty {
+                    Section {
+                        ForEach(idea.reasons, id: \.self) { reason in
+                            Label(reason, systemImage: "checkmark").font(.geist(15))
+                        }
+                    }
+                }
+                Section {
+                    Button("Less like this", systemImage: "minus.circle") {
+                        model.lessLikeThis(session.api, idea: idea)
+                        dismiss()
+                    }
+                    Button("Not for me", systemImage: "xmark.circle") {
+                        withAnimation(.snappy) { model.notForMe(session.api, idea: idea) }
+                        dismiss()
+                    }
+                    Button("How we rank", systemImage: "list.number") {
+                        let on = model.page?.personalised ?? false
+                        dismiss()
+                        Task { try? await Task.sleep(for: .milliseconds(450)); sheet = .howWeRank(on) }
+                    }
+                }
+                .font(.geist(15, .medium))
+                .foregroundStyle(Palette.text)
+            }
+            .navigationTitle("Why am I seeing this?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+/// How we rank (UWG § 5b, the web's HowWeRank): what puts Today's ideas in order, that nobody pays,
+/// and where listings come from.
+private struct HowWeRankSheet: View {
+    let personalised: Bool
+    @Environment(\.dismiss) private var dismiss
+    private static let today: [(String, String)] = [
+        ("Fits your plan", "Nothing that clashes with a plan whose times are known."),
+        ("Near you first", "Within 3 km of your neighbourhood or Home, then the rest, each soonest first. Tomorrow’s only once nothing is left today."),
+        ("What you lean towards, if you turned it on", "Put in order from what you open, save and turn down. It never hides one. Off: everyone sees the same order."),
+        ("What you turned down", "An event you said isn’t for you stays off."),
+    ]
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Today’s ideas") {
+                    ForEach(Array(Self.today.enumerated()), id: \.offset) { index, rule in
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Text("\(index + 1)").font(.posterGrotesque(15)).foregroundStyle(Palette.textSoft)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(rule.0).font(.geist(15, .semibold))
+                                Text(rule.1).font(.geist(13.5)).foregroundStyle(Palette.textSoft)
+                            }
+                        }
+                    }
+                }
+                Section("What’s on") { Text("Soonest first, unless you pick evening first or closest first.").font(.geist(14)) }
+                Section("Around here") { Text("Nearest first.").font(.geist(14)) }
+                Section {
+                    Label("Nobody pays to be listed or placed higher.", systemImage: "xmark.circle").font(.geist(14))
+                    Text("Events come from koeln.de, the City of Cologne’s open data, KölnTourismus (DatenHub NRW) and a few we add ourselves; exhibitions and all-day attractions are left out. Places come from OpenStreetMap and Overture Maps.")
+                        .font(.geist(13.5)).foregroundStyle(Palette.textSoft)
+                    LabeledContent("Personalised suggestions", value: personalised ? "On" : "Off").font(.geist(14))
+                }
+            }
+            .navigationTitle("How we rank")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
+        }
+        .presentationDetents([.large])
+    }
+}
+
+/// Agree to the change? (the web's AiOrderChange): what changed, what waits until they agree, what's kept.
+private struct AgreeSheet: View {
+    let pause: TodayPage.RankPause
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    @State private var busy = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section { Text("We changed how Claude Haiku, the AI that puts Today in order, works with Expadu.").font(.geist(14)).foregroundStyle(Palette.textSoft) }
+                Section(pause.changed.isEmpty ? "How it works now" : "What changed") {
+                    ForEach(pause.changed.isEmpty ? pause.notice : pause.changed, id: \.self) { Label($0, systemImage: "pencil").font(.geist(14)) }
+                }
+                Section("Paused until you agree") { Label("Today put in order by AI, and its “why” lines", systemImage: "clock").font(.geist(14)) }
+                Section("Kept either way") { Label("What Expadu learned, and your settings", systemImage: "checkmark").font(.geist(14)) }
+                if !pause.changed.isEmpty {
+                    Section("The whole notice") { ForEach(pause.notice, id: \.self) { Text($0).font(.geist(13.5)) } }
+                }
+                Section { Text("Your yes is saved with the date and this notice.").font(.geist(12.5)).foregroundStyle(Palette.textSoft) }
+            }
+            .navigationTitle("Agree to the change?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Not now") { Task { await model.orderLater(session.api) }; dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Agree") {
+                        busy = true
+                        Task {
+                            if await model.agree(session.api, to: pause) { dismiss() }
+                            busy = false
+                        }
+                    }
+                    .disabled(busy)
+                }
+            }
+        }
+        .presentationDetents([.large])
     }
 }
 
@@ -1315,6 +1536,7 @@ final class TodayModel {
             page = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
             if phase != .ready { waveSince = .now }
             phase = .ready
+            reportShown(api)
         } catch {
             if page != nil, quietly { return }
             phase = .problem(error == .signedOut ? "You’ve been signed out." : "Couldn’t reach Expadu. Check your connection.")
@@ -1323,7 +1545,7 @@ final class TodayModel {
 
     /// What just changed, for the note; `undo` puts it back.
     struct Note: Equatable, Identifiable {
-        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea) }
+        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea) }
 
         let id = UUID()
         let text: String
@@ -1333,6 +1555,16 @@ final class TodayModel {
     }
 
     private(set) var note: Note?
+    /// Ideas they said aren't for them: off Today at once (the server keeps them off once Undo has passed).
+    private(set) var hidden: Set<Int> = []
+    /// Not now on the paused line, for this session (the server keeps it off a week).
+    private(set) var pauseSetAside = false
+    /// A turned-down idea's signal waits out its Undo, as the web's signalLater.
+    private var pending: [Int: Task<Void, Never>] = [:]
+    /// Ideas already reported shown, so each counts once a day.
+    private var seen: Set<String> = []
+
+    var shownIdeas: [TodayPage.Idea] { (page?.ideas ?? []).filter { !hidden.contains($0.id) } }
     /// What was added this session, so its + shows a check at once.
     private(set) var added: Set<String> = []
     private var noteTimer: Task<Void, Never>?
@@ -1425,7 +1657,60 @@ final class TodayModel {
             var saved = idea
             saved.saved = true
             await toggleSave(api, idea: saved)
+        case let .signal(idea):
+            pending.removeValue(forKey: idea.id)?.cancel()
+            withAnimation(.snappy) { _ = hidden.remove(idea.id) }
+            say(Note(text: "Put back", symbol: "arrow.uturn.backward"))
         }
+    }
+
+    /// Less like this: its kind lower from tomorrow, nothing hidden; sent once Undo has passed.
+    func lessLikeThis(_ api: AppAPI, idea: TodayPage.Idea) {
+        later(api, Signal(action: .lessLikeThis, event: idea.id), for: idea)
+        say(Note(text: "Noted. Fewer like this from tomorrow.", symbol: "minus.circle", undo: .signal(idea)))
+    }
+
+    /// Not for me: off Today at once.
+    func notForMe(_ api: AppAPI, idea: TodayPage.Idea) {
+        hidden.insert(idea.id)
+        later(api, Signal(action: .notForMe, event: idea.id), for: idea)
+        say(Note(text: "Taken off Today.", symbol: "xmark.circle", undo: .signal(idea)))
+    }
+
+    private func later(_ api: AppAPI, _ signal: Signal, for idea: TodayPage.Idea) {
+        pending[idea.id]?.cancel()
+        pending[idea.id] = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            try? await api.send([signal])
+            self?.pending.removeValue(forKey: idea.id)
+        }
+    }
+
+    /// The ideas Today showed, with their places in the list, once a day each.
+    private func reportShown(_ api: AppAPI) {
+        guard let page else { return }
+        let fresh = Array(shownIdeas.prefix(4).enumerated()).filter { seen.insert("\(page.date):\($0.element.id)").inserted }
+        guard !fresh.isEmpty else { return }
+        let signals = fresh.map { Signal(action: .impression, event: $0.element.id, position: $0.offset) }
+        Task { try? await api.send(signals) }
+    }
+
+    func agree(_ api: AppAPI, to pause: TodayPage.RankPause) async -> Bool {
+        do throws(APIFailure) {
+            try await api.agreeToOrder(pause)
+            say(Note(text: "Agreed. Today is in your order again in a minute.", symbol: "checkmark.circle.fill"))
+            withAnimation(.snappy) { pauseSetAside = true }
+            return true
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            return false
+        }
+    }
+
+    func orderLater(_ api: AppAPI) async {
+        withAnimation(.snappy) { pauseSetAside = true }
+        try? await api.orderLater()
     }
 
     private static func words(_ error: APIFailure) -> String {

@@ -77,6 +77,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/refresh`.
     /// - Remark: Generated from `#/paths//auth/refresh/post(signIn.refresh)`.
     func signIn_refresh(_ input: Operations.SignIn_refresh.Input) async throws -> Operations.SignIn_refresh.Output
+    /// - Remark: HTTP `POST /signals`.
+    /// - Remark: Generated from `#/paths//signals/post(signal)`.
+    func signal(_ input: Operations.Signal.Input) async throws -> Operations.Signal.Output
     /// Today for the iPhone: the same day, notes, ideas, Paperwork, saved things and
     /// what's coming up that the web's Today reads (HomeFeedController), in one answer
     /// shaped for the app
@@ -84,6 +87,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /today`.
     /// - Remark: Generated from `#/paths//today/get(today.show)`.
     func today_show(_ input: Operations.Today_show.Input) async throws -> Operations.Today_show.Output
+    /// - Remark: HTTP `PUT /today-rank`.
+    /// - Remark: Generated from `#/paths//today-rank/put(todayRank.update)`.
+    func todayRank_update(_ input: Operations.TodayRank_update.Input) async throws -> Operations.TodayRank_update.Output
+    /// - Remark: HTTP `POST /today-rank/later`.
+    /// - Remark: Generated from `#/paths//today-rank/later/post(todayRank.later)`.
+    func todayRank_later(_ input: Operations.TodayRank_later.Input) async throws -> Operations.TodayRank_later.Output
     /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
     ///
     /// - Remark: HTTP `GET /travel/nearby`.
@@ -242,6 +251,17 @@ extension APIProtocol {
     public func signIn_refresh(headers: Operations.SignIn_refresh.Input.Headers = .init()) async throws -> Operations.SignIn_refresh.Output {
         try await signIn_refresh(Operations.SignIn_refresh.Input(headers: headers))
     }
+    /// - Remark: HTTP `POST /signals`.
+    /// - Remark: Generated from `#/paths//signals/post(signal)`.
+    public func signal(
+        headers: Operations.Signal.Input.Headers = .init(),
+        body: Operations.Signal.Input.Body
+    ) async throws -> Operations.Signal.Output {
+        try await signal(Operations.Signal.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// Today for the iPhone: the same day, notes, ideas, Paperwork, saved things and
     /// what's coming up that the web's Today reads (HomeFeedController), in one answer
     /// shaped for the app
@@ -256,6 +276,22 @@ extension APIProtocol {
             query: query,
             headers: headers
         ))
+    }
+    /// - Remark: HTTP `PUT /today-rank`.
+    /// - Remark: Generated from `#/paths//today-rank/put(todayRank.update)`.
+    public func todayRank_update(
+        headers: Operations.TodayRank_update.Input.Headers = .init(),
+        body: Operations.TodayRank_update.Input.Body
+    ) async throws -> Operations.TodayRank_update.Output {
+        try await todayRank_update(Operations.TodayRank_update.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /today-rank/later`.
+    /// - Remark: Generated from `#/paths//today-rank/later/post(todayRank.later)`.
+    public func todayRank_later(headers: Operations.TodayRank_later.Input.Headers = .init()) async throws -> Operations.TodayRank_later.Output {
+        try await todayRank_later(Operations.TodayRank_later.Input(headers: headers))
     }
     /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
     ///
