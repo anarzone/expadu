@@ -59,7 +59,7 @@ struct TodayView: View {
                         CologneToday(page: page, sheet: $sheet)
                         PaperworkCard(paperwork: page.paperwork)
                         if let continuation = page.continuation { PickUp(continuation: continuation) }
-                        if let saved = page.saved { SavedForLater(saved: saved) }
+                        if let saved = page.saved { SavedForLater(saved: saved, date: page.date) }
                         ComingUp(page: page)
                         CityLinks(sheet: $sheet)
                     }
@@ -86,11 +86,21 @@ struct TodayView: View {
             withAnimation(reduceMotion ? nil : .spring(duration: 0.55, bounce: 0.3)) { intro = true }
         }
         .onChange(of: model.topRequests) { withAnimation(.snappy) { position.scrollTo(edge: .top) } }
+        .overlay(alignment: .bottom) {
+            if let note = model.note {
+                NoteBar(note: note)
+                    .padding(.horizontal, 16).padding(.bottom, 12)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .id(note.id)
+            }
+        }
+        .animation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.25), value: model.note)
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case let .weather(weather): WeatherSheet(weather: weather)
             case let .ideas(page): IdeasSheet(page: page)
             case let .link(url): SafariView(url: url).ignoresSafeArea()
+            case let .addPlan(date): AddPlanSheet(date: date)
             }
         }
     }
@@ -128,7 +138,8 @@ private struct PullMark: View {
             Text(words).font(.geist(12.5, .semibold)).foregroundStyle(Palette.textSoft)
                 .contentTransition(.opacity)
         }
-        .opacity(shown ? 1 : 0)
+        // Fades in with the pull, as the canvas's .ptr; full once it's checking.
+        .opacity(refresh != .idle ? 1 : shown ? min(1, (pull - 4) / 46) : 0)
         .allowsHitTesting(false)
         .accessibilityHidden(!shown)
     }
@@ -147,13 +158,41 @@ enum TodaySheet: Identifiable {
     case weather(TodayPage.Weather)
     case ideas(TodayPage)
     case link(URL)
+    case addPlan(String)
 
     var id: String {
         switch self {
         case .weather: "weather"
         case .ideas: "ideas"
         case let .link(url): url.absoluteString
+        case let .addPlan(date): "add-\(date)"
         }
+    }
+}
+
+/// What just changed, in words, with Undo when it can be put back (the canvas's note, never alone:
+/// the change itself moves in place too).
+private struct NoteBar: View {
+    let note: TodayModel.Note
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: note.symbol).font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(note.problem ? Palette.conflictText : Color(hex: 0x2F9E5B))
+                .symbolEffect(.bounce, value: note.id)
+            Text(note.text).font(.geist(14.5, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
+            Spacer(minLength: 0)
+            if note.undo != nil {
+                Button("Undo") { Task { await model.undo(session.api) } }
+                    .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
+                    .frame(minHeight: 44)
+            }
+        }
+        .padding(.horizontal, 16).frame(minHeight: 52)
+        .glassEffect(.regular, in: .capsule)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -234,6 +273,9 @@ private struct Chips: View {
 /// what to bring and the Leave card; free time between shows what's open then.
 private struct YourDay: View {
     let page: TodayPage
+    @State private var doneOpen = false
+
+    private var done: [TodayPage.Plan] { page.plans.filter(\.completed) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -248,6 +290,7 @@ private struct YourDay: View {
                     Text("Now · \(TodayPage.clock(page.now))").font(.geist(13, .bold)).foregroundStyle(Self.line)
                 }
                 .frame(height: 22).padding(.bottom, 6)
+                if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
                 if page.free?.anchorTitle == nil, let free = page.free { FreeTime(page: page, free: free) }
                 if page.ahead.isEmpty {
                     VStack(alignment: .leading, spacing: 3) {
@@ -265,7 +308,7 @@ private struct YourDay: View {
                         LinkLine(link: link)
                     }
                 }
-                AddPlan()
+                AddPlan(date: page.date)
             }
             .padding(.top, 14).padding(.trailing, 14).padding(.bottom, 6).padding(.leading, 40)
             .background(alignment: .leading) {
@@ -304,6 +347,8 @@ private struct Stop: View {
     let page: TodayPage
     let plan: TodayPage.Plan
     let next: Bool
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -320,8 +365,20 @@ private struct Stop: View {
                     }
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "ellipsis").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.textSoft)
-                    .frame(width: 36, height: 36)
+                Menu {
+                    Button("Mark as done", systemImage: "checkmark.circle") {
+                        Task { await model.markDone(session.api, plan: plan, date: page.date) }
+                    }
+                    if plan.editable {
+                        Button("Remove", systemImage: "trash", role: .destructive) {
+                            Task { await model.change(session.api, action: "remove", id: plan.id, date: page.date, symbol: "trash") }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.textSoft)
+                        .frame(width: 44, height: 44).contentShape(.rect)
+                }
+                .accessibilityLabel("More for \(plan.title)")
             }
             if next {
                 if let deadline = page.deadline(for: plan) {
@@ -509,8 +566,7 @@ private struct FreeTime: View {
                             Text(place.line).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                         }
                         Spacer(minLength: 0)
-                        Image(systemName: "plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.action)
-                            .frame(width: 36, height: 36)
+                        AddButton(candidate: place.candidate, date: page.date, title: place.name)
                     }
                     .foregroundStyle(Palette.text)
                     .padding(.horizontal, 12).padding(.vertical, 6)
@@ -524,11 +580,120 @@ private struct FreeTime: View {
 }
 
 private struct AddPlan: View {
+    let date: String
+    @State private var open = false
+
     var body: some View {
-        Label("Add a plan", systemImage: "plus")
-            .labelStyle(Tight())
-            .font(.geist(15.5, .semibold)).foregroundStyle(Palette.action)
-            .frame(height: 50)
+        Button { open = true } label: {
+            Label("Add a plan", systemImage: "plus")
+                .labelStyle(Tight())
+                .font(.geist(15.5, .semibold)).foregroundStyle(Palette.action)
+                .frame(height: 50).contentShape(.rect)
+        }
+        .buttonStyle(PressStyle())
+        .sheet(isPresented: $open) { AddPlanSheet(date: date) }
+    }
+}
+
+/// Plans marked done today, folded away; each can be put back.
+private struct DoneFold: View {
+    let page: TodayPage
+    let done: [TodayPage.Plan]
+    @Binding var open: Bool
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button { withAnimation(.snappy) { open.toggle() } } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
+                    Text("\(done.count) done").font(.geist(13.5, .semibold))
+                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold)).rotationEffect(.degrees(open ? 180 : 0))
+                }
+                .foregroundStyle(Palette.textSoft)
+                .frame(minHeight: 32)
+            }
+            .buttonStyle(PressStyle())
+            if open {
+                ForEach(done) { plan in
+                    HStack(spacing: 8) {
+                        Text([plan.start, plan.title].compactMap { $0 }.joined(separator: " ")).font(.geist(14, .semibold)).strikethrough()
+                            .foregroundStyle(Palette.textSoft)
+                        Spacer(minLength: 0)
+                        Button("Restore") { Task { await model.restore(session.api, plan: plan, date: page.date) } }
+                            .font(.geist(13, .semibold)).foregroundStyle(TodayLink.ink)
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+        }
+        .padding(.bottom, 10)
+    }
+}
+
+/// A plan of their own: what, when, where (the web's Add a plan).
+private struct AddPlanSheet: View {
+    let date: String
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+    @State private var place = ""
+    @State private var start = Calendar.current.date(byAdding: .hour, value: 1, to: .now) ?? .now
+    @State private var end = Calendar.current.date(byAdding: .hour, value: 2, to: .now) ?? .now
+    @State private var saving = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("What", text: $name)
+                TextField("Where (optional)", text: $place)
+                DatePicker("Starts", selection: $start, displayedComponents: .hourAndMinute)
+                DatePicker("Ends", selection: $end, in: start..., displayedComponents: .hourAndMinute)
+            }
+            .navigationTitle("Add a plan")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel", systemImage: "xmark") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add", systemImage: "checkmark") {
+                        saving = true
+                        Task {
+                            let added = await model.addPlan(session.api, name: name, date: date, start: TodayPage.clock(start), end: TodayPage.clock(end), place: place)
+                            saving = false
+                            if added { dismiss() }
+                        }
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || saving)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+/// Add an event or a place to a day's plan, in place: the + turns to a check once it's in.
+private struct AddButton: View {
+    let candidate: String
+    let date: String
+    let title: String
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+
+    var body: some View {
+        let added = model.added.contains(candidate)
+        Button { Task { await model.change(session.api, action: "add", date: date, candidate: candidate, symbol: "calendar.badge.plus") } } label: {
+            Image(systemName: added ? "checkmark" : "plus")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(added ? Color(hex: 0x2F9E5B) : Palette.action)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 36, height: 36).contentShape(.circle)
+        }
+        .buttonStyle(PressStyle())
+        .disabled(added || candidate.isEmpty)
+        .accessibilityLabel(added ? "\(title) is in your plan" : "Add \(title) to your plan")
+        .sensoryFeedback(.success, trigger: added)
     }
 }
 
@@ -555,7 +720,7 @@ private struct Ideas: View {
             VStack(spacing: 0) {
                 ForEach(Array(page.ideas.prefix(4).enumerated()), id: \.element.id) { index, idea in
                     if index > 0 { Divider().overlay(Palette.border) }
-                    IdeaRow(idea: idea, now: page.now, tilt: [-3, 2, -2, 3][index % 4])
+                    IdeaRow(idea: idea, now: page.now, tilt: [-3, 2, -2, 3][index % 4], date: page.date, tomorrow: page.tomorrowDate)
                 }
             }
             .card(radius: 22)
@@ -573,6 +738,10 @@ private struct IdeaRow: View {
     let idea: TodayPage.Idea
     let now: Date
     let tilt: Double
+    var date: String = ""
+    var tomorrow: String?
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
 
     var body: some View {
         HStack(spacing: 12) {
@@ -583,10 +752,19 @@ private struct IdeaRow: View {
             }
             Spacer(minLength: 0)
             HStack(spacing: 4) {
-                Image(systemName: "bookmark").frame(width: 36, height: 36).foregroundStyle(Palette.textSoft)
-                Image(systemName: "plus").frame(width: 36, height: 36).foregroundStyle(Palette.action)
+                Button { Task { await model.toggleSave(session.api, idea: idea) } } label: {
+                    Image(systemName: idea.saved ? "bookmark.fill" : "bookmark")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(idea.saved ? TodayLink.ink : Palette.textSoft)
+                        .contentTransition(.symbolEffect(.replace))
+                        .symbolEffect(.bounce, value: idea.saved)
+                        .frame(width: 36, height: 36).contentShape(.circle)
+                }
+                .buttonStyle(PressStyle())
+                .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
+                .sensoryFeedback(.selection, trigger: idea.saved)
+                AddButton(candidate: idea.candidate, date: idea.tomorrow ? (tomorrow ?? date) : date, title: idea.title)
             }
-            .font(.system(size: 16, weight: .semibold))
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
     }
@@ -794,6 +972,9 @@ private struct PickUp: View {
 
 private struct SavedForLater: View {
     let saved: TodayPage.Saved
+    let date: String
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -803,7 +984,14 @@ private struct SavedForLater: View {
             VStack(spacing: 0) {
                 ForEach(Array(saved.items.enumerated()), id: \.element.id) { index, item in
                     if index > 0 { Divider().overlay(Palette.border) }
-                    ListRow(symbol: item.type == "place" ? "mappin" : "calendar", title: item.title, note: item.line, action: "Add to a plan")
+                    HStack(spacing: 0) {
+                        ListRow(symbol: item.type == "place" ? "mappin" : "calendar", title: item.title, note: item.line, action: nil)
+                        Button("Add to a plan") {
+                            Task { await model.change(session.api, action: "add", date: item.date ?? date, candidate: item.candidate, symbol: "calendar.badge.plus") }
+                        }
+                        .font(.geist(14, .semibold)).foregroundStyle(TodayLink.ink)
+                        .padding(.trailing, 14).frame(minHeight: 44)
+                    }
                 }
             }
             .card(radius: 22)
@@ -944,7 +1132,7 @@ private struct IdeasSheet: View {
     var body: some View {
         NavigationStack {
             List(Array(page.ideas.enumerated()), id: \.element.id) { index, idea in
-                IdeaRow(idea: idea, now: page.now, tilt: [-3, 2, -2, 3][index % 4])
+                IdeaRow(idea: idea, now: page.now, tilt: [-3, 2, -2, 3][index % 4], date: page.date, tomorrow: page.tomorrowDate)
                     .listRowInsets(EdgeInsets())
             }
             .navigationTitle(page.ideasTitle)
@@ -1130,6 +1318,122 @@ final class TodayModel {
         } catch {
             if page != nil, quietly { return }
             phase = .problem(error == .signedOut ? "You’ve been signed out." : "Couldn’t reach Expadu. Check your connection.")
+        }
+    }
+
+    /// What just changed, for the note; `undo` puts it back.
+    struct Note: Equatable, Identifiable {
+        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea) }
+
+        let id = UUID()
+        let text: String
+        let symbol: String
+        var undo: Undo?
+        var problem = false
+    }
+
+    private(set) var note: Note?
+    /// What was added this session, so its + shows a check at once.
+    private(set) var added: Set<String> = []
+    private var noteTimer: Task<Void, Never>?
+
+    private func say(_ next: Note) {
+        note = next
+        noteTimer?.cancel()
+        noteTimer = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            self?.note = nil
+        }
+    }
+
+    /// One change to the day through the server, then the day re-read so it moves in place.
+    func change(_ api: AppAPI, action: String, id: String? = nil, date: String? = nil, candidate: String? = nil, symbol: String,
+                name: String? = nil, start: String? = nil, end: String? = nil, location: String? = nil) async {
+        guard let page else { return }
+        if let candidate { added.insert(candidate) }
+        do throws(APIFailure) {
+            let done = try await api.changeDay(revision: page.revision, action: action, id: id, date: date, candidate: candidate, name: name, start: start, end: end, location: location)
+            say(Note(text: done.label ?? "Done", symbol: symbol, undo: done.undoable ? done.id.map { .change($0) } : nil))
+            await load(api, quietly: true)
+        } catch {
+            if let candidate { added.remove(candidate) }
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
+    func markDone(_ api: AppAPI, plan: TodayPage.Plan, date: String) async {
+        guard let page else { return }
+        do throws(APIFailure) {
+            _ = try await api.changeDay(revision: page.revision, action: "complete", id: plan.id, date: date)
+            say(Note(text: "\(plan.title) is done", symbol: "checkmark.circle.fill", undo: .restore(id: plan.id, date: date)))
+            await load(api, quietly: true)
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
+    func restore(_ api: AppAPI, plan: TodayPage.Plan, date: String) async {
+        guard let page else { return }
+        do throws(APIFailure) {
+            _ = try await api.changeDay(revision: page.revision, action: "uncomplete", id: plan.id, date: date)
+            say(Note(text: "\(plan.title) is back on your day", symbol: "arrow.uturn.backward"))
+            await load(api, quietly: true)
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
+    func addPlan(_ api: AppAPI, name: String, date: String, start: String, end: String, place: String) async -> Bool {
+        let where_ = place.trimmingCharacters(in: .whitespaces)
+        await change(api, action: "appointment", date: date, symbol: "calendar.badge.plus", name: name.trimmingCharacters(in: .whitespaces),
+                     start: start, end: end, location: where_.isEmpty ? nil : where_)
+        return note?.problem != true
+    }
+
+    /// The bookmark flips at once; the server's answer settles it.
+    func toggleSave(_ api: AppAPI, idea: TodayPage.Idea) async {
+        guard let startsAt = idea.startsAt, let index = page?.ideas.firstIndex(where: { $0.id == idea.id }) else { return }
+        let saving = !idea.saved
+        page?.ideas[index].saved = saving
+        do throws(APIFailure) {
+            _ = try await api.saveEvent(id: idea.id, startsAt: startsAt, saved: saving)
+            say(Note(text: saving ? "Saved for later" : "Removed from saved", symbol: saving ? "bookmark.fill" : "bookmark",
+                     undo: saving ? .unsave(idea) : nil))
+        } catch {
+            page?.ideas[index].saved = !saving
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
+    func undo(_ api: AppAPI) async {
+        guard let undo = note?.undo, let page else { return }
+        note = nil
+        switch undo {
+        case let .change(id):
+            do throws(APIFailure) {
+                _ = try await api.changeDay(revision: page.revision, action: "undo", change: id)
+                added.removeAll()
+                say(Note(text: "Put back", symbol: "arrow.uturn.backward"))
+                await load(api, quietly: true)
+            } catch {
+                say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
+        case let .restore(id, date):
+            if let plan = page.plans.first(where: { $0.id == id }) { await restore(api, plan: plan, date: date) }
+        case let .unsave(idea):
+            var saved = idea
+            saved.saved = true
+            await toggleSave(api, idea: saved)
+        }
+    }
+
+    private static func words(_ error: APIFailure) -> String {
+        switch error {
+        case let .refused(why): why
+        case .signedOut: "You’ve been signed out."
+        case .tooManyTries: "Too many tries. Wait a moment."
+        case .unreachable: "Couldn’t reach Expadu. Check your connection."
         }
     }
 

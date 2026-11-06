@@ -247,6 +247,9 @@ public struct TodayPage: Equatable, Sendable {
 
     public struct Idea: Equatable, Sendable, Identifiable {
         public let id: Int
+        /// What Add to a plan sends.
+        public let candidate: String
+        public var saved: Bool
         public let title: String
         public let category: String
         public let emoji: String?
@@ -260,8 +263,10 @@ public struct TodayPage: Equatable, Sendable {
         public let place: String?
         public let area: String?
 
-        public init(id: Int, title: String, category: String, emoji: String?, startsAt: Date?, endsAt: Date?, timed: Bool, untimed: String?, tomorrow: Bool, price: String?, place: String?, area: String?) {
+        public init(id: Int, candidate: String = "", saved: Bool = false, title: String, category: String, emoji: String?, startsAt: Date?, endsAt: Date?, timed: Bool, untimed: String?, tomorrow: Bool, price: String?, place: String?, area: String?) {
             self.id = id
+            self.candidate = candidate
+            self.saved = saved
             self.title = title
             self.category = category
             self.emoji = emoji
@@ -303,14 +308,20 @@ public struct TodayPage: Equatable, Sendable {
     public struct Free: Equatable, Sendable {
         public struct Place: Equatable, Sendable, Identifiable {
             public let id: Int
+            public let candidate: String
             public let name: String
             public let kind: String
             public let label: String
             public let km: Double?
             public let openUntil: String?
+            public let latitude: Double?
+            public let longitude: Double?
 
-            public init(id: Int, name: String, kind: String, label: String, km: Double?, openUntil: String?) {
+            public init(id: Int, candidate: String = "", name: String, kind: String, label: String, km: Double?, openUntil: String?, latitude: Double? = nil, longitude: Double? = nil) {
                 self.id = id
+                self.candidate = candidate
+                self.latitude = latitude
+                self.longitude = longitude
                 self.name = name
                 self.kind = kind
                 self.label = label
@@ -381,15 +392,17 @@ public struct TodayPage: Equatable, Sendable {
         public struct Item: Equatable, Sendable, Identifiable {
             public let type: String
             public let id: Int
+            public let candidate: String
             public let title: String
             public let date: String?
             public let place: String?
             public let label: String?
             public let area: String?
 
-            public init(type: String, id: Int, title: String, date: String?, place: String?, label: String?, area: String?) {
+            public init(type: String, id: Int, candidate: String = "", title: String, date: String?, place: String?, label: String?, area: String?) {
                 self.type = type
                 self.id = id
+                self.candidate = candidate
                 self.title = title
                 self.date = date
                 self.place = place
@@ -430,13 +443,15 @@ public struct TodayPage: Equatable, Sendable {
     /// `yyyy-MM-dd`, in Cologne's time.
     public let date: String
     public let now: Date
+    /// The plan's revision a change to the day sends.
+    public var revision: Int = 0
     public let weather: Weather?
     public let plans: [Plan]
     public let links: [Link]
     public let leave: Leave?
     public let deadline: Deadline?
     public let needs: [Need]
-    public let ideas: [Idea]
+    public var ideas: [Idea]
     /// "morning", "afternoon", "evening"…: which part of the day the ideas are for.
     public let ideasPart: String
     public let free: Free?
@@ -566,5 +581,20 @@ public struct TodayPage: Equatable, Sendable {
         }
         guard let start = value(from), let end = value(to) else { return nil }
         return end - start
+    }
+}
+
+/// What a change to the day did: the new revision, and the words for it with an Undo when it has one.
+public struct DayChange: Equatable, Sendable {
+    public let revision: Int
+    public let id: String?
+    public let label: String?
+    public let undoable: Bool
+
+    public init(revision: Int, id: String?, label: String?, undoable: Bool) {
+        self.revision = revision
+        self.id = id
+        self.label = label
+        self.undoable = undoable
     }
 }

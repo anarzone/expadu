@@ -1114,6 +1114,8 @@ extension Components {
                     public var _type: Swift.String
                     /// - Remark: Generated from `#/components/schemas/TodayResource/saved/ItemsPayload/id`.
                     public var id: Swift.Int
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/saved/ItemsPayload/candidate`.
+                    public var candidate: Swift.String
                     /// - Remark: Generated from `#/components/schemas/TodayResource/saved/ItemsPayload/title`.
                     public var title: Swift.String
                     /// - Remark: Generated from `#/components/schemas/TodayResource/saved/ItemsPayload/date`.
@@ -1129,6 +1131,7 @@ extension Components {
                     /// - Parameters:
                     ///   - _type:
                     ///   - id:
+                    ///   - candidate:
                     ///   - title:
                     ///   - date:
                     ///   - place:
@@ -1137,6 +1140,7 @@ extension Components {
                     public init(
                         _type: Swift.String,
                         id: Swift.Int,
+                        candidate: Swift.String,
                         title: Swift.String,
                         date: Swift.String? = nil,
                         place: Swift.String? = nil,
@@ -1145,6 +1149,7 @@ extension Components {
                     ) {
                         self._type = _type
                         self.id = id
+                        self.candidate = candidate
                         self.title = title
                         self.date = date
                         self.place = place
@@ -1154,6 +1159,7 @@ extension Components {
                     public enum CodingKeys: String, CodingKey {
                         case _type = "type"
                         case id
+                        case candidate
                         case title
                         case date
                         case place

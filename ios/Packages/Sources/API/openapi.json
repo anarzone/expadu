@@ -1696,6 +1696,9 @@
                                         "id": {
                                             "type": "integer"
                                         },
+                                        "candidate": {
+                                            "type": "string"
+                                        },
                                         "title": {
                                             "type": "string"
                                         },
@@ -1727,6 +1730,7 @@
                                     "required": [
                                         "type",
                                         "id",
+                                        "candidate",
                                         "title",
                                         "date",
                                         "place",

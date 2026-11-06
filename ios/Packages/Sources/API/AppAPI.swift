@@ -161,6 +161,38 @@ public struct AppAPI: Sendable {
     }
 
     /// Travel's board around a place.
+    /// One change to the day (done, undone, remove, add, a personal plan, undo), as the web's Today makes it.
+    public func changeDay(revision: Int, action: String, id: String? = nil, date: String? = nil, candidate: String? = nil, change: String? = nil,
+                          name: String? = nil, start: String? = nil, end: String? = nil, location: String? = nil) async throws(APIFailure) -> DayChange {
+        guard let action = Components.Schemas.DayCommandRequest.ActionPayload(rawValue: action) else { throw .unreachable }
+        let input = Components.Schemas.DayCommandRequest(revision: revision, action: action, id: id, change: change, candidate: candidate, date: date,
+                                                         start: start, end: end, name: name, location: location)
+        let output = try await calling { try await client.day_command(body: .json(input)) }
+        switch output {
+        case let .ok(ok):
+            let done = try body { try ok.body.json }
+            return DayChange(revision: done.revision, id: done.change?.id, label: done.change?.label, undoable: done.change?.undoable ?? false)
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case .forbidden: throw .refused("Confirm your email address first.")
+        case let .undocumented(status, _):
+            throw status == 409 ? .refused("Your day changed on another device. Pull to check again.") : failure(status)
+        }
+    }
+
+    /// Save an event for later, or let it go.
+    public func saveEvent(id: Int, startsAt: Date, saved: Bool) async throws(APIFailure) -> Bool {
+        let input = Components.Schemas.SaveEventRequest(eventId: id, occurrenceStart: startsAt, saved: saved)
+        let output = try await calling { try await client.events_save(body: .json(input)) }
+        switch output {
+        case let .ok(ok): return try body { try ok.body.json }.saved
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case .forbidden: throw .refused("Confirm your email address first.")
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
     public func nearby(latitude: Double, longitude: Double) async throws(APIFailure) -> Board {
         let output = try await calling { try await client.travel_nearby(query: .init(lat: latitude, lng: longitude)) }
         switch output {
@@ -185,7 +217,7 @@ public struct AppAPI: Sendable {
         switch output {
         case let .ok(ok):
             let today = try body { try ok.body.json }
-            return TodayPage(
+            var page = TodayPage(
                 date: today.date,
                 now: Self.date(from: today.now) ?? .now,
                 weather: today.weather.map { w in
@@ -210,14 +242,14 @@ public struct AppAPI: Sendable {
                 },
                 needs: today.needs.map { TodayPage.Need(id: $0.id, kind: $0.kind, severity: $0.severity, headline: $0.headline, detail: $0.detail) },
                 ideas: today.ideas.map {
-                    TodayPage.Idea(id: $0.id, title: $0.title, category: $0.category, emoji: $0.emoji, startsAt: $0.startsAt.flatMap(Self.date(from:)),
+                    TodayPage.Idea(id: $0.id, candidate: $0.candidate, saved: $0.saved, title: $0.title, category: $0.category, emoji: $0.emoji, startsAt: $0.startsAt.flatMap(Self.date(from:)),
                                    endsAt: $0.endsAt.flatMap(Self.date(from:)), timed: $0.timed, untimed: $0.untimed, tomorrow: $0.tomorrow,
                                    price: $0.price, place: $0.place, area: $0.area)
                 },
                 ideasPart: today.ideasPart,
                 free: today.free.map { f in
                     TodayPage.Free(anchorTitle: f.anchor?.title, anchorArea: f.anchor?.area, anchorEnd: f.anchor?.end, near: f.near, at: f.at,
-                                   places: f.places.map { TodayPage.Free.Place(id: $0.id, name: $0.name, kind: $0.kind, label: $0.label, km: $0.km, openUntil: $0.openUntil) })
+                                   places: f.places.map { TodayPage.Free.Place(id: $0.id, candidate: $0.candidate, name: $0.name, kind: $0.kind, label: $0.label, km: $0.km, openUntil: $0.openUntil, latitude: $0.lat, longitude: $0.lng) })
                 },
                 paperwork: today.paperwork.map {
                     TodayPage.Paperwork(processTitle: $0.processTitle, title: $0.title, ready: $0.ready, total: $0.total, process: $0.process)
@@ -227,13 +259,15 @@ public struct AppAPI: Sendable {
                 },
                 saved: today.saved.map { s in
                     TodayPage.Saved(count: s.count, items: s.items.map {
-                        TodayPage.Saved.Item(type: $0._type, id: $0.id, title: $0.title, date: $0.date, place: $0.place, label: $0.label, area: $0.area)
+                        TodayPage.Saved.Item(type: $0._type, id: $0.id, candidate: $0.candidate, title: $0.title, date: $0.date, place: $0.place, label: $0.label, area: $0.area)
                     })
                 },
                 tomorrowDate: today.comingUp.tomorrow.date,
                 tomorrow: today.comingUp.tomorrow.plans.map { TodayPage.Later(title: $0.title, place: $0.place, start: $0.start) },
                 later: today.comingUp.later.map { TodayPage.Later(date: $0.date, title: $0.title, place: $0.place, start: $0.start) }
             )
+            page.revision = today.revision
+            return page
         case .unauthorized: throw .signedOut
         case let .unprocessableContent(refusal): throw refused(refusal)
         case let .undocumented(status, _): throw failure(status)

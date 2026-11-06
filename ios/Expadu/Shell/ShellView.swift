@@ -47,6 +47,7 @@ struct ShellView: View {
     @State private var composer: ComposerOpening?
     @State private var dictation = Dictation()
     @State private var talk = Talk.idle
+    @State private var safeBottom: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The hold on the Composer button: listening, or about to cancel when the finger slides away.
@@ -80,28 +81,28 @@ struct ShellView: View {
             scrolled: scrolled
         ))
         .background(Palette.canvas)
-        // Measured from the screen's own edge, as the canvas: the bar 21pt up, the talk bubble 104pt.
-        .overlay {
-            Color.clear
-                .overlay(alignment: .bottom) {
-                    GlassEffectContainer(spacing: 10) {
-                        HStack(alignment: .center, spacing: 10) {
-                            SectionBar(selection: $tab, compact: $compact)
-                            Spacer(minLength: 0)
-                            ComposerButton(talk: $talk, dictation: dictation, open: { composer = ComposerOpening(words: $0) })
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 21)
+        .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { safeBottom = $0 }
+        // On the page itself, so the glass bends what scrolls under it; set from the screen's own edge,
+        // as the canvas: the bar 21pt up, the talk bubble 104pt.
+        .overlay(alignment: .bottom) {
+            GlassEffectContainer(spacing: 10) {
+                HStack(alignment: .center, spacing: 10) {
+                    SectionBar(selection: $tab, compact: $compact)
+                    Spacer(minLength: 0)
+                    ComposerButton(talk: $talk, dictation: dictation, open: { composer = ComposerOpening(words: $0) })
                 }
-                .overlay(alignment: .bottomTrailing) {
-                    if talk != .idle {
-                        TalkBubble(talk: talk, dictation: dictation)
-                            .padding(.trailing, 16).padding(.bottom, 104)
-                            .transition(.scale(scale: 0.7, anchor: .bottomTrailing).combined(with: .opacity))
-                    }
-                }
-                .ignoresSafeArea()
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, max(0, 21 - safeBottom))
+            .offset(y: max(0, safeBottom - 21))
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if talk != .idle {
+                TalkBubble(talk: talk, dictation: dictation)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, max(0, 104 - safeBottom))
+                    .transition(.scale(scale: 0.7, anchor: .bottomTrailing).combined(with: .opacity))
+            }
         }
         .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.3), value: talk)
         .sheet(item: $composer) { opening in
@@ -125,56 +126,95 @@ struct ComposerOpening: Identifiable {
     let words: String?
 }
 
-/// The sections in a Liquid Glass capsule; the current one sits in a lens that slides between them.
-/// Shrunk, only the current section shows, as a glass circle that grows back when tapped.
+/// The sections in a Liquid Glass capsule, as iOS 26's own tab bar: the current one sits in a lens;
+/// press and slide along the bar and the lens follows the finger, a little larger, then settles on
+/// the section it's let go over. Shrunk while scrolling down, only the current section shows, as a
+/// glass circle that grows back when tapped.
 private struct SectionBar: View {
     @Binding var selection: AppTab
     @Binding var compact: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Namespace private var lens
+    /// Where the finger is along the bar while it's pressed.
+    @State private var finger: CGFloat?
+    @State private var width: CGFloat = 290
+
+    private let tabs = AppTab.allCases
+    private var slot: CGFloat { width / CGFloat(tabs.count) }
+
+    /// The section under the finger, else the current one.
+    private var hovered: AppTab {
+        guard let finger else { return selection }
+        return tabs[min(tabs.count - 1, max(0, Int(finger / slot)))]
+    }
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(AppTab.allCases) { section in
-                if !compact || section == selection {
-                    item(section)
+        Group {
+            if compact {
+                Button { withAnimation(.spring(duration: 0.4, bounce: 0.2)) { compact = false } } label: {
+                    Image(systemName: selection.symbol).font(.system(size: 19, weight: .medium))
+                        .foregroundStyle(Palette.navTeal)
+                        .frame(width: 48, height: 48).contentShape(.circle)
                 }
+                .buttonStyle(PressStyle())
+                .accessibilityLabel("\(selection.title), show all sections")
+            } else {
+                ZStack(alignment: .leading) {
+                    lens
+                    HStack(spacing: 0) {
+                        ForEach(tabs) { section in item(section) }
+                    }
+                }
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+                .contentShape(.capsule)
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { drag in
+                            withAnimation(.interactiveSpring(response: 0.25, dampingFraction: 0.8)) { finger = drag.location.x }
+                        }
+                        .onEnded { drag in
+                            let chosen = tabs[min(tabs.count - 1, max(0, Int(drag.location.x / slot)))]
+                            withAnimation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.3)) {
+                                selection = chosen
+                                finger = nil
+                            }
+                        }
+                )
+                .accessibilityElement(children: .contain)
             }
         }
         .padding(4)
         .frame(height: compact ? 56 : 62)
         .frame(maxWidth: compact ? 56 : 298)
         .glassEffect(.regular.interactive(), in: .capsule)
-        .sensoryFeedback(.selection, trigger: selection)
+        .sensoryFeedback(.selection, trigger: hovered)
+    }
+
+    /// The lens: under the current section at rest; under the finger, larger, while pressed.
+    private var lens: some View {
+        let pressed = finger != nil
+        let x = pressed ? min(max((finger ?? 0) - slot / 2, -4), width - slot + 4) : CGFloat(tabs.firstIndex(of: selection) ?? 0) * slot
+        return Capsule()
+            .fill(Color(hex: 0x787062, opacity: pressed ? 0.1 : 0.16))
+            .glassEffect(pressed ? .regular.interactive() : .identity, in: .capsule)
+            .frame(width: slot, height: 54)
+            .scaleEffect(pressed ? 1.12 : 1)
+            .offset(x: x)
+            .allowsHitTesting(false)
     }
 
     private func item(_ section: AppTab) -> some View {
-        let on = selection == section
-        return Button {
-            if compact {
-                withAnimation(.spring(duration: 0.4, bounce: 0.2)) { compact = false }
-            } else {
-                withAnimation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.25)) { selection = section }
-            }
-        } label: {
-            VStack(spacing: 2) {
-                Image(systemName: section.symbol).font(.system(size: 19, weight: .medium)).frame(height: 24)
-                if !compact {
-                    Text(section.title).font(.system(size: 10, weight: on ? .semibold : .medium)).fixedSize()
-                }
-            }
-            .foregroundStyle(on ? Palette.navTeal : Palette.text)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background {
-                if on && !compact {
-                    Capsule().fill(Color(hex: 0x787062, opacity: 0.16)).matchedGeometryEffect(id: "lens", in: lens)
-                }
-            }
-            .contentShape(.capsule)
+        let on = hovered == section
+        return VStack(spacing: 2) {
+            Image(systemName: section.symbol).font(.system(size: 19, weight: .medium)).frame(height: 24)
+            Text(section.title).font(.system(size: 10, weight: on ? .semibold : .medium)).fixedSize()
         }
-        .buttonStyle(PressStyle())
+        .foregroundStyle(on ? Palette.navTeal : Palette.text)
+        .scaleEffect(on && finger != nil ? 1.08 : 1)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(section.title)
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityAddTraits(selection == section ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { selection = section }
     }
 }
 

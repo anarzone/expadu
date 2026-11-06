@@ -94,12 +94,13 @@ class TodayResource extends JsonResource
             ] : null,
             /** @var array{kind: string, title: string, last_at: string|null}|null */
             'continuation' => $this->resource['continuation'] ?? null,
-            /** @var array{count: int, items: array<int, array{type: string, id: int, title: string, date: string|null, place: string|null, label: string|null, area: string|null}>}|null */
+            /** @var array{count: int, items: array<int, array{type: string, id: int, candidate: string, title: string, date: string|null, place: string|null, label: string|null, area: string|null}>}|null */
             'saved' => is_array($this->resource['saved'] ?? null) ? [
                 'count' => (int) $this->resource['saved']['count'],
                 'items' => array_map(fn (array $item) => [
                     'type' => (string) $item['type'],
                     'id' => (int) $item['id'],
+                    'candidate' => $item['type'] === 'place' ? 'spot:'.$item['id'] : 'event:'.$item['id'].(isset($item['occurrence_start']) ? ':'.Carbon::parse($item['occurrence_start'])->getTimestamp() : ''),
                     'title' => (string) $item['title'],
                     'date' => $item['date'] ?? null,
                     'place' => $item['place'] ?? null,
