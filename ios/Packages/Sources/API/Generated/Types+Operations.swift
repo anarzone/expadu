@@ -7,15 +7,7 @@
 #if compiler(>=6.4)
 @diagnose(UnusedImportAccess, as: ignored)
 #endif
-public import struct Foundation.URL
-#if compiler(>=6.4)
-@diagnose(UnusedImportAccess, as: ignored)
-#endif
-public import struct Foundation.Data
-#if compiler(>=6.4)
-@diagnose(UnusedImportAccess, as: ignored)
-#endif
-public import struct Foundation.Date
+public import Foundation
 /// API operations, with input and output types, generated from `#/paths` in the OpenAPI document.
 public enum Operations {
     /// - Remark: HTTP `GET /me`.
@@ -1305,6 +1297,186 @@ public enum Operations {
             /// Validation error
             ///
             /// - Remark: Generated from `#/paths//auth/exchange/post(signIn.exchange)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Sign in with Apple: the sheet's identity token, checked against Apple's keys and the nonce
+    /// the app made. The same Apple ID always opens the same account; a verified address joins one
+    ///
+    /// - Remark: HTTP `POST /auth/apple`.
+    /// - Remark: Generated from `#/paths//auth/apple/post(signIn.apple)`.
+    public enum SignIn_apple {
+        public static let id: Swift.String = "signIn.apple"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/auth/apple/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignIn_apple.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignIn_apple.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.SignIn_apple.Input.Headers
+            /// - Remark: Generated from `#/paths/auth/apple/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/apple/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/auth/apple/POST/requestBody/json/identity_token`.
+                    public var identityToken: Swift.String
+                    /// - Remark: Generated from `#/paths/auth/apple/POST/requestBody/json/nonce`.
+                    public var nonce: Swift.String
+                    /// - Remark: Generated from `#/paths/auth/apple/POST/requestBody/json/name`.
+                    public var name: Swift.String?
+                    /// - Remark: Generated from `#/paths/auth/apple/POST/requestBody/json/device_name`.
+                    public var deviceName: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - identityToken:
+                    ///   - nonce:
+                    ///   - name:
+                    ///   - deviceName:
+                    public init(
+                        identityToken: Swift.String,
+                        nonce: Swift.String,
+                        name: Swift.String? = nil,
+                        deviceName: Swift.String
+                    ) {
+                        self.identityToken = identityToken
+                        self.nonce = nonce
+                        self.name = name
+                        self.deviceName = deviceName
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case identityToken = "identity_token"
+                        case nonce
+                        case name
+                        case deviceName = "device_name"
+                    }
+                }
+                /// - Remark: Generated from `#/paths/auth/apple/POST/requestBody/content/application\/json`.
+                case json(Operations.SignIn_apple.Input.Body.JsonPayload)
+            }
+            public var body: Operations.SignIn_apple.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.SignIn_apple.Input.Headers = .init(),
+                body: Operations.SignIn_apple.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/apple/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/auth/apple/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.SignInResource)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.SignInResource {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SignIn_apple.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SignIn_apple.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// `SignInResource`
+            ///
+            /// - Remark: Generated from `#/paths//auth/apple/post(signIn.apple)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.SignIn_apple.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.SignIn_apple.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//auth/apple/post(signIn.apple)/responses/422`.
             ///
             /// HTTP response code: `422 unprocessableContent`.
             case unprocessableContent(Components.Responses.ValidationException)

@@ -341,6 +341,67 @@
                 }
             }
         },
+        "/auth/apple": {
+            "post": {
+                "operationId": "signIn.apple",
+                "summary": "Sign in with Apple: the sheet's identity token, checked against Apple's keys and the nonce\nthe app made. The same Apple ID always opens the same account; a verified address joins one",
+                "tags": [
+                    "SignIn"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "identity_token": {
+                                        "type": "string",
+                                        "maxLength": 8192
+                                    },
+                                    "nonce": {
+                                        "type": "string",
+                                        "minLength": 32,
+                                        "maxLength": 128
+                                    },
+                                    "name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 255
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "required": [
+                                    "identity_token",
+                                    "nonce",
+                                    "device_name"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SignInResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignInResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/auth/register": {
             "post": {
                 "operationId": "signIn.register",

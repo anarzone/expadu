@@ -7,15 +7,7 @@
 #if compiler(>=6.4)
 @diagnose(UnusedImportAccess, as: ignored)
 #endif
-public import struct Foundation.URL
-#if compiler(>=6.4)
-@diagnose(UnusedImportAccess, as: ignored)
-#endif
-public import struct Foundation.Data
-#if compiler(>=6.4)
-@diagnose(UnusedImportAccess, as: ignored)
-#endif
-public import struct Foundation.Date
+public import Foundation
 /// A type that performs HTTP operations defined by the OpenAPI document.
 public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /me`.
@@ -52,6 +44,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/exchange`.
     /// - Remark: Generated from `#/paths//auth/exchange/post(signIn.exchange)`.
     func signIn_exchange(_ input: Operations.SignIn_exchange.Input) async throws -> Operations.SignIn_exchange.Output
+    /// Sign in with Apple: the sheet's identity token, checked against Apple's keys and the nonce
+    /// the app made. The same Apple ID always opens the same account; a verified address joins one
+    ///
+    /// - Remark: HTTP `POST /auth/apple`.
+    /// - Remark: Generated from `#/paths//auth/apple/post(signIn.apple)`.
+    func signIn_apple(_ input: Operations.SignIn_apple.Input) async throws -> Operations.SignIn_apple.Output
     /// A new account, signed in, its verification link on the way (as the web's)
     ///
     /// - Remark: HTTP `POST /auth/register`.
@@ -141,6 +139,20 @@ extension APIProtocol {
         body: Operations.SignIn_exchange.Input.Body
     ) async throws -> Operations.SignIn_exchange.Output {
         try await signIn_exchange(Operations.SignIn_exchange.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Sign in with Apple: the sheet's identity token, checked against Apple's keys and the nonce
+    /// the app made. The same Apple ID always opens the same account; a verified address joins one
+    ///
+    /// - Remark: HTTP `POST /auth/apple`.
+    /// - Remark: Generated from `#/paths//auth/apple/post(signIn.apple)`.
+    public func signIn_apple(
+        headers: Operations.SignIn_apple.Input.Headers = .init(),
+        body: Operations.SignIn_apple.Input.Body
+    ) async throws -> Operations.SignIn_apple.Output {
+        try await signIn_apple(Operations.SignIn_apple.Input(
             headers: headers,
             body: body
         ))

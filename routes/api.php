@@ -12,6 +12,7 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
     Route::post('auth/token', [SignInController::class, 'token'])->middleware('throttle:login');
     Route::post('auth/two-factor', [SignInController::class, 'twoFactor'])->middleware('throttle:app-two-factor');
     Route::post('auth/exchange', [SignInController::class, 'exchange'])->middleware('throttle:login');
+    Route::post('auth/apple', [SignInController::class, 'apple'])->middleware('throttle:login');
     Route::post('auth/register', [SignInController::class, 'register'])->middleware('throttle:fortify-forms');
     Route::post('auth/forgot-password', [SignInController::class, 'forgotPassword'])->middleware('throttle:fortify-forms');
 
