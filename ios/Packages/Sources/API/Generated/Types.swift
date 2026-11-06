@@ -93,6 +93,26 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /today-rank/later`.
     /// - Remark: Generated from `#/paths//today-rank/later/post(todayRank.later)`.
     func todayRank_later(_ input: Operations.TodayRank_later.Input) async throws -> Operations.TodayRank_later.Output
+    /// I'm on my way: the trip starts on that way. A trip already running asks first (409)
+    ///
+    /// - Remark: HTTP `POST /today/trip`.
+    /// - Remark: Generated from `#/paths//today/trip/post(todayTrip.start)`.
+    func todayTrip_start(_ input: Operations.TodayTrip_start.Input) async throws -> Operations.TodayTrip_start.Output
+    /// I'm there, or the trip is over: it ends
+    ///
+    /// - Remark: HTTP `DELETE /today/trip`.
+    /// - Remark: Generated from `#/paths//today/trip/delete(todayTrip.end)`.
+    func todayTrip_end(_ input: Operations.TodayTrip_end.Input) async throws -> Operations.TodayTrip_end.Output
+    /// Use this (Other ways): the plan keeps that way; the card shows it from now on
+    ///
+    /// - Remark: HTTP `POST /today/way`.
+    /// - Remark: Generated from `#/paths//today/way/post(todayTrip.keep)`.
+    func todayTrip_keep(_ input: Operations.TodayTrip_keep.Input) async throws -> Operations.TodayTrip_keep.Output
+    /// Undo Use this: the way the plan had before, or none
+    ///
+    /// - Remark: HTTP `DELETE /today/way/{undo}`.
+    /// - Remark: Generated from `#/paths//today/way/{undo}/delete(todayTrip.undo)`.
+    func todayTrip_undo(_ input: Operations.TodayTrip_undo.Input) async throws -> Operations.TodayTrip_undo.Output
     /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
     ///
     /// - Remark: HTTP `GET /travel/nearby`.
@@ -292,6 +312,52 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//today-rank/later/post(todayRank.later)`.
     public func todayRank_later(headers: Operations.TodayRank_later.Input.Headers = .init()) async throws -> Operations.TodayRank_later.Output {
         try await todayRank_later(Operations.TodayRank_later.Input(headers: headers))
+    }
+    /// I'm on my way: the trip starts on that way. A trip already running asks first (409)
+    ///
+    /// - Remark: HTTP `POST /today/trip`.
+    /// - Remark: Generated from `#/paths//today/trip/post(todayTrip.start)`.
+    public func todayTrip_start(
+        headers: Operations.TodayTrip_start.Input.Headers = .init(),
+        body: Operations.TodayTrip_start.Input.Body
+    ) async throws -> Operations.TodayTrip_start.Output {
+        try await todayTrip_start(Operations.TodayTrip_start.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// I'm there, or the trip is over: it ends
+    ///
+    /// - Remark: HTTP `DELETE /today/trip`.
+    /// - Remark: Generated from `#/paths//today/trip/delete(todayTrip.end)`.
+    public func todayTrip_end(headers: Operations.TodayTrip_end.Input.Headers = .init()) async throws -> Operations.TodayTrip_end.Output {
+        try await todayTrip_end(Operations.TodayTrip_end.Input(headers: headers))
+    }
+    /// Use this (Other ways): the plan keeps that way; the card shows it from now on
+    ///
+    /// - Remark: HTTP `POST /today/way`.
+    /// - Remark: Generated from `#/paths//today/way/post(todayTrip.keep)`.
+    public func todayTrip_keep(
+        headers: Operations.TodayTrip_keep.Input.Headers = .init(),
+        body: Operations.TodayTrip_keep.Input.Body
+    ) async throws -> Operations.TodayTrip_keep.Output {
+        try await todayTrip_keep(Operations.TodayTrip_keep.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Undo Use this: the way the plan had before, or none
+    ///
+    /// - Remark: HTTP `DELETE /today/way/{undo}`.
+    /// - Remark: Generated from `#/paths//today/way/{undo}/delete(todayTrip.undo)`.
+    public func todayTrip_undo(
+        path: Operations.TodayTrip_undo.Input.Path,
+        headers: Operations.TodayTrip_undo.Input.Headers = .init()
+    ) async throws -> Operations.TodayTrip_undo.Output {
+        try await todayTrip_undo(Operations.TodayTrip_undo.Input(
+            path: path,
+            headers: headers
+        ))
     }
     /// Departures from the stops a short walk from here, soonest first, in KVB's own colours
     ///

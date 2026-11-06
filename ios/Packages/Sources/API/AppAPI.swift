@@ -233,6 +233,58 @@ public struct AppAPI: Sendable {
         }
     }
 
+    /// I'm on my way, on one of the ways Today sent. A trip already running isn't replaced unless asked:
+    /// that comes back as `.running` with where it's going.
+    public func startTrip(way: TodayPage.Way, latitude: Double?, longitude: Double?, replace: Bool = false) async throws(APIFailure) -> TripStart {
+        let input = Components.Schemas.TodayWayRequest(mode: .init(rawValue: way.mode) ?? .transit, departs: way.lines.isEmpty ? nil : way.departs, lat: latitude, lng: longitude, replace: replace)
+        let output = try await calling { try await client.todayTrip_start(body: .json(input)) }
+        switch output {
+        case .ok: return .started
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case .forbidden: throw .refused("Confirm your email address first.")
+        case let .undocumented(status, _):
+            if status == 409 { return .running }
+            throw failure(status)
+        }
+    }
+
+    /// I'm there: the trip ends.
+    public func endTrip() async throws(APIFailure) {
+        let output = try await calling { try await client.todayTrip_end() }
+        switch output {
+        case .ok: return
+        case .unauthorized: throw .signedOut
+        case let .undocumented(status, _): throw failure(status)
+        default: throw .unreachable
+        }
+    }
+
+    /// Use this: the plan keeps that way. Returns what Undo sends.
+    public func keepWay(_ way: TodayPage.Way, latitude: Double?, longitude: Double?) async throws(APIFailure) -> String {
+        let input = Components.Schemas.TodayWayRequest(mode: .init(rawValue: way.mode) ?? .transit, departs: way.lines.isEmpty ? nil : way.departs, lat: latitude, lng: longitude)
+        let output = try await calling { try await client.todayTrip_keep(body: .json(input)) }
+        switch output {
+        case let .ok(ok): return try body { try ok.body.json }.undo
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case .forbidden: throw .refused("Confirm your email address first.")
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
+    /// Undo Use this.
+    public func undoWay(_ undo: String) async throws(APIFailure) {
+        let output = try await calling { try await client.todayTrip_undo(path: .init(undo: undo)) }
+        switch output {
+        case .ok: return
+        case .unauthorized: throw .signedOut
+        case .gone: throw .refused("That can’t be undone any more.")
+        case let .undocumented(status, _): throw failure(status)
+        default: throw .unreachable
+        }
+    }
+
     public func nearby(latitude: Double, longitude: Double) async throws(APIFailure) -> Board {
         let output = try await calling { try await client.travel_nearby(query: .init(lat: latitude, lng: longitude)) }
         switch output {
@@ -307,6 +359,19 @@ public struct AppAPI: Sendable {
                 later: today.comingUp.later.map { TodayPage.Later(date: $0.date, title: $0.title, place: $0.place, start: $0.start) }
             )
             page.revision = today.revision
+            page.leave?.planId = today.leave?.planId
+            page.leave?.ways = today.leave?.ways.enumerated().map { index, way in
+                TodayPage.Way(id: index, leaveTime: way.leaveTime, arriveTime: way.arriveTime, spareMinutes: way.spareMin, status: way.status, mode: way.mode,
+                              lines: way.lines.map { .init(line: $0.line, color: $0.color) }, departs: way.departs, from: way.from,
+                              walkMinutes: way.walkMin, transfers: way.transfers, minutes: way.minutes, inPlan: way.inPlan, live: way.live)
+            } ?? []
+            page.trip = today.trip.map { trip in
+                TodayPage.Trip(to: trip.to, arriveTime: trip.arriveTime, startTime: trip.startTime, legs: trip.legs.compactMap { leg in
+                    guard let departAt = Self.date(from: leg.departAt), let arriveAt = Self.date(from: leg.arriveAt) else { return nil }
+                    return TodayPage.Trip.Leg(mode: leg.mode, line: leg.line, color: leg.color, headsign: leg.headsign, from: leg.from, to: leg.to,
+                                              departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes, stops: leg.stops)
+                })
+            }
             page.welcome = today.welcome
             page.personalised = today.personalised
             page.rankPaused = today.rankPaused.map {
@@ -388,3 +453,6 @@ private struct BearerToken: ClientMiddleware {
         return try await next(request, body, baseURL)
     }
 }
+
+/// How starting a trip went: on its way, or another trip is running and they're asked first.
+public enum TripStart: Equatable, Sendable { case started, running }

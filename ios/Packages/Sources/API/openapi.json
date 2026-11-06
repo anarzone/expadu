@@ -853,6 +853,180 @@
                 }
             }
         },
+        "/today/trip": {
+            "post": {
+                "operationId": "todayTrip.start",
+                "summary": "I'm on my way: the trip starts on that way. A trip already running asks first (409)",
+                "tags": [
+                    "TodayTrip"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TodayWayRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "todayTrip.end",
+                "summary": "I'm there, or the trip is over: it ends",
+                "tags": [
+                    "TodayTrip"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/today/way": {
+            "post": {
+                "operationId": "todayTrip.keep",
+                "summary": "Use this (Other ways): the plan keeps that way; the card shows it from now on",
+                "tags": [
+                    "TodayTrip"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TodayWayRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "undo": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "undo"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/today/way/{undo}": {
+            "delete": {
+                "operationId": "todayTrip.undo",
+                "summary": "Undo Use this: the way the plan had before, or none",
+                "tags": [
+                    "TodayTrip"
+                ],
+                "parameters": [
+                    {
+                        "name": "undo",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "undone": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "undone"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "That can\u2019t be undone any more."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/travel/nearby": {
             "get": {
                 "operationId": "travel.nearby",
@@ -1493,6 +1667,12 @@
                             "null"
                         ],
                         "properties": {
+                            "plan_id": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
                             "to": {
                                 "type": "string"
                             },
@@ -1567,9 +1747,93 @@
                             },
                             "live": {
                                 "type": "boolean"
+                            },
+                            "ways": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "leave_time": {
+                                            "type": "string"
+                                        },
+                                        "arrive_time": {
+                                            "type": "string"
+                                        },
+                                        "spare_min": {
+                                            "type": "integer"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "mode": {
+                                            "type": "string"
+                                        },
+                                        "lines": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "line": {
+                                                        "type": "string"
+                                                    },
+                                                    "color": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "line",
+                                                    "color"
+                                                ]
+                                            }
+                                        },
+                                        "departs": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "from": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "walk_min": {
+                                            "type": "integer"
+                                        },
+                                        "transfers": {
+                                            "type": "integer"
+                                        },
+                                        "minutes": {
+                                            "type": "integer"
+                                        },
+                                        "in_plan": {
+                                            "type": "boolean"
+                                        },
+                                        "live": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "leave_time",
+                                        "arrive_time",
+                                        "spare_min",
+                                        "status",
+                                        "mode",
+                                        "lines",
+                                        "departs",
+                                        "from",
+                                        "walk_min",
+                                        "transfers",
+                                        "minutes",
+                                        "in_plan",
+                                        "live"
+                                    ]
+                                }
                             }
                         },
                         "required": [
+                            "plan_id",
                             "to",
                             "start_time",
                             "status",
@@ -1583,7 +1847,107 @@
                             "from",
                             "walk_min",
                             "transfers",
-                            "live"
+                            "live",
+                            "ways"
+                        ]
+                    },
+                    "trip": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "to": {
+                                "type": "string"
+                            },
+                            "arrive_time": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "start_time": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "legs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "mode": {
+                                            "type": "string"
+                                        },
+                                        "line": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "color": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "headsign": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "from": {
+                                            "type": "string"
+                                        },
+                                        "to": {
+                                            "type": "string"
+                                        },
+                                        "depart_at": {
+                                            "type": "string"
+                                        },
+                                        "arrive_at": {
+                                            "type": "string"
+                                        },
+                                        "depart_time": {
+                                            "type": "string"
+                                        },
+                                        "arrive_time": {
+                                            "type": "string"
+                                        },
+                                        "minutes": {
+                                            "type": "integer"
+                                        },
+                                        "stops": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "mode",
+                                        "line",
+                                        "color",
+                                        "headsign",
+                                        "from",
+                                        "to",
+                                        "depart_at",
+                                        "arrive_at",
+                                        "depart_time",
+                                        "arrive_time",
+                                        "minutes",
+                                        "stops"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "to",
+                            "arrive_time",
+                            "start_time",
+                            "legs"
                         ]
                     },
                     "deadline": {
@@ -2133,6 +2497,7 @@
                     "plans",
                     "links",
                     "leave",
+                    "trip",
                     "deadline",
                     "needs",
                     "ideas",
@@ -2144,6 +2509,52 @@
                     "coming_up"
                 ],
                 "title": "TodayResource"
+            },
+            "TodayWayRequest": {
+                "type": "object",
+                "description": "A way of the Leave card's, as Today sent it: on foot, by bike, or which ride.",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "description": "The way, by what it is: on foot, by bike, or a ride and when that ride leaves (a walk's\nleave time moves with the clock; its place in the list can change as the day is worked out again).",
+                        "enum": [
+                            "transit",
+                            "walk",
+                            "bike"
+                        ]
+                    },
+                    "departs": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "Where the phone is: the trip starts there, as on Today.",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -180,
+                        "maximum": 180
+                    },
+                    "replace": {
+                        "type": "boolean",
+                        "description": "Starting while another trip runs replaces it only when the person said so."
+                    }
+                },
+                "required": [
+                    "mode"
+                ],
+                "title": "TodayWayRequest"
             },
             "UserResource": {
                 "type": "object",

@@ -143,6 +143,10 @@ public struct TodayPage: Equatable, Sendable {
         public let walkMinutes: Int?
         public let transfers: Int?
         public let live: Bool
+        /// The way the card shows (0), then Other ways.
+        public var ways: [Way] = []
+        /// The plan it's for.
+        public var planId: String?
 
         public init(to: String, start: String?, status: String, leaveTime: String?, leaveInMinutes: Int?, arriveTime: String?, spareMinutes: Int?, line: String?, color: String?, departs: String?, from: String?, walkMinutes: Int? = nil, transfers: Int? = nil, live: Bool) {
             self.to = to
@@ -176,6 +180,165 @@ public struct TodayPage: Equatable, Sendable {
             }
             let parts = [walk, change].compactMap { $0 }
             return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        }
+    }
+
+    /// One way to the plan, for Other ways.
+    public struct Way: Equatable, Sendable, Identifiable {
+        public struct Line: Equatable, Sendable {
+            public let line: String
+            public let color: String
+
+            public init(line: String, color: String) {
+                self.line = line
+                self.color = color
+            }
+        }
+
+        /// Its place among the ways Today sent: what the server takes it by.
+        public let id: Int
+        public let leaveTime: String
+        public let arriveTime: String
+        public let spareMinutes: Int
+        public let status: String
+        public let mode: String
+        public let lines: [Line]
+        public let departs: String?
+        public let from: String?
+        public let walkMinutes: Int
+        public let transfers: Int
+        public let minutes: Int
+        public let inPlan: Bool
+        public let live: Bool
+
+        public init(id: Int, leaveTime: String, arriveTime: String, spareMinutes: Int, status: String, mode: String, lines: [Line], departs: String?, from: String?,
+                    walkMinutes: Int, transfers: Int, minutes: Int, inPlan: Bool, live: Bool) {
+            self.id = id
+            self.leaveTime = leaveTime
+            self.arriveTime = arriveTime
+            self.spareMinutes = spareMinutes
+            self.status = status
+            self.mode = mode
+            self.lines = lines
+            self.departs = departs
+            self.from = from
+            self.walkMinutes = walkMinutes
+            self.transfers = transfers
+            self.minutes = minutes
+            self.inPlan = inPlan
+            self.live = live
+        }
+
+        /// "12 min spare", "Only 2 min spare", "8 min late".
+        public var spareWords: String {
+            spareMinutes < 0 ? "\(-spareMinutes) min late" : spareMinutes <= 2 ? "Only \(spareMinutes) min spare" : "\(spareMinutes) min spare"
+        }
+
+        /// "4 min walk to the platform · no change", "On foot all the way".
+        public var note: String {
+            if lines.isEmpty { return mode == "bike" ? "By bike all the way" : "On foot all the way · \(minutes) min" }
+            let change = transfers == 0 ? "no change" : transfers == 1 ? "1 change" : "\(transfers) changes"
+            return "\(walkMinutes) min walking · \(change)"
+        }
+    }
+
+    /// The trip they're on: each leg, so the card can say where they are by the clock.
+    public struct Trip: Equatable, Sendable {
+        public struct Leg: Equatable, Sendable {
+            public let mode: String
+            public let line: String?
+            public let color: String?
+            public let headsign: String?
+            public let from: String
+            public let to: String
+            public let departAt: Date
+            public let arriveAt: Date
+            public let departTime: String
+            public let arriveTime: String
+            public let minutes: Int
+            public let stops: Int?
+
+            public init(mode: String, line: String?, color: String?, headsign: String?, from: String, to: String, departAt: Date, arriveAt: Date,
+                        departTime: String, arriveTime: String, minutes: Int, stops: Int?) {
+                self.mode = mode
+                self.line = line
+                self.color = color
+                self.headsign = headsign
+                self.from = from
+                self.to = to
+                self.departAt = departAt
+                self.arriveAt = arriveAt
+                self.departTime = departTime
+                self.arriveTime = arriveTime
+                self.minutes = minutes
+                self.stops = stops
+            }
+
+            public var rides: Bool { mode != "walk" && mode != "bike" }
+
+            /// "Tram 1", "Bus 146", "S-Bahn S6".
+            public var name: String {
+                let kind: String = switch mode {
+                case "tram": "Tram"
+                case "bus": "Bus"
+                case "rail", "regional", "train": "Train"
+                case "suburban": "S-Bahn"
+                case "subway": "U-Bahn"
+                case "bike": "Bike"
+                default: "Walk"
+                }
+                return [kind, line].compactMap { $0 }.joined(separator: " ")
+            }
+        }
+
+        /// The step the card shows now, in the canvas's words.
+        public struct Now: Equatable, Sendable {
+            public let index: Int
+            public let kind: String
+            public let title: String
+            public let sub: String
+            public let big: String
+            public let bigNote: String
+        }
+
+        public let to: String
+        public let arriveTime: String?
+        public let startTime: String?
+        public let legs: [Leg]
+
+        public init(to: String, arriveTime: String?, startTime: String?, legs: [Leg]) {
+            self.to = to
+            self.arriveTime = arriveTime
+            self.startTime = startTime
+            self.legs = legs
+        }
+
+        /// Where they are by the clock: the first leg not yet over; past the last, they're there.
+        public func now(at date: Date) -> Now? {
+            guard let index = legs.firstIndex(where: { $0.arriveAt > date }) else { return nil }
+            return step(index, at: date)
+        }
+
+        /// A step's words, now or as a later one reads (the bars can show any).
+        public func step(_ index: Int, at date: Date) -> Now {
+            let leg = legs[index]
+            let last = index == legs.count - 1
+            let left = { (until: Date) in max(0, Int((until.timeIntervalSince(date) / 60).rounded(.up))) }
+            if leg.rides {
+                return Now(index: index, kind: [leg.name, leg.headsign.map { "→ \($0)" }].compactMap { $0 }.joined(separator: " "),
+                           title: "Get off at \(leg.to)",
+                           sub: date < leg.departAt ? "Leaves \(leg.from) at \(leg.departTime)" : [leg.stops.map { "\($0) stops" }, "there \(leg.arriveTime)"].compactMap { $0 }.joined(separator: " · "),
+                           big: "\(left(date < leg.departAt ? leg.departAt : leg.arriveAt)) min",
+                           bigNote: date < leg.departAt ? "till it leaves" : "till you get off")
+            }
+            let next = legs.indices.contains(index + 1) ? legs[index + 1] : nil
+            if last || next == nil {
+                return Now(index: index, kind: leg.name, title: "To \(to)", sub: "There at \(leg.arriveTime)",
+                           big: "\(left(leg.arriveAt)) min", bigNote: "till you’re there")
+            }
+            return Now(index: index, kind: leg.name, title: "To \(leg.to)",
+                       sub: next.map { "\($0.name) leaves at \($0.departTime)" } ?? "",
+                       big: "\(left(leg.arriveAt)) min", bigNote: "to the stop")
         }
     }
 
@@ -496,12 +659,14 @@ public struct TodayPage: Equatable, Sendable {
     public let weather: Weather?
     public let plans: [Plan]
     public let links: [Link]
-    public let leave: Leave?
+    public var leave: Leave?
     public let deadline: Deadline?
     public let needs: [Need]
     public var ideas: [Idea]
     /// "morning", "afternoon", "evening"…: which part of the day the ideas are for.
     public let ideasPart: String
+    /// The trip they're on, when they started one.
+    public var trip: Trip?
     public let free: Free?
     public let paperwork: Paperwork?
     public let continuation: Continuation?

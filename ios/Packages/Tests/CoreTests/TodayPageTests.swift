@@ -64,4 +64,30 @@ struct TodayPageTests {
         let visa = TodayPage.Deadline(kind: "document_expiry", document: "visa", title: "", date: "2026-10-01", daysRemaining: 1, next: nil, ready: 1, total: 5, process: "blue-card")
         #expect(visa.headline == "Your visa expires tomorrow")
     }
+
+    @Test func theLiveCardSaysWhereTheyAreByTheClock() {
+        let t = { (minutes: Double) in Date(timeIntervalSinceReferenceDate: 800_000_000 + minutes * 60) }
+        let walk = TodayPage.Trip.Leg(mode: "walk", line: nil, color: nil, headsign: nil, from: "Your location", to: "Rudolfplatz", departAt: t(0), arriveAt: t(6),
+                                      departTime: "23:07", arriveTime: "23:13", minutes: 6, stops: nil)
+        let tram = TodayPage.Trip.Leg(mode: "tram", line: "1", color: "#E2001A", headsign: "Weiden West", from: "Rudolfplatz", to: "Stadtgarten", departAt: t(6), arriveAt: t(17),
+                                      departTime: "23:13", arriveTime: "23:24", minutes: 11, stops: 4)
+        let trip = TodayPage.Trip(to: "Dinner with Sara", arriveTime: "23:24", startTime: "23:30", legs: [walk, tram])
+
+        let walking = trip.now(at: t(2))
+        #expect(walking?.title == "To Rudolfplatz")
+        #expect(walking?.sub == "Tram 1 leaves at 23:13")
+        #expect(walking?.big == "4 min")
+        let riding = trip.now(at: t(8))
+        #expect(riding?.kind == "Tram 1 → Weiden West")
+        #expect(riding?.title == "Get off at Stadtgarten")
+        #expect(riding?.big == "9 min")
+        #expect(trip.now(at: t(20)) == nil)
+    }
+
+    @Test func otherWaysSayTheirSpareAndTheirWalk() {
+        let way = TodayPage.Way(id: 1, leaveTime: "23:17", arriveTime: "23:34", spareMinutes: 2, status: "tight", mode: "transit", lines: [.init(line: "1", color: "#E2001A")],
+                                departs: "23:23", from: "Rudolfplatz", walkMinutes: 9, transfers: 0, minutes: 17, inPlan: false, live: true)
+        #expect(way.spareWords == "Only 2 min spare")
+        #expect(way.note == "9 min walking · no change")
+    }
 }

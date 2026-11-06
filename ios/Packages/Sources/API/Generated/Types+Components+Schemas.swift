@@ -734,6 +734,8 @@ extension Components {
             public var links: Components.Schemas.TodayResource.LinksPayload
             /// - Remark: Generated from `#/components/schemas/TodayResource/leave`.
             public struct LeavePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/plan_id`.
+                public var planId: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/TodayResource/leave/to`.
                 public var to: Swift.String
                 /// - Remark: Generated from `#/components/schemas/TodayResource/leave/start_time`.
@@ -762,9 +764,128 @@ extension Components {
                 public var transfers: Swift.Int?
                 /// - Remark: Generated from `#/components/schemas/TodayResource/leave/live`.
                 public var live: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload`.
+                public struct WaysPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/leave_time`.
+                    public var leaveTime: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/arrive_time`.
+                    public var arriveTime: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/spare_min`.
+                    public var spareMin: Swift.Int
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/status`.
+                    public var status: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/mode`.
+                    public var mode: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LinesPayload`.
+                    public struct LinesPayloadPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LinesPayload/line`.
+                        public var line: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LinesPayload/color`.
+                        public var color: Swift.String
+                        /// Creates a new `LinesPayloadPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - line:
+                        ///   - color:
+                        public init(
+                            line: Swift.String,
+                            color: Swift.String
+                        ) {
+                            self.line = line
+                            self.color = color
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case line
+                            case color
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/lines`.
+                    public typealias LinesPayload = [Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LinesPayloadPayload]
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/lines`.
+                    public var lines: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LinesPayload
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/departs`.
+                    public var departs: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/from`.
+                    public var from: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/walk_min`.
+                    public var walkMin: Swift.Int
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/transfers`.
+                    public var transfers: Swift.Int
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/minutes`.
+                    public var minutes: Swift.Int
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/in_plan`.
+                    public var inPlan: Swift.Bool
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/live`.
+                    public var live: Swift.Bool
+                    /// Creates a new `WaysPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - leaveTime:
+                    ///   - arriveTime:
+                    ///   - spareMin:
+                    ///   - status:
+                    ///   - mode:
+                    ///   - lines:
+                    ///   - departs:
+                    ///   - from:
+                    ///   - walkMin:
+                    ///   - transfers:
+                    ///   - minutes:
+                    ///   - inPlan:
+                    ///   - live:
+                    public init(
+                        leaveTime: Swift.String,
+                        arriveTime: Swift.String,
+                        spareMin: Swift.Int,
+                        status: Swift.String,
+                        mode: Swift.String,
+                        lines: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LinesPayload,
+                        departs: Swift.String? = nil,
+                        from: Swift.String? = nil,
+                        walkMin: Swift.Int,
+                        transfers: Swift.Int,
+                        minutes: Swift.Int,
+                        inPlan: Swift.Bool,
+                        live: Swift.Bool
+                    ) {
+                        self.leaveTime = leaveTime
+                        self.arriveTime = arriveTime
+                        self.spareMin = spareMin
+                        self.status = status
+                        self.mode = mode
+                        self.lines = lines
+                        self.departs = departs
+                        self.from = from
+                        self.walkMin = walkMin
+                        self.transfers = transfers
+                        self.minutes = minutes
+                        self.inPlan = inPlan
+                        self.live = live
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case leaveTime = "leave_time"
+                        case arriveTime = "arrive_time"
+                        case spareMin = "spare_min"
+                        case status
+                        case mode
+                        case lines
+                        case departs
+                        case from
+                        case walkMin = "walk_min"
+                        case transfers
+                        case minutes
+                        case inPlan = "in_plan"
+                        case live
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/ways`.
+                public typealias WaysPayload = [Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/leave/ways`.
+                public var ways: Components.Schemas.TodayResource.LeavePayload.WaysPayload
                 /// Creates a new `LeavePayload`.
                 ///
                 /// - Parameters:
+                ///   - planId:
                 ///   - to:
                 ///   - startTime:
                 ///   - status:
@@ -779,7 +900,9 @@ extension Components {
                 ///   - walkMin:
                 ///   - transfers:
                 ///   - live:
+                ///   - ways:
                 public init(
+                    planId: Swift.String? = nil,
                     to: Swift.String,
                     startTime: Swift.String? = nil,
                     status: Swift.String,
@@ -793,8 +916,10 @@ extension Components {
                     from: Swift.String? = nil,
                     walkMin: Swift.Int? = nil,
                     transfers: Swift.Int? = nil,
-                    live: Swift.Bool
+                    live: Swift.Bool,
+                    ways: Components.Schemas.TodayResource.LeavePayload.WaysPayload
                 ) {
+                    self.planId = planId
                     self.to = to
                     self.startTime = startTime
                     self.status = status
@@ -809,8 +934,10 @@ extension Components {
                     self.walkMin = walkMin
                     self.transfers = transfers
                     self.live = live
+                    self.ways = ways
                 }
                 public enum CodingKeys: String, CodingKey {
+                    case planId = "plan_id"
                     case to
                     case startTime = "start_time"
                     case status
@@ -825,10 +952,133 @@ extension Components {
                     case walkMin = "walk_min"
                     case transfers
                     case live
+                    case ways
                 }
             }
             /// - Remark: Generated from `#/components/schemas/TodayResource/leave`.
             public var leave: Components.Schemas.TodayResource.LeavePayload?
+            /// - Remark: Generated from `#/components/schemas/TodayResource/trip`.
+            public struct TripPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/trip/to`.
+                public var to: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/trip/arrive_time`.
+                public var arriveTime: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/trip/start_time`.
+                public var startTime: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload`.
+                public struct LegsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/mode`.
+                    public var mode: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/line`.
+                    public var line: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/color`.
+                    public var color: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/headsign`.
+                    public var headsign: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/from`.
+                    public var from: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/to`.
+                    public var to: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/depart_at`.
+                    public var departAt: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/arrive_at`.
+                    public var arriveAt: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/depart_time`.
+                    public var departTime: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/arrive_time`.
+                    public var arriveTime: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/minutes`.
+                    public var minutes: Swift.Int
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/stops`.
+                    public var stops: Swift.Int?
+                    /// Creates a new `LegsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - mode:
+                    ///   - line:
+                    ///   - color:
+                    ///   - headsign:
+                    ///   - from:
+                    ///   - to:
+                    ///   - departAt:
+                    ///   - arriveAt:
+                    ///   - departTime:
+                    ///   - arriveTime:
+                    ///   - minutes:
+                    ///   - stops:
+                    public init(
+                        mode: Swift.String,
+                        line: Swift.String? = nil,
+                        color: Swift.String? = nil,
+                        headsign: Swift.String? = nil,
+                        from: Swift.String,
+                        to: Swift.String,
+                        departAt: Swift.String,
+                        arriveAt: Swift.String,
+                        departTime: Swift.String,
+                        arriveTime: Swift.String,
+                        minutes: Swift.Int,
+                        stops: Swift.Int? = nil
+                    ) {
+                        self.mode = mode
+                        self.line = line
+                        self.color = color
+                        self.headsign = headsign
+                        self.from = from
+                        self.to = to
+                        self.departAt = departAt
+                        self.arriveAt = arriveAt
+                        self.departTime = departTime
+                        self.arriveTime = arriveTime
+                        self.minutes = minutes
+                        self.stops = stops
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case mode
+                        case line
+                        case color
+                        case headsign
+                        case from
+                        case to
+                        case departAt = "depart_at"
+                        case arriveAt = "arrive_at"
+                        case departTime = "depart_time"
+                        case arriveTime = "arrive_time"
+                        case minutes
+                        case stops
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/TodayResource/trip/legs`.
+                public typealias LegsPayload = [Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/trip/legs`.
+                public var legs: Components.Schemas.TodayResource.TripPayload.LegsPayload
+                /// Creates a new `TripPayload`.
+                ///
+                /// - Parameters:
+                ///   - to:
+                ///   - arriveTime:
+                ///   - startTime:
+                ///   - legs:
+                public init(
+                    to: Swift.String,
+                    arriveTime: Swift.String? = nil,
+                    startTime: Swift.String? = nil,
+                    legs: Components.Schemas.TodayResource.TripPayload.LegsPayload
+                ) {
+                    self.to = to
+                    self.arriveTime = arriveTime
+                    self.startTime = startTime
+                    self.legs = legs
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case to
+                    case arriveTime = "arrive_time"
+                    case startTime = "start_time"
+                    case legs
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TodayResource/trip`.
+            public var trip: Components.Schemas.TodayResource.TripPayload?
             /// - Remark: Generated from `#/components/schemas/TodayResource/deadline`.
             public struct DeadlinePayload: Codable, Hashable, Sendable {
                 /// - Remark: Generated from `#/components/schemas/TodayResource/deadline/kind`.
@@ -1488,6 +1738,7 @@ extension Components {
             ///   - plans:
             ///   - links:
             ///   - leave:
+            ///   - trip:
             ///   - deadline:
             ///   - needs:
             ///   - ideas:
@@ -1508,6 +1759,7 @@ extension Components {
                 plans: Components.Schemas.TodayResource.PlansPayload,
                 links: Components.Schemas.TodayResource.LinksPayload,
                 leave: Components.Schemas.TodayResource.LeavePayload? = nil,
+                trip: Components.Schemas.TodayResource.TripPayload? = nil,
                 deadline: Components.Schemas.TodayResource.DeadlinePayload? = nil,
                 needs: Components.Schemas.TodayResource.NeedsPayload,
                 ideas: Components.Schemas.TodayResource.IdeasPayload,
@@ -1528,6 +1780,7 @@ extension Components {
                 self.plans = plans
                 self.links = links
                 self.leave = leave
+                self.trip = trip
                 self.deadline = deadline
                 self.needs = needs
                 self.ideas = ideas
@@ -1549,6 +1802,7 @@ extension Components {
                 case plans
                 case links
                 case leave
+                case trip
                 case deadline
                 case needs
                 case ideas
@@ -1558,6 +1812,65 @@ extension Components {
                 case continuation
                 case saved
                 case comingUp = "coming_up"
+            }
+        }
+        /// A way of the Leave card's, as Today sent it: on foot, by bike, or which ride.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TodayWayRequest`.
+        public struct TodayWayRequest: Codable, Hashable, Sendable {
+            /// The way, by what it is: on foot, by bike, or a ride and when that ride leaves (a walk's
+            /// leave time moves with the clock; its place in the list can change as the day is worked out again).
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayWayRequest/mode`.
+            @frozen public enum ModePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case transit = "transit"
+                case walk = "walk"
+                case bike = "bike"
+            }
+            /// The way, by what it is: on foot, by bike, or a ride and when that ride leaves (a walk's
+            /// leave time moves with the clock; its place in the list can change as the day is worked out again).
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayWayRequest/mode`.
+            public var mode: Components.Schemas.TodayWayRequest.ModePayload
+            /// - Remark: Generated from `#/components/schemas/TodayWayRequest/departs`.
+            public var departs: Swift.String?
+            /// Where the phone is: the trip starts there, as on Today.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayWayRequest/lat`.
+            public var lat: Swift.Double?
+            /// - Remark: Generated from `#/components/schemas/TodayWayRequest/lng`.
+            public var lng: Swift.Double?
+            /// Starting while another trip runs replaces it only when the person said so.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayWayRequest/replace`.
+            public var replace: Swift.Bool?
+            /// Creates a new `TodayWayRequest`.
+            ///
+            /// - Parameters:
+            ///   - mode: The way, by what it is: on foot, by bike, or a ride and when that ride leaves (a walk's
+            ///   - departs:
+            ///   - lat: Where the phone is: the trip starts there, as on Today.
+            ///   - lng:
+            ///   - replace: Starting while another trip runs replaces it only when the person said so.
+            public init(
+                mode: Components.Schemas.TodayWayRequest.ModePayload,
+                departs: Swift.String? = nil,
+                lat: Swift.Double? = nil,
+                lng: Swift.Double? = nil,
+                replace: Swift.Bool? = nil
+            ) {
+                self.mode = mode
+                self.departs = departs
+                self.lat = lat
+                self.lng = lng
+                self.replace = replace
+            }
+            public enum CodingKeys: String, CodingKey {
+                case mode
+                case departs
+                case lat
+                case lng
+                case replace
             }
         }
         /// - Remark: Generated from `#/components/schemas/UserResource`.
