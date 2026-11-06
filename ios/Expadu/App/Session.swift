@@ -18,6 +18,7 @@ final class Session {
     var isReady: Bool { stored?.account.emailVerified ?? false }
     var initial: String { stored?.account.initial ?? "?" }
     var email: String { stored?.account.email ?? "" }
+    var name: String { stored?.account.name ?? "" }
 
     func adopt(_ session: StoredSession) {
         TokenKeychain.save(session)

@@ -179,6 +179,36 @@ public struct AppAPI: Sendable {
         }
     }
 
+    /// Today: the day, when to leave for the next plan (from where the phone is), notes and ideas.
+    public func today(latitude: Double?, longitude: Double?) async throws(APIFailure) -> TodayPage {
+        let output = try await calling { try await client.today_show(query: .init(lat: latitude, lng: longitude)) }
+        switch output {
+        case let .ok(ok):
+            let today = try body { try ok.body.json }
+            return TodayPage(
+                date: today.date,
+                now: Self.date(from: today.now) ?? .now,
+                weather: today.weather.map { TodayPage.Weather(temperature: $0.temperature, condition: $0.condition, icon: $0.icon) },
+                plans: today.plans.map {
+                    TodayPage.Plan(id: $0.id, title: $0.title, subtitle: $0.subtitle, start: $0.startTime, end: $0.endTime, place: $0.place, state: $0.state, completed: $0.completed)
+                },
+                leave: today.leave.map {
+                    TodayPage.Leave(to: $0.to, start: $0.startTime, status: $0.status, leaveTime: $0.leaveTime, leaveInMinutes: $0.leaveInMin,
+                                    arriveTime: $0.arriveTime, spareMinutes: $0.spareMin, line: $0.line, color: $0.color, departs: $0.departs, from: $0.from, live: $0.live)
+                },
+                needs: today.needs.map { TodayPage.Need(id: $0.id, kind: $0.kind, severity: $0.severity, headline: $0.headline, detail: $0.detail) },
+                ideas: today.ideas.map {
+                    TodayPage.Idea(id: $0.id, title: $0.title, meta: $0.meta, category: $0.category, emoji: $0.emoji, price: $0.price, place: $0.place, area: $0.area)
+                },
+                ideasPart: today.ideasPart,
+                tomorrow: today.tomorrow.plans.map { TodayPage.Later(title: $0.title, place: $0.place, start: $0.start) }
+            )
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
     // MARK: - Reading the answers
 
     private func outcome(_ result: Components.Schemas.SignInResource) throws(APIFailure) -> SignInOutcome {

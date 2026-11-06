@@ -43,6 +43,7 @@ struct ShellView: View {
                     Tab(value: section) {
                         Group {
                             switch section {
+                            case .today: TodayView()
                             case .travel: TravelView()
                             default: SectionPage(title: section.title)
                             }
