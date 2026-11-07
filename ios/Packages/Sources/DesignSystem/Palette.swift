@@ -60,11 +60,23 @@ extension Color {
 
     public init(light: UInt32, dark: UInt32) {
         #if canImport(UIKit)
-        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(Color(hex: dark)) : UIColor(Color(hex: light)) })
+        self.init(uiColor: Self.dynamic(light: light, dark: dark))
         #else
         self.init(hex: light)
         #endif
     }
+
+    #if canImport(UIKit)
+    /// UIKit asks for the colour off the main thread too (SwiftUI resolves colours while it
+    /// animates), so the provider must not belong to the main actor.
+    nonisolated private static func dynamic(light: UInt32, dark: UInt32) -> UIColor {
+        UIColor { traits in rgb(traits.userInterfaceStyle == .dark ? dark : light) }
+    }
+
+    nonisolated private static func rgb(_ hex: UInt32) -> UIColor {
+        UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+    }
+    #endif
 }
 
 extension View {
