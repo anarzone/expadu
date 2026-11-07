@@ -906,6 +906,16 @@ public struct TodayPage: Equatable, Sendable {
         }
     }
 
+    /// How the ideas sit with the day: "After Language class" when every plan left ends before
+    /// their part of the day begins, "Nothing in your plan yet" with none left; tomorrow, its day.
+    public var ideasLead: String? {
+        if ideasPart == "tomorrow" { return tomorrowDate.flatMap { Self.day($0, format: "EEEE") } }
+        guard let last = ahead.last else { return "Nothing in your plan yet" }
+        let begins = ["morning": "06:00", "afternoon": "12:00", "evening": "17:00", "night": "21:00"][ideasPart]
+        guard let begins, let ends = last.end ?? last.start, ends <= begins else { return nil }
+        return "After \(last.title)"
+    }
+
     /// The plans still ahead today, in order.
     public var ahead: [Plan] { plans.filter { !$0.isPast } }
 

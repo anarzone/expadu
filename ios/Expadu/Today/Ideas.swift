@@ -53,9 +53,12 @@ struct Ideas: View {
         }
     }
 
+    /// As the canvas words it: how the ideas sit with their plan, then the weather ("After Language
+    /// class · dry, 5°"). The heading already says when, so this doesn't.
     private var sub: String? {
-        guard let weather = page.weather else { return nil }
-        return "\(page.ideasWhen) · \((weather.summary ?? weather.condition).lowercased()), \(weather.temperature)°"
+        let weather = page.weather.map { "\(($0.summary ?? $0.condition).lowercased()), \($0.temperature)°" }
+        let words = [page.ideasLead, weather].compactMap { $0 }
+        return words.isEmpty ? nil : words.joined(separator: " · ")
     }
 }
 
