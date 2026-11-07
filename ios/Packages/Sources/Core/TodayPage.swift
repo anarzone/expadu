@@ -369,8 +369,10 @@ public struct TodayPage: Equatable, Sendable {
         /// The live card at this moment: the step they're on by the clock, or the one tapped.
         public func live(at date: Date, picked: Int? = nil, guided: Int? = nil) -> Live {
             let steps = steps
-            // Where the phone is, when it's known; else the clock.
-            let current = guided.map { min($0, steps.count - 1) } ?? Self.current(steps, at: date)
+            // On foot the phone says where they are (walking pace varies); on a ride the timetable
+            // does, unless the phone is already further on. Without the phone, the clock.
+            let clock = Self.current(steps, at: date)
+            let current = guided.map { min($0, steps.count - 1) }.map { steps[$0].kind == .walk ? $0 : max($0, clock) } ?? clock
             let k = min(picked ?? current, steps.count - 1)
             let step = steps[k]
             let last = k == steps.count - 1

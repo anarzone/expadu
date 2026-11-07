@@ -781,21 +781,12 @@ struct LiveTrip: View {
     @State private var pulse = false
     /// Our own navigation: the phone's GPS on the trip's lines (Guide).
     @State private var follow = PhoneFollow()
-    @State private var reached = 0
-    @State private var offSince: Date?
     @State private var replanning = false
     @State private var trouble: String?
-    @AppStorage("speakTurns") private var speak = false
-
-    private var guide: Guide { Guide(trip: trip) }
-
-    private func position(at date: Date) -> Guide.Position? {
-        follow.point.flatMap { guide.position(of: $0, at: date, after: reached) }
-    }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 20)) { timeline in
-            let here = position(at: timeline.date)
+            let here = follow.here
             let live = trip.live(at: timeline.date, picked: picked, guided: here?.step)
             let all = trip.steps
             let last = live.current == all.count - 1
@@ -832,7 +823,7 @@ struct LiveTrip: View {
                 if let here, let missed = here.missed {
                     TripTrouble(text: "\(missed.name) at \(missed.departTime) has left.", busy: replanning) { replan() }
                         .padding(.top, 12).transition(.opacity)
-                } else if let here, here.offRoute, let since = offSince, timeline.date.timeIntervalSince(since) > 15 {
+                } else if let here, here.offRoute, let since = follow.offSince, timeline.date.timeIntervalSince(since) > 15 {
                     TripTrouble(text: "You’re off the way, \(TurnRow.distance(Int(here.offBy))) from it.", busy: replanning) { replan() }
                         .padding(.top, 12).transition(.opacity)
                 } else if let trouble {
@@ -864,20 +855,13 @@ struct LiveTrip: View {
         .animation(Motion.spring, value: model.cardNote)
         .sheet(isPresented: $mapOpen) { WayMap(title: "Your way to \(trip.to)", legs: trip.legs, guiding: (trip, follow)) }
         .onAppear {
+            follow.trip = trip
             follow.start()
             guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: false)) { pulse = true }
         }
         .onDisappear { follow.stop() }
-        .onChange(of: follow.point) {
-            guard let here = position(at: .now) else { return }
-            reached = max(reached, here.leg)
-            offSince = here.offRoute ? (offSince ?? .now) : nil
-            if speak, let turn = here.turn, let metres = here.metresToTurn, metres <= 30 {
-                TurnVoice.shared.say(turn.words, once: "\(trip.arriveTime ?? ""):\(here.leg):\(turn.words)")
-            }
-            if here.arrived { TurnVoice.shared.say("You’re there.", once: "\(trip.arriveTime ?? ""):there") }
-        }
+        .onChange(of: trip) { follow.trip = trip }
         .animation(Motion.ios(0.35), value: follow.point)
     }
 
@@ -888,8 +872,7 @@ struct LiveTrip: View {
         Task {
             trouble = await model.newWay(session.api, trip: trip, from: from)
             replanning = false
-            reached = 0
-            offSince = nil
+            follow.restart()
         }
     }
 
@@ -1055,7 +1038,7 @@ struct WayMap: View {
     @State private var following = true
 
     var body: some View {
-        let here = guiding.flatMap { g in g.follow.point.flatMap { Guide(trip: g.trip).position(of: $0, at: .now) } }
+        let here = guiding?.follow.here
         ZStack(alignment: .top) {
             CityMap(lines: WayDrawing.lines(legs, doneBefore: here?.leg), pins: WayDrawing.pins(legs, to: legs.last?.to ?? "", start: guiding == nil),
                     fit: WayDrawing.all(legs), padding: UIEdgeInsets(top: 150, left: 50, bottom: 120, right: 50),

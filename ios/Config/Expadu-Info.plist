@@ -13,6 +13,11 @@
 			</array>
 		</dict>
 	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>audio</string>
+	</array>
 	<key>MapStyleLight</key>
 	<string>$(MAP_STYLE_LIGHT)</string>
 	<key>MapStyleDark</key>

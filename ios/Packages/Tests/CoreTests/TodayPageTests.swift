@@ -143,4 +143,13 @@ struct GuideTests {
         let late = guide.position(of: .init(latitude: 50.9370, longitude: 6.9442), at: start.addingTimeInterval(300))
         #expect(late?.missed?.line == "18")
     }
+
+    @Test func onARideTheTimetableWinsOverAPhoneThatStoodStill() {
+        // The phone hasn't moved from the tram line, but the trip's time is long past.
+        let late = trip.live(at: start.addingTimeInterval(3600), guided: 1)
+        #expect(late.current == trip.steps.count - 1)
+        // On foot, the phone wins: still walking after the clock says the tram has gone.
+        let walking = trip.live(at: start.addingTimeInterval(240), guided: 0)
+        #expect(walking.current == 0)
+    }
 }

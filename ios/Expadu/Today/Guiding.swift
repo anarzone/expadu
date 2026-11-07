@@ -5,14 +5,25 @@ import DesignSystem
 import Maps
 import SwiftUI
 
-/// The phone's position while a trip is live: the device's own GPS, nothing else. Starts when the
-/// live card shows, stops when it goes.
+/// Our navigation while a trip is live: the phone's own GPS on our router's lines (Guide), the
+/// turn coming up, and the turn said aloud when asked. It keeps going with the screen off (a
+/// background activity session, the blue pill in the status bar) and stops when the trip ends.
 @Observable
 final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     private(set) var point: TodayPage.Point?
     private(set) var at: Date?
+    /// Where they are on the trip, worked out on every fix.
+    private(set) var here: Guide.Position?
+    /// When they left the way; nil while on it.
+    private(set) var offSince: Date?
+    /// The trip being guided; set by the live card.
+    var trip: TodayPage.Trip? {
+        didSet { if trip?.legs != oldValue?.legs { reached = 0; offSince = nil; here = nil } }
+    }
+    @ObservationIgnored private var reached = 0
     @ObservationIgnored private let manager = CLLocationManager()
     @ObservationIgnored private var users = 0
+    @ObservationIgnored private var session: CLBackgroundActivitySession?
 
     override init() {
         super.init()
@@ -20,31 +31,66 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
         manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
         manager.distanceFilter = 5
         manager.activityType = .otherNavigation
+        manager.pausesLocationUpdatesAutomatically = false
     }
 
     func start() {
         users += 1
         guard users == 1 else { return }
         if manager.authorizationStatus == .notDetermined { manager.requestWhenInUseAuthorization() }
+        // On the way with the phone in a pocket: fixes keep coming, under "while using the app".
+        session = CLBackgroundActivitySession()
+        manager.allowsBackgroundLocationUpdates = true
+        manager.showsBackgroundLocationIndicator = true
         manager.startUpdatingLocation()
     }
 
     func stop() {
         users = max(0, users - 1)
-        if users == 0 { manager.stopUpdatingLocation() }
+        guard users == 0 else { return }
+        manager.stopUpdatingLocation()
+        manager.allowsBackgroundLocationUpdates = false
+        session?.invalidate()
+        session = nil
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let last = locations.last, last.horizontalAccuracy >= 0, last.horizontalAccuracy < 80 else { return }
         let point = TodayPage.Point(latitude: last.coordinate.latitude, longitude: last.coordinate.longitude)
         let at = last.timestamp
-        Task { @MainActor in
-            self.point = point
-            self.at = at
-        }
+        Task { @MainActor in self.moved(to: point, at: at) }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {}
+
+    private func moved(to point: TodayPage.Point, at date: Date) {
+        self.point = point
+        at = date
+        guard let trip, let here = Guide(trip: trip).position(of: point, at: date, after: reached) else { return }
+        self.here = here
+        reached = max(reached, here.leg)
+        offSince = here.offRoute ? (offSince ?? date) : nil
+        // Said aloud, each once: the turn as it comes close, being off the way, arriving.
+        guard UserDefaults.standard.bool(forKey: "speakTurns") else { return }
+        let key = trip.arriveTime ?? trip.to
+        if let turn = here.turn, let metres = here.metresToTurn, metres <= 30 {
+            TurnVoice.shared.say(turn.words, once: "\(key):\(here.leg):\(turn.words)")
+        }
+        if let since = offSince, date.timeIntervalSince(since) > 15 {
+            TurnVoice.shared.say("You’re off the way.", once: "\(key):off:\(Int(since.timeIntervalSinceReferenceDate))")
+        }
+        if let missed = here.missed {
+            TurnVoice.shared.say("\(missed.name) has left. Open Expadu for a new way.", once: "\(key):missed:\(missed.departTime)")
+        }
+        if here.arrived { TurnVoice.shared.say("You’re there.", once: "\(key):there") }
+    }
+
+    /// A new way started: guide it from its start.
+    func restart() {
+        reached = 0
+        offSince = nil
+        here = nil
+    }
 }
 
 /// Turns spoken with the phone's own voice, each once, when they come close.
@@ -56,6 +102,9 @@ final class TurnVoice {
 
     func say(_ text: String, once key: String) {
         guard said.insert(key).inserted else { return }
+        // Over music or a podcast, briefly quieter, and with the screen off.
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .voicePrompt, options: [.duckOthers, .interruptSpokenAudioAndMixWithOthers])
+        try? AVAudioSession.sharedInstance().setActive(true)
         let words = AVSpeechUtterance(string: text)
         words.voice = AVSpeechSynthesisVoice(language: "en-GB")
         voice.speak(words)

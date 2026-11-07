@@ -53,8 +53,7 @@ class JourneyController extends Controller
             throw new HttpResponseException($response);
         }
         $answer = $response->getData(true);
-        // Only whole journeys, the best six as the planner ranks them; the kept list and the app's keep the same order.
-        $answer['journeys'] = array_slice(array_values(array_filter($answer['journeys'] ?? [], fn ($journey) => is_array($journey) && isset($journey['arrive_at']))), 0, 6);
+        $answer['journeys'] = self::pick(array_values(array_filter($answer['journeys'] ?? [], fn ($journey) => is_array($journey) && isset($journey['arrive_at']))));
 
         $plan = (string) Str::uuid();
         Cache::put($this->key($user->id, $plan), [
@@ -89,6 +88,23 @@ class JourneyController extends Controller
         $start->validateResolved();
 
         return app(TripController::class)->start($start);
+    }
+
+    /**
+     * Six ways in the planner's order, keeping the walk and the bike among them: a walk or a ride
+     * by bike is always worth seeing next to the trams, which otherwise fill every place.
+     * The kept list and the app's keep the same order.
+     *
+     * @param  list<array<string, mixed>>  $journeys
+     * @return list<array<string, mixed>>
+     */
+    private static function pick(array $journeys, int $count = 6): array
+    {
+        $own = array_values(array_filter($journeys, fn (array $journey) => in_array($journey['mode'] ?? null, ['walk', 'bike'], true)));
+        $rides = array_values(array_filter($journeys, fn (array $journey) => ! in_array($journey['mode'] ?? null, ['walk', 'bike'], true)));
+        $keep = [...array_slice($rides, 0, max(0, $count - count($own))), ...$own];
+
+        return array_values(array_filter($journeys, fn (array $journey) => in_array($journey, $keep, true)));
     }
 
     private function key(int $user, string $plan): string
