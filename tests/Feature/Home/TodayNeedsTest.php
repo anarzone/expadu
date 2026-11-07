@@ -3,6 +3,7 @@
 use App\ContextEngine\ActionBus;
 use App\ContextEngine\ScoredAction;
 use App\Home\TodayNeeds;
+use App\Models\Alert;
 use App\Models\PlannedTrip;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -54,6 +55,28 @@ test('what needs them, leave now first, then the brief’s order, in quiet hours
         // The same item keeps its id, which says nothing of what it is.
         ->and(app(TodayNeeds::class)->for($this->user)['items'][1]['id'])->toBe($needs['items'][1]['id'])
         ->and($needs['items'][1]['id'])->toMatch('/^[0-9a-f]{16}$/');
+});
+
+test('a line problem names its line and the alert card it left', function () {
+    $bus = app(ActionBus::class);
+    $bus->insert($this->user, new ScoredAction(type: 'transit_disruption', actionKey: "disruption:news_7:user:{$this->user->id}", score: 70.0,
+        severity: 'major', validUntil: now()->addHours(2), deliverChannels: [ScoredAction::CHANNEL_ALERT_PAGE],
+        payload: ['disruption_id' => 'news_7', 'lines' => ['13', '18'], 'stops_affected' => [], 'on_user_line' => true], createdAt: now()));
+    $bus->insert($this->user, new ScoredAction(type: 'transit_delay', actionKey: "delay:5:Am Butzweilerhof:user:{$this->user->id}", score: 60.0,
+        severity: 'moderate', validUntil: now()->addHours(2), deliverChannels: [ScoredAction::CHANNEL_ALERT_PAGE],
+        payload: ['line' => '5', 'delay_min' => 6], createdAt: now()));
+    // Each left its card on the Alerts page (RecordContextAlert); someone else's for the same line is never theirs.
+    $cards = Alert::query()->where('user_id', $this->user->id)->pluck('id', 'group_key');
+    Alert::factory()->for(User::factory())->create(['subtype' => 'transit_delay', 'group_key' => 'delay:5:Am Butzweilerhof']);
+
+    $items = fn () => collect(app(TodayNeeds::class)->for($this->user)['items'])->keyBy('kind');
+
+    expect($items()['disruption'])->toMatchArray(['line' => '13', 'alert_id' => $cards['disruption:news_7']])
+        ->and($items()['delay'])->toMatchArray(['line' => '5', 'alert_id' => $cards['delay:5:Am Butzweilerhof']]);
+
+    // A card dismissed a moment ago is never pointed at, though the items are kept.
+    Alert::query()->whereKey($cards['delay:5:Am Butzweilerhof'])->update(['dismissed_at' => now()]);
+    expect($items()['delay'])->toMatchArray(['line' => '5', 'alert_id' => null]);
 });
 
 test('what they turned off for push isn’t on Today either', function () {

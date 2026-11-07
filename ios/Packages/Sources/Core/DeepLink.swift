@@ -6,6 +6,9 @@ public enum DeepLink: Equatable, Sendable {
     case paperwork
     case travel
     case lab
+    /// From the trip's Live Activity: I'm on my way, and a new way from here.
+    case tripStart
+    case tripNewWay
 
     public init?(url: URL) {
         let first: String
@@ -22,6 +25,12 @@ public enum DeepLink: Equatable, Sendable {
         case "paperwork": self = .paperwork
         case "travel": self = .travel
         case "lab" where url.scheme == "expadu": self = .lab
+        case "trip" where url.scheme == "expadu":
+            switch url.pathComponents.dropFirst().first {
+            case "start": self = .tripStart
+            case "new-way": self = .tripNewWay
+            default: return nil
+            }
         default: return nil
         }
     }

@@ -4,7 +4,8 @@
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$root"
-php artisan scramble:export
+# The export outgrew the default memory limit as the API grew.
+php -d memory_limit=1G artisan scramble:export
 api=ios/Packages/Sources/API
 swift run --package-path ios/Tools swift-openapi-generator generate \
     --config "$api/openapi-generator-config.yaml" \

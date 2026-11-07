@@ -7,15 +7,7 @@
 #if compiler(>=6.4)
 @diagnose(UnusedImportAccess, as: ignored)
 #endif
-public import struct Foundation.URL
-#if compiler(>=6.4)
-@diagnose(UnusedImportAccess, as: ignored)
-#endif
-public import struct Foundation.Data
-#if compiler(>=6.4)
-@diagnose(UnusedImportAccess, as: ignored)
-#endif
-public import struct Foundation.Date
+public import Foundation
 extension Components {
     /// Types generated from the `#/components/responses` section of the OpenAPI document.
     public enum Responses {
@@ -136,6 +128,51 @@ extension Components {
             /// - Parameters:
             ///   - body: Received HTTP response body
             public init(body: Components.Responses.AuthenticationException.Body) {
+                self.body = body
+            }
+        }
+        public struct AuthorizationException: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/AuthorizationException/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/AuthorizationException/content/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// Error overview.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/AuthorizationException/content/json/message`.
+                    public var message: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - message: Error overview.
+                    public init(message: Swift.String) {
+                        self.message = message
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case message
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/AuthorizationException/content/application\/json`.
+                case json(Components.Responses.AuthorizationException.Body.JsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.AuthorizationException.Body.JsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.AuthorizationException.Body
+            /// Creates a new `AuthorizationException`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.AuthorizationException.Body) {
                 self.body = body
             }
         }

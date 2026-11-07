@@ -13,7 +13,7 @@ public enum Palette {
     public static let border = Color(light: 0xE6DDCB, dark: 0x413F34)
     public static let borderStrong = Color(light: 0x8A8277, dark: 0x8A887C)
     public static let text = Color(light: 0x211D15, dark: 0xF6F5F1)
-    public static let textSoft = Color(light: 0x6E6657, dark: 0xC9C7BD)
+    public static let textSoft = Color(light: 0x6A6253, dark: 0xC9C7BD)
     public static let onAction = Color(hex: 0xFFFFFF)
     public static let action = Color(light: 0xC23B0E, dark: 0xCC4512)
     public static let actionPressed = Color(light: 0xA9320B, dark: 0xBC3E0E)
@@ -22,6 +22,12 @@ public enum Palette {
     public static let conflictBackground = Color(light: 0xFFF0EB, dark: 0x2F1610)
     public static let conflictBorder = Color(light: 0xF2B8A8, dark: 0x6E2F1D)
     public static let conflictText = Color(light: 0xA2300E, dark: 0xFF9E80)
+    /// The canvas's --warn pair: tight, not wrong.
+    public static let warnBackground = Color(light: 0xFFF1D6, dark: 0x3A2A0C)
+    public static let warnText = Color(light: 0x694207, dark: 0xF2C46B)
+    /// The canvas's What to bring (--bring, --bring-k).
+    public static let bringBackground = Color(light: 0xEFEAFC, dark: 0x2A2338)
+    public static let bringText = Color(light: 0x4E3774, dark: 0xCDB3F4)
 
     public static let navTeal = Color(light: 0x00768B, dark: 0x5CCBE0)
     public static let navRust = Color(light: 0xB94B18, dark: 0xFF8A5B)
@@ -54,11 +60,23 @@ extension Color {
 
     public init(light: UInt32, dark: UInt32) {
         #if canImport(UIKit)
-        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(Color(hex: dark)) : UIColor(Color(hex: light)) })
+        self.init(uiColor: Self.dynamic(light: light, dark: dark))
         #else
         self.init(hex: light)
         #endif
     }
+
+    #if canImport(UIKit)
+    /// UIKit asks for the colour off the main thread too (SwiftUI resolves colours while it
+    /// animates), so the provider must not belong to the main actor.
+    nonisolated private static func dynamic(light: UInt32, dark: UInt32) -> UIColor {
+        UIColor { traits in rgb(traits.userInterfaceStyle == .dark ? dark : light) }
+    }
+
+    nonisolated private static func rgb(_ hex: UInt32) -> UIColor {
+        UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+    }
+    #endif
 }
 
 extension View {

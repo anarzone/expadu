@@ -431,11 +431,11 @@ class CandidateRepository
         if ($ids !== null) {
             $occurrences = $occurrences->filter(function (array $occurrence) use ($ids): bool {
                 $event = $occurrence['event'];
-                $id = $event->recurrence !== null
-                    ? "event:{$event->id}:{$occurrence['starts_at']->getTimestamp()}"
-                    : "event:{$event->id}";
+                $timed = "event:{$event->id}:{$occurrence['starts_at']->getTimestamp()}";
 
-                return in_array($id, $ids, true);
+                // A one-off listing is also asked for by its occurrence (the app names every
+                // listing by when it starts); it is still the one candidate, event:{id}.
+                return in_array($timed, $ids, true) || ($event->recurrence === null && in_array("event:{$event->id}", $ids, true));
             });
         }
 

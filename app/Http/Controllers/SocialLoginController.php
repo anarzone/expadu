@@ -11,8 +11,8 @@ use Laravel\Socialite\Facades\Socialite;
 class SocialLoginController extends Controller
 {
     /**
-     * Google only: no Apple sign-in yet (owner, 19 Oct 2026). Apple's
-     * settings stay in config/services.php for when it comes.
+     * Google on the web. Sign in with Apple is the iPhone app's own (Api\V1\SignInController::apple),
+     * which App Review asks for alongside Google (guideline 4.8).
      *
      * @var array<int, string>
      */

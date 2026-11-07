@@ -95,10 +95,11 @@ final class DayBriefs
     /**
      * What a brief says, most important first: each item's own line, the facts it comes from (all a
      * written line may use), whether it's theirs only (never sent to an AI) and its order; and, for
-     * Today's "Needs you" (TodayNeeds), its push type, severity, a short why, a link and what it's
-     * about (never shown). One list for the brief, push and Today.
+     * Today's "Needs you" (TodayNeeds), its push type, severity, a short why, a link, what it's
+     * about (never shown) and, for a problem on their lines, the line. One list for the brief,
+     * push and Today.
      *
-     * @return list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int, type: ?string, severity: string, why: ?string, link: string, about: string, at: ?string}>
+     * @return list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int, type: ?string, severity: string, why: ?string, link: string, about: string, at: ?string, line: ?string}>
      */
     public function items(User $user, CarbonImmutable $day, string $kind): array
     {
@@ -109,7 +110,7 @@ final class DayBriefs
         $add = function (string $kind, string $text, string $facts, bool $own, int $rank, array $more = []) use (&$items): void {
             $items[] = ['id' => 'i'.(count($items) + 1), 'kind' => $kind, 'text' => $text, 'facts' => $facts, 'own' => $own, 'rank' => $rank,
                 'type' => $more['type'] ?? null, 'severity' => $more['severity'] ?? 'minor', 'why' => $more['why'] ?? null,
-                'link' => $more['link'] ?? '/today', 'about' => $more['about'] ?? $kind, 'at' => $more['at'] ?? null];
+                'link' => $more['link'] ?? '/today', 'about' => $more['about'] ?? $kind, 'at' => $more['at'] ?? null, 'line' => $more['line'] ?? null];
         };
         $journey = fn (string $activity): string => '/travel?'.http_build_query(['view' => 'journey', 'activity' => $activity]);
 
@@ -132,11 +133,12 @@ final class DayBriefs
                 ->filter(fn (array $notice): bool => ($notice['scale'] ?? 'minor') === 'major' && array_intersect(array_map('strval', $notice['affected_lines'] ?? []), $mine) !== [])
                 ->take(self::OPEN_NOTICES);
             foreach ($open as $notice) {
-                $on = implode(', ', array_slice(array_values(array_intersect(array_map('strval', $notice['affected_lines'] ?? []), $mine)), 0, 3));
+                $theirs = array_values(array_intersect(array_map('strval', $notice['affected_lines'] ?? []), $mine));
+                $on = implode(', ', array_slice($theirs, 0, 3));
                 $text = (string) ($notice['brief']['headline'] ?? $notice['title'] ?? '');
                 // A brief often names its line already ("Line 18 split…").
                 $add('disruption', preg_match('/\b(lines?|linien?)\b/iu', $text) === 1 ? $text : "Line {$on}: {$text}", "KVB notice on line {$on}, one of their lines: {$text}", false, self::RANK['risk'] * 10000,
-                    ['type' => 'transit_disruption', 'severity' => 'major', 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => "disruption:{$notice['id']}"]);
+                    ['type' => 'transit_disruption', 'severity' => 'major', 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => "disruption:{$notice['id']}", 'line' => $theirs[0]]);
             }
             $told = $open->pluck('id')->map(fn (mixed $id): string => (string) $id)->all();
             foreach ($actions as $action) {
@@ -147,14 +149,17 @@ final class DayBriefs
                 if ($action->type === 'transit_disruption' && ($action->payload['on_user_line'] ?? false) === true && $lines !== '') {
                     $stops = implode(', ', array_slice((array) ($action->payload['stops_affected'] ?? []), 0, 2));
                     $text = "Line {$lines} disrupted".($stops !== '' ? " at {$stops}" : '').'.';
+                    // The line to badge: the first of theirs it names, else the first it names.
+                    $named = array_map('strval', (array) $action->payload['lines']);
                     $add('disruption', $text, "KVB disruption on line {$lines}".($stops !== '' ? ", stops affected: {$stops}" : '').', one of their lines.', false, self::RANK['risk'] * 10000,
-                        ['type' => 'transit_disruption', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => $action->actionKey]);
+                        ['type' => 'transit_disruption', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => $action->actionKey,
+                            'line' => array_values(array_intersect($named, $mine))[0] ?? $named[0] ?? null]);
                 } elseif ($action->type === 'transit_delay' && is_string($action->payload['line'] ?? null) && (int) ($action->payload['delay_min'] ?? 0) > 0) {
                     $delay = (int) $action->payload['delay_min'];
                     $stop = (string) ($action->payload['stop_id'] ?? '');
                     $add('delay', "Line {$action->payload['line']} running {$delay} min late".($stop !== '' ? " at {$stop}" : '').'.',
                         "Line {$action->payload['line']} running {$delay} min late".($stop !== '' ? " at {$stop}" : '').', one of their lines.', false, self::RANK['risk'] * 10000 + 1,
-                        ['type' => 'transit_delay', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => $action->actionKey]);
+                        ['type' => 'transit_delay', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => $action->actionKey, 'line' => $action->payload['line']]);
                 } elseif ($action->type === 'weather_alert' && is_string($action->payload['alert']['summary'] ?? null)) {
                     $add('weather', $action->payload['alert']['summary'].'.', 'Weather today: '.$action->payload['alert']['summary'].'.', false, self::RANK['weather'] * 10000,
                         ['type' => 'weather_alert', 'severity' => $action->severity, 'link' => '/travel', 'about' => $action->actionKey]);
