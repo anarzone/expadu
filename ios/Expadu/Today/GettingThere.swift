@@ -23,6 +23,8 @@ struct GettingThere: View {
     @State private var starting = false
     @State private var replaceAsked = false
     @State private var startProblem: String?
+    /// A walking way, turn by turn in place (Apple's walking route).
+    @State private var walking = WalkingRoute()
 
     private var idea: TodayPage.Idea { listing.idea }
     private var way: TodayPage.Way? { plan.flatMap { $0.ways.indices.contains(picked) ? $0.ways[picked] : $0.ways.first } }
@@ -52,7 +54,8 @@ struct GettingThere: View {
         }
         .background(Palette.canvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $mapOpen) { if let way { WayMap(title: "Your way to \(idea.place ?? idea.title)", legs: way.legs) } }
+        .sheet(isPresented: $mapOpen) { if let way { WayMap(title: "Your way to \(idea.place ?? idea.title)", legs: way.legs, place: idea.place ?? idea.title, walk: onFoot(way) ? walking.route : nil) } }
+        .task(id: "\(plan?.plan ?? "")-\(picked)") { await walk() }
         .confirmationDialog("Replace the trip you’re on?", isPresented: $replaceAsked, titleVisibility: .visible) {
             Button("Replace") { start(replace: true) }
             Button("Keep", role: .cancel) {}
@@ -105,7 +108,7 @@ struct GettingThere: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
         }
         Button { mapOpen = true } label: {
-            WayPreview(way: way, to: idea.place ?? idea.title)
+            WayPreview(way: way, to: idea.place ?? idea.title, walk: onFoot(way) ? walking.route : nil)
                 .frame(height: 190)
                 .clipShape(.rect(cornerRadius: 18))
                 .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(Palette.border) }
@@ -131,7 +134,11 @@ struct GettingThere: View {
                             .padding(.horizontal, 10).frame(height: 26)
                             .background(spareTint(way), in: .capsule)
                     }
-                    StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil))
+                    if onFoot(way), let route = walking.route, let end = destination {
+                        WalkTurns(route: route, to: idea.place ?? idea.title, point: end)
+                    } else {
+                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil))
+                    }
                 }
                 .padding(.top, 14).padding(.horizontal, 18).padding(.bottom, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -266,6 +273,22 @@ struct GettingThere: View {
         return rows
     }
 
+    // MARK: On foot
+
+    private func onFoot(_ way: TodayPage.Way) -> Bool { way.lines.isEmpty && way.mode == "walk" }
+
+    private var destination: TodayPage.Point? {
+        guard let latitude = listing.latitude, let longitude = listing.longitude else { return nil }
+        return TodayPage.Point(latitude: latitude, longitude: longitude)
+    }
+
+    /// A walking way's turns, from where its walk starts.
+    private func walk() async {
+        guard let way, onFoot(way), let end = destination,
+              let first = way.legs.first?.polyline.flatMap({ Polyline.decode($0).first }) else { return }
+        await walking.load(from: TodayPage.Point(latitude: first.latitude, longitude: first.longitude), to: end)
+    }
+
     // MARK: Start
 
     private func start(replace: Bool) {
@@ -345,14 +368,20 @@ private struct KnowRow: View {
 private struct WayPreview: View {
     let way: TodayPage.Way
     let to: String
+    /// On foot: Apple's walking route, drawn instead of the planner's line.
+    var walk: MKRoute?
 
     var body: some View {
         let paths = way.legs.map { leg in (leg, (leg.polyline.map { Polyline.decode($0) } ?? []).map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }) }
         let all = paths.flatMap(\.1)
         Map(initialPosition: Self.position(all), interactionModes: []) {
+            if let walk {
+                MapPolyline(walk.polyline)
+                    .stroke(Color(hex: 0x6A6253), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+            }
             ForEach(Array(paths.enumerated()), id: \.offset) { _, item in
                 let (leg, points) = item
-                if points.count > 1 {
+                if points.count > 1, walk == nil || leg.rides {
                     MapPolyline(coordinates: points)
                         .stroke(leg.rides ? LineLook(hex: leg.color ?? "#1A4CD4").deep : Palette.textSoft,
                                 style: StrokeStyle(lineWidth: leg.rides ? 5 : 3.5, lineCap: .round, lineJoin: .round, dash: leg.rides ? [] : [1, 6]))

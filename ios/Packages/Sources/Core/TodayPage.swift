@@ -328,6 +328,11 @@ public struct TodayPage: Equatable, Sendable {
 
             public var rides: Bool { mode != "walk" && mode != "bike" }
 
+            /// Where the leg ends, from its route line.
+            public var end: Point? {
+                polyline.flatMap { Polyline.decode($0).last }.map { Point(latitude: $0.latitude, longitude: $0.longitude) }
+            }
+
             /// "Tram 1", "Bus 146", "S-Bahn S6".
             public var name: String {
                 let kind: String = switch mode {
@@ -403,6 +408,9 @@ public struct TodayPage: Equatable, Sendable {
         public let color: String?
         /// "Tram 1", for "Tram 1 at 23:58".
         public let name: String
+        /// Where this step's walk ends, and its name: Apple Maps walks you there.
+        public var walkTo: Point?
+        public var walkToName: String?
 
         /// Walk to the stop, each ride, get off (with the walk on), and you're there.
         public static func of(_ legs: [Trip.Leg], to: String, start: String?) -> [Step] {
@@ -417,16 +425,29 @@ public struct TodayPage: Equatable, Sendable {
                         steps.append(Step(kind: .getOff, title: "Get off at \(leg.to)", sub: "Then you’re there", at: leg.arriveAt, time: leg.arriveTime, color: leg.color, name: leg.name))
                     }
                 } else if last, let before, before.rides {
-                    steps.append(Step(kind: .getOff, title: "Get off at \(before.to)", sub: "\(leg.minutes) min walk to \(to)", at: before.arriveAt, time: before.arriveTime, color: before.color, name: before.name))
+                    steps.append(Step(kind: .getOff, title: "Get off at \(before.to)", sub: "\(leg.minutes) min walk to \(to)", at: before.arriveAt, time: before.arriveTime, color: before.color, name: before.name,
+                                      walkTo: leg.end, walkToName: to))
                 } else {
                     let place = last || leg.to.isEmpty ? to : leg.to
-                    steps.append(Step(kind: .walk, title: leg.mode == "bike" ? "Cycle to \(place)" : "Walk to \(place)", sub: "\(leg.minutes) min", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name))
+                    steps.append(Step(kind: .walk, title: leg.mode == "bike" ? "Cycle to \(place)" : "Walk to \(place)", sub: "\(leg.minutes) min", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
+                                      walkTo: leg.mode == "walk" ? leg.end : nil, walkToName: place))
                 }
             }
             if let end = legs.last {
                 steps.append(Step(kind: .there, title: "You’re there", sub: start.map { "Starts at \($0)" } ?? "", at: end.arriveAt, time: end.arriveTime, color: "#E6421F", name: ""))
             }
             return steps
+        }
+    }
+
+    /// A place on the map.
+    public struct Point: Equatable, Sendable {
+        public let latitude: Double
+        public let longitude: Double
+
+        public init(latitude: Double, longitude: Double) {
+            self.latitude = latitude
+            self.longitude = longitude
         }
     }
 

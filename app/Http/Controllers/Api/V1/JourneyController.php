@@ -42,6 +42,9 @@ class JourneyController extends Controller
             'from_name' => isset($input['from_lat']) ? 'Your location' : null,
             'depart_at' => $arriveBy ? $starts->subMinutes(5)->toIso8601String() : null,
             'arrive_by' => $arriveBy ? '1' : null,
+            // The ways at once, as Plan a trip asks: the boarding stops' live boards (a heavy read
+            // of the whole realtime feed) aren't shown here, so they aren't waited for.
+            'checks_later' => '1',
         ], fn ($value) => $value !== null));
         $inner->setUserResolver(fn () => $user);
         $response = app()->call([app(TakeMeThereController::class), '__invoke'], ['request' => $inner]);

@@ -330,6 +330,12 @@ private struct YourDay: View {
                     Text("Now · \(TodayPage.clock(page.now))").font(.geist(13, .bold)).foregroundStyle(Self.line)
                 }
                 .frame(height: 22).padding(.bottom, 6)
+                // A trip to something that isn't a plan (an event's Getting there) goes at now, not under a plan.
+                if let trip = page.trip, !page.ahead.contains(where: { $0.title == trip.to }) {
+                    LiveTrip(trip: trip).padding(.bottom, 14)
+                        .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
+                                                removal: .opacity.combined(with: .offset(y: -10)).combined(with: .scale(scale: 0.97))))
+                }
                 if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
                 if page.free?.anchorTitle == nil, let free = page.free { FreeTime(page: page, free: free) }
                 if page.ahead.isEmpty {
@@ -474,7 +480,7 @@ private struct Stop: View {
                 }
             }
             // The trip goes under the plan it's for: the next one, or a later one while this one is under way.
-            if let trip = page.trip, forThis {
+            if let trip = page.trip, trip.to == plan.title {
                 // lvlive in, tlaway out.
                 LiveTrip(trip: trip).padding(.top, 12)
                     .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
@@ -803,6 +809,12 @@ struct LiveTrip: View {
                     .id(live.index)
                     .transition(.opacity.combined(with: .offset(y: 8)))
                     .modifier(Rise(order: 2))
+                // On foot: Apple Maps walks you to the stop, or from it to the place, turn by turn.
+                if live.step.kind == .walk || live.step.kind == .getOff, let point = live.step.walkTo, let name = live.step.walkToName {
+                    WalkWithAppleMaps(point: point, name: name)
+                        .padding(.top, 10)
+                        .transition(.opacity)
+                }
                 if steps {
                     StepList(steps: all, current: live.current)
                         .padding(.top, 14).padding(.horizontal, 2)
@@ -988,14 +1000,22 @@ struct StepList: View {
 struct WayMap: View {
     let title: String
     let legs: [TodayPage.Trip.Leg]
+    /// The place's own name, for Apple Maps.
+    var place: String?
+    /// On foot: Apple's walking route, drawn instead of the planner's line.
+    var walk: MKRoute?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Map {
+                if let walk {
+                    MapPolyline(walk.polyline)
+                        .stroke(Color(hex: 0x6A6253), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                }
                 ForEach(Array(legs.enumerated()), id: \.offset) { _, leg in
                     let points = (leg.polyline.map { Polyline.decode($0) } ?? []).map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
-                    if points.count > 1 {
+                    if points.count > 1, walk == nil || leg.rides {
                         MapPolyline(coordinates: points)
                             .stroke(leg.rides ? LineLook(hex: leg.color ?? "#1A4CD4").deep : Palette.textSoft,
                                     style: StrokeStyle(lineWidth: leg.rides ? 6 : 4, lineCap: .round, lineJoin: .round, dash: leg.rides ? [] : [1, 7]))
@@ -1018,7 +1038,29 @@ struct WayMap: View {
             .mapStyle(.standard(pointsOfInterest: .excludingAll))
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } }
+            }
+            // The whole trip in Apple Maps, for someone who'd rather follow it there.
+            .overlay(alignment: .bottom) {
+                if let end = legs.last?.end {
+                    Button {
+                        AppleMaps.open(end, name: place ?? legs.last?.to ?? title, mode: legs.contains(where: \.rides) ? .transit : .walking)
+                    } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: "map.fill")
+                            Text("Open in Apple Maps")
+                            Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold))
+                        }
+                        .font(.geist(16, .semibold)).foregroundStyle(Palette.text)
+                        .padding(.horizontal, 20).frame(height: 50)
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                    }
+                    .buttonStyle(PressStyle())
+                    .accessibilityHint("Opens Apple Maps")
+                    .padding(.bottom, 30)
+                }
+            }
         }
         .presentationDetents([.large])
     }

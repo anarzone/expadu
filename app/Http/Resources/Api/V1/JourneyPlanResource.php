@@ -44,7 +44,7 @@ class JourneyPlanResource extends JsonResource
             'ways' => array_map(function (array $journey) use ($starts) {
                 $spare = $starts === null ? 0 : (int) floor((CarbonImmutable::parse($starts)->getTimestamp() - CarbonImmutable::parse($journey['arrive_at'])->getTimestamp()) / 60);
 
-                return AppJourney::way($journey, max($spare, 0), $starts === null ? 'fits' : ($spare < 0 ? 'late' : ($spare < 3 ? 'tight' : 'fits')));
+                return AppJourney::way($journey, $spare, $starts === null ? 'fits' : ($spare < 0 ? 'late' : ($spare < 3 ? 'tight' : 'fits')));
             }, $journeys),
             /** @var array{covered: bool, label: string|null, price: float|null, how: string|null}|null */
             'ticket' => is_array($ticket) ? [
