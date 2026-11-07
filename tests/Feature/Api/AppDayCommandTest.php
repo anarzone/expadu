@@ -57,3 +57,16 @@ test('a change on an old revision is refused and changes nothing', function () {
         ->assertConflict();
     expect(ComposerWorkspace::query()->where('user_id', $user->id)->first()->state['plans'][$date]['slots'])->toHaveCount(1);
 });
+
+test('Edit plan changes a plan’s name, time and place on the latest revision', function () {
+    $user = User::factory()->create();
+    $date = now('Europe/Berlin')->format('Y-m-d');
+    dayWith($user, $date);
+
+    $this->withToken($user->createToken('iPhone')->plainTextToken)
+        ->postJson('/api/v1/day/command', ['revision' => 1, 'action' => 'edit', 'id' => 'manual:dinner', 'date' => $date, 'name' => 'Dinner with Sara', 'start' => '20:30', 'end' => '22:30'])
+        ->assertOk()->assertJsonPath('revision', 2);
+
+    $slot = ComposerWorkspace::query()->where('user_id', $user->id)->first()->state['plans'][$date]['slots'][0];
+    expect($slot['name'])->toBe('Dinner with Sara')->and($slot['start_time'])->toBe('20:30');
+});

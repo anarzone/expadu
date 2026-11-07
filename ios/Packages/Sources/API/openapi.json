@@ -1081,7 +1081,7 @@
         "schemas": {
             "DayCommandRequest": {
                 "type": "object",
-                "description": "A change to the day from the iPhone's Today: the same commands the web's Today sends to the\nComposer workspace, only those Today offers (done, remove, add, a personal plan, undo).",
+                "description": "A change to the day from the iPhone's Today: the same commands the web's Today sends to the\nComposer workspace, only those Today offers (done, remove, add, a personal plan, edit, undo).",
                 "properties": {
                     "revision": {
                         "type": "integer",
@@ -1095,6 +1095,7 @@
                             "remove",
                             "add",
                             "appointment",
+                            "edit",
                             "undo"
                         ]
                     },

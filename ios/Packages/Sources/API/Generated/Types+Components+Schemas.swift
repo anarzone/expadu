@@ -12,7 +12,7 @@ extension Components {
     /// Types generated from the `#/components/schemas` section of the OpenAPI document.
     public enum Schemas {
         /// A change to the day from the iPhone's Today: the same commands the web's Today sends to the
-        /// Composer workspace, only those Today offers (done, remove, add, a personal plan, undo).
+        /// Composer workspace, only those Today offers (done, remove, add, a personal plan, edit, undo).
         ///
         /// - Remark: Generated from `#/components/schemas/DayCommandRequest`.
         public struct DayCommandRequest: Codable, Hashable, Sendable {
@@ -25,6 +25,7 @@ extension Components {
                 case remove = "remove"
                 case add = "add"
                 case appointment = "appointment"
+                case edit = "edit"
                 case undo = "undo"
             }
             /// - Remark: Generated from `#/components/schemas/DayCommandRequest/action`.

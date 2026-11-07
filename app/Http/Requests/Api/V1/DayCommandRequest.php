@@ -7,7 +7,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * A change to the day from the iPhone's Today: the same commands the web's Today sends to the
- * Composer workspace, only those Today offers (done, remove, add, a personal plan, undo).
+ * Composer workspace, only those Today offers (done, remove, add, a personal plan, edit, undo).
  */
 class DayCommandRequest extends WorkspaceCommandRequest
 {
@@ -16,7 +16,7 @@ class DayCommandRequest extends WorkspaceCommandRequest
     {
         return [
             ...parent::rules(),
-            'action' => ['required', Rule::in(['complete', 'uncomplete', 'remove', 'add', 'appointment', 'undo'])],
+            'action' => ['required', Rule::in(['complete', 'uncomplete', 'remove', 'add', 'appointment', 'edit', 'undo'])],
         ];
     }
 }

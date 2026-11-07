@@ -77,7 +77,7 @@ struct TodayView: View {
                             case .city: CologneToday(page: page, sheet: $sheet)
                             case .paperwork: PaperworkCard(paperwork: page.paperwork)
                             case .pickUp: if let continuation = page.continuation { PickUp(continuation: continuation) }
-                            case .saved: if let saved = page.saved { SavedForLater(saved: saved, date: page.date) }
+                            case .saved: if let saved = page.saved { SavedForLater(saved: saved, date: page.date, plans: page.plans) }
                             case .comingUp: ComingUp(page: page)
                             case .links: CityLinks(sheet: $sheet)
                             }
@@ -115,11 +115,12 @@ struct TodayView: View {
                 // Above the floating bar (62pt and its 21pt gap), never under it.
                 NoteBar(note: note)
                     .padding(.horizontal, 16).padding(.bottom, 64)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    // rise: up from below on the canvas's spring.
+                    .transition(.offset(y: 30).combined(with: .opacity))
                     .id(note.id)
             }
         }
-        .animation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.25), value: model.note)
+        .animation(reduceMotion ? nil : .spring(duration: 0.5, bounce: 0.35), value: model.note)
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case let .weather(weather): WeatherSheet(weather: weather)
@@ -211,21 +212,25 @@ private struct NoteBar: View {
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
 
+    // The canvas's .toast: a dark pill over the bar, Undo in a lighter capsule.
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: note.symbol).font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(note.problem ? Palette.conflictText : Color(hex: 0x2F9E5B))
-                .symbolEffect(.bounce, value: note.id)
-            Text(note.text).font(.geist(14.5, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
+        HStack(spacing: 12) {
+            if note.problem {
+                Image(systemName: "exclamationmark.circle.fill").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color(hex: 0xFF9E80))
+            }
+            Text(note.text).font(.geist(15)).foregroundStyle(.white).lineLimit(2)
             Spacer(minLength: 0)
             if note.undo != nil {
                 Button("Undo") { Task { await model.undo(session.api) } }
-                    .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
-                    .frame(minHeight: 44)
+                    .font(.geist(15, .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 14).frame(height: 36)
+                    .background(.white.opacity(0.16), in: .capsule)
+                    .contentShape(.rect.inset(by: -4))
             }
         }
-        .padding(.horizontal, 16).frame(minHeight: 52)
-        .glassEffect(.regular, in: .capsule)
+        .padding(.leading, 18).padding(.trailing, 8).padding(.vertical, 8)
+        .frame(minHeight: 52)
+        .background(Color(hex: 0x2B2720), in: .rect(cornerRadius: 26))
         .accessibilityElement(children: .combine)
     }
 }
@@ -327,12 +332,7 @@ private struct YourDay: View {
                 if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
                 if page.free?.anchorTitle == nil, let free = page.free { FreeTime(page: page, free: free) }
                 if page.ahead.isEmpty {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(page.plans.isEmpty ? "No plans added for today" : "No more plans today").font(.geist(16, .semibold))
-                        Text("Your day is open.").font(.geist(13.5)).foregroundStyle(Palette.textSoft)
-                    }
-                    .foregroundStyle(Palette.text)
-                    .padding(.vertical, 10)
+                    EmptyDay(page: page).padding(.top, 4).padding(.bottom, 12)
                 }
                 ForEach(Array(page.ahead.enumerated()), id: \.element.id) { index, plan in
                     Stop(page: page, plan: plan, next: index == 0)
@@ -344,6 +344,7 @@ private struct YourDay: View {
                 }
                 AddPlan(date: page.date)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 14).padding(.trailing, 14).padding(.bottom, 6).padding(.leading, 40)
             .background(alignment: .leading) {
                 Rectangle().fill(Self.line).frame(width: 3).clipShape(.capsule)
@@ -354,6 +355,39 @@ private struct YourDay: View {
     }
 
     static let line = Color(hex: 0xE6421F)
+}
+
+/// A day with nothing ahead (the canvas's .ln-empty): what that means now, and two ways on.
+private struct EmptyDay: View {
+    let page: TodayPage
+    @Environment(\.shell) private var shell
+
+    var body: some View {
+        let evening = TodayPage.greeting(at: page.now, name: "").hasPrefix("Guten Abend")
+        let words: (String, String, String) = page.plans.isEmpty
+            ? (page.welcome ? ("No plans yet", "Add one, or let Composer plan your day.", "Plan my day") : ("No plans added for today", "Your day is open.", "Plan the rest of today"))
+            : evening ? ("No more plans today", "Tomorrow is still open.", "Plan tomorrow") : ("No plans left today", "Everything is done.", "Plan the rest of today")
+        VStack(alignment: .leading, spacing: 0) {
+            Text(words.0).font(.geist(16, .semibold)).foregroundStyle(Palette.text)
+            Text(words.1).font(.geist(13.5)).foregroundStyle(Palette.textSoft).padding(.top, 2)
+            HStack(spacing: 8) {
+                Button { shell.openComposer() } label: {
+                    Label(words.2, systemImage: "sparkle").labelStyle(Tight())
+                        .font(.geist(15, .semibold)).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).frame(height: 44)
+                        .background(Palette.text, in: .capsule)
+                }
+                .buttonStyle(PressStyle())
+                Button { shell.show(.travel) } label: {
+                    Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text)
+                        .padding(.horizontal, 16).frame(height: 44)
+                        .background(Palette.quiet, in: .capsule)
+                }
+                .buttonStyle(PressStyle())
+            }
+            .padding(.top, 12)
+        }
+    }
 }
 
 private struct PulseDot: View {
@@ -383,6 +417,8 @@ private struct Stop: View {
     let next: Bool
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
+    @State private var details = false
+    @State private var editing = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -400,6 +436,10 @@ private struct Stop: View {
                 }
                 Spacer(minLength: 0)
                 Menu {
+                    Button(details ? "Hide details" : "Details", systemImage: "info.circle") { withAnimation(Motion.ios(0.35)) { details.toggle() } }
+                    if plan.editable {
+                        Button("Edit plan", systemImage: "pencil") { editing = true }
+                    }
                     Button("Mark as done", systemImage: "checkmark.circle") {
                         Task { await model.markDone(session.api, plan: plan, date: page.date) }
                     }
@@ -413,6 +453,19 @@ private struct Stop: View {
                         .frame(width: 44, height: 44).contentShape(.rect)
                 }
                 .accessibilityLabel("More for \(plan.title)")
+            }
+            if details {
+                // The canvas's Details: what's known about the plan, in place.
+                VStack(alignment: .leading, spacing: 6) {
+                    detail("clock", [plan.start, plan.end].compactMap { $0 }.joined(separator: "–"))
+                    if let place = plan.place { detail("mappin", place) }
+                    detail(plan.editable ? "person" : "doc.text", plan.editable ? "Your own plan" : "From Paperwork")
+                }
+                .padding(.vertical, 10).padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Palette.quiet, in: .rect(cornerRadius: 14))
+                .padding(.top, 8)
+                .transition(.opacity.combined(with: .offset(y: -6)))
             }
             if next {
                 if let deadline = page.deadline(for: plan) {
@@ -441,7 +494,12 @@ private struct Stop: View {
                 .overlay { Circle().strokeBorder(YourDay.line, lineWidth: 3) }
                 .offset(x: -24, y: next ? 22 : 12)
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
+        .sheet(isPresented: $editing) { AddPlanSheet(date: page.date, editing: plan) }
+    }
+
+    private func detail(_ symbol: String, _ text: String) -> some View {
+        Label(text, systemImage: symbol).labelStyle(Tight()).font(.geist(14)).foregroundStyle(Palette.text)
     }
 
     /// The Leave card's plan is this one (by the server's id; with none, the next plan).
@@ -1024,6 +1082,7 @@ private struct OtherWaysSheet: View {
         .background(Palette.canvas)
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
+        .presentationBackground(Palette.canvas)
     }
 
     private func ticket(_ way: TodayPage.Way) -> some View {
@@ -1220,6 +1279,7 @@ private struct LinkLine: View {
 private struct FreeTime: View {
     let page: TodayPage
     let free: TodayPage.Free
+    @State private var mapOpen = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1245,11 +1305,96 @@ private struct FreeTime: View {
                     .foregroundStyle(Palette.text)
                     .padding(.horizontal, 12).padding(.vertical, 6)
                 }
+                if free.places.contains(where: { $0.latitude != nil }) {
+                    Button { mapOpen = true } label: {
+                        Label("See them on the map", systemImage: "map").labelStyle(Tight())
+                            .font(.geist(13.5, .semibold)).foregroundStyle(TodayLink.ink)
+                            .padding(.horizontal, 12).padding(.vertical, 8)
+                    }
+                    .buttonStyle(PressStyle())
+                }
             }
             .padding(.vertical, 4)
             .background(Palette.quiet, in: .rect(cornerRadius: 16))
         }
         .padding(.top, 8).padding(.bottom, 16)
+        .sheet(isPresented: $mapOpen) { NearbyMap(page: page, free: free) }
+    }
+}
+
+/// The free time's places on a map, in place (the canvas's map with its Nearby card): each marked,
+/// the list under the map to add one, and more places in Travel.
+private struct NearbyMap: View {
+    let page: TodayPage
+    let free: TodayPage.Free
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.shell) private var shell
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Map {
+                ForEach(free.places) { place in
+                    if let lat = place.latitude, let lng = place.longitude {
+                        Annotation(place.name, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)) {
+                            Image(systemName: PlaceSymbol.name(place.kind)).font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                                .frame(width: 26, height: 26)
+                                .background(Color(hex: 0x2F78C8), in: .circle)
+                                .overlay { Circle().strokeBorder(.white, lineWidth: 2) }
+                        }
+                    }
+                }
+            }
+            .mapStyle(.standard(pointsOfInterest: .excludingAll))
+            .ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 10) {
+                    Label("Nearby", systemImage: "mappin").labelStyle(Tight())
+                        .font(.geist(13, .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 10).frame(height: 28)
+                        .background(Color(hex: 0x2F78C8), in: .rect(cornerRadius: 8))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(free.anchorArea.map { "Near \($0)" } ?? "Near \(free.near ?? "you")").font(.geist(16, .bold))
+                        if let line = page.freeLine { Text(line).font(.geist(12.5)).foregroundStyle(Palette.textSoft) }
+                    }
+                }
+                .padding(.bottom, 8)
+                ForEach(free.places) { place in
+                    HStack(spacing: 12) {
+                        Image(systemName: PlaceSymbol.name(place.kind)).font(.system(size: 14, weight: .semibold))
+                            .frame(width: 32, height: 32).background(Palette.quiet, in: .circle)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(place.name).font(.geist(15.5, .semibold)).lineLimit(1)
+                            Text(place.line).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                        AddButton(candidate: place.candidate, date: page.date, title: place.name)
+                    }
+                    .padding(.vertical, 6)
+                    Divider().overlay(Palette.border)
+                }
+                Button { dismiss(); shell.show(.travel) } label: {
+                    Label("More places in Travel", systemImage: "chevron.right").labelStyle(TrailingIcon())
+                        .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
+                        .frame(maxWidth: .infinity).frame(height: 44)
+                }
+                .buttonStyle(PressStyle())
+            }
+            .foregroundStyle(Palette.text)
+            .padding(16)
+            .background(Palette.surface, in: .rect(cornerRadius: 26))
+            .shadow(color: Color(hex: 0x19140C, opacity: 0.2), radius: 14, y: 8)
+            .padding(10)
+        }
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
+                    .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
+            }
+            .buttonStyle(PressStyle())
+            .padding(16)
+            .accessibilityLabel("Close")
+        }
+        .presentationDetents([.large])
     }
 }
 
@@ -1306,44 +1451,125 @@ private struct DoneFold: View {
     }
 }
 
-/// A plan of their own: what, when, where (the web's Add a plan).
+/// A plan of their own (the canvas's Add a plan): What, Where (optional) and At, then Add to today.
+/// Opened from a plan's menu it edits that plan instead.
 private struct AddPlanSheet: View {
     let date: String
+    var editing: TodayPage.Plan?
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var place = ""
-    @State private var start = Calendar.current.date(byAdding: .hour, value: 1, to: .now) ?? .now
-    @State private var end = Calendar.current.date(byAdding: .hour, value: 2, to: .now) ?? .now
+    @State private var at = Calendar.current.date(bySettingHour: 16, minute: 0, second: 0, of: .now) ?? .now
+    @State private var picking = false
     @State private var saving = false
+    @FocusState private var focus: Field?
+
+    enum Field { case what, place }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                TextField("What", text: $name)
-                TextField("Where (optional)", text: $place)
-                DatePicker("Starts", selection: $start, displayedComponents: .hourAndMinute)
-                DatePicker("Ends", selection: $end, in: start..., displayedComponents: .hourAndMinute)
-            }
-            .navigationTitle("Add a plan")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", systemImage: "xmark") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add", systemImage: "checkmark") {
-                        saving = true
-                        Task {
-                            let added = await model.addPlan(session.api, name: name, date: date, start: TodayPage.clock(start), end: TodayPage.clock(end), place: place)
-                            saving = false
-                            if added { dismiss() }
-                        }
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || saving)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(editing == nil ? "Add a plan" : "Edit plan").font(.posterGrotesque(26)).tracking(-0.3)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))
+                        .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
                 }
+                .buttonStyle(PressStyle())
+                .accessibilityLabel("Close")
+            }
+            .foregroundStyle(Palette.text)
+            .padding(.bottom, 6)
+            field("What?") {
+                TextField("e.g. Doctor", text: $name).focused($focus, equals: .what).submitLabel(.next)
+                    .onSubmit { focus = .place }
+            }
+            field("Where? Optional") {
+                TextField("A place or address", text: $place).focused($focus, equals: .place).submitLabel(.done)
+            }
+            Button { focus = nil; withAnimation(Motion.ios(0.35)) { picking.toggle() } } label: {
+                field("At") { Text(TodayPage.clock(at)).monospacedDigit().frame(maxWidth: .infinity, alignment: .leading) }
+            }
+            .buttonStyle(.plain)
+            if picking {
+                DatePicker("At", selection: $at, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.wheel).labelsHidden()
+                    .frame(maxWidth: .infinity)
+                    .transition(.opacity.combined(with: .offset(y: -6)))
+            }
+            Button(action: save) {
+                Group {
+                    if saving { ProgressView().tint(.white) } else { Text(editing == nil ? "Add to today" : "Save") }
+                }
+                .font(.geist(16, .semibold))
+                .foregroundStyle(ready ? .white : Palette.textSoft)
+                .frame(maxWidth: .infinity).frame(height: 52)
+                .background(ready ? Palette.action : Palette.quiet, in: .capsule)
+            }
+            .buttonStyle(PressStyle())
+            .disabled(!ready || saving)
+            .padding(.top, 6)
+            .animation(.snappy, value: ready)
+        }
+        .padding(20)
+        .background(Palette.canvas)
+        .presentationDetents(picking ? [.large] : [.height(430)])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Palette.canvas)
+        .onAppear {
+            if let editing {
+                name = editing.title
+                place = editing.place ?? ""
+                if let start = editing.start, let time = Self.time(start) { at = time }
+            } else {
+                focus = .what
             }
         }
-        .presentationDetents([.medium])
+    }
+
+    private var ready: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    /// The canvas's .fld2: a small label over the value, on the card with its hairline.
+    private func field(_ label: String, @ViewBuilder value: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.geist(12)).foregroundStyle(Palette.textSoft)
+            value().font(.geist(16, .medium)).foregroundStyle(Palette.text)
+        }
+        .padding(.vertical, 9).padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Palette.surface, in: .rect(cornerRadius: 14))
+        .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.border) }
+    }
+
+    private func save() {
+        saving = true
+        let start = TodayPage.clock(at)
+        let end = TodayPage.clock(at.addingTimeInterval(TimeInterval((editing.flatMap(Self.length) ?? 60) * 60)))
+        Task {
+            let done: Bool
+            if let editing {
+                done = await model.editPlan(session.api, plan: editing, date: date, name: name, start: start, end: end, place: place)
+            } else {
+                done = await model.addPlan(session.api, name: name, date: date, start: start, end: end, place: place)
+            }
+            saving = false
+            if done { dismiss() }
+        }
+    }
+
+    private static func time(_ clock: String) -> Date? {
+        let parts = clock.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        return Calendar.current.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: .now)
+    }
+
+    /// How long the plan runs, so moving it keeps its length.
+    private static func length(_ plan: TodayPage.Plan) -> Int? {
+        guard let start = plan.start, let end = plan.end, let a = time(start), let b = time(end) else { return nil }
+        let minutes = Int(b.timeIntervalSince(a) / 60)
+        return minutes > 0 ? minutes : minutes + 24 * 60
     }
 }
 
@@ -1360,9 +1586,11 @@ private struct AddButton: View {
         Button { Task { await model.change(session.api, action: "add", date: date, candidate: candidate, symbol: "calendar.badge.plus") } } label: {
             Image(systemName: added ? "checkmark" : "plus")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(added ? Color(hex: 0x2F9E5B) : Palette.action)
+                .foregroundStyle(added ? Motion.green : Palette.action)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 36, height: 36).contentShape(.circle)
+                .frame(width: 36, height: 36)
+                .background(Motion.green.opacity(added ? 0.14 : 0), in: .circle)
+                .contentShape(.circle)
         }
         .buttonStyle(PressStyle())
         .disabled(added || candidate.isEmpty)
@@ -1453,11 +1681,14 @@ private struct IdeaRow: View {
             Spacer(minLength: 0)
             HStack(spacing: 4) {
                 Button { Task { await model.toggleSave(session.api, idea: idea) } } label: {
-                    Image(systemName: idea.saved ? "bookmark.fill" : "bookmark")
+                    // Saved: a star in a quiet circle (.id-btn.on); not yet: the bookmark.
+                    Image(systemName: idea.saved ? "star.fill" : "bookmark")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(idea.saved ? TodayLink.ink : Palette.textSoft)
+                        .foregroundStyle(idea.saved ? Palette.text : Palette.textSoft)
                         .contentTransition(.symbolEffect(.replace))
                         .symbolEffect(.bounce, value: idea.saved)
+                        .frame(width: 36, height: 36)
+                        .background(Palette.quiet.opacity(idea.saved ? 1 : 0), in: .circle)
                         .frame(width: 36, height: 36).contentShape(.circle)
                 }
                 .buttonStyle(PressStyle())
@@ -1833,6 +2064,7 @@ private struct PickUp: View {
 private struct SavedForLater: View {
     let saved: TodayPage.Saved
     let date: String
+    var plans: [TodayPage.Plan] = []
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
 
@@ -1846,11 +2078,17 @@ private struct SavedForLater: View {
                     if index > 0 { Divider().overlay(Palette.border) }
                     HStack(spacing: 0) {
                         ListRow(symbol: item.type == "place" ? "mappin" : "calendar", title: item.title, note: item.line, action: nil)
-                        Button("Add to a plan") {
-                            Task { await model.change(session.api, action: "add", date: item.date ?? date, candidate: item.candidate, symbol: "calendar.badge.plus") }
+                        if model.added.contains(item.candidate) || plans.contains(where: { $0.id == item.candidate }) {
+                            Text("In your plan").font(.geist(14, .semibold)).foregroundStyle(TodayLink.ink)
+                                .padding(.trailing, 14).frame(minHeight: 44)
+                                .transition(.opacity)
+                        } else {
+                            Button("Add to a plan") {
+                                Task { await model.change(session.api, action: "add", date: item.date ?? date, candidate: item.candidate, symbol: "calendar.badge.plus") }
+                            }
+                            .font(.geist(14, .semibold)).foregroundStyle(TodayLink.ink)
+                            .padding(.trailing, 14).frame(minHeight: 44)
                         }
-                        .font(.geist(14, .semibold)).foregroundStyle(TodayLink.ink)
-                        .padding(.trailing, 14).frame(minHeight: 44)
                     }
                 }
             }
@@ -2269,6 +2507,13 @@ final class TodayModel {
         } catch {
             say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
         }
+    }
+
+    func editPlan(_ api: AppAPI, plan: TodayPage.Plan, date: String, name: String, start: String, end: String, place: String) async -> Bool {
+        let where_ = place.trimmingCharacters(in: .whitespaces)
+        await change(api, action: "edit", id: plan.id, date: date, symbol: "pencil", name: name.trimmingCharacters(in: .whitespaces),
+                     start: start, end: end, location: where_.isEmpty ? nil : where_)
+        return note?.problem != true
     }
 
     func addPlan(_ api: AppAPI, name: String, date: String, start: String, end: String, place: String) async -> Bool {
