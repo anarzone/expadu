@@ -44,6 +44,8 @@ class TodayController extends Controller
             'continuation' => $continuation->for($user),
             'weather' => $weather->getCurrentWeather(),
             'forecast' => $weather->getForecast(),
+            // Today and the five days after, hour by hour, for the weather sheet (one cached fetch).
+            'weather_days' => array_map(fn (int $ahead) => $weather->getDayForecast(CarbonImmutable::now(DayProjection::TIMEZONE)->addDays($ahead)->format('Y-m-d')), range(0, 5)),
             // A first visit leads with Paperwork's way in (the web's priority.ts).
             'welcome' => $firstVisit->for($user),
             // Personalised suggestions on, and whether their order waits for a yes to a changed notice.

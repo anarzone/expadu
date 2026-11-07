@@ -51,7 +51,7 @@ test('the next plan comes with when to leave and the line that takes them, in it
         paperwork: ['strip' => null, 'focus' => null, 'processes' => [7 => ['title' => 'EU Blue Card', 'documents' => ['ready' => 1, 'total' => 5], 'occurrence_key' => 'blue-card']]]);
 
     expect($today['weather'])->toMatchArray(['temperature' => 6, 'summary' => 'Dry until 21:00', 'cycling' => 'Good for cycling'])
-        ->and($today['weather']['hours'])->toHaveCount(6)
+        ->and($today['weather']['hours'])->toBe([])
         ->and($today['plans'][0])->toMatchArray(['place' => 'Mülheim Wiener Platz', 'editable' => false, 'bring' => ['title' => 'EU Blue Card', 'ready' => 1, 'total' => 5, 'process' => 'blue-card']])
         ->and($today['leave'])->toMatchArray(['leave_time' => '13:10', 'line' => '4', 'color' => '#EA71A5', 'departs' => '13:14', 'from' => 'Neumarkt', 'walk_min' => 4, 'transfers' => 0, 'live' => true, 'spare_min' => 12]);
 });

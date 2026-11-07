@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Services\KvbLineColors;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,7 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * ideas and places for the time they have, Paperwork's next step, what they saved and what's
  * coming up. Each part is null or empty when there's nothing real to show.
  *
- * @property-read array{day: array<string, mixed>, needs: array<string, mixed>|null, discovery: array<string, mixed>, coming_up: array<string, mixed>, paperwork: array<string, mixed>|null, saved: array<string, mixed>|null, continuation: array<string, mixed>|null, weather: array<string, mixed>|null, forecast: array<string, mixed>|null, saved_events?: array<int, string>, welcome?: bool, personalised?: bool, rank_paused?: array<string, mixed>|null} $resource
+ * @property-read array{day: array<string, mixed>, needs: array<string, mixed>|null, discovery: array<string, mixed>, coming_up: array<string, mixed>, paperwork: array<string, mixed>|null, saved: array<string, mixed>|null, continuation: array<string, mixed>|null, weather: array<string, mixed>|null, forecast: array<string, mixed>|null, saved_events?: array<int, string>, welcome?: bool, personalised?: bool, rank_paused?: array<string, mixed>|null, weather_days?: array<int, array<string, mixed>>} $resource
  */
 class TodayResource extends JsonResource
 {
@@ -38,8 +39,8 @@ class TodayResource extends JsonResource
             'personalised' => (bool) ($this->resource['personalised'] ?? false),
             /** @var array{notice: array<int, string>, changes: array<int, string>|null, model_changed: bool, notice_version: string, provider_version: string}|null */
             'rank_paused' => $this->resource['rank_paused'] ?? null,
-            /** @var array{temperature: int, condition: string, icon: string, summary: string|null, cycling: string|null, hours: array<int, array{hour: string, temperature: int|null, icon: string|null}>}|null */
-            'weather' => $this->weather($this->resource['weather'] ?? null, $this->resource['forecast'] ?? null),
+            /** @var array{temperature: int, condition: string, icon: string, summary: string|null, cycling: string|null, feels_like: int|null, high: int|null, low: int|null, hours: array<int, array{hour: string, temperature: int|null, icon: string|null, rain: int|null}>, today: array<int, array{hour: string, temperature: int|null, icon: string|null, condition: string|null, rain: int|null}>, days: array<int, array{date: string, low: int|null, high: int|null, icon: string|null, rain: int|null}>}|null */
+            'weather' => $this->weather($this->resource['weather'] ?? null, $this->resource['forecast'] ?? null, $this->resource['weather_days'] ?? []),
             /** @var array<int, array{id: string, title: string, subtitle: string|null, start_time: string|null, end_time: string|null, place: string|null, state: string, completed: bool, editable: bool, bring: array{title: string|null, ready: int, total: int, process: string|null}|null}> */
             'plans' => array_map(function (array $item) use ($processes) {
                 $process = isset($item['process_id']) ? ($processes[$item['process_id']] ?? null) : null;
@@ -145,12 +146,25 @@ class TodayResource extends JsonResource
      * @param  array<string, mixed>|null  $forecast
      * @return array<string, mixed>|null
      */
-    private function weather(?array $now, ?array $forecast): ?array
+    private function weather(?array $now, ?array $forecast, array $days): ?array
     {
         if (! ($now['available'] ?? false)) {
             return null;
         }
-        $hourly = ($forecast['available'] ?? false) ? ($forecast['hourly'] ?? []) : [];
+        $slot = fn (array $hour) => [
+            'hour' => (string) $hour['hour'],
+            'temperature' => isset($hour['temperature']) ? (int) round((float) $hour['temperature']) : null,
+            'icon' => $hour['icon'] ?? null,
+            'rain' => isset($hour['precip_probability']) ? (int) $hour['precip_probability'] : null,
+        ];
+        $today = ($days[0]['available'] ?? false) ? $days[0]['hours'] : [];
+        $temps = array_values(array_filter(array_map(fn (array $hour) => $hour['temperature'] ?? null, $today), fn ($value) => $value !== null));
+        // The next twelve hours from this one, running into tomorrow when the evening is short.
+        $from = CarbonImmutable::now('Europe/Berlin')->startOfHour();
+        $ahead = collect(array_slice($days, 0, 2))
+            ->flatMap(fn (array $day) => ($day['available'] ?? false) ? $day['hours'] : [])
+            ->filter(fn (array $hour) => isset($hour['time']) && CarbonImmutable::parse($hour['time'])->greaterThanOrEqualTo($from))
+            ->take(12)->values();
 
         return [
             'temperature' => (int) round((float) $now['temperature']),
@@ -158,11 +172,29 @@ class TodayResource extends JsonResource
             'icon' => (string) $now['icon'],
             'summary' => $forecast['rain_summary'] ?? null,
             'cycling' => $forecast['bike_score'] ?? null,
-            'hours' => array_map(fn (array $hour) => [
-                'hour' => (string) $hour['hour'],
-                'temperature' => isset($hour['temperature']) ? (int) round((float) $hour['temperature']) : null,
-                'icon' => $hour['icon'] ?? null,
-            ], array_slice($hourly, 0, 6)),
+            'feels_like' => isset($now['feels_like']) ? (int) $now['feels_like'] : null,
+            'high' => $temps === [] ? null : (int) round(max($temps)),
+            'low' => $temps === [] ? null : (int) round(min($temps)),
+            'hours' => $ahead->map($slot)->all(),
+            // Today hour by hour, for each plan's hour (For your day).
+            'today' => array_map(fn (array $hour) => [...$slot($hour), 'condition' => $hour['condition'] ?? null], $today),
+            // The days ahead: their low and high, the afternoon's sky, the most rain likely.
+            'days' => array_values(array_filter(array_map(function (array $day) {
+                if (! ($day['available'] ?? false) || $day['hours'] === []) {
+                    return null;
+                }
+                $temps = array_values(array_filter(array_map(fn (array $hour) => $hour['temperature'] ?? null, $day['hours']), fn ($value) => $value !== null));
+                $afternoon = collect($day['hours'])->first(fn (array $hour) => $hour['hour'] === '14:00') ?? $day['hours'][intdiv(count($day['hours']), 2)];
+                $rain = array_values(array_filter(array_map(fn (array $hour) => $hour['precip_probability'] ?? null, $day['hours']), fn ($value) => $value !== null));
+
+                return [
+                    'date' => (string) $day['date'],
+                    'low' => $temps === [] ? null : (int) round(min($temps)),
+                    'high' => $temps === [] ? null : (int) round(max($temps)),
+                    'icon' => $afternoon['icon'] ?? null,
+                    'rain' => $rain === [] ? null : (int) max($rain),
+                ];
+            }, $days))),
         ];
     }
 

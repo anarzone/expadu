@@ -1487,6 +1487,24 @@
                                     "null"
                                 ]
                             },
+                            "feels_like": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "high": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "low": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
                             "hours": {
                                 "type": "array",
                                 "items": {
@@ -1506,12 +1524,103 @@
                                                 "string",
                                                 "null"
                                             ]
+                                        },
+                                        "rain": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
                                         }
                                     },
                                     "required": [
                                         "hour",
                                         "temperature",
-                                        "icon"
+                                        "icon",
+                                        "rain"
+                                    ]
+                                }
+                            },
+                            "today": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "hour": {
+                                            "type": "string"
+                                        },
+                                        "temperature": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "icon": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "condition": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rain": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "hour",
+                                        "temperature",
+                                        "icon",
+                                        "condition",
+                                        "rain"
+                                    ]
+                                }
+                            },
+                            "days": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "low": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "high": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "icon": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rain": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "low",
+                                        "high",
+                                        "icon",
+                                        "rain"
                                     ]
                                 }
                             }
@@ -1522,7 +1631,12 @@
                             "icon",
                             "summary",
                             "cycling",
-                            "hours"
+                            "feels_like",
+                            "high",
+                            "low",
+                            "hours",
+                            "today",
+                            "days"
                         ]
                     },
                     "plans": {

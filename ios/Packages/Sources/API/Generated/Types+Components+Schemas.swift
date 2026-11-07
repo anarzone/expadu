@@ -504,6 +504,12 @@ extension Components {
                 public var summary: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/TodayResource/weather/cycling`.
                 public var cycling: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/feels_like`.
+                public var feelsLike: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/high`.
+                public var high: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/low`.
+                public var low: Swift.Int?
                 /// - Remark: Generated from `#/components/schemas/TodayResource/weather/HoursPayload`.
                 public struct HoursPayloadPayload: Codable, Hashable, Sendable {
                     /// - Remark: Generated from `#/components/schemas/TodayResource/weather/HoursPayload/hour`.
@@ -512,31 +518,127 @@ extension Components {
                     public var temperature: Swift.Int?
                     /// - Remark: Generated from `#/components/schemas/TodayResource/weather/HoursPayload/icon`.
                     public var icon: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/HoursPayload/rain`.
+                    public var rain: Swift.Int?
                     /// Creates a new `HoursPayloadPayload`.
                     ///
                     /// - Parameters:
                     ///   - hour:
                     ///   - temperature:
                     ///   - icon:
+                    ///   - rain:
                     public init(
                         hour: Swift.String,
                         temperature: Swift.Int? = nil,
-                        icon: Swift.String? = nil
+                        icon: Swift.String? = nil,
+                        rain: Swift.Int? = nil
                     ) {
                         self.hour = hour
                         self.temperature = temperature
                         self.icon = icon
+                        self.rain = rain
                     }
                     public enum CodingKeys: String, CodingKey {
                         case hour
                         case temperature
                         case icon
+                        case rain
                     }
                 }
                 /// - Remark: Generated from `#/components/schemas/TodayResource/weather/hours`.
                 public typealias HoursPayload = [Components.Schemas.TodayResource.WeatherPayload.HoursPayloadPayload]
                 /// - Remark: Generated from `#/components/schemas/TodayResource/weather/hours`.
                 public var hours: Components.Schemas.TodayResource.WeatherPayload.HoursPayload
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/TodayPayload`.
+                public struct TodayPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/TodayPayload/hour`.
+                    public var hour: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/TodayPayload/temperature`.
+                    public var temperature: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/TodayPayload/icon`.
+                    public var icon: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/TodayPayload/condition`.
+                    public var condition: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/TodayPayload/rain`.
+                    public var rain: Swift.Int?
+                    /// Creates a new `TodayPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - hour:
+                    ///   - temperature:
+                    ///   - icon:
+                    ///   - condition:
+                    ///   - rain:
+                    public init(
+                        hour: Swift.String,
+                        temperature: Swift.Int? = nil,
+                        icon: Swift.String? = nil,
+                        condition: Swift.String? = nil,
+                        rain: Swift.Int? = nil
+                    ) {
+                        self.hour = hour
+                        self.temperature = temperature
+                        self.icon = icon
+                        self.condition = condition
+                        self.rain = rain
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case hour
+                        case temperature
+                        case icon
+                        case condition
+                        case rain
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/today`.
+                public typealias TodayPayload = [Components.Schemas.TodayResource.WeatherPayload.TodayPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/today`.
+                public var today: Components.Schemas.TodayResource.WeatherPayload.TodayPayload
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/DaysPayload`.
+                public struct DaysPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/DaysPayload/date`.
+                    public var date: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/DaysPayload/low`.
+                    public var low: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/DaysPayload/high`.
+                    public var high: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/DaysPayload/icon`.
+                    public var icon: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/weather/DaysPayload/rain`.
+                    public var rain: Swift.Int?
+                    /// Creates a new `DaysPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - date:
+                    ///   - low:
+                    ///   - high:
+                    ///   - icon:
+                    ///   - rain:
+                    public init(
+                        date: Swift.String,
+                        low: Swift.Int? = nil,
+                        high: Swift.Int? = nil,
+                        icon: Swift.String? = nil,
+                        rain: Swift.Int? = nil
+                    ) {
+                        self.date = date
+                        self.low = low
+                        self.high = high
+                        self.icon = icon
+                        self.rain = rain
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case date
+                        case low
+                        case high
+                        case icon
+                        case rain
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/days`.
+                public typealias DaysPayload = [Components.Schemas.TodayResource.WeatherPayload.DaysPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/weather/days`.
+                public var days: Components.Schemas.TodayResource.WeatherPayload.DaysPayload
                 /// Creates a new `WeatherPayload`.
                 ///
                 /// - Parameters:
@@ -545,21 +647,36 @@ extension Components {
                 ///   - icon:
                 ///   - summary:
                 ///   - cycling:
+                ///   - feelsLike:
+                ///   - high:
+                ///   - low:
                 ///   - hours:
+                ///   - today:
+                ///   - days:
                 public init(
                     temperature: Swift.Int,
                     condition: Swift.String,
                     icon: Swift.String,
                     summary: Swift.String? = nil,
                     cycling: Swift.String? = nil,
-                    hours: Components.Schemas.TodayResource.WeatherPayload.HoursPayload
+                    feelsLike: Swift.Int? = nil,
+                    high: Swift.Int? = nil,
+                    low: Swift.Int? = nil,
+                    hours: Components.Schemas.TodayResource.WeatherPayload.HoursPayload,
+                    today: Components.Schemas.TodayResource.WeatherPayload.TodayPayload,
+                    days: Components.Schemas.TodayResource.WeatherPayload.DaysPayload
                 ) {
                     self.temperature = temperature
                     self.condition = condition
                     self.icon = icon
                     self.summary = summary
                     self.cycling = cycling
+                    self.feelsLike = feelsLike
+                    self.high = high
+                    self.low = low
                     self.hours = hours
+                    self.today = today
+                    self.days = days
                 }
                 public enum CodingKeys: String, CodingKey {
                     case temperature
@@ -567,7 +684,12 @@ extension Components {
                     case icon
                     case summary
                     case cycling
+                    case feelsLike = "feels_like"
+                    case high
+                    case low
                     case hours
+                    case today
+                    case days
                 }
             }
             /// - Remark: Generated from `#/components/schemas/TodayResource/weather`.

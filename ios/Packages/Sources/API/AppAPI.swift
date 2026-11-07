@@ -314,7 +314,10 @@ public struct AppAPI: Sendable {
                 now: Self.date(from: today.now) ?? .now,
                 weather: today.weather.map { w in
                     TodayPage.Weather(temperature: w.temperature, condition: w.condition, icon: w.icon, summary: w.summary, cycling: w.cycling,
-                                      hours: w.hours.map { TodayPage.Weather.Hour(hour: $0.hour, temperature: $0.temperature, icon: $0.icon) })
+                                      feelsLike: w.feelsLike, high: w.high, low: w.low,
+                                      hours: w.hours.map { TodayPage.Weather.Hour(hour: $0.hour, temperature: $0.temperature, icon: $0.icon, rain: $0.rain) },
+                                      today: w.today.map { TodayPage.Weather.Hour(hour: $0.hour, temperature: $0.temperature, icon: $0.icon, rain: $0.rain, condition: $0.condition) },
+                                      days: w.days.map { TodayPage.Weather.Day(date: $0.date, low: $0.low, high: $0.high, icon: $0.icon, rain: $0.rain) })
                 },
                 plans: today.plans.map { p in
                     TodayPage.Plan(id: p.id, title: p.title, subtitle: p.subtitle, start: p.startTime, end: p.endTime, place: p.place, state: p.state, completed: p.completed,

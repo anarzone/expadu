@@ -9,11 +9,34 @@ public struct TodayPage: Equatable, Sendable {
             public let hour: String
             public let temperature: Int?
             public let icon: String?
+            /// Chance of rain, 0–100.
+            public let rain: Int?
+            public let condition: String?
 
-            public init(hour: String, temperature: Int?, icon: String?) {
+            public init(hour: String, temperature: Int?, icon: String?, rain: Int? = nil, condition: String? = nil) {
                 self.hour = hour
                 self.temperature = temperature
                 self.icon = icon
+                self.rain = rain
+                self.condition = condition
+            }
+        }
+
+        /// A day ahead: its low and high, the afternoon's sky, the most rain likely.
+        public struct Day: Equatable, Sendable, Identifiable {
+            public let date: String
+            public let low: Int?
+            public let high: Int?
+            public let icon: String?
+            public let rain: Int?
+            public var id: String { date }
+
+            public init(date: String, low: Int?, high: Int?, icon: String?, rain: Int?) {
+                self.date = date
+                self.low = low
+                self.high = high
+                self.icon = icon
+                self.rain = rain
             }
         }
 
@@ -24,15 +47,39 @@ public struct TodayPage: Equatable, Sendable {
         public let summary: String?
         /// "Good for cycling", "Poor — rain from 15:00".
         public let cycling: String?
+        public let feelsLike: Int?
+        public let high: Int?
+        public let low: Int?
+        /// The next twelve hours from this one.
         public let hours: [Hour]
+        /// Today hour by hour, for each plan's hour.
+        public let today: [Hour]
+        public let days: [Day]
 
-        public init(temperature: Int, condition: String, icon: String, summary: String?, cycling: String?, hours: [Hour]) {
+        public init(temperature: Int, condition: String, icon: String, summary: String?, cycling: String?, feelsLike: Int? = nil, high: Int? = nil, low: Int? = nil,
+                    hours: [Hour], today: [Hour] = [], days: [Day] = []) {
             self.temperature = temperature
             self.condition = condition
             self.icon = icon
             self.summary = summary
             self.cycling = cycling
+            self.feelsLike = feelsLike
+            self.high = high
+            self.low = low
             self.hours = hours
+            self.today = today
+            self.days = days
+        }
+
+        /// "High 14° · low 8° · feels like 11°", from what is known.
+        public var range: String? {
+            let parts = [high.map { "High \($0)°" }, low.map { "low \($0)°" }, feelsLike.map { "feels like \($0)°" }].compactMap { $0 }
+            return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        }
+
+        /// Today's hour that holds a plan's start ("18:30" → the 18:00 hour).
+        public func at(_ time: String) -> Hour? {
+            today.first { $0.hour.prefix(2) == time.prefix(2) }
         }
     }
 
