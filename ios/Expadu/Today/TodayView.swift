@@ -1,7 +1,7 @@
 import API
 import Core
 import CoreLocation
-import MapKit
+import Maps
 import DesignSystem
 import SafariServices
 import SwiftUI
@@ -779,10 +779,24 @@ struct LiveTrip: View {
     @State private var ending = false
     @State private var mapOpen = false
     @State private var pulse = false
+    /// Our own navigation: the phone's GPS on the trip's lines (Guide).
+    @State private var follow = PhoneFollow()
+    @State private var reached = 0
+    @State private var offSince: Date?
+    @State private var replanning = false
+    @State private var trouble: String?
+    @AppStorage("speakTurns") private var speak = false
+
+    private var guide: Guide { Guide(trip: trip) }
+
+    private func position(at date: Date) -> Guide.Position? {
+        follow.point.flatMap { guide.position(of: $0, at: date, after: reached) }
+    }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 20)) { timeline in
-            let live = trip.live(at: timeline.date, picked: picked)
+            let here = position(at: timeline.date)
+            let live = trip.live(at: timeline.date, picked: picked, guided: here?.step)
             let all = trip.steps
             let last = live.current == all.count - 1
             VStack(alignment: .leading, spacing: 0) {
@@ -809,11 +823,21 @@ struct LiveTrip: View {
                     .id(live.index)
                     .transition(.opacity.combined(with: .offset(y: 8)))
                     .modifier(Rise(order: 2))
-                // On foot: Apple Maps walks you to the stop, or from it to the place, turn by turn.
-                if live.step.kind == .walk || live.step.kind == .getOff, let point = live.step.walkTo, let name = live.step.walkToName {
-                    WalkWithAppleMaps(point: point, name: name)
+                // On foot: the next turn, by where the phone is on our router's way.
+                if picked == nil, let here, let turn = here.turn, !here.offRoute {
+                    TurnRow(turn: turn, metres: here.metresToTurn)
+                        .padding(.top, 12)
+                        .transition(.opacity.combined(with: .offset(y: -6)))
+                }
+                if let here, let missed = here.missed {
+                    TripTrouble(text: "\(missed.name) at \(missed.departTime) has left.", busy: replanning) { replan() }
+                        .padding(.top, 12).transition(.opacity)
+                } else if let here, here.offRoute, let since = offSince, timeline.date.timeIntervalSince(since) > 15 {
+                    TripTrouble(text: "You’re off the way, \(TurnRow.distance(Int(here.offBy))) from it.", busy: replanning) { replan() }
+                        .padding(.top, 12).transition(.opacity)
+                } else if let trouble {
+                    Label(trouble, systemImage: "exclamationmark.circle.fill").font(.geist(13.5, .semibold)).foregroundStyle(Palette.conflictText)
                         .padding(.top, 10)
-                        .transition(.opacity)
                 }
                 if steps {
                     StepList(steps: all, current: live.current)
@@ -838,10 +862,34 @@ struct LiveTrip: View {
         .background(Palette.surface, in: .rect(cornerRadius: 20))
         .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green.opacity(0.6), lineWidth: 1.5) }
         .animation(Motion.spring, value: model.cardNote)
-        .sheet(isPresented: $mapOpen) { WayMap(title: "Your way to \(trip.to)", legs: trip.legs) }
+        .sheet(isPresented: $mapOpen) { WayMap(title: "Your way to \(trip.to)", legs: trip.legs, guiding: (trip, follow)) }
         .onAppear {
+            follow.start()
             guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: false)) { pulse = true }
+        }
+        .onDisappear { follow.stop() }
+        .onChange(of: follow.point) {
+            guard let here = position(at: .now) else { return }
+            reached = max(reached, here.leg)
+            offSince = here.offRoute ? (offSince ?? .now) : nil
+            if speak, let turn = here.turn, let metres = here.metresToTurn, metres <= 30 {
+                TurnVoice.shared.say(turn.words, once: "\(trip.arriveTime ?? ""):\(here.leg):\(turn.words)")
+            }
+            if here.arrived { TurnVoice.shared.say("You’re there.", once: "\(trip.arriveTime ?? ""):there") }
+        }
+        .animation(Motion.ios(0.35), value: follow.point)
+    }
+
+    /// A new way from where the phone is now, to the same place: it replaces the trip.
+    private func replan() {
+        guard let from = follow.point else { return }
+        replanning = true
+        Task {
+            trouble = await model.newWay(session.api, trip: trip, from: from)
+            replanning = false
+            reached = 0
+            offSince = nil
         }
     }
 
@@ -1000,68 +1048,69 @@ struct StepList: View {
 struct WayMap: View {
     let title: String
     let legs: [TodayPage.Trip.Leg]
-    /// The place's own name, for Apple Maps.
-    var place: String?
-    /// On foot: Apple's walking route, drawn instead of the planner's line.
-    var walk: MKRoute?
+    /// While the trip is live: our navigation on the map (the phone, the next turn, Speak turns).
+    var guiding: (trip: TodayPage.Trip, follow: PhoneFollow)?
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("speakTurns") private var speak = false
+    @State private var following = true
 
     var body: some View {
-        NavigationStack {
-            Map {
-                if let walk {
-                    MapPolyline(walk.polyline)
-                        .stroke(Color(hex: 0x6A6253), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
-                }
-                ForEach(Array(legs.enumerated()), id: \.offset) { _, leg in
-                    let points = (leg.polyline.map { Polyline.decode($0) } ?? []).map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
-                    if points.count > 1, walk == nil || leg.rides {
-                        MapPolyline(coordinates: points)
-                            .stroke(leg.rides ? LineLook(hex: leg.color ?? "#1A4CD4").deep : Palette.textSoft,
-                                    style: StrokeStyle(lineWidth: leg.rides ? 6 : 4, lineCap: .round, lineJoin: .round, dash: leg.rides ? [] : [1, 7]))
-                    }
-                    if leg.rides, let first = points.first {
-                        Annotation(leg.from, coordinate: first) {
-                            let look = LineLook(hex: leg.color ?? "#1A4CD4")
-                            Text(leg.line.map { Board.badge($0) } ?? "")
-                                .font(.geist(12, .bold)).foregroundStyle(look.ink)
-                                .padding(.horizontal, 6).frame(height: 20)
-                                .background(look.fill, in: .rect(cornerRadius: 5))
-                        }
-                    }
-                }
-                if let end = legs.last?.polyline.map { Polyline.decode($0) }?.last {
-                    Marker(legs.last?.to ?? "", systemImage: "flag.fill", coordinate: CLLocationCoordinate2D(latitude: end.latitude, longitude: end.longitude))
-                        .tint(Color(hex: 0xE6421F))
-                }
-            }
-            .mapStyle(.standard(pointsOfInterest: .excludingAll))
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } }
-            }
-            // The whole trip in Apple Maps, for someone who'd rather follow it there.
-            .overlay(alignment: .bottom) {
-                if let end = legs.last?.end {
-                    Button {
-                        AppleMaps.open(end, name: place ?? legs.last?.to ?? title, mode: legs.contains(where: \.rides) ? .transit : .walking)
-                    } label: {
-                        HStack(spacing: 7) {
-                            Image(systemName: "map.fill")
-                            Text("Open in Apple Maps")
-                            Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold))
-                        }
-                        .font(.geist(16, .semibold)).foregroundStyle(Palette.text)
-                        .padding(.horizontal, 20).frame(height: 50)
-                        .glassEffect(.regular.interactive(), in: .capsule)
+        let here = guiding.flatMap { g in g.follow.point.flatMap { Guide(trip: g.trip).position(of: $0, at: .now) } }
+        ZStack(alignment: .top) {
+            CityMap(lines: WayDrawing.lines(legs, doneBefore: here?.leg), pins: WayDrawing.pins(legs, to: legs.last?.to ?? "", start: guiding == nil),
+                    fit: WayDrawing.all(legs), padding: UIEdgeInsets(top: 150, left: 50, bottom: 120, right: 50),
+                    follow: guiding != nil && following, showsUser: guiding != nil)
+                .ignoresSafeArea()
+            VStack(spacing: 10) {
+                HStack(alignment: .top, spacing: 10) {
+                    Text(title).font(.geist(17, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
+                        .padding(.horizontal, 16).padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 22))
+                    Button { dismiss() } label: {
+                        Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 48, height: 48).background(Palette.action, in: .circle)
                     }
                     .buttonStyle(PressStyle())
-                    .accessibilityHint("Opens Apple Maps")
-                    .padding(.bottom, 30)
+                    .accessibilityLabel("Done")
+                }
+                if let here, let turn = here.turn, !here.offRoute {
+                    TurnRow(turn: turn, metres: here.metresToTurn)
+                        .padding(14)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 22))
+                        .transition(.opacity.combined(with: .offset(y: -8)))
+                } else if let here, here.offRoute {
+                    Label("You’re off the way. Go back to the line, or plan a new way on the card.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.geist(14, .semibold)).foregroundStyle(Palette.warnText)
+                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Palette.warnBackground, in: .rect(cornerRadius: 18))
                 }
             }
+            .padding(.horizontal, 14).padding(.top, 14)
         }
+        .overlay(alignment: .bottomTrailing) {
+            if guiding != nil {
+                VStack(spacing: 10) {
+                    // Speak turns, with the phone's own voice.
+                    Button { speak.toggle() } label: {
+                        Image(systemName: speak ? "speaker.wave.2.fill" : "speaker.slash.fill").font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(speak ? Palette.action : Palette.text)
+                            .contentTransition(.symbolEffect(.replace))
+                            .frame(width: 48, height: 48).glassEffect(.regular.interactive(), in: .circle)
+                    }
+                    .accessibilityLabel(speak ? "Stop speaking turns" : "Speak turns")
+                    Button { following.toggle() } label: {
+                        Image(systemName: following ? "location.north.line.fill" : "location").font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(following ? Color(hex: 0x2F6FD0) : Palette.text)
+                            .frame(width: 48, height: 48).glassEffect(.regular.interactive(), in: .circle)
+                    }
+                    .accessibilityLabel(following ? "Show the whole way" : "Follow me")
+                }
+                .buttonStyle(PressStyle())
+                .padding(.trailing, 16).padding(.bottom, 40)
+            }
+        }
+        .animation(Motion.ios(0.3), value: here?.turn)
         .presentationDetents([.large])
     }
 }
@@ -1385,20 +1434,13 @@ private struct NearbyMap: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Map {
-                ForEach(free.places) { place in
-                    if let lat = place.latitude, let lng = place.longitude {
-                        Annotation(place.name, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)) {
-                            Image(systemName: PlaceSymbol.name(place.kind)).font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
-                                .frame(width: 26, height: 26)
-                                .background(Color(hex: 0x2F78C8), in: .circle)
-                                .overlay { Circle().strokeBorder(.white, lineWidth: 2) }
-                        }
-                    }
-                }
+            let pins = free.places.compactMap { place -> CityMap.Pin? in
+                guard let lat = place.latitude, let lng = place.longitude else { return nil }
+                return CityMap.Pin(id: "p\(place.id)", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), title: place.name, kind: .place(symbol: PlaceSymbol.name(place.kind)))
             }
-            .mapStyle(.standard(pointsOfInterest: .excludingAll))
-            .ignoresSafeArea()
+            CityMap(lines: [], pins: pins, fit: pins.map(\.coordinate),
+                    padding: UIEdgeInsets(top: 90, left: 50, bottom: 360, right: 50), showsUser: true)
+                .ignoresSafeArea()
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 10) {
                     Label("Nearby", systemImage: "mappin").labelStyle(Tight())
@@ -3154,6 +3196,25 @@ final class TodayModel {
             return (false, nil)
         } catch {
             return (false, Self.words(error))
+        }
+    }
+
+    /// Off the way or the ride gone: our planner again, from where the phone is to the same place,
+    /// and the trip goes on with the first way. Nil when it did, else why not.
+    func newWay(_ api: AppAPI, trip: TodayPage.Trip, from: TodayPage.Point) async -> String? {
+        guard let end = trip.legs.last?.end else { return "This trip has no place to go to." }
+        do throws(APIFailure) {
+            let plan = try await api.planWay(to: trip.to, latitude: end.latitude, longitude: end.longitude,
+                                             fromLatitude: from.latitude, fromLongitude: from.longitude, startsAt: nil)
+            guard let way = plan.ways.first else { return "No way from here right now." }
+            _ = try await api.startWay(plan: plan.plan, way: 0, replace: true)
+            await load(api, quietly: true)
+            cardFlips += 1
+            let how = way.lines.isEmpty ? "on foot" : way.legs.filter(\.rides).map(\.name).joined(separator: ", then ")
+            sayInCard(Note(text: "New way: leave \(way.leaveTime), \(how), there \(way.arriveTime).", symbol: "arrow.triangle.branch"))
+            return nil
+        } catch {
+            return Self.words(error)
         }
     }
 

@@ -543,6 +543,51 @@ extension Components {
                     public var stops: Swift.Int?
                     /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/polyline`.
                     public var polyline: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/TurnsPayload`.
+                    public struct TurnsPayloadPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/TurnsPayload/direction`.
+                        public var direction: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/TurnsPayload/street`.
+                        public var street: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/TurnsPayload/metres`.
+                        public var metres: Swift.Int
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/TurnsPayload/polyline`.
+                        public var polyline: Swift.String?
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/TurnsPayload/level_change`.
+                        public var levelChange: Swift.Bool
+                        /// Creates a new `TurnsPayloadPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - direction:
+                        ///   - street:
+                        ///   - metres:
+                        ///   - polyline:
+                        ///   - levelChange:
+                        public init(
+                            direction: Swift.String,
+                            street: Swift.String,
+                            metres: Swift.Int,
+                            polyline: Swift.String? = nil,
+                            levelChange: Swift.Bool
+                        ) {
+                            self.direction = direction
+                            self.street = street
+                            self.metres = metres
+                            self.polyline = polyline
+                            self.levelChange = levelChange
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case direction
+                            case street
+                            case metres
+                            case polyline
+                            case levelChange = "level_change"
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/turns`.
+                    public typealias TurnsPayload = [Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.TurnsPayloadPayload]
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/turns`.
+                    public var turns: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.TurnsPayload
                     /// Creates a new `LegsPayloadPayload`.
                     ///
                     /// - Parameters:
@@ -559,6 +604,7 @@ extension Components {
                     ///   - minutes:
                     ///   - stops:
                     ///   - polyline:
+                    ///   - turns:
                     public init(
                         mode: Swift.String,
                         line: Swift.String? = nil,
@@ -572,7 +618,8 @@ extension Components {
                         arriveTime: Swift.String,
                         minutes: Swift.Int,
                         stops: Swift.Int? = nil,
-                        polyline: Swift.String? = nil
+                        polyline: Swift.String? = nil,
+                        turns: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.TurnsPayload
                     ) {
                         self.mode = mode
                         self.line = line
@@ -587,6 +634,7 @@ extension Components {
                         self.minutes = minutes
                         self.stops = stops
                         self.polyline = polyline
+                        self.turns = turns
                     }
                     public enum CodingKeys: String, CodingKey {
                         case mode
@@ -602,6 +650,7 @@ extension Components {
                         case minutes
                         case stops
                         case polyline
+                        case turns
                     }
                 }
                 /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/legs`.
@@ -1677,6 +1726,51 @@ extension Components {
                         public var stops: Swift.Int?
                         /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/polyline`.
                         public var polyline: Swift.String?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/TurnsPayload`.
+                        public struct TurnsPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/TurnsPayload/direction`.
+                            public var direction: Swift.String
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/TurnsPayload/street`.
+                            public var street: Swift.String
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/TurnsPayload/metres`.
+                            public var metres: Swift.Int
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/TurnsPayload/polyline`.
+                            public var polyline: Swift.String?
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/TurnsPayload/level_change`.
+                            public var levelChange: Swift.Bool
+                            /// Creates a new `TurnsPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - direction:
+                            ///   - street:
+                            ///   - metres:
+                            ///   - polyline:
+                            ///   - levelChange:
+                            public init(
+                                direction: Swift.String,
+                                street: Swift.String,
+                                metres: Swift.Int,
+                                polyline: Swift.String? = nil,
+                                levelChange: Swift.Bool
+                            ) {
+                                self.direction = direction
+                                self.street = street
+                                self.metres = metres
+                                self.polyline = polyline
+                                self.levelChange = levelChange
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case direction
+                                case street
+                                case metres
+                                case polyline
+                                case levelChange = "level_change"
+                            }
+                        }
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/turns`.
+                        public typealias TurnsPayload = [Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.TurnsPayloadPayload]
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/turns`.
+                        public var turns: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.TurnsPayload
                         /// Creates a new `LegsPayloadPayload`.
                         ///
                         /// - Parameters:
@@ -1693,6 +1787,7 @@ extension Components {
                         ///   - minutes:
                         ///   - stops:
                         ///   - polyline:
+                        ///   - turns:
                         public init(
                             mode: Swift.String,
                             line: Swift.String? = nil,
@@ -1706,7 +1801,8 @@ extension Components {
                             arriveTime: Swift.String,
                             minutes: Swift.Int,
                             stops: Swift.Int? = nil,
-                            polyline: Swift.String? = nil
+                            polyline: Swift.String? = nil,
+                            turns: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.TurnsPayload
                         ) {
                             self.mode = mode
                             self.line = line
@@ -1721,6 +1817,7 @@ extension Components {
                             self.minutes = minutes
                             self.stops = stops
                             self.polyline = polyline
+                            self.turns = turns
                         }
                         public enum CodingKeys: String, CodingKey {
                             case mode
@@ -1736,6 +1833,7 @@ extension Components {
                             case minutes
                             case stops
                             case polyline
+                            case turns
                         }
                     }
                     /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/legs`.
@@ -1922,6 +2020,51 @@ extension Components {
                     public var stops: Swift.Int?
                     /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/polyline`.
                     public var polyline: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/TurnsPayload`.
+                    public struct TurnsPayloadPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/TurnsPayload/direction`.
+                        public var direction: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/TurnsPayload/street`.
+                        public var street: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/TurnsPayload/metres`.
+                        public var metres: Swift.Int
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/TurnsPayload/polyline`.
+                        public var polyline: Swift.String?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/TurnsPayload/level_change`.
+                        public var levelChange: Swift.Bool
+                        /// Creates a new `TurnsPayloadPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - direction:
+                        ///   - street:
+                        ///   - metres:
+                        ///   - polyline:
+                        ///   - levelChange:
+                        public init(
+                            direction: Swift.String,
+                            street: Swift.String,
+                            metres: Swift.Int,
+                            polyline: Swift.String? = nil,
+                            levelChange: Swift.Bool
+                        ) {
+                            self.direction = direction
+                            self.street = street
+                            self.metres = metres
+                            self.polyline = polyline
+                            self.levelChange = levelChange
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case direction
+                            case street
+                            case metres
+                            case polyline
+                            case levelChange = "level_change"
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/turns`.
+                    public typealias TurnsPayload = [Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.TurnsPayloadPayload]
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/turns`.
+                    public var turns: Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.TurnsPayload
                     /// Creates a new `LegsPayloadPayload`.
                     ///
                     /// - Parameters:
@@ -1938,6 +2081,7 @@ extension Components {
                     ///   - minutes:
                     ///   - stops:
                     ///   - polyline:
+                    ///   - turns:
                     public init(
                         mode: Swift.String,
                         line: Swift.String? = nil,
@@ -1951,7 +2095,8 @@ extension Components {
                         arriveTime: Swift.String,
                         minutes: Swift.Int,
                         stops: Swift.Int? = nil,
-                        polyline: Swift.String? = nil
+                        polyline: Swift.String? = nil,
+                        turns: Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.TurnsPayload
                     ) {
                         self.mode = mode
                         self.line = line
@@ -1966,6 +2111,7 @@ extension Components {
                         self.minutes = minutes
                         self.stops = stops
                         self.polyline = polyline
+                        self.turns = turns
                     }
                     public enum CodingKeys: String, CodingKey {
                         case mode
@@ -1981,6 +2127,7 @@ extension Components {
                         case minutes
                         case stops
                         case polyline
+                        case turns
                     }
                 }
                 /// - Remark: Generated from `#/components/schemas/TodayResource/trip/legs`.

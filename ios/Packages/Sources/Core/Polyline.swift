@@ -29,4 +29,26 @@ public enum Polyline {
         }
         return points
     }
+
+    /// Points as a line, at MOTIS's precision.
+    public static func encode(_ points: [(Double, Double)], precision: Double = 1e7) -> String {
+        var out = ""
+        var lastLat = 0, lastLng = 0
+        func add(_ value: Int) {
+            var v = value < 0 ? ~(value << 1) : value << 1
+            while v >= 0x20 {
+                out.unicodeScalars.append(Unicode.Scalar(UInt8((0x20 | (v & 0x1F)) + 63)))
+                v >>= 5
+            }
+            out.unicodeScalars.append(Unicode.Scalar(UInt8(v + 63)))
+        }
+        for (lat, lng) in points {
+            let ilat = Int((lat * precision).rounded()), ilng = Int((lng * precision).rounded())
+            add(ilat - lastLat)
+            add(ilng - lastLng)
+            lastLat = ilat
+            lastLng = ilng
+        }
+        return out
+    }
 }

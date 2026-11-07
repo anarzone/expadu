@@ -1697,6 +1697,39 @@
                                                     "string",
                                                     "null"
                                                 ]
+                                            },
+                                            "turns": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "direction": {
+                                                            "type": "string"
+                                                        },
+                                                        "street": {
+                                                            "type": "string"
+                                                        },
+                                                        "metres": {
+                                                            "type": "integer"
+                                                        },
+                                                        "polyline": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "level_change": {
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "direction",
+                                                        "street",
+                                                        "metres",
+                                                        "polyline",
+                                                        "level_change"
+                                                    ]
+                                                }
                                             }
                                         },
                                         "required": [
@@ -1712,7 +1745,8 @@
                                             "arrive_time",
                                             "minutes",
                                             "stops",
-                                            "polyline"
+                                            "polyline",
+                                            "turns"
                                         ]
                                     }
                                 }
@@ -2666,6 +2700,39 @@
                                                             "string",
                                                             "null"
                                                         ]
+                                                    },
+                                                    "turns": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "direction": {
+                                                                    "type": "string"
+                                                                },
+                                                                "street": {
+                                                                    "type": "string"
+                                                                },
+                                                                "metres": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "polyline": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ]
+                                                                },
+                                                                "level_change": {
+                                                                    "type": "boolean"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "direction",
+                                                                "street",
+                                                                "metres",
+                                                                "polyline",
+                                                                "level_change"
+                                                            ]
+                                                        }
                                                     }
                                                 },
                                                 "required": [
@@ -2681,7 +2748,8 @@
                                                     "arrive_time",
                                                     "minutes",
                                                     "stops",
-                                                    "polyline"
+                                                    "polyline",
+                                                    "turns"
                                                 ]
                                             }
                                         }
@@ -2803,6 +2871,39 @@
                                                 "string",
                                                 "null"
                                             ]
+                                        },
+                                        "turns": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "direction": {
+                                                        "type": "string"
+                                                    },
+                                                    "street": {
+                                                        "type": "string"
+                                                    },
+                                                    "metres": {
+                                                        "type": "integer"
+                                                    },
+                                                    "polyline": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "level_change": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "direction",
+                                                    "street",
+                                                    "metres",
+                                                    "polyline",
+                                                    "level_change"
+                                                ]
+                                            }
                                         }
                                     },
                                     "required": [
@@ -2818,7 +2919,8 @@
                                         "arrive_time",
                                         "minutes",
                                         "stops",
-                                        "polyline"
+                                        "polyline",
+                                        "turns"
                                     ]
                                 }
                             }

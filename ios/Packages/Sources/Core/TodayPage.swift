@@ -308,10 +308,13 @@ public struct TodayPage: Equatable, Sendable {
             public let stops: Int?
             /// The way it goes, encoded (MOTIS, precision 7): `Polyline.decode`.
             public let polyline: String?
+            /// On foot: our router's turns.
+            public var turns: [Turn]
 
             public init(mode: String, line: String?, color: String?, headsign: String?, from: String, to: String, departAt: Date, arriveAt: Date,
-                        departTime: String, arriveTime: String, minutes: Int, stops: Int?, polyline: String? = nil) {
+                        departTime: String, arriveTime: String, minutes: Int, stops: Int?, polyline: String? = nil, turns: [Turn] = []) {
                 self.polyline = polyline
+                self.turns = turns
                 self.mode = mode
                 self.line = line
                 self.color = color
@@ -364,9 +367,10 @@ public struct TodayPage: Equatable, Sendable {
         public var steps: [Step] { Step.of(legs, to: to, start: startTime) }
 
         /// The live card at this moment: the step they're on by the clock, or the one tapped.
-        public func live(at date: Date, picked: Int? = nil) -> Live {
+        public func live(at date: Date, picked: Int? = nil, guided: Int? = nil) -> Live {
             let steps = steps
-            let current = Self.current(steps, at: date)
+            // Where the phone is, when it's known; else the clock.
+            let current = guided.map { min($0, steps.count - 1) } ?? Self.current(steps, at: date)
             let k = min(picked ?? current, steps.count - 1)
             let step = steps[k]
             let last = k == steps.count - 1
@@ -408,9 +412,8 @@ public struct TodayPage: Equatable, Sendable {
         public let color: String?
         /// "Tram 1", for "Tram 1 at 23:58".
         public let name: String
-        /// Where this step's walk ends, and its name: Apple Maps walks you there.
-        public var walkTo: Point?
-        public var walkToName: String?
+        /// The leg this step is on (the walk after the last ride counts as getting off).
+        public var leg: Int?
 
         /// Walk to the stop, each ride, get off (with the walk on), and you're there.
         public static func of(_ legs: [Trip.Leg], to: String, start: String?) -> [Step] {
@@ -420,23 +423,80 @@ public struct TodayPage: Equatable, Sendable {
                 let before = index > 0 ? legs[index - 1] : nil
                 if leg.rides {
                     let sub = ["From \(leg.from)", leg.headsign.map { "towards \($0)" }, leg.stops.map { "\($0) stops" }].compactMap { $0 }.joined(separator: " · ")
-                    steps.append(Step(kind: .ride, title: "\(leg.name) to \(leg.to)", sub: sub, at: leg.departAt, time: leg.departTime, color: leg.color, name: leg.name))
+                    steps.append(Step(kind: .ride, title: "\(leg.name) to \(leg.to)", sub: sub, at: leg.departAt, time: leg.departTime, color: leg.color, name: leg.name, leg: index))
                     if last {
                         steps.append(Step(kind: .getOff, title: "Get off at \(leg.to)", sub: "Then you’re there", at: leg.arriveAt, time: leg.arriveTime, color: leg.color, name: leg.name))
                     }
                 } else if last, let before, before.rides {
                     steps.append(Step(kind: .getOff, title: "Get off at \(before.to)", sub: "\(leg.minutes) min walk to \(to)", at: before.arriveAt, time: before.arriveTime, color: before.color, name: before.name,
-                                      walkTo: leg.end, walkToName: to))
+                                      leg: index))
                 } else {
                     let place = last || leg.to.isEmpty ? to : leg.to
                     steps.append(Step(kind: .walk, title: leg.mode == "bike" ? "Cycle to \(place)" : "Walk to \(place)", sub: "\(leg.minutes) min", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
-                                      walkTo: leg.mode == "walk" ? leg.end : nil, walkToName: place))
+                                      leg: index))
                 }
             }
             if let end = legs.last {
                 steps.append(Step(kind: .there, title: "You’re there", sub: start.map { "Starts at \($0)" } ?? "", at: end.arriveAt, time: end.arriveTime, color: "#E6421F", name: ""))
             }
             return steps
+        }
+    }
+
+    /// One turn of a walk, as our router (MOTIS) gives it.
+    public struct Turn: Equatable, Sendable {
+        public let direction: String
+        public let street: String
+        public let metres: Int
+        /// The stretch this turn covers, encoded (precision 7).
+        public let polyline: String?
+        /// A change of floor: a lift or stairs in a station.
+        public let levelChange: Bool
+
+        public init(direction: String, street: String, metres: Int, polyline: String?, levelChange: Bool) {
+            self.direction = direction
+            self.street = street
+            self.metres = metres
+            self.polyline = polyline
+            self.levelChange = levelChange
+        }
+
+        /// Where the turn starts: the first point of its stretch.
+        public var start: Point? {
+            polyline.flatMap { Polyline.decode($0).first }.map { Point(latitude: $0.latitude, longitude: $0.longitude) }
+        }
+
+        /// "Turn left onto Breite Straße", "Take the lift", "Continue".
+        public var words: String {
+            if levelChange { return "Change level: lift or stairs" }
+            let onto = street.isEmpty ? "" : " onto \(street)"
+            switch direction {
+            case "depart": return street.isEmpty ? "Start walking" : "Start on \(street)"
+            case "left", "hard_left": return "Turn left\(onto)"
+            case "right", "hard_right": return "Turn right\(onto)"
+            case "slightly_left": return "Bear left\(onto)"
+            case "slightly_right": return "Bear right\(onto)"
+            case "uturn_left", "uturn_right": return "Turn around\(onto)"
+            case "circle_clockwise", "circle_counterclockwise": return "At the roundabout, go\(onto.isEmpty ? " on" : onto)"
+            case "elevator": return "Take the lift"
+            case "stairs": return "Take the stairs"
+            default: return street.isEmpty ? "Continue" : "Continue on \(street)"
+            }
+        }
+
+        /// The SF Symbol for the turn's arrow.
+        public var symbol: String {
+            if levelChange || direction == "elevator" { return "arrow.up.arrow.down" }
+            switch direction {
+            case "left", "hard_left": return "arrow.turn.up.left"
+            case "right", "hard_right": return "arrow.turn.up.right"
+            case "slightly_left": return "arrow.up.left"
+            case "slightly_right": return "arrow.up.right"
+            case "uturn_left", "uturn_right": return "arrow.uturn.down"
+            case "circle_clockwise", "circle_counterclockwise": return "arrow.triangle.turn.up.right.circle"
+            case "stairs": return "figure.stairs"
+            default: return "arrow.up"
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 import Core
 import DesignSystem
-import MapKit
+import Maps
 import SwiftUI
 
 /// Getting there, pushed from an event's details as the canvas draws it: the way on a small map,
@@ -23,8 +23,6 @@ struct GettingThere: View {
     @State private var starting = false
     @State private var replaceAsked = false
     @State private var startProblem: String?
-    /// A walking way, turn by turn in place (Apple's walking route).
-    @State private var walking = WalkingRoute()
 
     private var idea: TodayPage.Idea { listing.idea }
     private var way: TodayPage.Way? { plan.flatMap { $0.ways.indices.contains(picked) ? $0.ways[picked] : $0.ways.first } }
@@ -54,8 +52,7 @@ struct GettingThere: View {
         }
         .background(Palette.canvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $mapOpen) { if let way { WayMap(title: "Your way to \(idea.place ?? idea.title)", legs: way.legs, place: idea.place ?? idea.title, walk: onFoot(way) ? walking.route : nil) } }
-        .task(id: "\(plan?.plan ?? "")-\(picked)") { await walk() }
+        .sheet(isPresented: $mapOpen) { if let way { WayMap(title: "Your way to \(idea.place ?? idea.title)", legs: live?.legs ?? way.legs) } }
         .confirmationDialog("Replace the trip you’re on?", isPresented: $replaceAsked, titleVisibility: .visible) {
             Button("Replace") { start(replace: true) }
             Button("Keep", role: .cancel) {}
@@ -108,7 +105,8 @@ struct GettingThere: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
         }
         Button { mapOpen = true } label: {
-            WayPreview(way: way, to: idea.place ?? idea.title, walk: onFoot(way) ? walking.route : nil)
+            // While the trip is live, its own way; else the one picked.
+            WayPreview(legs: live?.legs ?? way.legs, key: live == nil ? "p\(way.id)-" : "live-", to: idea.place ?? idea.title)
                 .frame(height: 190)
                 .clipShape(.rect(cornerRadius: 18))
                 .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(Palette.border) }
@@ -134,8 +132,9 @@ struct GettingThere: View {
                             .padding(.horizontal, 10).frame(height: 26)
                             .background(spareTint(way), in: .capsule)
                     }
-                    if onFoot(way), let route = walking.route, let end = destination {
-                        WalkTurns(route: route, to: idea.place ?? idea.title, point: end)
+                    // On foot: our router's own turns.
+                    if onFoot(way), let turns = way.legs.first?.turns, !turns.isEmpty {
+                        TurnList(turns: turns, to: idea.place ?? idea.title)
                     } else {
                         StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil))
                     }
@@ -277,18 +276,6 @@ struct GettingThere: View {
 
     private func onFoot(_ way: TodayPage.Way) -> Bool { way.lines.isEmpty && way.mode == "walk" }
 
-    private var destination: TodayPage.Point? {
-        guard let latitude = listing.latitude, let longitude = listing.longitude else { return nil }
-        return TodayPage.Point(latitude: latitude, longitude: longitude)
-    }
-
-    /// A walking way's turns, from where its walk starts.
-    private func walk() async {
-        guard let way, onFoot(way), let end = destination,
-              let first = way.legs.first?.polyline.flatMap({ Polyline.decode($0).first }) else { return }
-        await walking.load(from: TodayPage.Point(latitude: first.latitude, longitude: first.longitude), to: end)
-    }
-
     // MARK: Start
 
     private func start(replace: Bool) {
@@ -364,50 +351,16 @@ private struct KnowRow: View {
     }
 }
 
-/// The way on a small map (.go-map): its lines in their colours, walking dotted, from and to.
+/// The way on a small map (.go-map): its lines in their colours, walking dotted, from and to. Ours: MapLibre on OpenStreetMap.
 private struct WayPreview: View {
-    let way: TodayPage.Way
+    let legs: [TodayPage.Trip.Leg]
+    let key: String
     let to: String
-    /// On foot: Apple's walking route, drawn instead of the planner's line.
-    var walk: MKRoute?
 
     var body: some View {
-        let paths = way.legs.map { leg in (leg, (leg.polyline.map { Polyline.decode($0) } ?? []).map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }) }
-        let all = paths.flatMap(\.1)
-        Map(initialPosition: Self.position(all), interactionModes: []) {
-            if let walk {
-                MapPolyline(walk.polyline)
-                    .stroke(Color(hex: 0x6A6253), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-            }
-            ForEach(Array(paths.enumerated()), id: \.offset) { _, item in
-                let (leg, points) = item
-                if points.count > 1, walk == nil || leg.rides {
-                    MapPolyline(coordinates: points)
-                        .stroke(leg.rides ? LineLook(hex: leg.color ?? "#1A4CD4").deep : Palette.textSoft,
-                                style: StrokeStyle(lineWidth: leg.rides ? 5 : 3.5, lineCap: .round, lineJoin: .round, dash: leg.rides ? [] : [1, 6]))
-                }
-            }
-            if let first = all.first {
-                Annotation("You", coordinate: first) {
-                    Circle().fill(Color(hex: 0x2F6FD0)).frame(width: 12, height: 12).overlay { Circle().strokeBorder(.white, lineWidth: 2.5) }
-                }
-            }
-            if let last = all.last {
-                Marker(to, systemImage: "flag.fill", coordinate: last).tint(Palette.action)
-            }
-        }
-        .allowsHitTesting(false)
-    }
-
-    private static func position(_ points: [CLLocationCoordinate2D]) -> MapCameraPosition {
-        guard let first = points.first else { return .automatic }
-        var minLat = first.latitude, maxLat = first.latitude, minLng = first.longitude, maxLng = first.longitude
-        for point in points {
-            minLat = min(minLat, point.latitude); maxLat = max(maxLat, point.latitude)
-            minLng = min(minLng, point.longitude); maxLng = max(maxLng, point.longitude)
-        }
-        let center = CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2, longitude: (minLng + maxLng) / 2)
-        return .region(MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: max((maxLat - minLat) * 1.5, 0.006), longitudeDelta: max((maxLng - minLng) * 1.5, 0.006))))
+        CityMap(lines: WayDrawing.lines(legs, prefix: key), pins: WayDrawing.pins(legs, to: to),
+                fit: WayDrawing.all(legs), padding: UIEdgeInsets(top: 36, left: 36, bottom: 36, right: 36), interactive: false)
+            .allowsHitTesting(false)
     }
 }
 

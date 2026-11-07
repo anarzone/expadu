@@ -266,7 +266,8 @@ public struct AppAPI: Sendable {
                         guard let departAt = Self.date(from: leg.departAt), let arriveAt = Self.date(from: leg.arriveAt) else { return nil }
                         return TodayPage.Trip.Leg(mode: leg.mode, line: leg.line, color: leg.color, headsign: leg.headsign, from: leg.from, to: leg.to,
                                                   departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
-                                                  stops: leg.stops, polyline: leg.polyline)
+                                                  stops: leg.stops, polyline: leg.polyline,
+                                              turns: leg.turns.map { TodayPage.Turn(direction: $0.direction, street: $0.street, metres: $0.metres, polyline: $0.polyline, levelChange: $0.levelChange) })
                     }
                     return mapped
                 },
@@ -449,7 +450,8 @@ public struct AppAPI: Sendable {
                     guard let departAt = Self.date(from: leg.departAt), let arriveAt = Self.date(from: leg.arriveAt) else { return nil }
                     return TodayPage.Trip.Leg(mode: leg.mode, line: leg.line, color: leg.color, headsign: leg.headsign, from: leg.from, to: leg.to,
                                               departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
-                                              stops: leg.stops, polyline: leg.polyline)
+                                              stops: leg.stops, polyline: leg.polyline,
+                                              turns: leg.turns.map { TodayPage.Turn(direction: $0.direction, street: $0.street, metres: $0.metres, polyline: $0.polyline, levelChange: $0.levelChange) })
                 }
                 return mapped
             } ?? []
@@ -458,7 +460,8 @@ public struct AppAPI: Sendable {
                     guard let departAt = Self.date(from: leg.departAt), let arriveAt = Self.date(from: leg.arriveAt) else { return nil }
                     return TodayPage.Trip.Leg(mode: leg.mode, line: leg.line, color: leg.color, headsign: leg.headsign, from: leg.from, to: leg.to,
                                               departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
-                                              stops: leg.stops, polyline: leg.polyline)
+                                              stops: leg.stops, polyline: leg.polyline,
+                                              turns: leg.turns.map { TodayPage.Turn(direction: $0.direction, street: $0.street, metres: $0.metres, polyline: $0.polyline, levelChange: $0.levelChange) })
                 })
             }
             page.welcome = today.welcome

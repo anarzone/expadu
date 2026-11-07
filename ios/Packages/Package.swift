@@ -9,10 +9,13 @@ let package = Package(
         .library(name: "Core", targets: ["Core"]),
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "API", targets: ["API"]),
+        .library(name: "Maps", targets: ["Maps"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.8.0"),
         .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.1.0"),
+        // Open-source maps (BSD), drawn from OpenStreetMap tiles: the same map the web shows.
+        .package(url: "https://github.com/maplibre/maplibre-gl-native-distribution", exact: "6.31.0"),
     ],
     targets: [
         .target(name: "Core"),
@@ -28,6 +31,15 @@ let package = Package(
         .target(
             name: "DesignSystem",
             resources: [.copy("Resources/Fonts")],
+            swiftSettings: [.defaultIsolation(MainActor.self)]
+        ),
+        .target(
+            name: "Maps",
+            dependencies: [
+                "Core",
+                // The map is iPhone-only; `swift test` on the Mac builds the rest without it.
+                .product(name: "MapLibre", package: "maplibre-gl-native-distribution", condition: .when(platforms: [.iOS])),
+            ],
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
         .testTarget(name: "CoreTests", dependencies: ["Core"]),

@@ -103,3 +103,44 @@ struct TodayPageTests {
         #expect(way.note == "9 min walking · no change")
     }
 }
+
+struct GuideTests {
+    private let start = Date(timeIntervalSinceReferenceDate: 800_000_000)
+
+    /// A walk along a straight street, 0.002° east (about 140 m), then a tram on to the north.
+    private var trip: TodayPage.Trip {
+        let walkLine = Polyline.encode([(50.9370, 6.9440), (50.9370, 6.9450), (50.9370, 6.9460)])
+        let rideLine = Polyline.encode([(50.9370, 6.9460), (50.9400, 6.9460), (50.9430, 6.9460)])
+        let turns = [
+            TodayPage.Turn(direction: "depart", street: "Breite Straße", metres: 70, polyline: Polyline.encode([(50.9370, 6.9440), (50.9370, 6.9450)]), levelChange: false),
+            TodayPage.Turn(direction: "left", street: "Mörsergasse", metres: 70, polyline: Polyline.encode([(50.9370, 6.9450), (50.9370, 6.9460)]), levelChange: false),
+        ]
+        let walk = TodayPage.Trip.Leg(mode: "walk", line: nil, color: nil, headsign: nil, from: "", to: "Neumarkt", departAt: start, arriveAt: start.addingTimeInterval(120),
+                                      departTime: "15:00", arriveTime: "15:02", minutes: 2, stops: nil, polyline: walkLine, turns: turns)
+        let tram = TodayPage.Trip.Leg(mode: "tram", line: "18", color: "#1D92D1", headsign: "Buchheim", from: "Neumarkt", to: "Dom/Hbf", departAt: start.addingTimeInterval(180),
+                                      arriveAt: start.addingTimeInterval(480), departTime: "15:03", arriveTime: "15:08", minutes: 5, stops: 2, polyline: rideLine)
+        return TodayPage.Trip(to: "Kreuzblume", arriveTime: "15:08", startTime: "15:30", legs: [walk, tram])
+    }
+
+    @Test func onTheWalkItGivesTheNextTurnAndHowFar() {
+        let here = Guide(trip: trip).position(of: .init(latitude: 50.9370, longitude: 6.9445), at: start)
+        #expect(here?.leg == 0)
+        #expect(here?.offRoute == false)
+        #expect(here?.turn?.words == "Turn left onto Mörsergasse")
+        #expect((here?.metresToTurn ?? 0) > 25 && (here?.metresToTurn ?? 0) < 45)
+    }
+
+    @Test func onTheTramItIsTheRide() {
+        let here = Guide(trip: trip).position(of: .init(latitude: 50.9400, longitude: 6.9460), at: start.addingTimeInterval(300), after: 0)
+        #expect(here?.leg == 1)
+        #expect(here?.turn == nil)
+    }
+
+    @Test func farFromTheLineIsOffTheWayAndAMissedTramIsSaid() {
+        let guide = Guide(trip: trip)
+        let off = guide.position(of: .init(latitude: 50.9355, longitude: 6.9452), at: start)
+        #expect(off?.offRoute == true)
+        let late = guide.position(of: .init(latitude: 50.9370, longitude: 6.9442), at: start.addingTimeInterval(300))
+        #expect(late?.missed?.line == "18")
+    }
+}
