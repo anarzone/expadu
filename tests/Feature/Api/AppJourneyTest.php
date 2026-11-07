@@ -38,6 +38,10 @@ test('the ways come in the app’s own shape, with a plan to start one from', fu
         ->assertJsonPath('to', 'Kreuzblume')
         ->assertJsonStructure(['plan', 'from', 'to', 'ways' => [['leave_time', 'arrive_time', 'mode', 'lines', 'minutes', 'legs']], 'ticket', 'rain', 'lifts', 'notices']);
     expect($plan->json('ways'))->not->toBeEmpty();
+    // On foot, the router's own turns come along: the app guides the walk itself.
+    $turns = collect($plan->json('ways'))->flatMap(fn ($way) => $way['legs'])->where('mode', 'walk')->flatMap(fn ($leg) => $leg['turns']);
+    expect($turns)->not->toBeEmpty()
+        ->and($turns->first())->toHaveKeys(['direction', 'street', 'metres', 'polyline', 'level_change']);
 });
 
 test('🔒 a trip starts only on a way planned for this person', function () use ($where) {

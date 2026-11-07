@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Services\KvbLineColors;
+use App\Transit\Polyline;
 
 /**
  * A journey (Journey::toArray) as the iPhone draws it, the same wherever a way shows: the Leave
@@ -64,7 +65,89 @@ final class AppJourney
             'stops' => isset($leg['stops']) ? (int) $leg['stops'] : null,
             // The way it goes, for the map (MOTIS's encoded polyline, precision 7).
             'polyline' => $leg['polyline'] ?? null,
+            // On foot: the router's turns, for the map and the next turn while walking.
+            'turns' => is_array($leg['steps'] ?? null) ? self::turns($leg['steps']) : [],
         ], array_filter($journey['legs'] ?? [], fn ($leg) => is_array($leg) && isset($leg['depart_at'], $leg['arrive_at']))));
+    }
+
+    /**
+     * The router's steps as turns someone walks by: going straight on (on the same street, or one
+     * with no name) adds to the turn before it, so a street is one turn, not ten.
+     *
+     * @param  array<int, mixed>  $steps
+     * @return list<array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>
+     */
+    public static function turns(array $steps): array
+    {
+        $turns = [];
+        foreach ($steps as $step) {
+            if (! is_array($step)) {
+                continue;
+            }
+            $turn = [
+                'direction' => (string) ($step['direction'] ?? 'continue'),
+                'street' => (string) ($step['street'] ?? ''),
+                'metres' => (int) ($step['metres'] ?? 0),
+                'polyline' => $step['polyline'] ?? null,
+                // A change of floor: a lift or stairs in a station.
+                'level_change' => isset($step['from_level'], $step['to_level']) && (float) $step['from_level'] !== (float) $step['to_level'],
+            ];
+            $last = array_key_last($turns);
+            // The router often says "continue" onto a new street: the angle between the two stretches says which way.
+            if ($last !== null && $turn['direction'] === 'continue' && $turn['street'] !== '' && $turn['street'] !== $turns[$last]['street']) {
+                $turn['direction'] = self::bend($turns[$last]['polyline'], $turn['polyline']) ?? 'continue';
+            }
+            $straightOn = $last !== null && $turn['direction'] === 'continue' && ! $turn['level_change']
+                && ($turn['street'] === '' || $turn['street'] === $turns[$last]['street']);
+            if ($straightOn) {
+                $turns[$last]['metres'] += $turn['metres'];
+
+                continue;
+            }
+            $turns[] = $turn;
+        }
+
+        return $turns;
+    }
+
+    /**
+     * Which way the walk bends from one stretch into the next, by their headings: left, right,
+     * slightly so, or straight on (under 30°).
+     */
+    private static function bend(?string $before, ?string $after): ?string
+    {
+        $a = $before === null ? null : Polyline::decode($before, Polyline::PRECISION);
+        $b = $after === null ? null : Polyline::decode($after, Polyline::PRECISION);
+        if ($a === null || $b === null || count($a) < 2 || count($b) < 2) {
+            return null;
+        }
+        $heading = function (array $from, array $to): float {
+            [$lat1, $lng1] = $from;
+            [$lat2, $lng2] = $to;
+
+            return rad2deg(atan2(($lng2 - $lng1) * cos(deg2rad($lat1)), $lat2 - $lat1));
+        };
+        // Over about 12 m on each side: a stretch's last metre can wobble where two ways meet.
+        $metres = fn (array $p, array $q): float => hypot(($q[1] - $p[1]) * 111_320 * cos(deg2rad($p[0])), ($q[0] - $p[0]) * 111_320);
+        $end = $a[count($a) - 1];
+        $back = $a[count($a) - 2];
+        for ($i = count($a) - 2; $i >= 0 && $metres($a[$i], $end) < 12; $i--) {
+            $back = $a[$i];
+        }
+        $start = $b[0];
+        $ahead = $b[1];
+        for ($i = 1; $i < count($b) && $metres($start, $b[$i - 1]) < 12; $i++) {
+            $ahead = $b[$i];
+        }
+        $turn = $heading($start, $ahead) - $heading($back, $end);
+        $turn = fmod($turn + 540, 360) - 180;
+
+        return match (true) {
+            abs($turn) < 30 => 'continue',
+            abs($turn) < 60 => $turn > 0 ? 'slightly_right' : 'slightly_left',
+            abs($turn) < 150 => $turn > 0 ? 'right' : 'left',
+            default => $turn > 0 ? 'uturn_right' : 'uturn_left',
+        };
     }
 
     /** "Köln Neumarkt" as the stop signs say it: "Neumarkt". */
