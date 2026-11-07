@@ -20,6 +20,8 @@ struct GettingThere: View {
     @State private var picked = 0
     @State private var flips = 0
     @State private var mapOpen = false
+    @State private var pinch: CGFloat = 1
+    @Namespace private var mapZoom
     @State private var starting = false
     @State private var replaceAsked = false
     @State private var startProblem: String?
@@ -52,7 +54,12 @@ struct GettingThere: View {
         }
         .background(Palette.canvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $mapOpen) { if let way { WayMap(title: "Your way to \(idea.place ?? idea.title)", legs: live?.legs ?? way.legs) } }
+        .fullScreenCover(isPresented: $mapOpen) {
+            if let way {
+                WayMap(title: "Your way to \(idea.place ?? idea.title)", legs: live?.legs ?? way.legs)
+                    .navigationTransition(.zoom(sourceID: "way-map", in: mapZoom))
+            }
+        }
         .confirmationDialog("Replace the trip you’re on?", isPresented: $replaceAsked, titleVisibility: .visible) {
             Button("Replace") { start(replace: true) }
             Button("Keep", role: .cancel) {}
@@ -104,22 +111,29 @@ struct GettingThere: View {
                 .padding(.bottom, 14)
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
         }
-        Button { mapOpen = true } label: {
-            // While the trip is live, its own way; else the one picked.
-            WayPreview(legs: live?.legs ?? way.legs, key: live == nil ? "p\(way.id)-" : "live-", to: idea.place ?? idea.title)
-                .frame(height: 190)
-                .clipShape(.rect(cornerRadius: 18))
-                .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(Palette.border) }
-                .overlay(alignment: .bottomTrailing) {
-                    Label("Map", systemImage: "map").labelStyle(Tight())
-                        .font(.geist(13, .semibold)).foregroundStyle(Palette.text)
-                        .padding(.horizontal, 12).frame(height: 32)
-                        .glassEffect(.regular, in: .capsule)
-                        .padding(10)
-                }
-        }
-        .buttonStyle(PressStyle())
-        .accessibilityLabel("Open the map")
+        // Tap or pinch out: the map grows into the full map from where it sits; swipe down to put it back.
+        WayPreview(legs: live?.legs ?? way.legs, key: live == nil ? "p\(way.id)-" : "live-", to: idea.place ?? idea.title)
+            .frame(height: 190)
+            .clipShape(.rect(cornerRadius: 18))
+            .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(Palette.border) }
+            .contentShape(.rect(cornerRadius: 18))
+            .matchedTransitionSource(id: "way-map", in: mapZoom)
+            .scaleEffect(pinch)
+            .onTapGesture { mapOpen = true }
+            .gesture(
+                MagnifyGesture()
+                    .onChanged { value in pinch = min(max(value.magnification, 1), 1.12) }
+                    .onEnded { value in
+                        withAnimation(.spring(duration: 0.3)) { pinch = 1 }
+                        if value.magnification > 1.08 { mapOpen = true }
+                    }
+            )
+            .sensoryFeedback(.impact(weight: .light), trigger: mapOpen) { _, open in open }
+            .accessibilityElement()
+            .accessibilityLabel("Map of your way")
+            .accessibilityHint("Opens the full map")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { mapOpen = true }
         if live == nil {
             VStack(spacing: 0) {
                 TicketTop(way: way, mine: true)

@@ -783,6 +783,28 @@ struct LiveTrip: View {
     @State private var follow = PhoneFollow()
     @State private var replanning = false
     @State private var trouble: String?
+    @State private var drag: CGFloat = 0
+    @State private var swipedLeft = true
+    @State private var back: Task<Void, Never>?
+    @AppStorage("speakTurns") private var speak = false
+
+    /// Look a step ahead or back; after a while the card comes back to the step they're on.
+    private func look(by delta: Int, from index: Int, current: Int, count: Int) {
+        let next = min(max(index + delta, 0), count - 1)
+        guard next != index else { return }
+        withAnimation(.spring(duration: 0.4, bounce: 0.2)) { picked = next == current ? nil : next }
+        back?.cancel()
+        back = Task {
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(duration: 0.4, bounce: 0.2)) { swipedLeft = false; picked = nil }
+        }
+    }
+
+    private func end(arrived: Bool) {
+        ending = true
+        Task { await model.endTrip(session.api, arrived: arrived); ending = false }
+    }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 20)) { timeline in
@@ -810,10 +832,31 @@ struct LiveTrip: View {
                 bars(all, current: live.current)
                     .padding(.top, 12).padding(.bottom, 4)
                     .modifier(Rise(order: 1))
+                // Swipe sideways: the step before or after; tap: every step. It comes back to now by itself.
                 nowCard(live)
                     .id(live.index)
-                    .transition(.opacity.combined(with: .offset(y: 8)))
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: swipedLeft ? 40 : -40)),
+                                            removal: .opacity.combined(with: .offset(x: swipedLeft ? -40 : 40))))
+                    .offset(x: drag)
+                    .contentShape(.rect(cornerRadius: 16))
+                    .onTapGesture { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 18)
+                            .onChanged { value in
+                                guard abs(value.translation.width) > abs(value.translation.height) * 1.4 else { return }
+                                drag = value.translation.width * 0.35
+                            }
+                            .onEnded { value in
+                                withAnimation(.spring(duration: 0.35, bounce: 0.3)) { drag = 0 }
+                                guard abs(value.translation.width) > 50, abs(value.translation.width) > abs(value.translation.height) * 1.4 else { return }
+                                swipedLeft = value.translation.width < 0
+                                look(by: swipedLeft ? 1 : -1, from: live.index, current: live.current, count: all.count)
+                            }
+                    )
                     .modifier(Rise(order: 2))
+                    .accessibilityAction(named: "Next step") { look(by: 1, from: live.index, current: live.current, count: all.count) }
+                    .accessibilityAction(named: "Previous step") { look(by: -1, from: live.index, current: live.current, count: all.count) }
+                    .accessibilityAction(named: steps ? "Hide steps" : "All steps") { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
                 // On foot: the next turn, by where the phone is on our router's way.
                 if picked == nil, let here, let turn = here.turn, !here.offRoute {
                     TurnRow(turn: turn, metres: here.metresToTurn)
@@ -835,23 +878,38 @@ struct LiveTrip: View {
                         .padding(.top, 14).padding(.horizontal, 2)
                         .transition(.opacity.combined(with: .offset(y: -6)))
                 }
-                HStack(spacing: 8) {
-                    action(steps ? "Hide" : "Steps", symbol: "list.bullet", grow: true) { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
-                    action("Map", symbol: "map") { mapOpen = true }
-                    action(last ? "Done" : "End", symbol: last ? "checkmark" : "stop.circle") {
-                        ending = true
-                        Task { await model.endTrip(session.api, arrived: last); ending = false }
-                    }
-                    .disabled(ending)
+                // There: the one thing left to do. On the way, everything else is a long press away.
+                if last && picked == nil {
+                    action("Done", symbol: "checkmark", grow: true) { end(arrived: true) }
+                        .disabled(ending)
+                        .padding(.top, 12)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                } else {
+                    Text("Swipe for the next step · tap for all · hold for more")
+                        .font(.geist(12)).foregroundStyle(Palette.textSoft)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 10)
+                        .accessibilityHidden(true)
                 }
-                .padding(.top, 12)
-                .modifier(Rise(order: 3))
             }
             .animation(Motion.ios(0.35), value: live.index)
         }
         .padding(14)
         .background(Palette.surface, in: .rect(cornerRadius: 20))
         .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green.opacity(0.6), lineWidth: 1.5) }
+        .sensoryFeedback(.selection, trigger: picked)
+        .contentShape(.contextMenuPreview, .rect(cornerRadius: 20))
+        .contextMenu {
+            Button { mapOpen = true } label: { Label("Show the map", systemImage: "map") }
+            Button { withAnimation(Motion.ios(0.35)) { steps.toggle() } } label: { Label(steps ? "Hide steps" : "All steps", systemImage: "list.bullet") }
+            Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
+            Button { replan() } label: { Label("New way from here", systemImage: "arrow.triangle.turn.up.right.diamond") }
+                .disabled(follow.point == nil)
+            Divider()
+            Button(role: .destructive) { end(arrived: false) } label: { Label("End trip", systemImage: "stop.circle") }
+        }
+        .accessibilityAction(named: "Show the map") { mapOpen = true }
+        .accessibilityAction(named: "End trip") { end(arrived: false) }
         .animation(Motion.spring, value: model.cardNote)
         .sheet(isPresented: $mapOpen) { WayMap(title: "Your way to \(trip.to)", legs: trip.legs, guiding: (trip, follow)) }
         .onAppear {
@@ -1036,6 +1094,7 @@ struct WayMap: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("speakTurns") private var speak = false
     @State private var following = true
+    @State private var pull: CGFloat = 0
 
     var body: some View {
         let here = guiding?.follow.here
@@ -1046,10 +1105,24 @@ struct WayMap: View {
                 .ignoresSafeArea()
             VStack(spacing: 10) {
                 HStack(alignment: .top, spacing: 10) {
-                    Text(title).font(.geist(17, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
-                        .padding(.horizontal, 16).padding(.vertical, 12)
+                    // Pull the title down: the map shrinks back to where it came from.
+                    VStack(alignment: .leading, spacing: 6) {
+                        Capsule().fill(Palette.textSoft.opacity(0.5)).frame(width: 36, height: 5).frame(maxWidth: .infinity)
+                        Text(title).font(.geist(17, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
+                    }
+                        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .glassEffect(.regular, in: .rect(cornerRadius: 22))
+                        .contentShape(.rect)
+                        .gesture(
+                            DragGesture(minimumDistance: 8)
+                                .onChanged { value in pull = max(0, value.translation.height) }
+                                .onEnded { value in
+                                    if value.translation.height > 90 || value.predictedEndTranslation.height > 220 { dismiss() }
+                                    withAnimation(.spring(duration: 0.35, bounce: 0.25)) { pull = 0 }
+                                }
+                        )
+                        .accessibilityAction(named: "Close the map") { dismiss() }
                     Button { dismiss() } label: {
                         Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
                             .frame(width: 48, height: 48).background(Palette.action, in: .circle)
@@ -1093,6 +1166,9 @@ struct WayMap: View {
                 .padding(.trailing, 16).padding(.bottom, 40)
             }
         }
+        // Following the finger while pulled, as a sheet does.
+        .scaleEffect(1 - min(pull, 300) / 1500, anchor: .top)
+        .offset(y: pull * 0.6)
         .animation(Motion.ios(0.3), value: here?.turn)
         .presentationDetents([.large])
     }
