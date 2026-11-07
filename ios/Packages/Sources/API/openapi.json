@@ -165,6 +165,72 @@
                 }
             }
         },
+        "/alerts": {
+            "get": {
+                "operationId": "alerts.index",
+                "summary": "The bell's sheet: the web's Alerts list (AlertController::index), shaped for the app",
+                "tags": [
+                    "Alerts"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`AlertsResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AlertsResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/alerts/{alert}/read": {
+            "post": {
+                "operationId": "alerts.read",
+                "summary": "Mark one of their alerts read; another person's is not found, so nothing says it exists",
+                "tags": [
+                    "Alerts"
+                ],
+                "parameters": [
+                    {
+                        "name": "alert",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "ok"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/day/command": {
             "post": {
                 "operationId": "day.command",
@@ -390,6 +456,98 @@
                             "application/json": {
                                 "schema": {
                                     "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/{process}/documents": {
+            "get": {
+                "operationId": "paperworkDocuments.index",
+                "summary": "What to bring to a Paperwork appointment (Today's plans' `bring.process`): its documents, each ready or not",
+                "tags": [
+                    "PaperworkDocuments"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`BringListResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BringListResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/{process}/documents/{document}": {
+            "post": {
+                "operationId": "paperworkDocuments.update",
+                "summary": "Tick a document ready or not: the same record Paperwork's Documents list changes",
+                "tags": [
+                    "PaperworkDocuments"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "document",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BringDocumentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`BringListResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BringListResource"
                                 }
                             }
                         }
@@ -1201,6 +1359,154 @@
     },
     "components": {
         "schemas": {
+            "AlertsResource": {
+                "type": "object",
+                "properties": {
+                    "alerts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "category": {
+                                    "type": "string"
+                                },
+                                "severity": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "body": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "source": {
+                                    "type": "string"
+                                },
+                                "at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "read": {
+                                    "type": "boolean"
+                                },
+                                "url": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "lines": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "stops": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "category",
+                                "severity",
+                                "title",
+                                "body",
+                                "source",
+                                "at",
+                                "read",
+                                "url",
+                                "lines",
+                                "stops"
+                            ]
+                        }
+                    },
+                    "unread": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "alerts",
+                    "unread"
+                ],
+                "title": "AlertsResource"
+            },
+            "BringDocumentRequest": {
+                "type": "object",
+                "description": "A document of What to bring, ticked ready or not.",
+                "properties": {
+                    "ready": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "ready"
+                ],
+                "title": "BringDocumentRequest"
+            },
+            "BringListResource": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "ready": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "documents": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "ready": {
+                                    "type": "boolean"
+                                },
+                                "note": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "title",
+                                "ready",
+                                "note"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "title",
+                    "ready",
+                    "total",
+                    "documents"
+                ],
+                "title": "BringListResource"
+            },
             "DayCommandRequest": {
                 "type": "object",
                 "description": "A change to the day from the iPhone's Today: the same commands the web's Today sends to the\nComposer workspace, only those Today offers (done, remove, add, a personal plan, edit, undo).",
@@ -3015,6 +3321,24 @@
                                         "string",
                                         "null"
                                     ]
+                                },
+                                "line": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "color": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "alert_id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
                                 }
                             },
                             "required": [
@@ -3022,7 +3346,10 @@
                                 "kind",
                                 "severity",
                                 "headline",
-                                "detail"
+                                "detail",
+                                "line",
+                                "color",
+                                "alert_id"
                             ]
                         }
                     },

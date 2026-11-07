@@ -26,6 +26,16 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /me/delete`.
     /// - Remark: Generated from `#/paths//me/delete/post(account.destroy)`.
     func account_destroy(_ input: Operations.Account_destroy.Input) async throws -> Operations.Account_destroy.Output
+    /// The bell's sheet: the web's Alerts list (AlertController::index), shaped for the app
+    ///
+    /// - Remark: HTTP `GET /alerts`.
+    /// - Remark: Generated from `#/paths//alerts/get(alerts.index)`.
+    func alerts_index(_ input: Operations.Alerts_index.Input) async throws -> Operations.Alerts_index.Output
+    /// Mark one of their alerts read; another person's is not found, so nothing says it exists
+    ///
+    /// - Remark: HTTP `POST /alerts/{alert}/read`.
+    /// - Remark: Generated from `#/paths//alerts/{alert}/read/post(alerts.read)`.
+    func alerts_read(_ input: Operations.Alerts_read.Input) async throws -> Operations.Alerts_read.Output
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
     /// go in comes back 422 with why, and nothing changes
@@ -52,6 +62,16 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /journey/start`.
     /// - Remark: Generated from `#/paths//journey/start/post(journey.start)`.
     func journey_start(_ input: Operations.Journey_start.Input) async throws -> Operations.Journey_start.Output
+    /// What to bring to a Paperwork appointment (Today's plans' `bring.process`): its documents, each ready or not
+    ///
+    /// - Remark: HTTP `GET /paperwork/{process}/documents`.
+    /// - Remark: Generated from `#/paths//paperwork/{process}/documents/get(paperworkDocuments.index)`.
+    func paperworkDocuments_index(_ input: Operations.PaperworkDocuments_index.Input) async throws -> Operations.PaperworkDocuments_index.Output
+    /// Tick a document ready or not: the same record Paperwork's Documents list changes
+    ///
+    /// - Remark: HTTP `POST /paperwork/{process}/documents/{document}`.
+    /// - Remark: Generated from `#/paths//paperwork/{process}/documents/{document}/post(paperworkDocuments.update)`.
+    func paperworkDocuments_update(_ input: Operations.PaperworkDocuments_update.Input) async throws -> Operations.PaperworkDocuments_update.Output
     /// Email and password. An account with two-step sign-in gets a challenge, not a token
     ///
     /// - Remark: HTTP `POST /auth/token`.
@@ -166,6 +186,26 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// The bell's sheet: the web's Alerts list (AlertController::index), shaped for the app
+    ///
+    /// - Remark: HTTP `GET /alerts`.
+    /// - Remark: Generated from `#/paths//alerts/get(alerts.index)`.
+    public func alerts_index(headers: Operations.Alerts_index.Input.Headers = .init()) async throws -> Operations.Alerts_index.Output {
+        try await alerts_index(Operations.Alerts_index.Input(headers: headers))
+    }
+    /// Mark one of their alerts read; another person's is not found, so nothing says it exists
+    ///
+    /// - Remark: HTTP `POST /alerts/{alert}/read`.
+    /// - Remark: Generated from `#/paths//alerts/{alert}/read/post(alerts.read)`.
+    public func alerts_read(
+        path: Operations.Alerts_read.Input.Path,
+        headers: Operations.Alerts_read.Input.Headers = .init()
+    ) async throws -> Operations.Alerts_read.Output {
+        try await alerts_read(Operations.Alerts_read.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
     /// go in comes back 422 with why, and nothing changes
@@ -228,6 +268,34 @@ extension APIProtocol {
         body: Operations.Journey_start.Input.Body
     ) async throws -> Operations.Journey_start.Output {
         try await journey_start(Operations.Journey_start.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// What to bring to a Paperwork appointment (Today's plans' `bring.process`): its documents, each ready or not
+    ///
+    /// - Remark: HTTP `GET /paperwork/{process}/documents`.
+    /// - Remark: Generated from `#/paths//paperwork/{process}/documents/get(paperworkDocuments.index)`.
+    public func paperworkDocuments_index(
+        path: Operations.PaperworkDocuments_index.Input.Path,
+        headers: Operations.PaperworkDocuments_index.Input.Headers = .init()
+    ) async throws -> Operations.PaperworkDocuments_index.Output {
+        try await paperworkDocuments_index(Operations.PaperworkDocuments_index.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Tick a document ready or not: the same record Paperwork's Documents list changes
+    ///
+    /// - Remark: HTTP `POST /paperwork/{process}/documents/{document}`.
+    /// - Remark: Generated from `#/paths//paperwork/{process}/documents/{document}/post(paperworkDocuments.update)`.
+    public func paperworkDocuments_update(
+        path: Operations.PaperworkDocuments_update.Input.Path,
+        headers: Operations.PaperworkDocuments_update.Input.Headers = .init(),
+        body: Operations.PaperworkDocuments_update.Input.Body
+    ) async throws -> Operations.PaperworkDocuments_update.Output {
+        try await paperworkDocuments_update(Operations.PaperworkDocuments_update.Input(
+            path: path,
             headers: headers,
             body: body
         ))

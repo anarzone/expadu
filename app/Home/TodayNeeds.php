@@ -2,7 +2,9 @@
 
 namespace App\Home;
 
+use App\Alerts\AlertClassifier;
 use App\ContextEngine\DayBriefs;
+use App\Models\Alert;
 use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Support\NotificationThrottle;
@@ -46,7 +48,7 @@ final class TodayNeeds
      * Today's strip's shape (Build session 1, 26 Oct 2026): null when the engine couldn't say, so
      * nothing claims a calm day it didn't check; else the items, ranked, and when they were checked.
      *
-     * @return array{items: list<array{id: string, tier: int, kind: string, headline: string, detail: ?string, at: ?string, severity: string, href: ?string}>, checked_at: string}|null
+     * @return array{items: list<array{id: string, tier: int, kind: string, headline: string, detail: ?string, at: ?string, severity: string, href: ?string, line: ?string, alert_id: ?int}>, checked_at: string}|null
      */
     public function for(User $user): ?array
     {
@@ -78,7 +80,7 @@ final class TodayNeeds
      * Leaving now, worked out each time (the clock decides it), then the day's eligible items, kept
      * for KEEP_SECONDS as plain data: the brief's items and order, through push's gate.
      *
-     * @return list<array{id: string, tier: int, kind: string, headline: string, detail: ?string, at: ?string, severity: string, href: ?string}>
+     * @return list<array{id: string, tier: int, kind: string, headline: string, detail: ?string, at: ?string, severity: string, href: ?string, line: ?string, alert_id: ?int}>
      */
     private function items(User $user, CarbonImmutable $now): array
     {
@@ -92,8 +94,9 @@ final class TodayNeeds
             ->filter(fn (array $item): bool => NotificationThrottle::eligible($user, $item['type']));
         $needs = Cache::remember(self::key($user->id, $now->toDateString()), self::KEEP_SECONDS, fn (): array => collect($this->briefs->items($user, $now->startOfDay(), DayBriefs::MORNING))
             ->filter(fn (array $item): bool => in_array($item['kind'], self::NEEDS, true) && $item['type'] !== null && NotificationThrottle::eligible($user, $item['type']))
-            ->map(fn (array $item): array => array_intersect_key($item, array_flip(['kind', 'type', 'severity', 'text', 'why', 'link', 'about', 'at'])))
+            ->map(fn (array $item): array => array_intersect_key($item, array_flip(['kind', 'type', 'severity', 'text', 'why', 'link', 'about', 'at', 'line'])))
             ->values()->all());
+        $alerts = self::alerts($user, $needs);
 
         return $leaving->concat($needs)
             ->map(fn (array $item): array => [
@@ -106,7 +109,32 @@ final class TodayNeeds
                 'at' => $item['at'],
                 'severity' => in_array($item['severity'], ['critical', 'major'], true) ? 'conflict' : 'attention',
                 'href' => $item['link'],
+                // A problem on their lines: the line to badge, and their alert card for it, if there is one.
+                'line' => $item['line'] ?? null,
+                'alert_id' => $alerts[self::alertGroup($item) ?? ''] ?? null,
             ])->values()->all();
+    }
+
+    /**
+     * Their live alert cards for these line problems, by group: read each time (not kept with the
+     * items), so a card dismissed a moment ago is never pointed at.
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return array<string, int>
+     */
+    private static function alerts(User $user, array $items): array
+    {
+        $groups = array_values(array_unique(array_filter(array_map(self::alertGroup(...), $items))));
+
+        return $groups === [] ? [] : Alert::query()->where('user_id', $user->id)->whereIn('group_key', $groups)
+            ->publishable()->whereNull('dismissed_at')->orderBy('id')->pluck('id', 'group_key')->all();
+    }
+
+    /** The group a line problem's alert card is kept under (RecordContextAlert): its action's key, less the user. */
+    private static function alertGroup(array $item): ?string
+    {
+        return in_array($item['kind'], ['disruption', 'delay'], true) && is_string($item['type'] ?? null)
+            ? AlertClassifier::groupKey($item['type'], (string) $item['about']) : null;
     }
 
     private static function key(int $userId, string $date): string

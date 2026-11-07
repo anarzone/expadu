@@ -69,3 +69,13 @@ test('ideas are at most six; every note that needs the person goes to the bell',
         ->and($today['ideas'][0]['place'])->toBe('Stadtgarten')
         ->and($today['needs'])->toHaveCount(5);
 });
+
+test('a disruption on one of their lines carries its line, in its colour, and its alert card', function () {
+    $need = ['id' => 'n1', 'tier' => 1, 'kind' => 'disruption', 'headline' => 'Line 12 disrupted.', 'detail' => 'On one of your lines.', 'at' => null, 'severity' => 'conflict', 'href' => '/travel', 'line' => '12', 'alert_id' => 41];
+    $other = ['id' => 'n2', 'tier' => 2, 'kind' => 'shops', 'headline' => 'Most shops are closed tomorrow (Sunday).', 'detail' => null, 'at' => null, 'severity' => 'attention', 'href' => '/today'];
+
+    expect(todayShaped(needs: ['items' => [$need, $other], 'checked_at' => 'now'])['needs'])->sequence(
+        fn ($n) => $n->toMatchArray(['line' => '12', 'color' => '#98BF1D', 'alert_id' => 41]),
+        fn ($n) => $n->toMatchArray(['line' => null, 'color' => null, 'alert_id' => null]),
+    );
+});

@@ -80,13 +80,17 @@ class TodayResource extends JsonResource
             'trip' => $this->trip($day['active_trip'] ?? null),
             /** @var array{kind: string, document: string|null, title: string, date: string, days_remaining: int, next: string|null, ready: int|null, total: int|null, process: string|null}|null */
             'deadline' => $this->deadline($paperwork['strip'] ?? null),
-            /** @var array<int, array{id: string, kind: string, severity: string, headline: string, detail: string|null}> */
+            /** @var array<int, array{id: string, kind: string, severity: string, headline: string, detail: string|null, line: string|null, color: string|null, alert_id: int|null}> */
             'needs' => array_map(fn (array $need) => [
                 'id' => (string) $need['id'],
                 'kind' => (string) $need['kind'],
                 'severity' => (string) $need['severity'],
                 'headline' => (string) $need['headline'],
                 'detail' => $need['detail'] ?? null,
+                // A disruption or delay on one of their lines: its badge, and the alert card it opens.
+                'line' => ($need['line'] ?? null) === null ? null : (string) $need['line'],
+                'color' => ($need['line'] ?? null) === null ? null : KvbLineColors::for((string) $need['line']),
+                'alert_id' => isset($need['alert_id']) ? (int) $need['alert_id'] : null,
             ], $this->resource['needs']['items'] ?? []),
             /** @var array<int, array{id: int, candidate: string, saved: bool, why: string|null, reasons: array<int, string>, title: string, category: string, emoji: string|null, starts_at: string|null, ends_at: string|null, timed: bool, untimed: string|null, tomorrow: bool, price: string|null, place: string|null, area: string|null}> */
             'ideas' => array_map(fn (array $event) => $this->idea($event), array_slice($this->resource['discovery']['events'] ?? [], 0, 6)),

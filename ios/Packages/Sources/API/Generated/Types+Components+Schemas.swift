@@ -11,6 +11,197 @@ public import Foundation
 extension Components {
     /// Types generated from the `#/components/schemas` section of the OpenAPI document.
     public enum Schemas {
+        /// - Remark: Generated from `#/components/schemas/AlertsResource`.
+        public struct AlertsResource: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload`.
+            public struct AlertsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/id`.
+                public var id: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/category`.
+                public var category: Swift.String
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/severity`.
+                public var severity: Swift.String
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/title`.
+                public var title: Swift.String
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/body`.
+                public var body: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/source`.
+                public var source: Swift.String
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/at`.
+                public var at: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/read`.
+                public var read: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/url`.
+                public var url: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/lines`.
+                public var lines: [Swift.String]
+                /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload/stops`.
+                public var stops: [Swift.String]
+                /// Creates a new `AlertsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - category:
+                ///   - severity:
+                ///   - title:
+                ///   - body:
+                ///   - source:
+                ///   - at:
+                ///   - read:
+                ///   - url:
+                ///   - lines:
+                ///   - stops:
+                public init(
+                    id: Swift.Int,
+                    category: Swift.String,
+                    severity: Swift.String,
+                    title: Swift.String,
+                    body: Swift.String? = nil,
+                    source: Swift.String,
+                    at: Swift.String? = nil,
+                    read: Swift.Bool,
+                    url: Swift.String? = nil,
+                    lines: [Swift.String],
+                    stops: [Swift.String]
+                ) {
+                    self.id = id
+                    self.category = category
+                    self.severity = severity
+                    self.title = title
+                    self.body = body
+                    self.source = source
+                    self.at = at
+                    self.read = read
+                    self.url = url
+                    self.lines = lines
+                    self.stops = stops
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case category
+                    case severity
+                    case title
+                    case body
+                    case source
+                    case at
+                    case read
+                    case url
+                    case lines
+                    case stops
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/AlertsResource/alerts`.
+            public typealias AlertsPayload = [Components.Schemas.AlertsResource.AlertsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/AlertsResource/alerts`.
+            public var alerts: Components.Schemas.AlertsResource.AlertsPayload
+            /// - Remark: Generated from `#/components/schemas/AlertsResource/unread`.
+            public var unread: Swift.Int
+            /// Creates a new `AlertsResource`.
+            ///
+            /// - Parameters:
+            ///   - alerts:
+            ///   - unread:
+            public init(
+                alerts: Components.Schemas.AlertsResource.AlertsPayload,
+                unread: Swift.Int
+            ) {
+                self.alerts = alerts
+                self.unread = unread
+            }
+            public enum CodingKeys: String, CodingKey {
+                case alerts
+                case unread
+            }
+        }
+        /// A document of What to bring, ticked ready or not.
+        ///
+        /// - Remark: Generated from `#/components/schemas/BringDocumentRequest`.
+        public struct BringDocumentRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/BringDocumentRequest/ready`.
+            public var ready: Swift.Bool
+            /// Creates a new `BringDocumentRequest`.
+            ///
+            /// - Parameters:
+            ///   - ready:
+            public init(ready: Swift.Bool) {
+                self.ready = ready
+            }
+            public enum CodingKeys: String, CodingKey {
+                case ready
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/BringListResource`.
+        public struct BringListResource: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/BringListResource/title`.
+            public var title: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/BringListResource/ready`.
+            public var ready: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/BringListResource/total`.
+            public var total: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/BringListResource/DocumentsPayload`.
+            public struct DocumentsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BringListResource/DocumentsPayload/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/BringListResource/DocumentsPayload/title`.
+                public var title: Swift.String
+                /// - Remark: Generated from `#/components/schemas/BringListResource/DocumentsPayload/ready`.
+                public var ready: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/BringListResource/DocumentsPayload/note`.
+                public var note: Swift.String?
+                /// Creates a new `DocumentsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - title:
+                ///   - ready:
+                ///   - note:
+                public init(
+                    id: Swift.String,
+                    title: Swift.String,
+                    ready: Swift.Bool,
+                    note: Swift.String? = nil
+                ) {
+                    self.id = id
+                    self.title = title
+                    self.ready = ready
+                    self.note = note
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case title
+                    case ready
+                    case note
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/BringListResource/documents`.
+            public typealias DocumentsPayload = [Components.Schemas.BringListResource.DocumentsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/BringListResource/documents`.
+            public var documents: Components.Schemas.BringListResource.DocumentsPayload
+            /// Creates a new `BringListResource`.
+            ///
+            /// - Parameters:
+            ///   - title:
+            ///   - ready:
+            ///   - total:
+            ///   - documents:
+            public init(
+                title: Swift.String? = nil,
+                ready: Swift.Int,
+                total: Swift.Int,
+                documents: Components.Schemas.BringListResource.DocumentsPayload
+            ) {
+                self.title = title
+                self.ready = ready
+                self.total = total
+                self.documents = documents
+            }
+            public enum CodingKeys: String, CodingKey {
+                case title
+                case ready
+                case total
+                case documents
+            }
+        }
         /// A change to the day from the iPhone's Today: the same commands the web's Today sends to the
         /// Composer workspace, only those Today offers (done, remove, add, a personal plan, edit, undo).
         ///
@@ -2240,6 +2431,12 @@ extension Components {
                 public var headline: Swift.String
                 /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/detail`.
                 public var detail: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/line`.
+                public var line: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/color`.
+                public var color: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/NeedsPayload/alert_id`.
+                public var alertId: Swift.Int?
                 /// Creates a new `NeedsPayloadPayload`.
                 ///
                 /// - Parameters:
@@ -2248,18 +2445,27 @@ extension Components {
                 ///   - severity:
                 ///   - headline:
                 ///   - detail:
+                ///   - line:
+                ///   - color:
+                ///   - alertId:
                 public init(
                     id: Swift.String,
                     kind: Swift.String,
                     severity: Swift.String,
                     headline: Swift.String,
-                    detail: Swift.String? = nil
+                    detail: Swift.String? = nil,
+                    line: Swift.String? = nil,
+                    color: Swift.String? = nil,
+                    alertId: Swift.Int? = nil
                 ) {
                     self.id = id
                     self.kind = kind
                     self.severity = severity
                     self.headline = headline
                     self.detail = detail
+                    self.line = line
+                    self.color = color
+                    self.alertId = alertId
                 }
                 public enum CodingKeys: String, CodingKey {
                     case id
@@ -2267,6 +2473,9 @@ extension Components {
                     case severity
                     case headline
                     case detail
+                    case line
+                    case color
+                    case alertId = "alert_id"
                 }
             }
             /// - Remark: Generated from `#/components/schemas/TodayResource/needs`.

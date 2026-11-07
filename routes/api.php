@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\AlertsController;
 use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\JourneyController;
+use App\Http\Controllers\Api\V1\PaperworkDocumentsController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
 use App\Http\Controllers\Api\V1\TodayTripController;
@@ -52,5 +54,12 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         // Getting there (an event's details): the ways, and I'm on my way on one of them.
         Route::post('journey/plan', [JourneyController::class, 'plan'])->middleware(['verified', 'throttle:journey']);
         Route::post('journey/start', [JourneyController::class, 'start'])->middleware(['verified', 'throttle:journey']);
+        // The bell's sheet: their alerts, and one read.
+        Route::get('alerts', [AlertsController::class, 'index'])->middleware('verified');
+        Route::post('alerts/{alert}/read', [AlertsController::class, 'read'])->whereNumber('alert')->middleware('verified');
+        // What to bring to a Paperwork appointment (Today's `bring.process`), and ticking a document ready.
+        Route::get('paperwork/{process}/documents', [PaperworkDocumentsController::class, 'index'])->where('process', '[a-f0-9]{64}')->middleware('verified');
+        Route::post('paperwork/{process}/documents/{document}', [PaperworkDocumentsController::class, 'update'])
+            ->where(['process' => '[a-f0-9]{64}', 'document' => '[a-z0-9][a-zA-Z0-9._-]{0,199}'])->middleware(['verified', 'throttle:bureaucracy-v2']);
     });
 });
