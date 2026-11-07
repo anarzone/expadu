@@ -3,11 +3,8 @@
 namespace App\Services;
 
 /**
- * KVB line → brand colour. GTFS `route_color` is authoritative but the
- * static feed isn't imported here yet, so departures come back with a
- * default blue. Until then this map gives trams their familiar colours and
- * buses a neutral grey; once GTFS is imported, route_color wins and this is
- * only a fallback for lines it doesn't cover.
+ * KVB line → brand colour: the Stadtbahn lines' official colours (from the
+ * GTFS feed's route_color), buses a neutral grey, S-Bahn its green.
  */
 final class KvbLineColors
 {
@@ -21,20 +18,24 @@ final class KvbLineColors
     /** Regionalbahn / RegionalExpress (RB, RE, RRX) — a neutral rail slate. */
     private const REGIONAL = '#455A6B';
 
-    /** Approximate KVB tram line colours — refined by GTFS route_color later. */
+    /**
+     * KVB's own line colours: the VRS GTFS feed's route_color for each Stadtbahn line, as on
+     * KVB's network map (owner, 7 Nov 2026: the official colours are the base; the app draws
+     * them as gradients).
+     */
     private const TRAM = [
-        '1' => '#E2001A',
-        '3' => '#C8027E',
-        '4' => '#A01E5A',
-        '5' => '#0089CB',
-        '7' => '#009A45',
-        '9' => '#E2001A',
-        '12' => '#95C11F',
-        '13' => '#F18800',
-        '15' => '#E2001A',
-        '16' => '#0089CB',
-        '17' => '#0089CB',
-        '18' => '#0089CB',
+        '1' => '#E0071C',
+        '3' => '#F29DC2',
+        '4' => '#EA71A5',
+        '5' => '#A69CC8',
+        '7' => '#F08D51',
+        '9' => '#F09086',
+        '12' => '#98BF1D',
+        '13' => '#A98567',
+        '15' => '#5AAC31',
+        '16' => '#06ADA5',
+        '17' => '#85D0F5',
+        '18' => '#1D92D1',
     ];
 
     public static function for(string $line, ?string $type = null): string

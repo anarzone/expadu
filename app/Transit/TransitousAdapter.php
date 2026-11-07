@@ -664,6 +664,9 @@ class TransitousAdapter implements RouteService
             $arriveAt = CarbonImmutable::parse($rawLeg['endTime'])->setTimezone('Europe/Berlin');
             $scheduledDepartAt = $this->scheduledTime($rawLeg['scheduledStartTime'] ?? null);
             $realtime = ($rawLeg['realTime'] ?? false) === true;
+            if (in_array($mode, ['walk', 'bike'], true)) {
+                $rawLeg = $this->forwards($rawLeg, $from, $to);
+            }
 
             $legs[] = new Leg(
                 mode: $mode,
@@ -697,6 +700,7 @@ class TransitousAdapter implements RouteService
                 cancelled: ($rawLeg['cancelled'] ?? false) === true,
                 tripId: isset($rawLeg['tripId']) ? (string) $rawLeg['tripId'] : null,
                 distanceM: $mode === 'walk' && isset($rawLeg['distance']) ? (int) round((float) $rawLeg['distance']) : null,
+                steps: in_array($mode, ['walk', 'bike'], true) ? $this->mapSteps((array) ($rawLeg['steps'] ?? [])) : null,
             );
         }
 
@@ -811,5 +815,79 @@ class TransitousAdapter implements RouteService
     protected function source(): string
     {
         return 'transitous';
+    }
+
+    /**
+     * A walk's turns as the router gives them: which way, onto which street, how far, the line
+     * of it (precision 7, as every map), and the floors when it changes level (lifts, stairs).
+     *
+     * @param  array<int, mixed>  $steps
+     * @return list<array{direction: string, street: string, metres: int, polyline: string|null, from_level: float|null, to_level: float|null}>|null
+     */
+    private function mapSteps(array $steps): ?array
+    {
+        $mapped = array_values(array_filter(array_map(fn ($step) => is_array($step) ? [
+            'direction' => strtolower((string) ($step['relativeDirection'] ?? 'continue')),
+            'street' => trim((string) ($step['streetName'] ?? '')),
+            'metres' => (int) round((float) ($step['distance'] ?? 0)),
+            'polyline' => isset($step['polyline']['points'])
+                ? Polyline::atPrecision((string) $step['polyline']['points'], (int) ($step['polyline']['precision'] ?? Polyline::PRECISION))
+                : null,
+            'from_level' => isset($step['fromLevel']) ? (float) $step['fromLevel'] : null,
+            'to_level' => isset($step['toLevel']) ? (float) $step['toLevel'] : null,
+        ] : null, $steps)));
+
+        return $mapped === [] ? null : $mapped;
+    }
+
+    /**
+     * A walk or ride on the street, the right way round. Asked to arrive by a time, the router can
+     * hand a direct walk back from its end to its start (line and turns alike); then both are turned
+     * round, and each turn's way is worked out again from the line (AppJourney).
+     *
+     * @param  array<string, mixed>  $leg
+     * @param  array<string, mixed>  $from
+     * @param  array<string, mixed>  $to
+     * @return array<string, mixed>
+     */
+    private function forwards(array $leg, array $from, array $to): array
+    {
+        $precision = (int) ($leg['legGeometry']['precision'] ?? Polyline::PRECISION);
+        $points = isset($leg['legGeometry']['points']) ? Polyline::decode((string) $leg['legGeometry']['points'], $precision) : null;
+        if ($points === null || count($points) < 2 || ! isset($from['lat'], $from['lon'], $to['lat'], $to['lon'])) {
+            return $leg;
+        }
+        // Metres between a line point and a place, flat (fine across a city).
+        $metres = fn (array $point, array $place): float => hypot(
+            ($point[1] - (float) $place['lon']) * 111_320 * cos(deg2rad((float) $place['lat'])),
+            ($point[0] - (float) $place['lat']) * 111_320,
+        );
+        // Only a line that plainly runs from the end to the start is turned round.
+        $backwards = $metres($points[0], $to) < 150 && $metres($points[count($points) - 1], $from) < 150
+            && $metres($points[0], $from) > $metres($points[0], $to);
+        if (! $backwards) {
+            return $leg;
+        }
+
+        $leg['legGeometry']['points'] = Polyline::encode(array_reverse($points), $precision);
+        $leg['steps'] = array_reverse(array_map(function ($step) {
+            if (! is_array($step)) {
+                return $step;
+            }
+            if (isset($step['polyline']['points'])) {
+                $stepPrecision = (int) ($step['polyline']['precision'] ?? Polyline::PRECISION);
+                $stepPoints = Polyline::decode((string) $step['polyline']['points'], $stepPrecision);
+                $step['polyline']['points'] = $stepPoints === null ? $step['polyline']['points'] : Polyline::encode(array_reverse($stepPoints), $stepPrecision);
+            }
+            // Left and right flip on the way back: the turns are read again from the line.
+            if (! in_array(strtoupper((string) ($step['relativeDirection'] ?? '')), ['STAIRS', 'ELEVATOR'], true)) {
+                $step['relativeDirection'] = 'CONTINUE';
+            }
+            [$step['fromLevel'], $step['toLevel']] = [$step['toLevel'] ?? null, $step['fromLevel'] ?? null];
+
+            return $step;
+        }, (array) ($leg['steps'] ?? [])));
+
+        return $leg;
     }
 }

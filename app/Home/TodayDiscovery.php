@@ -269,8 +269,11 @@ final class TodayDiscovery
             ? $this->nearFirst($this->listings($now, $now->addDay())->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])->values(), $home)
             : collect();
 
+        // One listing imported from two sources is one idea: the same title at the same start shows once.
         // Today shows eleven at most, so only the first eleven are dressed.
-        return $ahead->concat($tomorrow)->concat($running)->take(self::LISTED + self::SPARE_FOR_HIDDEN)->values();
+        return $ahead->concat($tomorrow)->concat($running)
+            ->unique(fn (array $event): string => mb_strtolower(trim((string) $event['title'])).'|'.$event['occurrence_start'])
+            ->take(self::LISTED + self::SPARE_FOR_HIDDEN)->values();
     }
 
     /**

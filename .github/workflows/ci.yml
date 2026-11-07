@@ -3,10 +3,13 @@ name: CI
 on:
   push:
     branches: [main, staging]
+    # A push touching only the iOS app changes nothing on the server, so it deploys nothing.
+    paths-ignore: ['ios/**']
   pull_request:
     # The launch branch too: its PRs get the same lint, tests and browser specs as a
     # release, on GitHub's machines. Deploy jobs still run only for main and staging.
     branches: [main, staging, 'launch/**']
+    paths-ignore: ['ios/**']
   workflow_dispatch:
 
 jobs:

@@ -1,0 +1,3965 @@
+{
+    "openapi": "3.1.2",
+    "info": {
+        "title": "Expadu",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://app.expadu.com/api/v1",
+            "description": "Production"
+        }
+    ],
+    "paths": {
+        "/me": {
+            "get": {
+                "operationId": "account.show",
+                "tags": [
+                    "Account"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/me/email-verification": {
+            "post": {
+                "operationId": "account.resendVerification",
+                "tags": [
+                    "Account"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "sent": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "sent"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/me/deletion-code": {
+            "post": {
+                "operationId": "account.sendDeletionCode",
+                "summary": "For an account without a password: the code that confirms deleting it",
+                "tags": [
+                    "Account"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "sent": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "sent"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/me/delete": {
+            "post": {
+                "operationId": "account.destroy",
+                "summary": "Deletes the account for good, with everything ForgetAccount and the web's Delete account remove",
+                "tags": [
+                    "Account"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ProfileDeleteRequest"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "password": {
+                                                "type": "string",
+                                                "description": "The password, for an account that has one."
+                                            },
+                                            "code": {
+                                                "type": "string",
+                                                "description": "The emailed code, for an account without a password."
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/alerts": {
+            "get": {
+                "operationId": "alerts.index",
+                "summary": "The bell's sheet: the web's Alerts list (AlertController::index), shaped for the app",
+                "tags": [
+                    "Alerts"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`AlertsResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AlertsResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/alerts/{alert}/read": {
+            "post": {
+                "operationId": "alerts.read",
+                "summary": "Mark one of their alerts read; another person's is not found, so nothing says it exists",
+                "tags": [
+                    "Alerts"
+                ],
+                "parameters": [
+                    {
+                        "name": "alert",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "ok"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/day/command": {
+            "post": {
+                "operationId": "day.command",
+                "summary": "One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):\nthe new revision and what changed, so the app can say so with an Undo; a change that can't\ngo in comes back 422 with why, and nothing changes",
+                "tags": [
+                    "Day"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DayCommandRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "revision": {
+                                            "type": "integer"
+                                        },
+                                        "change": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "label": {
+                                                    "type": "string"
+                                                },
+                                                "undoable": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "label",
+                                                "undoable"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "revision",
+                                        "change"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/events": {
+            "get": {
+                "operationId": "events.day",
+                "summary": "What's on for a day (All events on Today): the web panel's listings (App\\Home\\WhatsOn).\nToday drops what has already ended and says how many",
+                "tags": [
+                    "Events"
+                ],
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`EventsDayResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EventsDayResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/events/saved": {
+            "post": {
+                "operationId": "events.save",
+                "summary": "Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)",
+                "tags": [
+                    "Events"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveEventRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "saved": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "saved"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/journey/plan": {
+            "post": {
+                "operationId": "journey.plan",
+                "tags": [
+                    "Journey"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JourneyPlanRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`JourneyPlanResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JourneyPlanResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/journey/start": {
+            "post": {
+                "operationId": "journey.start",
+                "summary": "I'm on my way: the trip starts on that way. A trip already running asks first (409)",
+                "tags": [
+                    "Journey"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JourneyStartRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/{process}/documents": {
+            "get": {
+                "operationId": "paperworkDocuments.index",
+                "summary": "What to bring to a Paperwork appointment (Today's plans' `bring.process`): its documents, each ready or not",
+                "tags": [
+                    "PaperworkDocuments"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`BringListResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BringListResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/{process}/documents/{document}": {
+            "post": {
+                "operationId": "paperworkDocuments.update",
+                "summary": "Tick a document ready or not: the same record Paperwork's Documents list changes",
+                "tags": [
+                    "PaperworkDocuments"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "document",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BringDocumentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`BringListResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BringListResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/auth/token": {
+            "post": {
+                "operationId": "signIn.token",
+                "summary": "Email and password. An account with two-step sign-in gets a challenge, not a token",
+                "tags": [
+                    "SignIn"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "remember": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "email",
+                                    "password",
+                                    "device_name"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SignInResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignInResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "signIn.signOut",
+                "tags": [
+                    "SignIn"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/auth/two-factor": {
+            "post": {
+                "operationId": "signIn.twoFactor",
+                "summary": "The second step: the app's code, or a recovery code",
+                "tags": [
+                    "SignIn"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "challenge": {
+                                        "type": "string"
+                                    },
+                                    "code": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "recovery_code": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "challenge"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SignInResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignInResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/exchange": {
+            "post": {
+                "operationId": "signIn.exchange",
+                "summary": "Trades the code from Google's sign-in sheet for a token, proving it's the app that asked",
+                "tags": [
+                    "SignIn"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string"
+                                    },
+                                    "verifier": {
+                                        "type": "string",
+                                        "minLength": 43,
+                                        "maxLength": 128
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "required": [
+                                    "code",
+                                    "verifier",
+                                    "device_name"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SignInResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignInResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/apple": {
+            "post": {
+                "operationId": "signIn.apple",
+                "summary": "Sign in with Apple: the sheet's identity token, checked against Apple's keys and the nonce\nthe app made. The same Apple ID always opens the same account; a verified address joins one",
+                "tags": [
+                    "SignIn"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "identity_token": {
+                                        "type": "string",
+                                        "maxLength": 8192
+                                    },
+                                    "nonce": {
+                                        "type": "string",
+                                        "minLength": 32,
+                                        "maxLength": 128
+                                    },
+                                    "name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 255
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "required": [
+                                    "identity_token",
+                                    "nonce",
+                                    "device_name"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SignInResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignInResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "operationId": "signIn.register",
+                "summary": "A new account, signed in, its verification link on the way (as the web's)",
+                "tags": [
+                    "SignIn"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation",
+                                    "device_name"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SignInResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignInResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/forgot-password": {
+            "post": {
+                "operationId": "signIn.forgotPassword",
+                "summary": "Answers the same whether or not the address has an account",
+                "tags": [
+                    "SignIn"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "required": [
+                                    "email"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "sent": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "sent"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "operationId": "signIn.refresh",
+                "summary": "A fresh token for the one making the request, which stops working",
+                "tags": [
+                    "SignIn"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SignInResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignInResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/signals": {
+            "post": {
+                "operationId": "signal",
+                "tags": [
+                    "Signal"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordSignalsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": ""
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/today": {
+            "get": {
+                "operationId": "today.show",
+                "summary": "Today for the iPhone: the same day, notes, ideas, Paperwork, saved things and\nwhat's coming up that the web's Today reads (HomeFeedController), in one answer\nshaped for the app",
+                "tags": [
+                    "Today"
+                ],
+                "parameters": [
+                    {
+                        "name": "lat",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "minimum": -90,
+                            "maximum": 90
+                        }
+                    },
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "minimum": -180,
+                            "maximum": 180
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`TodayResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TodayResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/today-rank": {
+            "put": {
+                "operationId": "todayRank.update",
+                "tags": [
+                    "TodayRank"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "notice_version": {
+                                        "type": "string",
+                                        "description": "The notice they were shown (TodayRankPause's), to agree to it.",
+                                        "maxLength": 100
+                                    },
+                                    "provider_version": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "notice_version",
+                                    "provider_version"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "enabled"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Today\u2019s AI order isn\u2019t waiting for you."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/today-rank/later": {
+            "post": {
+                "operationId": "todayRank.later",
+                "tags": [
+                    "TodayRank"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "until": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "until"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/today/trip": {
+            "post": {
+                "operationId": "todayTrip.start",
+                "summary": "I'm on my way: the trip starts on that way. A trip already running asks first (409)",
+                "tags": [
+                    "TodayTrip"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TodayWayRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "todayTrip.end",
+                "summary": "I'm there, or the trip is over: it ends",
+                "tags": [
+                    "TodayTrip"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/today/way": {
+            "post": {
+                "operationId": "todayTrip.keep",
+                "summary": "Use this (Other ways): the plan keeps that way; the card shows it from now on",
+                "tags": [
+                    "TodayTrip"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TodayWayRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "undo": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "undo"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/today/way/{undo}": {
+            "delete": {
+                "operationId": "todayTrip.undo",
+                "summary": "Undo Use this: the way the plan had before, or none",
+                "tags": [
+                    "TodayTrip"
+                ],
+                "parameters": [
+                    {
+                        "name": "undo",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "undone": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "undone"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "That can\u2019t be undone any more."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/nearby": {
+            "get": {
+                "operationId": "travel.nearby",
+                "summary": "Departures from the stops a short walk from here, soonest first, in KVB's own colours",
+                "tags": [
+                    "Travel"
+                ],
+                "parameters": [
+                    {
+                        "name": "lat",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                        }
+                    },
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`NearbyDeparturesResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NearbyDeparturesResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AlertsResource": {
+                "type": "object",
+                "properties": {
+                    "alerts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "category": {
+                                    "type": "string"
+                                },
+                                "severity": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "body": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "source": {
+                                    "type": "string"
+                                },
+                                "at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "read": {
+                                    "type": "boolean"
+                                },
+                                "url": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "lines": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "stops": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "category",
+                                "severity",
+                                "title",
+                                "body",
+                                "source",
+                                "at",
+                                "read",
+                                "url",
+                                "lines",
+                                "stops"
+                            ]
+                        }
+                    },
+                    "unread": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "alerts",
+                    "unread"
+                ],
+                "title": "AlertsResource"
+            },
+            "BringDocumentRequest": {
+                "type": "object",
+                "description": "A document of What to bring, ticked ready or not.",
+                "properties": {
+                    "ready": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "ready"
+                ],
+                "title": "BringDocumentRequest"
+            },
+            "BringListResource": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "ready": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "documents": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "ready": {
+                                    "type": "boolean"
+                                },
+                                "note": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "title",
+                                "ready",
+                                "note"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "title",
+                    "ready",
+                    "total",
+                    "documents"
+                ],
+                "title": "BringListResource"
+            },
+            "DayCommandRequest": {
+                "type": "object",
+                "description": "A change to the day from the iPhone's Today: the same commands the web's Today sends to the\nComposer workspace, only those Today offers (done, remove, add, a personal plan, edit, undo).",
+                "properties": {
+                    "revision": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "complete",
+                            "uncomplete",
+                            "remove",
+                            "add",
+                            "appointment",
+                            "edit",
+                            "undo"
+                        ]
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Only a message carries words; its answer is worked out from the stored one (composer/ask).",
+                        "maxLength": 500
+                    },
+                    "kind": {
+                        "type": "string",
+                        "description": "A reply is only ever that the page couldn't get an answer.",
+                        "enum": [
+                            "failed"
+                        ]
+                    },
+                    "token": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "id": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "change": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid",
+                        "description": "Which change to undo (without it, the newest one), or to put back."
+                    },
+                    "candidate": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "start": {
+                        "type": "string"
+                    },
+                    "end": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "location": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 160
+                    },
+                    "lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "The place picked from the suggestions, when one was: its map point.",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -180,
+                        "maximum": 180
+                    }
+                },
+                "required": [
+                    "revision",
+                    "action"
+                ],
+                "title": "DayCommandRequest"
+            },
+            "EventsDayResource": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string"
+                    },
+                    "today": {
+                        "type": "string"
+                    },
+                    "ended": {
+                        "type": "integer",
+                        "description": "How many of today's listings have already ended (Earlier today \u00b7 3 ended)."
+                    },
+                    "days": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "date": {
+                                    "type": "string"
+                                },
+                                "count": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "date",
+                                "count"
+                            ]
+                        }
+                    },
+                    "categories": {
+                        "type": "array",
+                        "description": "The kinds on this day, in the filter's own order.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "label"
+                            ]
+                        }
+                    },
+                    "listings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "candidate": {
+                                    "type": "string"
+                                },
+                                "saved": {
+                                    "type": "boolean"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "category": {
+                                    "type": "string"
+                                },
+                                "category_label": {
+                                    "type": "string"
+                                },
+                                "emoji": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "starts_at": {
+                                    "type": "string"
+                                },
+                                "ends_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "timed": {
+                                    "type": "boolean"
+                                },
+                                "untimed": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "price": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "free": {
+                                    "type": "boolean"
+                                },
+                                "no_german": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "place": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "area": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "photo_url": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "language": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "summary": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "summary_lang": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "tip": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "source_url": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "lat": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ]
+                                },
+                                "lng": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "candidate",
+                                "saved",
+                                "title",
+                                "category",
+                                "category_label",
+                                "emoji",
+                                "starts_at",
+                                "ends_at",
+                                "timed",
+                                "untimed",
+                                "price",
+                                "free",
+                                "no_german",
+                                "place",
+                                "area",
+                                "photo_url",
+                                "language",
+                                "summary",
+                                "summary_lang",
+                                "tip",
+                                "source_url",
+                                "lat",
+                                "lng"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "date",
+                    "today",
+                    "ended",
+                    "days",
+                    "categories",
+                    "listings"
+                ],
+                "title": "EventsDayResource"
+            },
+            "JourneyPlanRequest": {
+                "type": "object",
+                "description": "Getting there: where to, from where the phone is, and when it starts.",
+                "properties": {
+                    "to_lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "to_lng": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                    },
+                    "to_name": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "from_lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "Where the phone is; without it, where the server last knew them to be.",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "from_lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -180,
+                        "maximum": 180
+                    },
+                    "starts_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "description": "When it starts: the ways are planned to be there five minutes before."
+                    }
+                },
+                "required": [
+                    "to_lat",
+                    "to_lng",
+                    "to_name"
+                ],
+                "title": "JourneyPlanRequest"
+            },
+            "JourneyPlanResource": {
+                "type": "object",
+                "properties": {
+                    "plan": {
+                        "type": "string",
+                        "description": "What I'm on my way names a way by, with its place in `ways`."
+                    },
+                    "from": {
+                        "type": "string"
+                    },
+                    "to": {
+                        "type": "string"
+                    },
+                    "ways": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "leave_time": {
+                                    "type": "string"
+                                },
+                                "arrive_time": {
+                                    "type": "string"
+                                },
+                                "spare_min": {
+                                    "type": "integer"
+                                },
+                                "status": {
+                                    "type": "string"
+                                },
+                                "mode": {
+                                    "type": "string"
+                                },
+                                "lines": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "line": {
+                                                "type": "string"
+                                            },
+                                            "color": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "line",
+                                            "color"
+                                        ]
+                                    }
+                                },
+                                "departs": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "from": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "walk_min": {
+                                    "type": "integer"
+                                },
+                                "transfers": {
+                                    "type": "integer"
+                                },
+                                "minutes": {
+                                    "type": "integer"
+                                },
+                                "in_plan": {
+                                    "type": "boolean"
+                                },
+                                "live": {
+                                    "type": "boolean"
+                                },
+                                "legs": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "mode": {
+                                                "type": "string"
+                                            },
+                                            "line": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "color": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "headsign": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "from": {
+                                                "type": "string"
+                                            },
+                                            "to": {
+                                                "type": "string"
+                                            },
+                                            "depart_at": {
+                                                "type": "string"
+                                            },
+                                            "arrive_at": {
+                                                "type": "string"
+                                            },
+                                            "depart_time": {
+                                                "type": "string"
+                                            },
+                                            "arrive_time": {
+                                                "type": "string"
+                                            },
+                                            "minutes": {
+                                                "type": "integer"
+                                            },
+                                            "stops": {
+                                                "type": [
+                                                    "integer",
+                                                    "null"
+                                                ]
+                                            },
+                                            "polyline": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "turns": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "direction": {
+                                                            "type": "string"
+                                                        },
+                                                        "street": {
+                                                            "type": "string"
+                                                        },
+                                                        "metres": {
+                                                            "type": "integer"
+                                                        },
+                                                        "polyline": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "level_change": {
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "direction",
+                                                        "street",
+                                                        "metres",
+                                                        "polyline",
+                                                        "level_change"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        "required": [
+                                            "mode",
+                                            "line",
+                                            "color",
+                                            "headsign",
+                                            "from",
+                                            "to",
+                                            "depart_at",
+                                            "arrive_at",
+                                            "depart_time",
+                                            "arrive_time",
+                                            "minutes",
+                                            "stops",
+                                            "polyline",
+                                            "turns"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "leave_time",
+                                "arrive_time",
+                                "spare_min",
+                                "status",
+                                "mode",
+                                "lines",
+                                "departs",
+                                "from",
+                                "walk_min",
+                                "transfers",
+                                "minutes",
+                                "in_plan",
+                                "live",
+                                "legs"
+                            ]
+                        }
+                    },
+                    "ticket": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "covered": {
+                                "type": "boolean"
+                            },
+                            "label": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "price": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ]
+                            },
+                            "how": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "covered",
+                            "label",
+                            "price",
+                            "how"
+                        ]
+                    },
+                    "rain": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "at": {
+                                "type": "string"
+                            },
+                            "chance": {
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "at",
+                            "chance"
+                        ]
+                    },
+                    "lifts": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "notices": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string"
+                                },
+                                "lines": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "major": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "title",
+                                "lines",
+                                "major"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "plan",
+                    "from",
+                    "to",
+                    "ways",
+                    "ticket",
+                    "rain",
+                    "lifts",
+                    "notices"
+                ],
+                "title": "JourneyPlanResource"
+            },
+            "JourneyStartRequest": {
+                "type": "object",
+                "description": "I'm on my way, on one of the ways Getting there planned: named by its plan and place in it.",
+                "properties": {
+                    "plan": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "way": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 20
+                    },
+                    "replace": {
+                        "type": "boolean",
+                        "description": "Starting while another trip runs replaces it only when the person said so."
+                    }
+                },
+                "required": [
+                    "plan",
+                    "way"
+                ],
+                "title": "JourneyStartRequest"
+            },
+            "NearbyDeparturesResource": {
+                "type": "object",
+                "properties": {
+                    "stops": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "walk_min": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "walk_min"
+                            ]
+                        }
+                    },
+                    "departures": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "line": {
+                                    "type": "string"
+                                },
+                                "direction": {
+                                    "type": "string"
+                                },
+                                "stop": {
+                                    "type": "string"
+                                },
+                                "color": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string"
+                                },
+                                "minutes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "delay": {
+                                    "type": "integer"
+                                },
+                                "cancelled": {
+                                    "type": "boolean"
+                                },
+                                "disrupted": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "line",
+                                "direction",
+                                "stop",
+                                "color",
+                                "type",
+                                "minutes",
+                                "delay",
+                                "cancelled",
+                                "disrupted"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "stops",
+                    "departures"
+                ],
+                "title": "NearbyDeparturesResource"
+            },
+            "ProfileDeleteRequest": {
+                "type": "object",
+                "description": "Deleting the account asks for the password, or, for an account made with\nGoogle that has none, the code just emailed to it (EXP-174).",
+                "title": "ProfileDeleteRequest"
+            },
+            "RecordSignalsRequest": {
+                "type": "object",
+                "description": "A client batch for the signal ledger: allow-listed actions and surfaces,\ncatalogue item ids that exist, no free text and no coordinates.",
+                "properties": {
+                    "signals": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "description": "Only these keys: anything else (a name, a point, a note) fails.",
+                            "properties": {
+                                "action": {
+                                    "type": "string",
+                                    "enum": [
+                                        "impression",
+                                        "detail_viewed",
+                                        "not_now",
+                                        "shared",
+                                        "not_for_me",
+                                        "less_like_this"
+                                    ]
+                                },
+                                "surface": {
+                                    "$ref": "#/components/schemas/SignalSurface"
+                                },
+                                "item_type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "spot",
+                                        "event"
+                                    ]
+                                },
+                                "item_id": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 999999999999
+                                },
+                                "position": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 0,
+                                    "maximum": 500
+                                },
+                                "dwell_seconds": {
+                                    "type": "integer",
+                                    "description": "A detail view counts from 10 seconds; shorter ones aren't sent.",
+                                    "minimum": 10,
+                                    "maximum": 86400
+                                }
+                            },
+                            "required": [
+                                "action",
+                                "surface",
+                                "item_type",
+                                "item_id"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 50
+                    }
+                },
+                "required": [
+                    "signals"
+                ],
+                "title": "RecordSignalsRequest"
+            },
+            "SaveEventRequest": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "occurrence_start": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "saved": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "event_id",
+                    "occurrence_start",
+                    "saved"
+                ],
+                "title": "SaveEventRequest"
+            },
+            "SignInResource": {
+                "type": "object",
+                "properties": {
+                    "two_factor": {
+                        "type": "boolean"
+                    },
+                    "challenge": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "expires_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "user": {
+                        "description": "Left out with a challenge, not null: the Swift generator drops a nullable reference.",
+                        "$ref": "#/components/schemas/UserResource"
+                    }
+                },
+                "required": [
+                    "two_factor",
+                    "challenge",
+                    "token",
+                    "expires_at"
+                ],
+                "title": "SignInResource"
+            },
+            "SignalSurface": {
+                "type": "string",
+                "description": "Where in the app the action happened.\n",
+                "enum": [
+                    "today",
+                    "places",
+                    "events",
+                    "composer",
+                    "travel",
+                    "search",
+                    "alerts",
+                    "place_sheet",
+                    "event_sheet"
+                ],
+                "title": "SignalSurface"
+            },
+            "TodayResource": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string"
+                    },
+                    "now": {
+                        "type": "string"
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "description": "The plan's revision a change to the day must send (day/command)."
+                    },
+                    "welcome": {
+                        "type": "boolean",
+                        "description": "A first visit: the page leads with Paperwork's way in."
+                    },
+                    "personalised": {
+                        "type": "boolean",
+                        "description": "Personalised suggestions on (Settings), for How we rank."
+                    },
+                    "rank_paused": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "notice": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "changes": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "model_changed": {
+                                "type": "boolean"
+                            },
+                            "notice_version": {
+                                "type": "string"
+                            },
+                            "provider_version": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "notice",
+                            "changes",
+                            "model_changed",
+                            "notice_version",
+                            "provider_version"
+                        ]
+                    },
+                    "weather": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "temperature": {
+                                "type": "integer"
+                            },
+                            "condition": {
+                                "type": "string"
+                            },
+                            "icon": {
+                                "type": "string"
+                            },
+                            "summary": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "cycling": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "feels_like": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "high": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "low": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "hours": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "hour": {
+                                            "type": "string"
+                                        },
+                                        "temperature": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "icon": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rain": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "hour",
+                                        "temperature",
+                                        "icon",
+                                        "rain"
+                                    ]
+                                }
+                            },
+                            "today": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "hour": {
+                                            "type": "string"
+                                        },
+                                        "temperature": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "icon": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "condition": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rain": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "hour",
+                                        "temperature",
+                                        "icon",
+                                        "condition",
+                                        "rain"
+                                    ]
+                                }
+                            },
+                            "days": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "low": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "high": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "icon": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rain": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "low",
+                                        "high",
+                                        "icon",
+                                        "rain"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "temperature",
+                            "condition",
+                            "icon",
+                            "summary",
+                            "cycling",
+                            "feels_like",
+                            "high",
+                            "low",
+                            "hours",
+                            "today",
+                            "days"
+                        ]
+                    },
+                    "plans": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "subtitle": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "start_time": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "end_time": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "place": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "state": {
+                                    "type": "string"
+                                },
+                                "completed": {
+                                    "type": "boolean"
+                                },
+                                "editable": {
+                                    "type": "boolean"
+                                },
+                                "bring": {
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
+                                    "properties": {
+                                        "title": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "ready": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        },
+                                        "process": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "title",
+                                        "ready",
+                                        "total",
+                                        "process"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "title",
+                                "subtitle",
+                                "start_time",
+                                "end_time",
+                                "place",
+                                "state",
+                                "completed",
+                                "editable",
+                                "bring"
+                            ]
+                        }
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "from_id": {
+                                    "type": "string"
+                                },
+                                "to_id": {
+                                    "type": "string"
+                                },
+                                "reason": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "basis": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "travel_min": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
+                                "gap_min": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "from_id",
+                                "to_id",
+                                "reason",
+                                "basis",
+                                "travel_min",
+                                "gap_min"
+                            ]
+                        }
+                    },
+                    "leave": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "plan_id": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "to": {
+                                "type": "string"
+                            },
+                            "start_time": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "leave_time": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "leave_in_min": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "arrive_time": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "spare_min": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "line": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "color": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "departs": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "from": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "walk_min": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "transfers": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "live": {
+                                "type": "boolean"
+                            },
+                            "ways": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "leave_time": {
+                                            "type": "string"
+                                        },
+                                        "arrive_time": {
+                                            "type": "string"
+                                        },
+                                        "spare_min": {
+                                            "type": "integer"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "mode": {
+                                            "type": "string"
+                                        },
+                                        "lines": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "line": {
+                                                        "type": "string"
+                                                    },
+                                                    "color": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "line",
+                                                    "color"
+                                                ]
+                                            }
+                                        },
+                                        "departs": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "from": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "walk_min": {
+                                            "type": "integer"
+                                        },
+                                        "transfers": {
+                                            "type": "integer"
+                                        },
+                                        "minutes": {
+                                            "type": "integer"
+                                        },
+                                        "in_plan": {
+                                            "type": "boolean"
+                                        },
+                                        "live": {
+                                            "type": "boolean"
+                                        },
+                                        "legs": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "mode": {
+                                                        "type": "string"
+                                                    },
+                                                    "line": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "color": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "headsign": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "from": {
+                                                        "type": "string"
+                                                    },
+                                                    "to": {
+                                                        "type": "string"
+                                                    },
+                                                    "depart_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "arrive_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "depart_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "arrive_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "minutes": {
+                                                        "type": "integer"
+                                                    },
+                                                    "stops": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "polyline": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "turns": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "direction": {
+                                                                    "type": "string"
+                                                                },
+                                                                "street": {
+                                                                    "type": "string"
+                                                                },
+                                                                "metres": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "polyline": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ]
+                                                                },
+                                                                "level_change": {
+                                                                    "type": "boolean"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "direction",
+                                                                "street",
+                                                                "metres",
+                                                                "polyline",
+                                                                "level_change"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "required": [
+                                                    "mode",
+                                                    "line",
+                                                    "color",
+                                                    "headsign",
+                                                    "from",
+                                                    "to",
+                                                    "depart_at",
+                                                    "arrive_at",
+                                                    "depart_time",
+                                                    "arrive_time",
+                                                    "minutes",
+                                                    "stops",
+                                                    "polyline",
+                                                    "turns"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "leave_time",
+                                        "arrive_time",
+                                        "spare_min",
+                                        "status",
+                                        "mode",
+                                        "lines",
+                                        "departs",
+                                        "from",
+                                        "walk_min",
+                                        "transfers",
+                                        "minutes",
+                                        "in_plan",
+                                        "live",
+                                        "legs"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "plan_id",
+                            "to",
+                            "start_time",
+                            "status",
+                            "leave_time",
+                            "leave_in_min",
+                            "arrive_time",
+                            "spare_min",
+                            "line",
+                            "color",
+                            "departs",
+                            "from",
+                            "walk_min",
+                            "transfers",
+                            "live",
+                            "ways"
+                        ]
+                    },
+                    "trip": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "to": {
+                                "type": "string"
+                            },
+                            "arrive_time": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "start_time": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "legs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "mode": {
+                                            "type": "string"
+                                        },
+                                        "line": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "color": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "headsign": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "from": {
+                                            "type": "string"
+                                        },
+                                        "to": {
+                                            "type": "string"
+                                        },
+                                        "depart_at": {
+                                            "type": "string"
+                                        },
+                                        "arrive_at": {
+                                            "type": "string"
+                                        },
+                                        "depart_time": {
+                                            "type": "string"
+                                        },
+                                        "arrive_time": {
+                                            "type": "string"
+                                        },
+                                        "minutes": {
+                                            "type": "integer"
+                                        },
+                                        "stops": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "polyline": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "turns": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "direction": {
+                                                        "type": "string"
+                                                    },
+                                                    "street": {
+                                                        "type": "string"
+                                                    },
+                                                    "metres": {
+                                                        "type": "integer"
+                                                    },
+                                                    "polyline": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "level_change": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "direction",
+                                                    "street",
+                                                    "metres",
+                                                    "polyline",
+                                                    "level_change"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "mode",
+                                        "line",
+                                        "color",
+                                        "headsign",
+                                        "from",
+                                        "to",
+                                        "depart_at",
+                                        "arrive_at",
+                                        "depart_time",
+                                        "arrive_time",
+                                        "minutes",
+                                        "stops",
+                                        "polyline",
+                                        "turns"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "to",
+                            "arrive_time",
+                            "start_time",
+                            "legs"
+                        ]
+                    },
+                    "deadline": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "kind": {
+                                "type": "string"
+                            },
+                            "document": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "date": {
+                                "type": "string"
+                            },
+                            "days_remaining": {
+                                "type": "integer"
+                            },
+                            "next": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "ready": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "total": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "process": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "kind",
+                            "document",
+                            "title",
+                            "date",
+                            "days_remaining",
+                            "next",
+                            "ready",
+                            "total",
+                            "process"
+                        ]
+                    },
+                    "needs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "kind": {
+                                    "type": "string"
+                                },
+                                "severity": {
+                                    "type": "string"
+                                },
+                                "headline": {
+                                    "type": "string"
+                                },
+                                "detail": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "line": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "color": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "alert_id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "kind",
+                                "severity",
+                                "headline",
+                                "detail",
+                                "line",
+                                "color",
+                                "alert_id"
+                            ]
+                        }
+                    },
+                    "ideas": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "candidate": {
+                                    "type": "string"
+                                },
+                                "saved": {
+                                    "type": "boolean"
+                                },
+                                "why": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "reasons": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "category": {
+                                    "type": "string"
+                                },
+                                "emoji": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "starts_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "ends_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "timed": {
+                                    "type": "boolean"
+                                },
+                                "untimed": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "tomorrow": {
+                                    "type": "boolean"
+                                },
+                                "price": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "place": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "area": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "candidate",
+                                "saved",
+                                "why",
+                                "reasons",
+                                "title",
+                                "category",
+                                "emoji",
+                                "starts_at",
+                                "ends_at",
+                                "timed",
+                                "untimed",
+                                "tomorrow",
+                                "price",
+                                "place",
+                                "area"
+                            ]
+                        }
+                    },
+                    "ideas_part": {
+                        "type": "string"
+                    },
+                    "free": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "anchor": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "area": {
+                                        "type": "string"
+                                    },
+                                    "start": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "end": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "title",
+                                    "area",
+                                    "start",
+                                    "end"
+                                ]
+                            },
+                            "near": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "at": {
+                                "type": "string"
+                            },
+                            "places": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "candidate": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "kind": {
+                                            "type": "string"
+                                        },
+                                        "label": {
+                                            "type": "string"
+                                        },
+                                        "km": {
+                                            "type": [
+                                                "number",
+                                                "null"
+                                            ]
+                                        },
+                                        "open_until": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "lat": {
+                                            "type": [
+                                                "number",
+                                                "null"
+                                            ]
+                                        },
+                                        "lng": {
+                                            "type": [
+                                                "number",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "candidate",
+                                        "name",
+                                        "kind",
+                                        "label",
+                                        "km",
+                                        "open_until",
+                                        "lat",
+                                        "lng"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "anchor",
+                            "near",
+                            "at",
+                            "places"
+                        ]
+                    },
+                    "paperwork": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "process_title": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "ready": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "total": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "process": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "process_title",
+                            "title",
+                            "ready",
+                            "total",
+                            "process"
+                        ]
+                    },
+                    "continuation": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "kind": {
+                                "type": "string"
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "last_at": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "kind",
+                            "title",
+                            "last_at"
+                        ]
+                    },
+                    "saved": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "candidate": {
+                                            "type": "string"
+                                        },
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "date": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "place": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "label": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "area": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "type",
+                                        "id",
+                                        "candidate",
+                                        "title",
+                                        "date",
+                                        "place",
+                                        "label",
+                                        "area"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "items"
+                        ]
+                    },
+                    "coming_up": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "tomorrow": {
+                                "type": "object",
+                                "properties": {
+                                    "date": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "plans": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "place": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "start": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "title",
+                                                "place",
+                                                "start"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "date",
+                                    "plans"
+                                ]
+                            },
+                            "later": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "start": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "place": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "title",
+                                        "start",
+                                        "place"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "tomorrow",
+                            "later"
+                        ]
+                    }
+                },
+                "required": [
+                    "date",
+                    "now",
+                    "revision",
+                    "welcome",
+                    "personalised",
+                    "rank_paused",
+                    "weather",
+                    "plans",
+                    "links",
+                    "leave",
+                    "trip",
+                    "deadline",
+                    "needs",
+                    "ideas",
+                    "ideas_part",
+                    "free",
+                    "paperwork",
+                    "continuation",
+                    "saved",
+                    "coming_up"
+                ],
+                "title": "TodayResource"
+            },
+            "TodayWayRequest": {
+                "type": "object",
+                "description": "A way of the Leave card's, as Today sent it: on foot, by bike, or which ride.",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "description": "The way, by what it is: on foot, by bike, or a ride and when that ride leaves (a walk's\nleave time moves with the clock; its place in the list can change as the day is worked out again).",
+                        "enum": [
+                            "transit",
+                            "walk",
+                            "bike"
+                        ]
+                    },
+                    "departs": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "Where the phone is: the trip starts there, as on Today.",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -180,
+                        "maximum": 180
+                    },
+                    "replace": {
+                        "type": "boolean",
+                        "description": "Starting while another trip runs replaces it only when the person said so."
+                    }
+                },
+                "required": [
+                    "mode"
+                ],
+                "title": "TodayWayRequest"
+            },
+            "UserResource": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "email_verified": {
+                        "type": "boolean"
+                    },
+                    "has_password": {
+                        "type": "boolean",
+                        "description": "Deleting asks for the password, or an emailed code for an account without one."
+                    }
+                },
+                "required": [
+                    "name",
+                    "email",
+                    "email_verified",
+                    "has_password"
+                ],
+                "title": "UserResource"
+            }
+        },
+        "responses": {
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthorizationException": {
+                "description": "Authorization error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

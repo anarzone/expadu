@@ -31,6 +31,8 @@ final readonly class Leg
         public bool $cancelled = false,
         public ?string $tripId = null, // the feed's trip id, to re-match this ride across plans
         public ?int $distanceM = null, // walk legs, when the router says; 0 is its wait for a change
+        // Walk legs: the router's turns (direction, street, metres, the line of each, floors).
+        public ?array $steps = null,
     ) {}
 
     public function isTransit(): bool
@@ -80,6 +82,7 @@ final readonly class Leg
             'cancelled' => $this->cancelled,
             'trip_id' => $this->tripId,
             'distance_m' => $this->distanceM,
+            'steps' => $this->steps,
         ];
     }
 
@@ -109,6 +112,7 @@ final readonly class Leg
             cancelled: (bool) ($data['cancelled'] ?? false),
             tripId: $data['trip_id'] ?? null,
             distanceM: isset($data['distance_m']) ? (int) $data['distance_m'] : null,
+            steps: is_array($data['steps'] ?? null) ? $data['steps'] : null,
         );
     }
 }

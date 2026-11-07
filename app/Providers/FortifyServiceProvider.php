@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Auth\AppSignIn;
 use App\Http\Controllers\SocialLoginController;
 use App\Http\Responses\PasswordResetLinkFailedResponse;
 use App\Support\ReturnPath;
@@ -130,6 +131,13 @@ class FortifyServiceProvider extends ServiceProvider
     {
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
+        });
+
+        // The app's second step, by the person being challenged: a new challenge doesn't buy new guesses.
+        RateLimiter::for('app-two-factor', function (Request $request) {
+            $user = app(AppSignIn::class)->challengedUser((string) $request->input('challenge'));
+
+            return Limit::perMinute(5)->by($user ? 'user:'.$user->id : 'ip:'.$request->ip());
         });
 
         RateLimiter::for('login', function (Request $request) {
