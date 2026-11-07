@@ -274,7 +274,8 @@ struct GettingThere: View {
 
     // MARK: On foot
 
-    private func onFoot(_ way: TodayPage.Way) -> Bool { way.lines.isEmpty && way.mode == "walk" }
+    /// On foot or by bike: the way is our router's turns.
+    private func onFoot(_ way: TodayPage.Way) -> Bool { way.lines.isEmpty && (way.mode == "walk" || way.mode == "bike") }
 
     // MARK: Start
 

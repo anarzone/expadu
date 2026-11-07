@@ -67,6 +67,8 @@
         "INFOPLIST_FILE": "Config/Expadu-Info.plist",
         "INFOPLIST_KEY_CFBundleDisplayName": "Expadu",
         "INFOPLIST_KEY_LSApplicationCategoryType": "public.app-category.travel",
+        "MAP_STYLE_LIGHT": "",
+        "MAP_STYLE_DARK": "",
         "INFOPLIST_KEY_NSLocationWhenInUseUsageDescription": "Expadu shows the departures from the stop closest to you, and guides you step by step while you’re on your way.",
         "INFOPLIST_KEY_NSMicrophoneUsageDescription": "Hold the Composer button and say what you need; Expadu listens only while you hold it.",
         "INFOPLIST_KEY_NSSpeechRecognitionUsageDescription": "Apple’s speech recognition turns what you say into text, so Composer can answer it. Expadu listens only while you hold the button.",

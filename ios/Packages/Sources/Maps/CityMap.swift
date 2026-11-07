@@ -84,9 +84,12 @@ public struct CityMap: UIViewRepresentable {
         self.showsUser = showsUser
     }
 
-    /// OpenFreeMap's styles (OpenStreetMap data), as the web's maps use.
+    /// The map's style: our own tile server's when the build names one (MapStyleLight / MapStyleDark
+    /// in Info.plist), else OpenFreeMap's (OpenStreetMap data), as the web's maps use.
     static func style(dark: Bool) -> URL {
-        URL(string: dark ? "https://tiles.openfreemap.org/styles/dark" : "https://tiles.openfreemap.org/styles/positron")!
+        let own = Bundle.main.object(forInfoDictionaryKey: dark ? "MapStyleDark" : "MapStyleLight") as? String
+        if let own, !own.isEmpty, let url = URL(string: own) { return url }
+        return URL(string: dark ? "https://tiles.openfreemap.org/styles/dark" : "https://tiles.openfreemap.org/styles/positron")!
     }
 
     public func makeCoordinator() -> Coordinator { Coordinator() }

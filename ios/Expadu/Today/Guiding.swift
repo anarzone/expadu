@@ -65,6 +65,8 @@ final class TurnVoice {
 /// A way as lines and pins on our map: rides in their line's colour, walking dotted, the start and the end.
 enum WayDrawing {
     static let walkColour = UIColor(red: 0x6A / 255, green: 0x62 / 255, blue: 0x53 / 255, alpha: 1)
+    /// TRIP_LOOK.bike.
+    static let bikeColour = UIColor(red: 0x00 / 255, green: 0x76 / 255, blue: 0x8B / 255, alpha: 1)
 
     static func points(_ leg: TodayPage.Trip.Leg) -> [CLLocationCoordinate2D] {
         (leg.polyline.map { Polyline.decode($0) } ?? []).map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
@@ -73,8 +75,8 @@ enum WayDrawing {
     static func lines(_ legs: [TodayPage.Trip.Leg], prefix: String = "w", doneBefore: Int? = nil) -> [CityMap.Line] {
         legs.enumerated().map { index, leg in
             CityMap.Line(id: "\(prefix)\(index)", points: points(leg),
-                         color: leg.rides ? UIColor(LineLook(hex: leg.color ?? "#1A4CD4").deep) : walkColour,
-                         width: leg.rides ? 6 : 4.5, dashed: !leg.rides, faint: doneBefore.map { index < $0 } ?? false)
+                         color: leg.rides ? UIColor(LineLook(hex: leg.color ?? "#1A4CD4").deep) : leg.mode == "bike" ? bikeColour : walkColour,
+                         width: leg.rides ? 6 : 4.5, dashed: leg.mode == "walk", faint: doneBefore.map { index < $0 } ?? false)
         }
     }
 
