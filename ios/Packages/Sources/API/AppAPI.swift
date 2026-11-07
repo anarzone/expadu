@@ -303,6 +303,32 @@ public struct AppAPI: Sendable {
         }
     }
 
+    /// What's on for a day (today when nil).
+    public func whatsOn(date: String?) async throws(APIFailure) -> WhatsOn {
+        let output = try await calling { try await client.events_day(query: .init(date: date)) }
+        switch output {
+        case let .ok(ok):
+            let day = try body { try ok.body.json }
+            return WhatsOn(
+                date: day.date, today: day.today, ended: day.ended,
+                days: day.days.map { WhatsOn.Day(date: $0.date, count: $0.count) },
+                categories: day.categories.map { WhatsOn.Category(id: $0.id, label: $0.label) },
+                listings: day.listings.map { listing in
+                    let starts = Self.date(from: listing.startsAt)
+                    let idea = TodayPage.Idea(id: listing.id, candidate: listing.candidate, saved: listing.saved, title: listing.title, category: listing.categoryLabel,
+                                              emoji: listing.emoji, startsAt: starts, endsAt: listing.endsAt.flatMap(Self.date(from:)), timed: listing.timed,
+                                              untimed: listing.untimed, tomorrow: day.date != day.today, price: listing.price, place: listing.place, area: listing.area)
+                    return WhatsOn.Listing(idea: idea, category: listing.category, free: listing.free, noGerman: listing.noGerman,
+                                           photo: listing.photoUrl.flatMap(URL.init(string:)))
+                }
+            )
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case .forbidden: throw .refused("Confirm your email address first.")
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
     /// Today: the day, when to leave for the next plan (from where the phone is), notes and ideas.
     public func today(latitude: Double?, longitude: Double?) async throws(APIFailure) -> TodayPage {
         let output = try await calling { try await client.today_show(query: .init(lat: latitude, lng: longitude)) }

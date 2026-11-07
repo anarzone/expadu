@@ -39,6 +39,8 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::delete('today/trip', [TodayTripController::class, 'end'])->middleware('verified');
         Route::post('today/way', [TodayTripController::class, 'keep'])->middleware(['verified', 'throttle:journey']);
         Route::delete('today/way/{undo}', [TodayTripController::class, 'undo'])->whereUuid('undo')->middleware('verified');
+        // What's on: a day's listings (All events on Today).
+        Route::get('events', [EventsController::class, 'day'])->middleware('verified');
         Route::post('events/saved', [EventsController::class, 'save'])->middleware(['verified', 'throttle:60,1']);
         // What only the app sees (impressions, Less like this, Not for me), as the web's /api/signals.
         Route::post('signals', SignalController::class)->middleware(['verified', 'throttle:signals']);

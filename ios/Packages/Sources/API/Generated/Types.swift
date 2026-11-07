@@ -33,6 +33,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /day/command`.
     /// - Remark: Generated from `#/paths//day/command/post(day.command)`.
     func day_command(_ input: Operations.Day_command.Input) async throws -> Operations.Day_command.Output
+    /// What's on for a day (All events on Today): the web panel's listings (App\Home\WhatsOn).
+    /// Today drops what has already ended and says how many
+    ///
+    /// - Remark: HTTP `GET /events`.
+    /// - Remark: Generated from `#/paths//events/get(events.day)`.
+    func events_day(_ input: Operations.Events_day.Input) async throws -> Operations.Events_day.Output
     /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)
     ///
     /// - Remark: HTTP `POST /events/saved`.
@@ -165,6 +171,20 @@ extension APIProtocol {
         try await day_command(Operations.Day_command.Input(
             headers: headers,
             body: body
+        ))
+    }
+    /// What's on for a day (All events on Today): the web panel's listings (App\Home\WhatsOn).
+    /// Today drops what has already ended and says how many
+    ///
+    /// - Remark: HTTP `GET /events`.
+    /// - Remark: Generated from `#/paths//events/get(events.day)`.
+    public func events_day(
+        query: Operations.Events_day.Input.Query = .init(),
+        headers: Operations.Events_day.Input.Headers = .init()
+    ) async throws -> Operations.Events_day.Output {
+        try await events_day(Operations.Events_day.Input(
+            query: query,
+            headers: headers
         ))
     }
     /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)

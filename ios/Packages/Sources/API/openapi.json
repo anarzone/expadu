@@ -236,6 +236,49 @@
                 }
             }
         },
+        "/events": {
+            "get": {
+                "operationId": "events.day",
+                "summary": "What's on for a day (All events on Today): the web panel's listings (App\\Home\\WhatsOn).\nToday drops what has already ended and says how many",
+                "tags": [
+                    "Events"
+                ],
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`EventsDayResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EventsDayResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/events/saved": {
             "post": {
                 "operationId": "events.save",
@@ -1175,6 +1218,169 @@
                     "action"
                 ],
                 "title": "DayCommandRequest"
+            },
+            "EventsDayResource": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string"
+                    },
+                    "today": {
+                        "type": "string"
+                    },
+                    "ended": {
+                        "type": "integer",
+                        "description": "How many of today's listings have already ended (Earlier today \u00b7 3 ended)."
+                    },
+                    "days": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "date": {
+                                    "type": "string"
+                                },
+                                "count": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "date",
+                                "count"
+                            ]
+                        }
+                    },
+                    "categories": {
+                        "type": "array",
+                        "description": "The kinds on this day, in the filter's own order.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "label"
+                            ]
+                        }
+                    },
+                    "listings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "candidate": {
+                                    "type": "string"
+                                },
+                                "saved": {
+                                    "type": "boolean"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "category": {
+                                    "type": "string"
+                                },
+                                "category_label": {
+                                    "type": "string"
+                                },
+                                "emoji": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "starts_at": {
+                                    "type": "string"
+                                },
+                                "ends_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "timed": {
+                                    "type": "boolean"
+                                },
+                                "untimed": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "price": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "free": {
+                                    "type": "boolean"
+                                },
+                                "no_german": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "place": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "area": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "photo_url": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "candidate",
+                                "saved",
+                                "title",
+                                "category",
+                                "category_label",
+                                "emoji",
+                                "starts_at",
+                                "ends_at",
+                                "timed",
+                                "untimed",
+                                "price",
+                                "free",
+                                "no_german",
+                                "place",
+                                "area",
+                                "photo_url"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "date",
+                    "today",
+                    "ended",
+                    "days",
+                    "categories",
+                    "listings"
+                ],
+                "title": "EventsDayResource"
             },
             "NearbyDeparturesResource": {
                 "type": "object",

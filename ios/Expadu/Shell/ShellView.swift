@@ -221,6 +221,42 @@ private struct SectionBar: View {
 /// The canvas's Composer button (travel.css .round.fab): a dark disc in a 3pt ring of the brand's
 /// colours with a soft glow. The ring turns slowly at rest; held, it grows to 112%, turns fast and
 /// glows, while Dictation listens. Sliding 36pt away cancels; letting go sends what was said.
+/// Composer's own look, wherever it's offered: dark ink, the white spark, and the turning ring of
+/// the city's colours (cyan into the brand orange).
+enum ComposerLook {
+    static let ink = Color(hex: 0x1D1A14)
+
+    static func ring(turn: Angle = .zero) -> AngularGradient {
+        AngularGradient(stops: [
+            .init(color: Color(hex: 0xA6F2FB), location: 0), .init(color: Color(hex: 0x05BADD), location: 0.2),
+            .init(color: Color(hex: 0x0B7F95), location: 0.38), .init(color: Color(hex: 0xFF3902), location: 0.6),
+            .init(color: Color(hex: 0xFFB067), location: 0.78), .init(color: Color(hex: 0xA6F2FB), location: 1),
+        ], center: .center, angle: turn)
+    }
+}
+
+/// A way into Composer on a page ("Plan my day", "Ask Composer"): an ink capsule with the spark,
+/// ringed in Composer's colours, the ring turning slowly as the Composer button's does.
+struct AskComposerLabel: View {
+    let title: String
+    var height: CGFloat = 50
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { timeline in
+            let turn = Angle.degrees((timeline.date.timeIntervalSinceReferenceDate / 12).truncatingRemainder(dividingBy: 1) * 360)
+            HStack(spacing: 8) {
+                Image(.composerSpark).resizable().frame(width: 18, height: 18)
+                Text(title)
+            }
+            .font(.geist(16, .semibold)).foregroundStyle(.white)
+            .frame(maxWidth: .infinity).frame(height: height)
+            .background(ComposerLook.ink, in: .capsule)
+            .overlay { Capsule().strokeBorder(ComposerLook.ring(turn: turn), lineWidth: 2.5) }
+        }
+    }
+}
+
 private struct ComposerButton: View {
     @Binding var talk: ShellView.Talk
     let dictation: Dictation
@@ -229,11 +265,7 @@ private struct ComposerButton: View {
     @State private var pressed = false
     @State private var holding: Task<Void, Never>?
 
-    private static let colours = AngularGradient(stops: [
-        .init(color: Color(hex: 0xA6F2FB), location: 0), .init(color: Color(hex: 0x05BADD), location: 0.2),
-        .init(color: Color(hex: 0x0B7F95), location: 0.38), .init(color: Color(hex: 0xFF3902), location: 0.6),
-        .init(color: Color(hex: 0xFFB067), location: 0.78), .init(color: Color(hex: 0xA6F2FB), location: 1),
-    ], center: .center)
+    private static let colours = ComposerLook.ring()
 
     var body: some View {
         let listening = talk == .listening
@@ -244,7 +276,7 @@ private struct ComposerButton: View {
                 Circle().fill(Self.colours).rotationEffect(turn)
                     .padding(listening ? -9 : -3).blur(radius: listening ? 13 : 9).opacity(listening ? 1 : talk == .away ? 0.3 : 0.45)
                 Circle().fill(Self.colours).rotationEffect(turn)
-                Circle().fill(Color(hex: 0x1D1A14)).padding(3)
+                Circle().fill(ComposerLook.ink).padding(3)
                     .overlay { Circle().strokeBorder(.white.opacity(0.22), lineWidth: 0.5).padding(3) }
                 Image(.composerSpark).resizable().frame(width: 24, height: 24).foregroundStyle(.white)
             }

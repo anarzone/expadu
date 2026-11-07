@@ -124,7 +124,7 @@ struct TodayView: View {
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case let .weather(page): WeatherSheet(page: page)
-            case let .ideas(page): IdeasSheet(page: page)
+            case .whatsOn: WhatsOnSheet()
             case let .link(url): SafariView(url: url).ignoresSafeArea()
             case let .addPlan(date): AddPlanSheet(date: date)
             case let .why(idea, when): WhySheet(idea: idea, when: when, sheet: $sheet)
@@ -185,7 +185,7 @@ private struct PullMark: View {
 /// What opens over Today, in place: the weather by the hour, all the ideas, a city site.
 enum TodaySheet: Identifiable {
     case weather(TodayPage)
-    case ideas(TodayPage)
+    case whatsOn
     case link(URL)
     case addPlan(String)
     case why(TodayPage.Idea, String)
@@ -195,7 +195,7 @@ enum TodaySheet: Identifiable {
     var id: String {
         switch self {
         case .weather: "weather"
-        case .ideas: "ideas"
+        case .whatsOn: "whats-on"
         case let .link(url): url.absoluteString
         case let .addPlan(date): "add-\(date)"
         case let .why(idea, _): "why-\(idea.id)"
@@ -274,7 +274,7 @@ private struct Chips: View {
             }
             if !page.ideas.isEmpty {
                 chip(symbol: "calendar", tint: Color(hex: 0x6B4FD0), title: "\(page.ideas.count) events", note: page.ideasWhen,
-                     order: page.weather == nil ? 0 : 1, spins: false) { sheet = .ideas(page) }
+                     order: page.weather == nil ? 0 : 1, spins: false) { sheet = .whatsOn }
             }
         }
     }
@@ -372,10 +372,7 @@ private struct EmptyDay: View {
             Text(words.1).font(.geist(13.5)).foregroundStyle(Palette.textSoft).padding(.top, 2)
             HStack(spacing: 8) {
                 Button { shell.openComposer() } label: {
-                    Label(words.2, systemImage: "sparkle").labelStyle(Tight())
-                        .font(.geist(15, .semibold)).foregroundStyle(.white)
-                        .frame(maxWidth: .infinity).frame(height: 44)
-                        .background(Palette.text, in: .capsule)
+                    AskComposerLabel(title: words.2, height: 44)
                 }
                 .buttonStyle(PressStyle())
                 Button { shell.show(.travel) } label: {
@@ -1574,7 +1571,7 @@ private struct AddPlanSheet: View {
 }
 
 /// Add an event or a place to a day's plan, in place: the + turns to a check once it's in.
-private struct AddButton: View {
+struct AddButton: View {
     let candidate: String
     let date: String
     let title: String
@@ -1610,7 +1607,7 @@ private struct Ideas: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             SectionHead(title: page.ideasTitle) {
-                Button { sheet = .ideas(page) } label: {
+                Button { sheet = .whatsOn } label: {
                     Label("All events", systemImage: "arrow.right").labelStyle(TrailingIcon())
                         .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
                         .frame(minHeight: 44)
@@ -1708,7 +1705,7 @@ private struct IdeaRow: View {
 }
 
 /// The canvas's poster thumb: a coloured card, a little tilted, its time in the corner.
-private struct Poster: View {
+struct Poster: View {
     let label: String
     let night: Bool
     let tilt: Double
@@ -2045,7 +2042,7 @@ private struct PickUp: View {
         VStack(alignment: .leading, spacing: 14) {
             SectionHead(title: "Pick up where you left off") { EmptyView() }
             Button { shell.openComposer() } label: {
-                ListRow(symbol: "sparkle", title: continuation.title,
+                ListRow(symbol: "composer", title: continuation.title,
                         note: ["Composer", continuation.kind == "trip" ? "your trip" : "your plan", continuation.lastAt.map(Self.when)].compactMap { $0 }.joined(separator: " · "),
                         action: "Continue")
                     .card(radius: 22)
@@ -2656,24 +2653,6 @@ private struct WxFade: ViewModifier {
     }
 }
 
-private struct IdeasSheet: View {
-    let page: TodayPage
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List(Array(page.ideas.enumerated()), id: \.element.id) { index, idea in
-                IdeaRow(idea: idea, now: page.now, tilt: [-3, 2, -2, 3][index % 4], date: page.date, tomorrow: page.tomorrowDate)
-                    .listRowInsets(EdgeInsets())
-            }
-            .navigationTitle(page.ideasTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
-        }
-        .presentationDetents([.medium, .large])
-    }
-}
-
 /// A city site, inside the app.
 private struct SafariView: UIViewControllerRepresentable {
     let url: URL
@@ -2708,8 +2687,16 @@ private struct ListRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 15, weight: .semibold))
-                .frame(width: 36, height: 36).background(Palette.quiet, in: .circle)
+            if symbol == "composer" {
+                // Composer's own mark: the spark on ink, ringed in its colours.
+                Image(.composerSpark).resizable().frame(width: 16, height: 16).foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(ComposerLook.ink, in: .circle)
+                    .overlay { Circle().strokeBorder(ComposerLook.ring(), lineWidth: 2) }
+            } else {
+                Image(systemName: symbol).font(.system(size: 15, weight: .semibold))
+                    .frame(width: 36, height: 36).background(Palette.quiet, in: .circle)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.geist(15.5, .semibold)).lineLimit(2).multilineTextAlignment(.leading)
                 if !note.isEmpty { Text(note).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(2).multilineTextAlignment(.leading) }
@@ -2739,7 +2726,7 @@ private struct TrailingIcon: LabelStyle {
     }
 }
 
-private extension View {
+extension View {
     /// The canvas's .t-card: the surface, rounded, with its hairline.
     func card(radius: CGFloat) -> some View {
         background(Palette.surface, in: .rect(cornerRadius: radius))
@@ -2960,6 +2947,12 @@ final class TodayModel {
         await change(api, action: "appointment", date: date, symbol: "calendar.badge.plus", name: name.trimmingCharacters(in: .whitespaces),
                      start: start, end: end, location: where_.isEmpty ? nil : where_)
         return note?.problem != true
+    }
+
+    /// A save made in What's on shows on Today's own idea too.
+    func markSaved(_ candidate: String, saved: Bool) {
+        guard let index = page?.ideas.firstIndex(where: { $0.candidate == candidate }) else { return }
+        page?.ideas[index].saved = saved
     }
 
     /// The bookmark flips at once; the server's answer settles it.

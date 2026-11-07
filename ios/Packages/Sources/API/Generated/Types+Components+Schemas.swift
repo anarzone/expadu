@@ -139,6 +139,224 @@ extension Components {
                 case lng
             }
         }
+        /// - Remark: Generated from `#/components/schemas/EventsDayResource`.
+        public struct EventsDayResource: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/date`.
+            public var date: Swift.String
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/today`.
+            public var today: Swift.String
+            /// How many of today's listings have already ended (Earlier today · 3 ended).
+            ///
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/ended`.
+            public var ended: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/DaysPayload`.
+            public struct DaysPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/DaysPayload/date`.
+                public var date: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/DaysPayload/count`.
+                public var count: Swift.Int
+                /// Creates a new `DaysPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - date:
+                ///   - count:
+                public init(
+                    date: Swift.String,
+                    count: Swift.Int
+                ) {
+                    self.date = date
+                    self.count = count
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case date
+                    case count
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/days`.
+            public typealias DaysPayload = [Components.Schemas.EventsDayResource.DaysPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/days`.
+            public var days: Components.Schemas.EventsDayResource.DaysPayload
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/CategoriesPayload`.
+            public struct CategoriesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/CategoriesPayload/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/CategoriesPayload/label`.
+                public var label: Swift.String
+                /// Creates a new `CategoriesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - label:
+                public init(
+                    id: Swift.String,
+                    label: Swift.String
+                ) {
+                    self.id = id
+                    self.label = label
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case label
+                }
+            }
+            /// The kinds on this day, in the filter's own order.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/categories`.
+            public typealias CategoriesPayload = [Components.Schemas.EventsDayResource.CategoriesPayloadPayload]
+            /// The kinds on this day, in the filter's own order.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/categories`.
+            public var categories: Components.Schemas.EventsDayResource.CategoriesPayload
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload`.
+            public struct ListingsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/id`.
+                public var id: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/candidate`.
+                public var candidate: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/saved`.
+                public var saved: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/title`.
+                public var title: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/category`.
+                public var category: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/category_label`.
+                public var categoryLabel: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/emoji`.
+                public var emoji: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/starts_at`.
+                public var startsAt: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/ends_at`.
+                public var endsAt: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/timed`.
+                public var timed: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/untimed`.
+                public var untimed: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/price`.
+                public var price: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/free`.
+                public var free: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/no_german`.
+                public var noGerman: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/place`.
+                public var place: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/area`.
+                public var area: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/photo_url`.
+                public var photoUrl: Swift.String?
+                /// Creates a new `ListingsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - candidate:
+                ///   - saved:
+                ///   - title:
+                ///   - category:
+                ///   - categoryLabel:
+                ///   - emoji:
+                ///   - startsAt:
+                ///   - endsAt:
+                ///   - timed:
+                ///   - untimed:
+                ///   - price:
+                ///   - free:
+                ///   - noGerman:
+                ///   - place:
+                ///   - area:
+                ///   - photoUrl:
+                public init(
+                    id: Swift.Int,
+                    candidate: Swift.String,
+                    saved: Swift.Bool,
+                    title: Swift.String,
+                    category: Swift.String,
+                    categoryLabel: Swift.String,
+                    emoji: Swift.String? = nil,
+                    startsAt: Swift.String,
+                    endsAt: Swift.String? = nil,
+                    timed: Swift.Bool,
+                    untimed: Swift.String? = nil,
+                    price: Swift.String? = nil,
+                    free: Swift.Bool,
+                    noGerman: Swift.String? = nil,
+                    place: Swift.String? = nil,
+                    area: Swift.String? = nil,
+                    photoUrl: Swift.String? = nil
+                ) {
+                    self.id = id
+                    self.candidate = candidate
+                    self.saved = saved
+                    self.title = title
+                    self.category = category
+                    self.categoryLabel = categoryLabel
+                    self.emoji = emoji
+                    self.startsAt = startsAt
+                    self.endsAt = endsAt
+                    self.timed = timed
+                    self.untimed = untimed
+                    self.price = price
+                    self.free = free
+                    self.noGerman = noGerman
+                    self.place = place
+                    self.area = area
+                    self.photoUrl = photoUrl
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case candidate
+                    case saved
+                    case title
+                    case category
+                    case categoryLabel = "category_label"
+                    case emoji
+                    case startsAt = "starts_at"
+                    case endsAt = "ends_at"
+                    case timed
+                    case untimed
+                    case price
+                    case free
+                    case noGerman = "no_german"
+                    case place
+                    case area
+                    case photoUrl = "photo_url"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/listings`.
+            public typealias ListingsPayload = [Components.Schemas.EventsDayResource.ListingsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/EventsDayResource/listings`.
+            public var listings: Components.Schemas.EventsDayResource.ListingsPayload
+            /// Creates a new `EventsDayResource`.
+            ///
+            /// - Parameters:
+            ///   - date:
+            ///   - today:
+            ///   - ended: How many of today's listings have already ended (Earlier today · 3 ended).
+            ///   - days:
+            ///   - categories: The kinds on this day, in the filter's own order.
+            ///   - listings:
+            public init(
+                date: Swift.String,
+                today: Swift.String,
+                ended: Swift.Int,
+                days: Components.Schemas.EventsDayResource.DaysPayload,
+                categories: Components.Schemas.EventsDayResource.CategoriesPayload,
+                listings: Components.Schemas.EventsDayResource.ListingsPayload
+            ) {
+                self.date = date
+                self.today = today
+                self.ended = ended
+                self.days = days
+                self.categories = categories
+                self.listings = listings
+            }
+            public enum CodingKeys: String, CodingKey {
+                case date
+                case today
+                case ended
+                case days
+                case categories
+                case listings
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource`.
         public struct NearbyDeparturesResource: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/StopsPayload`.
