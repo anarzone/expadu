@@ -44,6 +44,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /events/saved`.
     /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
     func events_save(_ input: Operations.Events_save.Input) async throws -> Operations.Events_save.Output
+    /// - Remark: HTTP `POST /journey/plan`.
+    /// - Remark: Generated from `#/paths//journey/plan/post(journey.plan)`.
+    func journey_plan(_ input: Operations.Journey_plan.Input) async throws -> Operations.Journey_plan.Output
+    /// I'm on my way: the trip starts on that way. A trip already running asks first (409)
+    ///
+    /// - Remark: HTTP `POST /journey/start`.
+    /// - Remark: Generated from `#/paths//journey/start/post(journey.start)`.
+    func journey_start(_ input: Operations.Journey_start.Input) async throws -> Operations.Journey_start.Output
     /// Email and password. An account with two-step sign-in gets a challenge, not a token
     ///
     /// - Remark: HTTP `POST /auth/token`.
@@ -196,6 +204,30 @@ extension APIProtocol {
         body: Operations.Events_save.Input.Body
     ) async throws -> Operations.Events_save.Output {
         try await events_save(Operations.Events_save.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /journey/plan`.
+    /// - Remark: Generated from `#/paths//journey/plan/post(journey.plan)`.
+    public func journey_plan(
+        headers: Operations.Journey_plan.Input.Headers = .init(),
+        body: Operations.Journey_plan.Input.Body
+    ) async throws -> Operations.Journey_plan.Output {
+        try await journey_plan(Operations.Journey_plan.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// I'm on my way: the trip starts on that way. A trip already running asks first (409)
+    ///
+    /// - Remark: HTTP `POST /journey/start`.
+    /// - Remark: Generated from `#/paths//journey/start/post(journey.start)`.
+    public func journey_start(
+        headers: Operations.Journey_start.Input.Headers = .init(),
+        body: Operations.Journey_start.Input.Body
+    ) async throws -> Operations.Journey_start.Output {
+        try await journey_start(Operations.Journey_start.Input(
             headers: headers,
             body: body
         ))

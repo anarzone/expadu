@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
+use App\Http\Controllers\Api\V1\JourneyController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
 use App\Http\Controllers\Api\V1\TodayTripController;
@@ -48,5 +49,8 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::put('today-rank', [TodayRankController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
         Route::post('today-rank/later', [TodayRankController::class, 'later'])->middleware('verified');
         Route::get('travel/nearby', [TravelController::class, 'nearby'])->middleware('verified');
+        // Getting there (an event's details): the ways, and I'm on my way on one of them.
+        Route::post('journey/plan', [JourneyController::class, 'plan'])->middleware(['verified', 'throttle:journey']);
+        Route::post('journey/start', [JourneyController::class, 'start'])->middleware(['verified', 'throttle:journey']);
     });
 });

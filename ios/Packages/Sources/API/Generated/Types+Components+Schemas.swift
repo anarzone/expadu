@@ -399,6 +399,455 @@ extension Components {
                 case listings
             }
         }
+        /// Getting there: where to, from where the phone is, and when it starts.
+        ///
+        /// - Remark: Generated from `#/components/schemas/JourneyPlanRequest`.
+        public struct JourneyPlanRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanRequest/to_lat`.
+            public var toLat: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanRequest/to_lng`.
+            public var toLng: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanRequest/to_name`.
+            public var toName: Swift.String
+            /// Where the phone is; without it, where the server last knew them to be.
+            ///
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanRequest/from_lat`.
+            public var fromLat: Swift.Double?
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanRequest/from_lng`.
+            public var fromLng: Swift.Double?
+            /// When it starts: the ways are planned to be there five minutes before.
+            ///
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanRequest/starts_at`.
+            public var startsAt: Foundation.Date?
+            /// Creates a new `JourneyPlanRequest`.
+            ///
+            /// - Parameters:
+            ///   - toLat:
+            ///   - toLng:
+            ///   - toName:
+            ///   - fromLat: Where the phone is; without it, where the server last knew them to be.
+            ///   - fromLng:
+            ///   - startsAt: When it starts: the ways are planned to be there five minutes before.
+            public init(
+                toLat: Swift.Double,
+                toLng: Swift.Double,
+                toName: Swift.String,
+                fromLat: Swift.Double? = nil,
+                fromLng: Swift.Double? = nil,
+                startsAt: Foundation.Date? = nil
+            ) {
+                self.toLat = toLat
+                self.toLng = toLng
+                self.toName = toName
+                self.fromLat = fromLat
+                self.fromLng = fromLng
+                self.startsAt = startsAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case toLat = "to_lat"
+                case toLng = "to_lng"
+                case toName = "to_name"
+                case fromLat = "from_lat"
+                case fromLng = "from_lng"
+                case startsAt = "starts_at"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource`.
+        public struct JourneyPlanResource: Codable, Hashable, Sendable {
+            /// What I'm on my way names a way by, with its place in `ways`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/plan`.
+            public var plan: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/from`.
+            public var from: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/to`.
+            public var to: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload`.
+            public struct WaysPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/leave_time`.
+                public var leaveTime: Swift.String
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/arrive_time`.
+                public var arriveTime: Swift.String
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/spare_min`.
+                public var spareMin: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/status`.
+                public var status: Swift.String
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/mode`.
+                public var mode: Swift.String
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LinesPayload`.
+                public struct LinesPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LinesPayload/line`.
+                    public var line: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LinesPayload/color`.
+                    public var color: Swift.String
+                    /// Creates a new `LinesPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - line:
+                    ///   - color:
+                    public init(
+                        line: Swift.String,
+                        color: Swift.String
+                    ) {
+                        self.line = line
+                        self.color = color
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case line
+                        case color
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/lines`.
+                public typealias LinesPayload = [Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LinesPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/lines`.
+                public var lines: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LinesPayload
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/departs`.
+                public var departs: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/from`.
+                public var from: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/walk_min`.
+                public var walkMin: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/transfers`.
+                public var transfers: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/minutes`.
+                public var minutes: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/in_plan`.
+                public var inPlan: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/live`.
+                public var live: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload`.
+                public struct LegsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/mode`.
+                    public var mode: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/line`.
+                    public var line: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/color`.
+                    public var color: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/headsign`.
+                    public var headsign: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/from`.
+                    public var from: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/to`.
+                    public var to: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/depart_at`.
+                    public var departAt: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/arrive_at`.
+                    public var arriveAt: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/depart_time`.
+                    public var departTime: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/arrive_time`.
+                    public var arriveTime: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/minutes`.
+                    public var minutes: Swift.Int
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/stops`.
+                    public var stops: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/polyline`.
+                    public var polyline: Swift.String?
+                    /// Creates a new `LegsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - mode:
+                    ///   - line:
+                    ///   - color:
+                    ///   - headsign:
+                    ///   - from:
+                    ///   - to:
+                    ///   - departAt:
+                    ///   - arriveAt:
+                    ///   - departTime:
+                    ///   - arriveTime:
+                    ///   - minutes:
+                    ///   - stops:
+                    ///   - polyline:
+                    public init(
+                        mode: Swift.String,
+                        line: Swift.String? = nil,
+                        color: Swift.String? = nil,
+                        headsign: Swift.String? = nil,
+                        from: Swift.String,
+                        to: Swift.String,
+                        departAt: Swift.String,
+                        arriveAt: Swift.String,
+                        departTime: Swift.String,
+                        arriveTime: Swift.String,
+                        minutes: Swift.Int,
+                        stops: Swift.Int? = nil,
+                        polyline: Swift.String? = nil
+                    ) {
+                        self.mode = mode
+                        self.line = line
+                        self.color = color
+                        self.headsign = headsign
+                        self.from = from
+                        self.to = to
+                        self.departAt = departAt
+                        self.arriveAt = arriveAt
+                        self.departTime = departTime
+                        self.arriveTime = arriveTime
+                        self.minutes = minutes
+                        self.stops = stops
+                        self.polyline = polyline
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case mode
+                        case line
+                        case color
+                        case headsign
+                        case from
+                        case to
+                        case departAt = "depart_at"
+                        case arriveAt = "arrive_at"
+                        case departTime = "depart_time"
+                        case arriveTime = "arrive_time"
+                        case minutes
+                        case stops
+                        case polyline
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/legs`.
+                public typealias LegsPayload = [Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/legs`.
+                public var legs: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayload
+                /// Creates a new `WaysPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - leaveTime:
+                ///   - arriveTime:
+                ///   - spareMin:
+                ///   - status:
+                ///   - mode:
+                ///   - lines:
+                ///   - departs:
+                ///   - from:
+                ///   - walkMin:
+                ///   - transfers:
+                ///   - minutes:
+                ///   - inPlan:
+                ///   - live:
+                ///   - legs:
+                public init(
+                    leaveTime: Swift.String,
+                    arriveTime: Swift.String,
+                    spareMin: Swift.Int,
+                    status: Swift.String,
+                    mode: Swift.String,
+                    lines: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LinesPayload,
+                    departs: Swift.String? = nil,
+                    from: Swift.String? = nil,
+                    walkMin: Swift.Int,
+                    transfers: Swift.Int,
+                    minutes: Swift.Int,
+                    inPlan: Swift.Bool,
+                    live: Swift.Bool,
+                    legs: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayload
+                ) {
+                    self.leaveTime = leaveTime
+                    self.arriveTime = arriveTime
+                    self.spareMin = spareMin
+                    self.status = status
+                    self.mode = mode
+                    self.lines = lines
+                    self.departs = departs
+                    self.from = from
+                    self.walkMin = walkMin
+                    self.transfers = transfers
+                    self.minutes = minutes
+                    self.inPlan = inPlan
+                    self.live = live
+                    self.legs = legs
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case leaveTime = "leave_time"
+                    case arriveTime = "arrive_time"
+                    case spareMin = "spare_min"
+                    case status
+                    case mode
+                    case lines
+                    case departs
+                    case from
+                    case walkMin = "walk_min"
+                    case transfers
+                    case minutes
+                    case inPlan = "in_plan"
+                    case live
+                    case legs
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/ways`.
+            public typealias WaysPayload = [Components.Schemas.JourneyPlanResource.WaysPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/ways`.
+            public var ways: Components.Schemas.JourneyPlanResource.WaysPayload
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/ticket`.
+            public struct TicketPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/ticket/covered`.
+                public var covered: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/ticket/label`.
+                public var label: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/ticket/price`.
+                public var price: Swift.Double?
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/ticket/how`.
+                public var how: Swift.String?
+                /// Creates a new `TicketPayload`.
+                ///
+                /// - Parameters:
+                ///   - covered:
+                ///   - label:
+                ///   - price:
+                ///   - how:
+                public init(
+                    covered: Swift.Bool,
+                    label: Swift.String? = nil,
+                    price: Swift.Double? = nil,
+                    how: Swift.String? = nil
+                ) {
+                    self.covered = covered
+                    self.label = label
+                    self.price = price
+                    self.how = how
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case covered
+                    case label
+                    case price
+                    case how
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/ticket`.
+            public var ticket: Components.Schemas.JourneyPlanResource.TicketPayload?
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/rain`.
+            public struct RainPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/rain/at`.
+                public var at: Swift.String
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/rain/chance`.
+                public var chance: Swift.Int
+                /// Creates a new `RainPayload`.
+                ///
+                /// - Parameters:
+                ///   - at:
+                ///   - chance:
+                public init(
+                    at: Swift.String,
+                    chance: Swift.Int
+                ) {
+                    self.at = at
+                    self.chance = chance
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case at
+                    case chance
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/rain`.
+            public var rain: Components.Schemas.JourneyPlanResource.RainPayload?
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/lifts`.
+            public var lifts: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/NoticesPayload`.
+            public struct NoticesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/NoticesPayload/title`.
+                public var title: Swift.String
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/NoticesPayload/lines`.
+                public var lines: [Swift.String]
+                /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/NoticesPayload/major`.
+                public var major: Swift.Bool
+                /// Creates a new `NoticesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - title:
+                ///   - lines:
+                ///   - major:
+                public init(
+                    title: Swift.String,
+                    lines: [Swift.String],
+                    major: Swift.Bool
+                ) {
+                    self.title = title
+                    self.lines = lines
+                    self.major = major
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case title
+                    case lines
+                    case major
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/notices`.
+            public typealias NoticesPayload = [Components.Schemas.JourneyPlanResource.NoticesPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/notices`.
+            public var notices: Components.Schemas.JourneyPlanResource.NoticesPayload
+            /// Creates a new `JourneyPlanResource`.
+            ///
+            /// - Parameters:
+            ///   - plan: What I'm on my way names a way by, with its place in `ways`.
+            ///   - from:
+            ///   - to:
+            ///   - ways:
+            ///   - ticket:
+            ///   - rain:
+            ///   - lifts:
+            ///   - notices:
+            public init(
+                plan: Swift.String,
+                from: Swift.String,
+                to: Swift.String,
+                ways: Components.Schemas.JourneyPlanResource.WaysPayload,
+                ticket: Components.Schemas.JourneyPlanResource.TicketPayload? = nil,
+                rain: Components.Schemas.JourneyPlanResource.RainPayload? = nil,
+                lifts: [Swift.String],
+                notices: Components.Schemas.JourneyPlanResource.NoticesPayload
+            ) {
+                self.plan = plan
+                self.from = from
+                self.to = to
+                self.ways = ways
+                self.ticket = ticket
+                self.rain = rain
+                self.lifts = lifts
+                self.notices = notices
+            }
+            public enum CodingKeys: String, CodingKey {
+                case plan
+                case from
+                case to
+                case ways
+                case ticket
+                case rain
+                case lifts
+                case notices
+            }
+        }
+        /// I'm on my way, on one of the ways Getting there planned: named by its plan and place in it.
+        ///
+        /// - Remark: Generated from `#/components/schemas/JourneyStartRequest`.
+        public struct JourneyStartRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JourneyStartRequest/plan`.
+            public var plan: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JourneyStartRequest/way`.
+            public var way: Swift.Int
+            /// Starting while another trip runs replaces it only when the person said so.
+            ///
+            /// - Remark: Generated from `#/components/schemas/JourneyStartRequest/replace`.
+            public var replace: Swift.Bool?
+            /// Creates a new `JourneyStartRequest`.
+            ///
+            /// - Parameters:
+            ///   - plan:
+            ///   - way:
+            ///   - replace: Starting while another trip runs replaces it only when the person said so.
+            public init(
+                plan: Swift.String,
+                way: Swift.Int,
+                replace: Swift.Bool? = nil
+            ) {
+                self.plan = plan
+                self.way = way
+                self.replace = replace
+            }
+            public enum CodingKeys: String, CodingKey {
+                case plan
+                case way
+                case replace
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource`.
         public struct NearbyDeparturesResource: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/NearbyDeparturesResource/StopsPayload`.

@@ -249,6 +249,56 @@ public struct AppAPI: Sendable {
         }
     }
 
+    /// Getting there: the ways from where the phone is (or was last known) to a place, there five minutes before `startsAt`.
+    public func planWay(to name: String, latitude: Double, longitude: Double, fromLatitude: Double?, fromLongitude: Double?, startsAt: Date?) async throws(APIFailure) -> WayPlan {
+        let input = Components.Schemas.JourneyPlanRequest(toLat: latitude, toLng: longitude, toName: name, fromLat: fromLatitude, fromLng: fromLongitude, startsAt: startsAt)
+        let output = try await calling { try await client.journey_plan(body: .json(input)) }
+        switch output {
+        case let .ok(ok):
+            let plan = try body { try ok.body.json }
+            return WayPlan(
+                plan: plan.plan, from: plan.from, to: plan.to,
+                ways: plan.ways.enumerated().map { index, way in
+                    var mapped = TodayPage.Way(id: index, leaveTime: way.leaveTime, arriveTime: way.arriveTime, spareMinutes: way.spareMin, status: way.status, mode: way.mode,
+                                               lines: way.lines.map { .init(line: $0.line, color: $0.color) }, departs: way.departs, from: way.from,
+                                               walkMinutes: way.walkMin, transfers: way.transfers, minutes: way.minutes, inPlan: way.inPlan, live: way.live)
+                    mapped.legs = way.legs.compactMap { leg in
+                        guard let departAt = Self.date(from: leg.departAt), let arriveAt = Self.date(from: leg.arriveAt) else { return nil }
+                        return TodayPage.Trip.Leg(mode: leg.mode, line: leg.line, color: leg.color, headsign: leg.headsign, from: leg.from, to: leg.to,
+                                                  departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
+                                                  stops: leg.stops, polyline: leg.polyline)
+                    }
+                    return mapped
+                },
+                ticket: plan.ticket.map { WayPlan.Ticket(covered: $0.covered, label: $0.label, price: $0.price, how: $0.how) },
+                rain: plan.rain.map { (at: $0.at, chance: $0.chance) },
+                lifts: plan.lifts,
+                notices: plan.notices.map { WayPlan.Notice(title: $0.title, lines: $0.lines, major: $0.major) }
+            )
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case .forbidden: throw .refused("Confirm your email address first.")
+        case let .undocumented(status, _):
+            if status == 429 { throw .tooManyTries }
+            throw failure(status)
+        }
+    }
+
+    /// I'm on my way, on a way Getting there planned.
+    public func startWay(plan: String, way: Int, replace: Bool = false) async throws(APIFailure) -> TripStart {
+        let input = Components.Schemas.JourneyStartRequest(plan: plan, way: way, replace: replace)
+        let output = try await calling { try await client.journey_start(body: .json(input)) }
+        switch output {
+        case .ok: return .started
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case .forbidden: throw .refused("Confirm your email address first.")
+        case let .undocumented(status, _):
+            if status == 409 { return .running }
+            throw failure(status)
+        }
+    }
+
     /// I'm there: the trip ends.
     public func endTrip() async throws(APIFailure) {
         let output = try await calling { try await client.todayTrip_end() }

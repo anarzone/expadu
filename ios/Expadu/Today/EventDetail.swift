@@ -1,6 +1,6 @@
+import API
 import Core
 import DesignSystem
-import MapKit
 import SwiftUI
 
 /// An event's details, pushed over What's on as the canvas draws it: the poster, what to know
@@ -19,7 +19,10 @@ struct EventDetail: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The title in a bar once the poster has scrolled away (.wd.bar).
     @State private var bar = false
-    @State private var mapOpen = false
+    @State private var going = false
+    /// Getting there's ways, planned when the details open; the Where row shows the first one's time.
+    @State private var plan: WayPlan?
+    @State private var planProblem: String?
     @State private var listingOpen = false
     /// Why Add to my day didn't go in, said here: Today's own note is under this sheet.
     @State private var refusal: String?
@@ -92,7 +95,10 @@ struct EventDetail: View {
         .overlay(alignment: .top) { nav }
         .overlay(alignment: .bottom) { foot }
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $mapOpen) { PlaceMap(listing: listing) }
+        .navigationDestination(isPresented: $going) {
+            GettingThere(listing: listing, day: day, plan: $plan, problem: $planProblem, replan: replan)
+        }
+        .task { if plan == nil { await replan() } }
         .sheet(isPresented: $listingOpen) { if let source = listing.source { SafariView(url: source).ignoresSafeArea() } }
     }
 
@@ -272,13 +278,13 @@ struct EventDetail: View {
             DetailRow(symbol: "clock.fill", tint: Color(hex: 0xE6421F), title: whenLine, note: whenNote)
             divider
             let hasPlace = listing.latitude != nil && listing.longitude != nil
-            Button { mapOpen = true } label: {
+            Button { going = true } label: {
                 DetailRow(symbol: "mappin", tint: Color(hex: 0x2F6FD0), title: idea.place ?? idea.area ?? "Place not listed",
-                          note: idea.place == nil ? nil : idea.area, chevron: hasPlace)
+                          note: idea.place == nil ? nil : idea.area, chevron: hasPlace, go: goChip)
             }
             .buttonStyle(.plain)
             .disabled(!hasPlace)
-            .accessibilityHint(hasPlace ? "Shows it on a map" : "")
+            .accessibilityHint(hasPlace ? "Getting there" : "")
             divider
             DetailRow(symbol: "ticket.fill", tint: Color(hex: 0x2F9E5B), title: idea.price ?? "Price not listed", note: "Admission")
             if let language = listing.languageLine {
@@ -288,6 +294,34 @@ struct EventDetail: View {
         }
         .clipShape(.rect(cornerRadius: 22))
         .card(radius: 22)
+    }
+
+    /// The first way's time on the Where row (.ig-go): "14 min" with how.
+    private var goChip: (symbol: String, text: String)? {
+        guard let way = plan?.ways.first else { return nil }
+        return (way.lines.isEmpty ? (way.mode == "bike" ? "bicycle" : "figure.walk") : "tram.fill", "\(way.minutes) min")
+    }
+
+    /// The ways from where the phone is, to be there five minutes before it starts.
+    private func replan() async {
+        guard let latitude = listing.latitude, let longitude = listing.longitude else { return }
+        let from = today.place
+        do throws(APIFailure) {
+            let next = try await session.api.planWay(to: idea.title, latitude: latitude, longitude: longitude, fromLatitude: from?.latitude, fromLongitude: from?.longitude,
+                                                     startsAt: idea.timed ? idea.startsAt : nil)
+            withAnimation(.snappy) { plan = next; planProblem = next.ways.isEmpty ? "No way there was found for this time. Try again in a moment." : nil }
+        } catch {
+            withAnimation(.snappy) { planProblem = Self.words(error) }
+        }
+    }
+
+    private static func words(_ error: APIFailure) -> String {
+        switch error {
+        case let .refused(why): why
+        case .signedOut: "You’ve been signed out."
+        case .tooManyTries: "Too many plans in a row. Try again in a minute."
+        case .unreachable: "Couldn’t reach Expadu. Check your connection."
+        }
     }
 
     private var divider: some View {
@@ -348,6 +382,7 @@ private struct DetailRow: View {
     let title: String
     let note: String?
     var chevron = false
+    var go: (symbol: String, text: String)?
 
     var body: some View {
         HStack(spacing: 13) {
@@ -358,6 +393,13 @@ private struct DetailRow: View {
                 if let note, !note.isEmpty { Text(note).font(.geist(13.5)).foregroundStyle(Palette.textSoft) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            if let go {
+                Label(go.text, systemImage: go.symbol).labelStyle(Tight())
+                    .font(.geist(14, .semibold)).foregroundStyle(Color(hex: 0x2F6FD0))
+                    .padding(.horizontal, 10).frame(height: 28)
+                    .background(Color(light: 0xEAF1F8, dark: 0x1E2C40), in: .capsule)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+            }
             if chevron {
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft)
             }
@@ -400,30 +442,5 @@ private struct CaseRow: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 13)
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// Where it is, on a map in place.
-private struct PlaceMap: View {
-    let listing: WhatsOn.Listing
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        let point = CLLocationCoordinate2D(latitude: listing.latitude ?? 50.9375, longitude: listing.longitude ?? 6.9603)
-        Map(initialPosition: .region(MKCoordinateRegion(center: point, latitudinalMeters: 900, longitudinalMeters: 900))) {
-            Marker(listing.idea.place ?? listing.idea.title, systemImage: "mappin", coordinate: point).tint(Color(hex: 0x2F6FD0))
-        }
-        .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                    .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
-            }
-            .buttonStyle(PressStyle())
-            .accessibilityLabel("Close")
-            .padding(16)
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
     }
 }

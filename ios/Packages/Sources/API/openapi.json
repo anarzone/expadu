@@ -327,6 +327,85 @@
                 }
             }
         },
+        "/journey/plan": {
+            "post": {
+                "operationId": "journey.plan",
+                "tags": [
+                    "Journey"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JourneyPlanRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`JourneyPlanResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JourneyPlanResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/journey/start": {
+            "post": {
+                "operationId": "journey.start",
+                "summary": "I'm on my way: the trip starts on that way. A trip already running asks first (409)",
+                "tags": [
+                    "Journey"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JourneyStartRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/auth/token": {
             "post": {
                 "operationId": "signIn.token",
@@ -1430,6 +1509,352 @@
                     "listings"
                 ],
                 "title": "EventsDayResource"
+            },
+            "JourneyPlanRequest": {
+                "type": "object",
+                "description": "Getting there: where to, from where the phone is, and when it starts.",
+                "properties": {
+                    "to_lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "to_lng": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                    },
+                    "to_name": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "from_lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "Where the phone is; without it, where the server last knew them to be.",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "from_lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -180,
+                        "maximum": 180
+                    },
+                    "starts_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "description": "When it starts: the ways are planned to be there five minutes before."
+                    }
+                },
+                "required": [
+                    "to_lat",
+                    "to_lng",
+                    "to_name"
+                ],
+                "title": "JourneyPlanRequest"
+            },
+            "JourneyPlanResource": {
+                "type": "object",
+                "properties": {
+                    "plan": {
+                        "type": "string",
+                        "description": "What I'm on my way names a way by, with its place in `ways`."
+                    },
+                    "from": {
+                        "type": "string"
+                    },
+                    "to": {
+                        "type": "string"
+                    },
+                    "ways": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "leave_time": {
+                                    "type": "string"
+                                },
+                                "arrive_time": {
+                                    "type": "string"
+                                },
+                                "spare_min": {
+                                    "type": "integer"
+                                },
+                                "status": {
+                                    "type": "string"
+                                },
+                                "mode": {
+                                    "type": "string"
+                                },
+                                "lines": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "line": {
+                                                "type": "string"
+                                            },
+                                            "color": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "line",
+                                            "color"
+                                        ]
+                                    }
+                                },
+                                "departs": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "from": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "walk_min": {
+                                    "type": "integer"
+                                },
+                                "transfers": {
+                                    "type": "integer"
+                                },
+                                "minutes": {
+                                    "type": "integer"
+                                },
+                                "in_plan": {
+                                    "type": "boolean"
+                                },
+                                "live": {
+                                    "type": "boolean"
+                                },
+                                "legs": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "mode": {
+                                                "type": "string"
+                                            },
+                                            "line": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "color": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "headsign": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "from": {
+                                                "type": "string"
+                                            },
+                                            "to": {
+                                                "type": "string"
+                                            },
+                                            "depart_at": {
+                                                "type": "string"
+                                            },
+                                            "arrive_at": {
+                                                "type": "string"
+                                            },
+                                            "depart_time": {
+                                                "type": "string"
+                                            },
+                                            "arrive_time": {
+                                                "type": "string"
+                                            },
+                                            "minutes": {
+                                                "type": "integer"
+                                            },
+                                            "stops": {
+                                                "type": [
+                                                    "integer",
+                                                    "null"
+                                                ]
+                                            },
+                                            "polyline": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "mode",
+                                            "line",
+                                            "color",
+                                            "headsign",
+                                            "from",
+                                            "to",
+                                            "depart_at",
+                                            "arrive_at",
+                                            "depart_time",
+                                            "arrive_time",
+                                            "minutes",
+                                            "stops",
+                                            "polyline"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "leave_time",
+                                "arrive_time",
+                                "spare_min",
+                                "status",
+                                "mode",
+                                "lines",
+                                "departs",
+                                "from",
+                                "walk_min",
+                                "transfers",
+                                "minutes",
+                                "in_plan",
+                                "live",
+                                "legs"
+                            ]
+                        }
+                    },
+                    "ticket": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "covered": {
+                                "type": "boolean"
+                            },
+                            "label": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "price": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ]
+                            },
+                            "how": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "covered",
+                            "label",
+                            "price",
+                            "how"
+                        ]
+                    },
+                    "rain": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "at": {
+                                "type": "string"
+                            },
+                            "chance": {
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "at",
+                            "chance"
+                        ]
+                    },
+                    "lifts": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "notices": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string"
+                                },
+                                "lines": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "major": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "title",
+                                "lines",
+                                "major"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "plan",
+                    "from",
+                    "to",
+                    "ways",
+                    "ticket",
+                    "rain",
+                    "lifts",
+                    "notices"
+                ],
+                "title": "JourneyPlanResource"
+            },
+            "JourneyStartRequest": {
+                "type": "object",
+                "description": "I'm on my way, on one of the ways Getting there planned: named by its plan and place in it.",
+                "properties": {
+                    "plan": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "way": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 20
+                    },
+                    "replace": {
+                        "type": "boolean",
+                        "description": "Starting while another trip runs replaces it only when the person said so."
+                    }
+                },
+                "required": [
+                    "plan",
+                    "way"
+                ],
+                "title": "JourneyStartRequest"
             },
             "NearbyDeparturesResource": {
                 "type": "object",

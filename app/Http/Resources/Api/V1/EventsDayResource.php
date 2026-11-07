@@ -78,8 +78,8 @@ class EventsDayResource extends JsonResource
             'summary_lang' => $event['summary_lang'] ?? null,
             'tip' => $event['tip'] ?? null,
             'source_url' => $event['source_url'] ?? null,
-            'lat' => isset($event['venue']['lat']) ? (float) $event['venue']['lat'] : null,
-            'lng' => isset($event['venue']['lng']) ? (float) $event['venue']['lng'] : null,
+            'lat' => $this->resource['points'][$event['id']]['lat'] ?? null,
+            'lng' => $this->resource['points'][$event['id']]['lng'] ?? null,
         ];
     }
 }

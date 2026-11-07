@@ -243,35 +243,14 @@ class TodayResource extends JsonResource
     }
 
     /**
-     * One way for Other ways: when, the lines, the walking and changes, how long.
+     * One way for Other ways (AppJourney::way), with its fit to the plan.
      *
      * @param  array<string, mixed>  $way
      * @return array<string, mixed>
      */
     private function way(array $way): array
     {
-        $journey = $way['journey'];
-        $legs = collect($journey['legs'] ?? [])->filter(fn ($leg) => is_array($leg));
-        $rides = $legs->filter(fn (array $leg) => ! in_array($leg['mode'] ?? 'walk', ['walk', 'bike'], true))->values();
-        $ride = $rides->first();
-
-        return [
-            'leave_time' => (string) ($journey['depart_time'] ?? ''),
-            'arrive_time' => (string) ($journey['arrive_time'] ?? ''),
-            'spare_min' => (int) ($way['spare_min'] ?? 0),
-            'status' => (string) ($way['status'] ?? 'fits'),
-            'mode' => (string) ($journey['mode'] ?? 'transit'),
-            'lines' => $rides->map(fn (array $leg) => ['line' => (string) ($leg['line'] ?? ''), 'color' => KvbLineColors::for((string) ($leg['line'] ?? ''), $leg['mode'] ?? null)])->all(),
-            'departs' => $ride['depart_time'] ?? null,
-            'from' => isset($ride['from']['name']) ? trim((string) preg_replace('/^(Köln|Koeln)\s+/u', '', (string) $ride['from']['name'])) : null,
-            'walk_min' => (int) $legs->filter(fn (array $leg) => ($leg['mode'] ?? null) === 'walk')->sum('duration_min'),
-            'transfers' => max(0, $rides->count() - 1),
-            'minutes' => (int) ($journey['duration_min'] ?? 0),
-            'in_plan' => (bool) ($way['in_plan'] ?? false),
-            'live' => ($way['time_basis'] ?? null) === 'live',
-            // Journey details on its ticket.
-            'legs' => $this->legs($journey),
-        ];
+        return AppJourney::way($way['journey'], (int) ($way['spare_min'] ?? 0), (string) ($way['status'] ?? 'fits'), (bool) ($way['in_plan'] ?? false), ($way['time_basis'] ?? null) === 'live');
     }
 
     /**
@@ -385,30 +364,11 @@ class TodayResource extends JsonResource
     }
 
     /**
-     * A journey's legs as the app draws them: the step list, the live card and the map.
-     *
      * @param  array<string, mixed>  $journey
      * @return array<int, array<string, mixed>>
      */
     private function legs(array $journey): array
     {
-        $short = fn (?string $name) => $name === null ? '' : trim((string) preg_replace('/^(Köln|Koeln)\s+/u', '', $name));
-
-        return array_values(array_map(fn (array $leg) => [
-            'mode' => (string) ($leg['mode'] ?? 'walk'),
-            'line' => $leg['line'] ?? null,
-            'color' => isset($leg['line']) ? KvbLineColors::for((string) $leg['line'], $leg['mode'] ?? null) : null,
-            'headsign' => isset($leg['headsign']) ? $short($leg['headsign']) : null,
-            'from' => $short($leg['from']['name'] ?? null),
-            'to' => $short($leg['to']['name'] ?? null),
-            'depart_at' => (string) $leg['depart_at'],
-            'arrive_at' => (string) $leg['arrive_at'],
-            'depart_time' => (string) ($leg['depart_time'] ?? ''),
-            'arrive_time' => (string) ($leg['arrive_time'] ?? ''),
-            'minutes' => (int) ($leg['duration_min'] ?? 0),
-            'stops' => isset($leg['stops']) ? (int) $leg['stops'] : null,
-            // The way it goes, for the map (MOTIS's encoded polyline, precision 7).
-            'polyline' => $leg['polyline'] ?? null,
-        ], array_filter($journey['legs'] ?? [], fn ($leg) => is_array($leg) && isset($leg['depart_at'], $leg['arrive_at']))));
+        return AppJourney::legs($journey);
     }
 }

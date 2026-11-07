@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\CologneBoundaryUnavailable;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\EventsDayRequest;
 use App\Http\Requests\Events\SaveEventRequest;
 use App\Http\Resources\Api\V1\EventsDayResource;
 use App\Models\Event;
 use App\Models\EventBookmark;
+use App\Services\CologneServiceArea;
 use App\Services\SavedEvents;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
@@ -23,7 +25,7 @@ class EventsController extends Controller
      * What's on for a day (All events on Today): the web panel's listings (App\Home\WhatsOn).
      * Today drops what has already ended and says how many.
      */
-    public function day(EventsDayRequest $request, EventOccurrencePresenter $presenter): EventsDayResource
+    public function day(EventsDayRequest $request, EventOccurrencePresenter $presenter, CologneServiceArea $areas): EventsDayResource
     {
         $now = CarbonImmutable::now('Europe/Berlin');
         $day = CarbonImmutable::parse($request->validated('date') ?? $now->toDateString(), 'Europe/Berlin');
@@ -36,12 +38,21 @@ class EventsController extends Controller
             ->values();
         $over = fn (array $event) => $day->isSameDay($now) && isset($event['occurrence_end']) && CarbonImmutable::parse($event['occurrence_end'])->lessThanOrEqualTo($now);
 
+        $shown = $listings->reject($over)->values();
+        // Where each listing is (its own point, else its venue's), only inside Cologne: Getting there plans to it.
+        try {
+            $points = $areas->eventCoordinates($shown->pluck('id')->map(fn ($id) => (int) $id)->unique()->values()->all());
+        } catch (CologneBoundaryUnavailable) {
+            $points = collect();
+        }
+
         return new EventsDayResource([
             'date' => $day->toDateString(),
             'today' => $now->toDateString(),
             'ended' => $listings->filter($over)->count(),
             'days' => $this->days($now),
-            'listings' => $listings->reject($over)->values()->all(),
+            'listings' => $shown->all(),
+            'points' => $points->map(fn ($point) => ['lat' => (float) $point->lat, 'lng' => (float) $point->lng])->all(),
             'saved_events' => EventBookmark::query()->where('user_id', $request->user()->id)->get(['event_id', 'occurrence_start'])
                 ->map(fn (EventBookmark $bookmark) => $bookmark->event_id.':'.$bookmark->occurrence_start->getTimestamp())->all(),
         ]);

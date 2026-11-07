@@ -590,7 +590,7 @@ private struct Rise: ViewModifier {
 }
 
 /// The card's own note (the canvas's .lv-say): green, dropped in at its top, with Undo when it can.
-private struct CardSay: View {
+struct CardSay: View {
     let note: TodayModel.Note
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
@@ -763,7 +763,7 @@ private struct LeaveCard: View {
 /// On your way, live (the canvas's .trip-l): progress bars for the steps, the step they're on by the
 /// clock in its line's colour, every step when asked, the way on a map, and End. It turns live in
 /// place: the card settles in, its parts rise one after another, the dot pulses.
-private struct LiveTrip: View {
+struct LiveTrip: View {
     let trip: TodayPage.Trip
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
@@ -928,7 +928,7 @@ private struct BarFill: View {
 
 /// Every step of a way (.way .w-s): a ring in its colour, the line to the next (dotted for walking),
 /// the step and when; past ones faded, the one they're on in its colour.
-private struct StepList: View {
+struct StepList: View {
     let steps: [TodayPage.Step]
     var current: Int?
 
@@ -985,7 +985,7 @@ private struct StepList: View {
 }
 
 /// The way on a map, in place: each leg in its line's colour, walking dotted, start and end marked.
-private struct WayMap: View {
+struct WayMap: View {
     let title: String
     let legs: [TodayPage.Trip.Leg]
     @Environment(\.dismiss) private var dismiss
@@ -1025,7 +1025,7 @@ private struct WayMap: View {
 }
 
 /// A ticket's half (.tk-top / .tk-bot): rounded outer corners and the two notches the perforation runs between.
-nonisolated private struct TicketHalf: Shape {
+nonisolated struct TicketHalf: Shape {
     let top: Bool
 
     func path(in rect: CGRect) -> Path {
@@ -1085,64 +1085,12 @@ private struct OtherWaysSheet: View {
 
     private func ticket(_ way: TodayPage.Way) -> some View {
         let mine = way.id == 0
-        // TRIP_LOOK: the line's colour; a change runs from the first line into the second; bike teal, walking soft brown.
-        let look = LineLook(hex: way.lines.first?.color ?? (way.mode == "bike" ? "#00768B" : "#6A6253"))
-        let fill = way.lines.count > 1 ? LineLook.fill(from: look, to: LineLook(hex: way.lines[1].color)) : look.fill
-        let ink = look.ink
         let spareTone: (Color, Color) = way.spareMinutes < 0 ? (Palette.conflictText, Palette.conflictBackground)
             : way.spareMinutes <= 2 ? (Palette.warnText, Palette.warnBackground)
             : way.spareMinutes >= 10 ? (Color(hex: 0x17603A), Color(hex: 0xE4F4E8)) : (Palette.text, Palette.quiet)
         return VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 0) {
-                if mine {
-                    Text("YOUR WAY").font(.posterMarker(15)).foregroundStyle(Motion.ink)
-                        .padding(.horizontal, 10).padding(.top, 3).padding(.bottom, 2)
-                        .background(Color(hex: 0xFFE363))
-                        .rotationEffect(.degrees(-2))
-                        .padding(.bottom, 10)
-                }
-                HStack(spacing: 8) {
-                    if way.lines.isEmpty {
-                        plate(way.mode == "bike" ? "Bike" : "Walk", symbol: way.mode == "bike" ? "bicycle" : "figure.walk", colour: look.deep)
-                    }
-                    ForEach(Array(way.lines.enumerated()), id: \.offset) { index, line in
-                        if index > 0 { Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)) }
-                        plate(Board.badge(line.line), symbol: "tram.fill", colour: LineLook(hex: line.color).deep)
-                    }
-                    if let departs = way.departs, !way.lines.isEmpty {
-                        Text("at \(departs)").font(.geist(16, .bold))
-                    }
-                }
-                HStack(alignment: .bottom, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Leave").font(.geist(12.5, .semibold)).opacity(0.9)
-                        Text(way.leaveTime).font(.posterGrotesque(42)).tracking(-1).monospacedDigit()
-                    }
-                    Image(systemName: "arrow.right").font(.system(size: 20, weight: .semibold)).padding(.bottom, 10)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("There").font(.geist(12.5, .semibold)).opacity(0.9)
-                        Text(way.arriveTime).font(.posterGrotesque(42)).tracking(-1).monospacedDigit()
-                    }
-                }
-                .padding(.top, 12)
-            }
-            .foregroundStyle(ink)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 16).padding(.horizontal, 18).padding(.bottom, 18)
-            .background(alignment: .topTrailing) {
-                Text(way.lines.count == 1 ? Board.badge(way.lines[0].line) : "")
-                    .font(.posterGrotesque(170)).foregroundStyle(ink.opacity(0.13))
-                    .offset(x: 8, y: -18)
-                    .lineLimit(1).fixedSize()
-            }
-            .overlay(alignment: .topTrailing) {
-                Text("\(way.minutes) min").font(.geist(13, .bold)).foregroundStyle(ink)
-                    .padding(.horizontal, 11).frame(height: 28)
-                    .background(.black.opacity(0.28), in: .capsule)
-                    .padding(16)
-            }
-            .background(fill)
-            .clipShape(TicketHalf(top: true))
+            TicketTop(way: way, mine: mine)
+
             // The perforation.
             Line().stroke(Color(hex: 0x211D15, opacity: 0.28), style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
                 .frame(height: 2).padding(.horizontal, 14)
@@ -1213,6 +1161,71 @@ private struct OtherWaysSheet: View {
         .shadow(color: Color(hex: 0x19140C, opacity: 0.22), radius: 9, y: 10)
     }
 
+}
+
+/// A Travel ticket's top half: the line plates, Leave → There, the minutes, the line's colour.
+/// Other ways and Getting there show the same ticket.
+struct TicketTop: View {
+    let way: TodayPage.Way
+    var mine = false
+
+    var body: some View {
+        // TRIP_LOOK: the line's colour; a change runs from the first line into the second; bike teal, walking soft brown.
+        let look = LineLook(hex: way.lines.first?.color ?? (way.mode == "bike" ? "#00768B" : "#6A6253"))
+        let fill = way.lines.count > 1 ? LineLook.fill(from: look, to: LineLook(hex: way.lines[1].color)) : look.fill
+        let ink = look.ink
+        VStack(alignment: .leading, spacing: 0) {
+            if mine {
+                Text("YOUR WAY").font(.posterMarker(15)).foregroundStyle(Motion.ink)
+                    .padding(.horizontal, 10).padding(.top, 3).padding(.bottom, 2)
+                    .background(Color(hex: 0xFFE363))
+                    .rotationEffect(.degrees(-2))
+                    .padding(.bottom, 10)
+            }
+            HStack(spacing: 8) {
+                if way.lines.isEmpty {
+                    plate(way.mode == "bike" ? "Bike" : "Walk", symbol: way.mode == "bike" ? "bicycle" : "figure.walk", colour: look.deep)
+                }
+                ForEach(Array(way.lines.enumerated()), id: \.offset) { index, line in
+                    if index > 0 { Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)) }
+                    plate(Board.badge(line.line), symbol: "tram.fill", colour: LineLook(hex: line.color).deep)
+                }
+                if let departs = way.departs, !way.lines.isEmpty {
+                    Text("at \(departs)").font(.geist(16, .bold))
+                }
+            }
+            HStack(alignment: .bottom, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Leave").font(.geist(12.5, .semibold)).opacity(0.9)
+                    Text(way.leaveTime).font(.posterGrotesque(42)).tracking(-1).monospacedDigit()
+                }
+                Image(systemName: "arrow.right").font(.system(size: 20, weight: .semibold)).padding(.bottom, 10)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("There").font(.geist(12.5, .semibold)).opacity(0.9)
+                    Text(way.arriveTime).font(.posterGrotesque(42)).tracking(-1).monospacedDigit()
+                }
+            }
+            .padding(.top, 12)
+        }
+        .foregroundStyle(ink)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 16).padding(.horizontal, 18).padding(.bottom, 18)
+        .background(alignment: .topTrailing) {
+            Text(way.lines.count == 1 ? Board.badge(way.lines[0].line) : "")
+                .font(.posterGrotesque(170)).foregroundStyle(ink.opacity(0.13))
+                .offset(x: 8, y: -18)
+                .lineLimit(1).fixedSize()
+        }
+        .overlay(alignment: .topTrailing) {
+            Text("\(way.minutes) min").font(.geist(13, .bold)).foregroundStyle(ink)
+                .padding(.horizontal, 11).frame(height: 28)
+                .background(.black.opacity(0.28), in: .capsule)
+                .padding(16)
+        }
+        .background(fill)
+        .clipShape(TicketHalf(top: true))
+    }
+
     private func plate(_ text: String, symbol: String, colour: Color) -> some View {
         Label(text, systemImage: symbol).labelStyle(Tight())
             .font(.posterGrotesque(20)).foregroundStyle(colour)
@@ -1250,7 +1263,7 @@ private struct FlowLines: View {
     }
 }
 
-nonisolated private struct Line: Shape {
+nonisolated struct Line: Shape {
     func path(in rect: CGRect) -> Path {
         Path { path in
             path.move(to: CGPoint(x: rect.minX, y: rect.midY))
@@ -2727,7 +2740,7 @@ enum TodayLink {
     static let ink = Color(light: 0x005B6B, dark: 0x5CCBE0)
 }
 
-private struct Tight: LabelStyle {
+struct Tight: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 7) { configuration.icon; configuration.title }
     }
@@ -3072,7 +3085,8 @@ final class TodayModel {
     }
 
     /// Where the phone was when Today was last read: trips start there, as on Today.
-    private var place: CLLocationCoordinate2D?
+    /// Where the phone was when Today was last read; Getting there plans from here too.
+    private(set) var place: CLLocationCoordinate2D?
 
     /// I'm on my way. True when another trip is running and they should be asked first.
     func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool) async -> Bool {
@@ -3087,6 +3101,18 @@ final class TodayModel {
             await load(api, quietly: true)
         }
         return false
+    }
+
+    /// I'm on my way on a way Getting there planned: Today shows the trip live after it.
+    func startWay(_ api: AppAPI, plan: WayPlan, way: Int, replace: Bool) async -> (running: Bool, problem: String?) {
+        do throws(APIFailure) {
+            let started = try await api.startWay(plan: plan.plan, way: way, replace: replace)
+            if started == .running { return (true, nil) }
+            await load(api, quietly: true)
+            return (false, nil)
+        } catch {
+            return (false, Self.words(error))
+        }
     }
 
     func endTrip(_ api: AppAPI, arrived: Bool) async {
