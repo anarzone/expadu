@@ -319,7 +319,9 @@ public struct AppAPI: Sendable {
                                               emoji: listing.emoji, startsAt: starts, endsAt: listing.endsAt.flatMap(Self.date(from:)), timed: listing.timed,
                                               untimed: listing.untimed, tomorrow: day.date != day.today, price: listing.price, place: listing.place, area: listing.area)
                     return WhatsOn.Listing(idea: idea, category: listing.category, free: listing.free, noGerman: listing.noGerman,
-                                           photo: listing.photoUrl.flatMap(URL.init(string:)))
+                                           photo: listing.photoUrl.flatMap(URL.init(string:)), language: listing.language, summary: listing.summary,
+                                           summaryLang: listing.summaryLang, tip: listing.tip, source: listing.sourceUrl.flatMap(URL.init(string:)),
+                                           latitude: listing.lat, longitude: listing.lng)
                 }
             )
         case .unauthorized: throw .signedOut

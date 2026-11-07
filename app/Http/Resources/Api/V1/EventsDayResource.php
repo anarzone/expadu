@@ -37,14 +37,14 @@ class EventsDayResource extends JsonResource
                 fn (EventCategory $category) => ['id' => $category->value, 'label' => $category->label()],
                 array_filter(EventCategory::cases(), fn (EventCategory $category) => in_array($category->value, $present, true)),
             )),
-            /** @var array<int, array{id: int, candidate: string, saved: bool, title: string, category: string, category_label: string, emoji: string|null, starts_at: string, ends_at: string|null, timed: bool, untimed: string|null, price: string|null, free: bool, no_german: string|null, place: string|null, area: string|null, photo_url: string|null}> */
+            /** @var array<int, array{id: int, candidate: string, saved: bool, title: string, category: string, category_label: string, emoji: string|null, starts_at: string, ends_at: string|null, timed: bool, untimed: string|null, price: string|null, free: bool, no_german: string|null, place: string|null, area: string|null, photo_url: string|null, language: string|null, summary: string|null, summary_lang: string|null, tip: string|null, source_url: string|null, lat: float|null, lng: float|null}> */
             'listings' => array_map(fn (array $event) => $this->listing($event), $listings),
         ];
     }
 
     /**
      * @param  array<string, mixed>  $event
-     * @return array{id: int, candidate: string, saved: bool, title: string, category: string, category_label: string, emoji: string|null, starts_at: string, ends_at: string|null, timed: bool, untimed: string|null, price: string|null, free: bool, no_german: string|null, place: string|null, area: string|null, photo_url: string|null}
+     * @return array{id: int, candidate: string, saved: bool, title: string, category: string, category_label: string, emoji: string|null, starts_at: string, ends_at: string|null, timed: bool, untimed: string|null, price: string|null, free: bool, no_german: string|null, place: string|null, area: string|null, photo_url: string|null, language: string|null, summary: string|null, summary_lang: string|null, tip: string|null, source_url: string|null, lat: float|null, lng: float|null}
      */
     private function listing(array $event): array
     {
@@ -71,6 +71,15 @@ class EventsDayResource extends JsonResource
             'place' => $event['venue']['name'] ?? null,
             'area' => $event['venue']['veedel'] ?? null,
             'photo_url' => $event['photo_url'] ?? null,
+            // For its details page: what it's in, what it is, a tip, the listing, where it is.
+            'language' => $event['language'] ?? null,
+            'summary' => $event['summary'] ?? null,
+            // The listing's own language when the summary is its words, not a translation.
+            'summary_lang' => $event['summary_lang'] ?? null,
+            'tip' => $event['tip'] ?? null,
+            'source_url' => $event['source_url'] ?? null,
+            'lat' => isset($event['venue']['lat']) ? (float) $event['venue']['lat'] : null,
+            'lng' => isset($event['venue']['lng']) ? (float) $event['venue']['lng'] : null,
         ];
     }
 }

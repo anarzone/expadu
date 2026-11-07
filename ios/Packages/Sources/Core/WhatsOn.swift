@@ -31,14 +31,38 @@ public struct WhatsOn: Equatable, Sendable {
         /// Why a guest needs no German, or nil.
         public let noGerman: String?
         public let photo: URL?
+        /// The listing's language as checked against it: en, de, mixed, none_needed.
+        public let language: String?
+        /// What it is, in English, or the listing's own words (`summaryLang` then says which).
+        public let summary: String?
+        public let summaryLang: String?
+        /// A tip checked against the listing.
+        public let tip: String?
+        /// The listing where it came from.
+        public let source: URL?
+        public let latitude: Double?
+        public let longitude: Double?
         public var id: String { idea.candidate }
 
-        public init(idea: TodayPage.Idea, category: String, free: Bool, noGerman: String?, photo: URL?) {
+        public init(idea: TodayPage.Idea, category: String, free: Bool, noGerman: String?, photo: URL?, language: String? = nil, summary: String? = nil,
+                    summaryLang: String? = nil, tip: String? = nil, source: URL? = nil, latitude: Double? = nil, longitude: Double? = nil) {
             self.idea = idea
             self.category = category
             self.free = free
             self.noGerman = noGerman
             self.photo = photo
+            self.language = language
+            self.summary = summary
+            self.summaryLang = summaryLang
+            self.tip = tip
+            self.source = source
+            self.latitude = latitude
+            self.longitude = longitude
+        }
+
+        /// The Language row: how a guest gets on, or that it's in German; nil when nobody checked.
+        public var languageLine: String? {
+            noGerman ?? (language == "de" ? "In German" : nil)
         }
 
         /// Search reads its title, place, area and kind, and "free" and "english".

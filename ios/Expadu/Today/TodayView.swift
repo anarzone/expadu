@@ -124,7 +124,7 @@ struct TodayView: View {
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case let .weather(page): WeatherSheet(page: page)
-            case .whatsOn: WhatsOnSheet()
+            case let .whatsOn(open, date): WhatsOnSheet(open: open, date: date)
             case let .link(url): SafariView(url: url).ignoresSafeArea()
             case let .addPlan(date): AddPlanSheet(date: date)
             case let .why(idea, when): WhySheet(idea: idea, when: when, sheet: $sheet)
@@ -185,7 +185,8 @@ private struct PullMark: View {
 /// What opens over Today, in place: the weather by the hour, all the ideas, a city site.
 enum TodaySheet: Identifiable {
     case weather(TodayPage)
-    case whatsOn
+    /// What's on; with a listing, straight at its details (on that listing's day).
+    case whatsOn(open: String? = nil, date: String? = nil)
     case link(URL)
     case addPlan(String)
     case why(TodayPage.Idea, String)
@@ -274,7 +275,7 @@ private struct Chips: View {
             }
             if !page.ideas.isEmpty {
                 chip(symbol: "calendar", tint: Color(hex: 0x6B4FD0), title: "\(page.ideas.count) events", note: page.ideasWhen,
-                     order: page.weather == nil ? 0 : 1, spins: false) { sheet = .whatsOn }
+                     order: page.weather == nil ? 0 : 1, spins: false) { sheet = .whatsOn() }
             }
         }
     }
@@ -1607,7 +1608,7 @@ private struct Ideas: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             SectionHead(title: page.ideasTitle) {
-                Button { sheet = .whatsOn } label: {
+                Button { sheet = .whatsOn() } label: {
                     Label("All events", systemImage: "arrow.right").labelStyle(TrailingIcon())
                         .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
                         .frame(minHeight: 44)
@@ -1625,6 +1626,7 @@ private struct Ideas: View {
                 ForEach(Array(model.shownIdeas.prefix(4).enumerated()), id: \.element.id) { index, idea in
                     if index > 0 { Divider().overlay(Palette.border) }
                     IdeaRow(idea: idea, now: page.now, tilt: [-3, 2, -2, 3][index % 4], date: page.date, tomorrow: page.tomorrowDate,
+                            onOpen: { sheet = .whatsOn(open: idea.candidate, date: idea.tomorrow ? page.tomorrowDate : nil) },
                             onWhy: { sheet = .why(idea, idea.whenLine(at: page.now)) })
                         .transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .move(edge: .trailing))))
                 }
@@ -1654,15 +1656,26 @@ private struct IdeaRow: View {
     let tilt: Double
     var date: String = ""
     var tomorrow: String?
+    var onOpen: (() -> Void)?
     var onWhy: (() -> Void)?
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
 
     var body: some View {
         HStack(spacing: 12) {
-            Poster(label: idea.posterLabel(at: now), night: night, tilt: tilt)
+            // The poster and the title open its details (e.open), as on the canvas.
+            Button { onOpen?() } label: {
+                Poster(label: idea.posterLabel(at: now), night: night, tilt: tilt)
+            }
+            .buttonStyle(PressStyle())
+            .disabled(onOpen == nil)
+            .accessibilityLabel("Open \(idea.title)")
             VStack(alignment: .leading, spacing: 2) {
-                Text(idea.title).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
+                Button { onOpen?() } label: {
+                    Text(idea.title).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(2).multilineTextAlignment(.leading)
+                }
+                .buttonStyle(.plain)
+                .disabled(onOpen == nil)
                 Text(idea.whenLine(at: now)).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(2)
                 if let why = idea.why, let onWhy {
                     Button(action: onWhy) {
@@ -2654,7 +2667,7 @@ private struct WxFade: ViewModifier {
 }
 
 /// A city site, inside the app.
-private struct SafariView: UIViewControllerRepresentable {
+struct SafariView: UIViewControllerRepresentable {
     let url: URL
 
     func makeUIViewController(context: Context) -> SFSafariViewController { SFSafariViewController(url: url) }
@@ -2948,6 +2961,14 @@ final class TodayModel {
                      start: start, end: end, location: where_.isEmpty ? nil : where_)
         return note?.problem != true
     }
+
+    /// Not interested, from an event's details: off Today too, until Undo.
+    func hideIdea(_ id: Int, _ hide: Bool) {
+        withAnimation(.snappy) { if hide { hidden.insert(id) } else { hidden.remove(id) } }
+    }
+
+    /// Add to my day from What's on: the same add Today's own button sends.
+    func isAdded(_ candidate: String) -> Bool { added.contains(candidate) }
 
     /// A save made in What's on shows on Today's own idea too.
     func markSaved(_ candidate: String, saved: Bool) {

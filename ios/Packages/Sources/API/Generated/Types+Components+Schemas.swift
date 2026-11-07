@@ -243,6 +243,20 @@ extension Components {
                 public var area: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/photo_url`.
                 public var photoUrl: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/language`.
+                public var language: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/summary`.
+                public var summary: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/summary_lang`.
+                public var summaryLang: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/tip`.
+                public var tip: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/source_url`.
+                public var sourceUrl: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/lat`.
+                public var lat: Swift.Double?
+                /// - Remark: Generated from `#/components/schemas/EventsDayResource/ListingsPayload/lng`.
+                public var lng: Swift.Double?
                 /// Creates a new `ListingsPayloadPayload`.
                 ///
                 /// - Parameters:
@@ -263,6 +277,13 @@ extension Components {
                 ///   - place:
                 ///   - area:
                 ///   - photoUrl:
+                ///   - language:
+                ///   - summary:
+                ///   - summaryLang:
+                ///   - tip:
+                ///   - sourceUrl:
+                ///   - lat:
+                ///   - lng:
                 public init(
                     id: Swift.Int,
                     candidate: Swift.String,
@@ -280,7 +301,14 @@ extension Components {
                     noGerman: Swift.String? = nil,
                     place: Swift.String? = nil,
                     area: Swift.String? = nil,
-                    photoUrl: Swift.String? = nil
+                    photoUrl: Swift.String? = nil,
+                    language: Swift.String? = nil,
+                    summary: Swift.String? = nil,
+                    summaryLang: Swift.String? = nil,
+                    tip: Swift.String? = nil,
+                    sourceUrl: Swift.String? = nil,
+                    lat: Swift.Double? = nil,
+                    lng: Swift.Double? = nil
                 ) {
                     self.id = id
                     self.candidate = candidate
@@ -299,6 +327,13 @@ extension Components {
                     self.place = place
                     self.area = area
                     self.photoUrl = photoUrl
+                    self.language = language
+                    self.summary = summary
+                    self.summaryLang = summaryLang
+                    self.tip = tip
+                    self.sourceUrl = sourceUrl
+                    self.lat = lat
+                    self.lng = lng
                 }
                 public enum CodingKeys: String, CodingKey {
                     case id
@@ -318,6 +353,13 @@ extension Components {
                     case place
                     case area
                     case photoUrl = "photo_url"
+                    case language
+                    case summary
+                    case summaryLang = "summary_lang"
+                    case tip
+                    case sourceUrl = "source_url"
+                    case lat
+                    case lng
                 }
             }
             /// - Remark: Generated from `#/components/schemas/EventsDayResource/listings`.

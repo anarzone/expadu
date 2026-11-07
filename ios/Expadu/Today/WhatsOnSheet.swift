@@ -7,6 +7,8 @@ import SwiftUI
 /// Saved, the kinds of event, list or grid; picks for the day as big posters, then every listing
 /// under its start time. The listings are the city's real ones; search and filters run here.
 struct WhatsOnSheet: View {
+    /// A listing to open straight away (an idea tapped on Today), by its candidate id.
+    var open: String?
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
     @Environment(\.dismiss) private var dismiss
@@ -14,6 +16,10 @@ struct WhatsOnSheet: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var day: WhatsOn?
     @State private var date: String?
+    @State private var path: [String] = []
+    /// Not interested: off the list at once; the signal goes when Undo has had its moment.
+    @State private var hidden: Set<String> = []
+    @State private var hiding: (listing: WhatsOn.Listing, send: Task<Void, Never>)?
     @State private var problem: String?
     @State private var query = ""
     @State private var free = false
@@ -25,7 +31,29 @@ struct WhatsOnSheet: View {
     @State private var round = 0
     @FocusState private var searching: Bool
 
+    init(open: String? = nil, date: String? = nil) {
+        self.open = open
+        _date = State(initialValue: date)
+    }
+
     var body: some View {
+        NavigationStack(path: $path) {
+            list
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(for: String.self) { id in
+                    if let day, let listing = day.listings.first(where: { $0.id == id }) {
+                        EventDetail(listing: listing, day: day, page: today.page, save: save, notInterested: notInterested)
+                    }
+                }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Palette.canvas)
+        .task(id: date) { await load() }
+        .onChange(of: searching) { _, on in if on { withAnimation(Motion.ios(0.44)) { finding = true } } }
+    }
+
+    private var list: some View {
         VStack(spacing: 0) {
             top
             ScrollView {
@@ -38,11 +66,6 @@ struct WhatsOnSheet: View {
             .scrollDismissesKeyboard(.immediately)
         }
         .background(Palette.canvas)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Palette.canvas)
-        .task(id: date) { await load() }
-        .onChange(of: searching) { _, on in if on { withAnimation(Motion.ios(0.44)) { finding = true } } }
     }
 
     // MARK: Top
@@ -227,7 +250,7 @@ struct WhatsOnSheet: View {
 
     private var shown: [WhatsOn.Listing] {
         (day?.listings ?? []).filter { listing in
-            (category == nil || listing.category == category) && (!free || listing.free) && (!savedOnly || listing.idea.saved) && listing.matches(query)
+            !hidden.contains(listing.id) && (category == nil || listing.category == category) && (!free || listing.free) && (!savedOnly || listing.idea.saved) && listing.matches(query)
         }
     }
 
@@ -256,7 +279,7 @@ struct WhatsOnSheet: View {
                     .padding(.top, 14).padding(.bottom, 8)
                     ScrollView(.horizontal) {
                         HStack(spacing: 12) {
-                            ForEach(Array(picks)) { PickCard(listing: $0, day: day, now: now, save: save) }
+                            ForEach(Array(picks)) { listing in PickCard(listing: listing, day: day, now: now, save: save) { path.append(listing.id) } }
                         }
                         .scrollTargetLayout()
                         .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 10)
@@ -265,6 +288,22 @@ struct WhatsOnSheet: View {
                     .scrollIndicators(.hidden)
                     .padding(.horizontal, -16)
                 }
+            }
+            if let hiding {
+                HStack(spacing: 10) {
+                    Image(systemName: "eye.slash").font(.system(size: 14, weight: .semibold))
+                    Text("\(hiding.listing.idea.title) is hidden. You'll see fewer like it.").font(.geist(14)).frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Undo") { undoHide() }
+                        .font(.geist(14, .bold)).foregroundStyle(Palette.text)
+                        .padding(.horizontal, 14).frame(height: 32)
+                        .background(Palette.surface, in: .capsule)
+                        .overlay { Capsule().strokeBorder(Palette.border) }
+                }
+                .foregroundStyle(Palette.text)
+                .padding(.leading, 14).padding(.trailing, 10).padding(.vertical, 10)
+                .background(Palette.quiet, in: .rect(cornerRadius: 16))
+                .padding(.top, 10).padding(.bottom, 2)
+                .transition(.offset(y: -12).combined(with: .opacity))
             }
             if day.isToday && day.ended > 0 {
                 Text("Earlier today · \(day.ended) ended").font(.geist(13)).foregroundStyle(Palette.textSoft).padding(.top, 10).padding(.bottom, 2)
@@ -280,14 +319,14 @@ struct WhatsOnSheet: View {
                     if grid {
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                             ForEach(group.listings) { listing in
-                                EventTile(listing: listing, day: day, now: now, save: save)
+                                EventTile(listing: listing, day: day, now: now, save: save) { path.append(listing.id) }
                                     .modifier(RowIn(order: order[listing.id] ?? 0, round: round))
                             }
                         }
                         .padding(.top, 10).padding(.bottom, 6)
                     } else {
                         ForEach(group.listings) { listing in
-                            EventRow(listing: listing, day: day, now: now, save: save)
+                            EventRow(listing: listing, day: day, now: now, save: save) { path.append(listing.id) }
                                 .modifier(RowIn(order: order[listing.id] ?? 0, round: round))
                         }
                     }
@@ -350,6 +389,7 @@ struct WhatsOnSheet: View {
                 if let category, !next.categories.contains(where: { $0.id == category }) { self.category = nil }
             }
             round += 1
+            if let open, path.isEmpty, next.listings.contains(where: { $0.id == open }) { path = [open] }
         } catch {
             if day == nil { problem = Self.words(error) }
         }
@@ -370,6 +410,35 @@ struct WhatsOnSheet: View {
         }
     }
 
+    /// Not interested: back to the list, the listing gone from it and from Today, a line to undo it.
+    private func notInterested(_ listing: WhatsOn.Listing) {
+        hiding?.send.cancel()
+        let api = session.api
+        let send = Task {
+            try? await Task.sleep(for: .seconds(8))
+            guard !Task.isCancelled else { return }
+            try? await api.send([Signal(action: .notForMe, event: listing.idea.id)])
+            withAnimation(.snappy) { if hiding?.listing.id == listing.id { hiding = nil } }
+        }
+        path.removeAll()
+        withAnimation(.spring(duration: 0.45, bounce: 0.3).delay(0.35)) {
+            hidden.insert(listing.id)
+            hiding = (listing, send)
+        }
+        today.hideIdea(listing.idea.id, true)
+    }
+
+    private func undoHide() {
+        guard let hiding else { return }
+        hiding.send.cancel()
+        withAnimation(.spring(duration: 0.45, bounce: 0.3)) {
+            hidden.remove(hiding.listing.id)
+            self.hiding = nil
+        }
+        today.hideIdea(hiding.listing.idea.id, false)
+        round += 1
+    }
+
     private static func words(_ error: APIFailure) -> String {
         switch error {
         case let .refused(why): why
@@ -383,7 +452,7 @@ struct WhatsOnSheet: View {
 // MARK: - Pieces
 
 /// The canvas's poster colours: yellow by day, indigo in the evening.
-private enum WhatsOnLook {
+enum WhatsOnLook {
     static let yellow = Color(hex: 0xFFE363)
     static let indigo = Color(hex: 0x3D2F9E)
     static let saveInk = Color(light: 0x6A459B, dark: 0xC4A6F0)
@@ -428,7 +497,7 @@ private struct EventChip: View {
     }
 }
 
-private struct SaveButton: View {
+struct SaveButton: View {
     let listing: WhatsOn.Listing
     let save: (WhatsOn.Listing) -> Void
 
@@ -455,10 +524,13 @@ private struct EventRow: View {
     let day: WhatsOn
     let now: Date
     let save: (WhatsOn.Listing) -> Void
+    let open: () -> Void
 
     var body: some View {
         let idea = listing.idea
         HStack(spacing: 12) {
+            Button(action: open) {
+            HStack(spacing: 12) {
             Poster(label: WhatsOnLook.time(idea), night: WhatsOnLook.night(idea, now: now), tilt: WhatsOnLook.tilt(listing))
             VStack(alignment: .leading, spacing: 3) {
                 Text(idea.title).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(3)
@@ -467,10 +539,15 @@ private struct EventRow: View {
                 HStack(spacing: 6) {
                     Text([when(idea), idea.price].compactMap { $0 }.joined(separator: " · "))
                         .font(.geist(13)).foregroundStyle(Palette.text.opacity(0.75)).lineLimit(1)
-                    if listing.noGerman != nil { EventChip(text: "No German needed") }
+                    if let words = listing.noGerman { EventChip(text: words) }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens its details")
             SaveButton(listing: listing, save: save)
         }
         .padding(.vertical, 12)
@@ -491,12 +568,14 @@ private struct EventTile: View {
     let day: WhatsOn
     let now: Date
     let save: (WhatsOn.Listing) -> Void
+    let open: () -> Void
 
     var body: some View {
         let idea = listing.idea
         let night = WhatsOnLook.night(idea, now: now)
         let ink = night ? WhatsOnLook.yellow : WhatsOnLook.indigo
         VStack(spacing: 0) {
+            Button(action: open) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(WhatsOnLook.stamp(idea, day: day, now: now).uppercased()).font(.posterMarker(11))
                     .foregroundStyle(Color(hex: 0x211D15))
@@ -510,11 +589,14 @@ private struct EventTile: View {
             .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
             .padding(10)
             .background(night ? WhatsOnLook.indigo : WhatsOnLook.yellow)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(idea.title). Open details")
             HStack(alignment: .top, spacing: 6) {
                 VStack(alignment: .leading, spacing: 2) {
                     if let place = idea.place ?? idea.area { Text(place).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1) }
                     if let price = idea.price { Text(price).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1) }
-                    if listing.noGerman != nil { EventChip(text: "No German").padding(.top, 4) }
+                    if let words = listing.noGerman { EventChip(text: words).padding(.top, 4) }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 SaveButton(listing: listing, save: save)
@@ -533,12 +615,14 @@ private struct PickCard: View {
     let day: WhatsOn
     let now: Date
     let save: (WhatsOn.Listing) -> Void
+    let open: () -> Void
 
     var body: some View {
         let idea = listing.idea
         let night = WhatsOnLook.night(idea, now: now)
         let ink = night ? WhatsOnLook.yellow : WhatsOnLook.indigo
         VStack(spacing: 0) {
+            Button(action: open) {
             ZStack(alignment: .topLeading) {
                 Circle().strokeBorder(ink, lineWidth: 22).frame(width: 220, height: 220).opacity(0.85)
                     .offset(x: 272 - 220 + 70, y: -60)
@@ -564,9 +648,12 @@ private struct PickCard: View {
             .frame(width: 272, height: 220, alignment: .topLeading)
             .background(night ? WhatsOnLook.indigo : WhatsOnLook.yellow)
             .clipped()
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(idea.title). Open details")
             HStack(spacing: 8) {
-                if listing.noGerman != nil {
-                    EventChip(text: "No German needed")
+                if let words = listing.noGerman {
+                    EventChip(text: words)
                 } else if let price = idea.price {
                     Text(price).font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft).lineLimit(1)
                 }
@@ -586,7 +673,7 @@ private struct PickCard: View {
 }
 
 /// The canvas's outlined time (-webkit-text-stroke): the numbers drawn as an outline in the ink.
-private struct OutlinedText: View {
+struct OutlinedText: View {
     let text: String
     let size: CGFloat
     let ink: Color

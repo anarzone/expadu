@@ -1348,6 +1348,48 @@
                                         "string",
                                         "null"
                                     ]
+                                },
+                                "language": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "summary": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "summary_lang": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "tip": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "source_url": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "lat": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ]
+                                },
+                                "lng": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ]
                                 }
                             },
                             "required": [
@@ -1367,7 +1409,14 @@
                                 "no_german",
                                 "place",
                                 "area",
-                                "photo_url"
+                                "photo_url",
+                                "language",
+                                "summary",
+                                "summary_lang",
+                                "tip",
+                                "source_url",
+                                "lat",
+                                "lng"
                             ]
                         }
                     }
