@@ -142,6 +142,10 @@ struct GuideTests {
         #expect(off?.offRoute == true)
         let late = guide.position(of: .init(latitude: 50.9370, longitude: 6.9442), at: start.addingTimeInterval(300))
         #expect(late?.missed?.line == "18")
+        // At the stop: a tram just gone may still have them on board; minutes later it hasn't.
+        let atStop = TodayPage.Point(latitude: 50.9370, longitude: 6.9459)
+        #expect(guide.position(of: atStop, at: start.addingTimeInterval(270))?.missed == nil)
+        #expect(guide.position(of: atStop, at: start.addingTimeInterval(400))?.missed?.line == "18")
     }
 
     @Test func onARideTheTimetableWinsOverAPhoneThatStoodStill() {

@@ -10,6 +10,8 @@ public struct Guide: Sendable {
     public static let arrivedMetres = 30.0
     /// Within this of where the way begins is still setting off, never off the way.
     public static let startMetres = 150.0
+    /// Still at the stop this long after the ride left: it left without them.
+    public static let leftStopSeconds = 180.0
 
     struct Line: Sendable {
         let leg: Int
@@ -83,11 +85,13 @@ public struct Guide: Sendable {
             }
         }
 
-        // Walking to a ride whose time has passed while they're still short of its stop.
+        // Walking to a ride whose time has passed while they're still short of its stop, or still
+        // at the stop long after it left (on board, the phone would have moved on with it).
         var missed: TodayPage.Trip.Leg?
         if !leg.rides, best.line.leg + 1 < trip.legs.count {
             let ride = trip.legs[best.line.leg + 1]
-            if ride.rides, date.timeIntervalSince(ride.departAt) > 60, total - best.along > 40 { missed = ride }
+            let gone = date.timeIntervalSince(ride.departAt)
+            if ride.rides, gone > 60, total - best.along > 40 || gone > Self.leftStopSeconds { missed = ride }
         }
 
         // Still getting to where the way starts (the router begins on the nearest path, not the doorstep).
