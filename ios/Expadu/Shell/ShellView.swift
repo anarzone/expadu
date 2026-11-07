@@ -464,9 +464,13 @@ private struct ShellHeader: View {
         .padding(.horizontal, 16)
         .padding(.top, 4).padding(.bottom, 10)
         .background {
-            // The canvas's .t-topfade: the page slides away under the header.
-            LinearGradient(stops: [.init(color: Palette.canvas, location: 0.8), .init(color: Palette.canvas.opacity(0), location: 1)], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea(edges: .top)
+            // The canvas's .t-topfade: the page slides away under the header. Solid to the header's
+            // edge, fading below it, so nothing reads through the brand or the bell.
+            Palette.canvas.ignoresSafeArea(edges: .top).allowsHitTesting(false)
+        }
+        .overlay(alignment: .bottom) {
+            LinearGradient(colors: [Palette.canvas, Palette.canvas.opacity(0)], startPoint: .top, endPoint: .bottom)
+                .frame(height: 20).offset(y: 20)
                 .allowsHitTesting(false)
         }
         .animation(.snappy, value: today.alerts)
