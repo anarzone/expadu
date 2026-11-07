@@ -26,6 +26,13 @@ struct CologneToday: View {
                         .buttonStyle(PressStyle())
                     Divider().overlay(Palette.border)
                 }
+                // One of their lines late or disrupted (.ct-line), one tap from what it means for them.
+                if let need = page.needs.first(where: \.isLine) {
+                    Button { sheet = .line(need, page) } label: { LineRow(need: need) }
+                        .buttonStyle(PressStyle())
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    Divider().overlay(Palette.border)
+                }
                 Button {
                     withAnimation(.snappy) { open.toggle() }
                     if open { Task { await model.loadBoard(session.api) } }

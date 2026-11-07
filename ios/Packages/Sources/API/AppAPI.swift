@@ -355,6 +355,62 @@ public struct AppAPI: Sendable {
     }
 
     /// What's on for a day (today when nil).
+    /// The bell's full record, newest first.
+    public func alerts() async throws(APIFailure) -> [BellCard] {
+        let output = try await calling { try await client.alerts_index() }
+        switch output {
+        case let .ok(ok):
+            return try body { try ok.body.json }.alerts.map {
+                BellCard(id: $0.id, category: $0.category, severity: $0.severity, title: $0.title, body: $0.body, source: $0.source,
+                      at: $0.at.flatMap(Self.date(from:)), read: $0.read, url: $0.url.flatMap(URL.init(string:)), lines: $0.lines, stops: $0.stops)
+            }
+        case .unauthorized: throw .signedOut
+        case let .undocumented(status, _): throw failure(status)
+        default: throw .unreachable
+        }
+    }
+
+    /// Opened: the card counts as read.
+    public func readAlert(_ id: Int) async throws(APIFailure) {
+        let output = try await calling { try await client.alerts_read(path: .init(alert: id)) }
+        switch output {
+        case .ok: return
+        case .unauthorized: throw .signedOut
+        case let .undocumented(status, _): throw failure(status)
+        default: throw .unreachable
+        }
+    }
+
+    /// What to bring to a Paperwork appointment.
+    public func bringList(process: String) async throws(APIFailure) -> BringList {
+        let output = try await calling { try await client.paperworkDocuments_index(path: .init(process: process)) }
+        switch output {
+        case let .ok(ok): return Self.bring(try body { try ok.body.json })
+        case .unauthorized: throw .signedOut
+        case let .undocumented(status, _): throw failure(status)
+        default: throw .unreachable
+        }
+    }
+
+    /// Ticked or unticked on Today; the same record as Paperwork's. Returns the list as it is now.
+    public func tick(process: String, document: String, ready: Bool) async throws(APIFailure) -> BringList {
+        let output = try await calling {
+            try await client.paperworkDocuments_update(path: .init(process: process, document: document), body: .json(.init(ready: ready)))
+        }
+        switch output {
+        case let .ok(ok): return Self.bring(try body { try ok.body.json })
+        case .unauthorized: throw .signedOut
+        case let .unprocessableContent(refusal): throw refused(refusal)
+        case let .undocumented(status, _): throw failure(status)
+        default: throw .unreachable
+        }
+    }
+
+    private static func bring(_ list: Components.Schemas.BringListResource) -> BringList {
+        BringList(title: list.title, ready: list.ready, total: list.total,
+                  documents: list.documents.map { .init(id: $0.id, title: $0.title, ready: $0.ready, note: $0.note) })
+    }
+
     public func whatsOn(date: String?) async throws(APIFailure) -> WhatsOn {
         let output = try await calling { try await client.events_day(query: .init(date: date)) }
         switch output {
@@ -414,7 +470,7 @@ public struct AppAPI: Sendable {
                     TodayPage.Deadline(kind: $0.kind, document: $0.document, title: $0.title, date: $0.date, daysRemaining: $0.daysRemaining, next: $0.next,
                                        ready: $0.ready, total: $0.total, process: $0.process)
                 },
-                needs: today.needs.map { TodayPage.Need(id: $0.id, kind: $0.kind, severity: $0.severity, headline: $0.headline, detail: $0.detail) },
+                needs: today.needs.map { TodayPage.Need(id: $0.id, kind: $0.kind, severity: $0.severity, headline: $0.headline, detail: $0.detail, line: $0.line, color: $0.color, alert: $0.alertId) },
                 ideas: today.ideas.map {
                     TodayPage.Idea(id: $0.id, candidate: $0.candidate, saved: $0.saved, why: $0.why, reasons: $0.reasons, title: $0.title, category: $0.category, emoji: $0.emoji, startsAt: $0.startsAt.flatMap(Self.date(from:)),
                                    endsAt: $0.endsAt.flatMap(Self.date(from:)), timed: $0.timed, untimed: $0.untimed, tomorrow: $0.tomorrow,

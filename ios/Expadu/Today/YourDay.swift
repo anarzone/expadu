@@ -175,7 +175,7 @@ struct Stop: View {
                     DeadlineNote(deadline: deadline).padding(.top, 10)
                 }
                 if let bring = plan.bring {
-                    BringCard(bring: bring).padding(.top, 10)
+                    BringCard(bring: bring, at: plan.start).padding(.top, 10)
                 }
             }
             // The trip goes under the plan it's for: the next one, or a later one while this one is under way.
@@ -231,24 +231,137 @@ struct DeadlineNote: View {
     }
 }
 
-/// What to bring, from Paperwork: "1 of 5 documents ready".
+/// What to bring, from Paperwork: "1 of 5 documents ready". A tap opens the list under it; ticking
+/// here ticks it in Paperwork, the same record.
 struct BringCard: View {
     let bring: TodayPage.Plan.Bring
+    /// The appointment's time: "all set for 14:00".
+    let at: String?
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var open = false
+    @State private var list: BringList?
+    @State private var busy: String?
+    @State private var problem: String?
     private let ink = Palette.bringText
 
+    private var ready: Int { list?.documents.filter(\.ready).count ?? bring.ready }
+    private var total: Int { list?.documents.count ?? bring.total }
+    private var allSet: Bool { total > 0 && ready == total }
+
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "doc.text.fill").font(.system(size: 16)).foregroundStyle(ink)
+        VStack(spacing: 8) {
+            Button {
+                withAnimation(reduceMotion ? nil : Motion.ios(0.35)) { open.toggle() }
+                if open, list == nil { Task { await load() } }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: allSet ? "checkmark" : "doc.text.fill").font(.system(size: 16, weight: allSet ? .bold : .regular))
+                        .foregroundStyle(allSet ? Motion.green : ink)
+                        .contentTransition(.symbolEffect(.replace))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(allSet ? "What to bring · all set\(at.map { " for \($0)" } ?? "")" : "What to bring · \(list?.title ?? bring.title ?? "Paperwork")")
+                            .font(.geist(12)).opacity(0.8).lineLimit(1)
+                        Text(allSet ? "All \(total) documents ready" : "\(ready) of \(total) documents ready").font(.geist(15, .bold))
+                            .contentTransition(.numericText(value: Double(ready)))
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
+                        .rotationEffect(.degrees(open ? 0 : -90))
+                }
+                .foregroundStyle(ink)
+                .padding(.horizontal, 14).padding(.vertical, 11)
+                .background(Palette.bringBackground, in: .rect(cornerRadius: 14))
+                .contentShape(.rect(cornerRadius: 14))
+            }
+            .buttonStyle(PressStyle())
+            .accessibilityHint(open ? "Hides the list" : "Shows the list")
+            .sensoryFeedback(.success, trigger: allSet) { _, now in now }
+
+            if open {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let list {
+                        ForEach(list.documents) { document in
+                            Button { Task { await tick(document) } } label: { BringRow(document: document, busy: busy == document.id) }
+                                .buttonStyle(PressStyle())
+                                .disabled(busy != nil)
+                        }
+                        Text("From your Paperwork record. Ticking here ticks it there.")
+                            .font(.geist(12)).foregroundStyle(Palette.textSoft).padding(.top, 4)
+                    } else if let problem {
+                        Text(problem).font(.geist(13.5)).foregroundStyle(Palette.conflictText).padding(.vertical, 6)
+                    } else {
+                        ProgressView().frame(maxWidth: .infinity).padding(.vertical, 10)
+                    }
+                }
+                .padding(.horizontal, 12).padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Palette.quiet, in: .rect(cornerRadius: 14))
+                // .chk opens down from the card (the canvas's open keyframes).
+                .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: -8)), removal: .opacity))
+            }
+        }
+    }
+
+    private func load() async {
+        guard let process = bring.process else { return }
+        do {
+            let loaded = try await session.api.bringList(process: process)
+            withAnimation(reduceMotion ? nil : .snappy) { list = loaded; problem = nil }
+        } catch {
+            problem = "Couldn’t load the list. Try again in a moment."
+        }
+    }
+
+    private func tick(_ document: BringList.Document) async {
+        guard let process = bring.process, var list else { return }
+        // Ticked at once; the record follows, and goes back if it says no.
+        let before = list
+        if let index = list.documents.firstIndex(where: { $0.id == document.id }) { list.documents[index].ready.toggle() }
+        busy = document.id
+        withAnimation(reduceMotion ? nil : Motion.spring) { self.list = list }
+        do {
+            let saved = try await session.api.tick(process: process, document: document.id, ready: !document.ready)
+            withAnimation(reduceMotion ? nil : .snappy) { self.list = saved; problem = nil }
+            await model.load(session.api, quietly: true)
+        } catch {
+            withAnimation(reduceMotion ? nil : .snappy) { self.list = before }
+            problem = "Couldn’t save that. Try again in a moment."
+        }
+        busy = nil
+    }
+}
+
+/// One document: a box that ticks with a pop, the name struck through once it's ready.
+private struct BringRow: View {
+    let document: BringList.Document
+    let busy: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 7).strokeBorder(Palette.textSoft, lineWidth: 1.5).opacity(document.ready ? 0 : 1)
+                RoundedRectangle(cornerRadius: 7).fill(Motion.green).opacity(document.ready ? 1 : 0)
+                Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                    .scaleEffect(document.ready ? 1 : 0.3).opacity(document.ready ? 1 : 0)
+            }
+            .frame(width: 22, height: 22)
             VStack(alignment: .leading, spacing: 1) {
-                Text("What to bring · \(bring.title ?? "Paperwork")").font(.geist(12)).lineLimit(1)
-                Text("\(bring.ready) of \(bring.total) documents ready").font(.geist(15, .bold))
+                Text(document.title).font(.geist(14)).strikethrough(document.ready)
+                    .foregroundStyle(document.ready ? Palette.textSoft : Palette.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let note = document.note, !document.ready {
+                    Text(note).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(2)
+                }
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+            if busy { ProgressView().controlSize(.mini) }
         }
-        .foregroundStyle(ink)
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(Palette.bringBackground, in: .rect(cornerRadius: 16))
+        .frame(minHeight: 36)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(document.ready ? [.isSelected] : [])
     }
 }
 

@@ -580,14 +580,24 @@ public struct TodayPage: Equatable, Sendable {
         public let severity: String
         public let headline: String
         public let detail: String?
+        /// A disruption or a delay: the line, in KVB's colour, and the bell's card for it.
+        public let line: String?
+        public let color: String?
+        public let alert: Int?
 
-        public init(id: String, kind: String, severity: String, headline: String, detail: String?) {
+        public init(id: String, kind: String, severity: String, headline: String, detail: String?, line: String? = nil, color: String? = nil, alert: Int? = nil) {
             self.id = id
             self.kind = kind
             self.severity = severity
             self.headline = headline
             self.detail = detail
+            self.line = line
+            self.color = color
+            self.alert = alert
         }
+
+        /// A line running late or disrupted, as Cologne today's line row shows it.
+        public var isLine: Bool { line != nil && (kind == "disruption" || kind == "delay") }
     }
 
     public struct Idea: Equatable, Sendable, Identifiable {

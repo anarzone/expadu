@@ -475,7 +475,7 @@ private struct ShellHeader: View {
         }
         .animation(.snappy, value: today.alerts)
         .sheet(isPresented: $alertsOpen) {
-            AlertsSheet(needs: today.page?.needs ?? [])
+            AlertsSheet(page: today.page)
         }
     }
 }
@@ -498,44 +498,6 @@ struct AccountButton: View {
                 .contentShape(.circle)
         }
         .accessibilityLabel("Your account")
-    }
-}
-
-/// The notes that need the person, from the bell: each says what and why, and goes away when it's done.
-private struct AlertsSheet: View {
-    let needs: [TodayPage.Need]
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if needs.isEmpty {
-                    Text("Nothing needs you right now.").font(.geist(15)).foregroundStyle(Palette.textSoft)
-                        .listRowBackground(Palette.surface)
-                }
-                ForEach(needs) { need in
-                    HStack(alignment: .top, spacing: 12) {
-                        Circle().fill(NeedTone.color(need.severity)).frame(width: 9, height: 9).padding(.top, 6)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(need.headline).font(.geist(15, .semibold))
-                            if let detail = need.detail { Text(detail).font(.geist(13.5)).foregroundStyle(Palette.textSoft) }
-                        }
-                    }
-                    .foregroundStyle(Palette.text)
-                    .listRowBackground(Palette.surface)
-                }
-            }
-            .scrollContentBackground(.hidden)
-            .background(Palette.canvas)
-            .navigationTitle("Alerts")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "checkmark") { dismiss() }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
     }
 }
 
