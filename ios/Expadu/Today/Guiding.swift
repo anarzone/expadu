@@ -24,6 +24,8 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     @ObservationIgnored private let manager = CLLocationManager()
     @ObservationIgnored private var users = 0
     @ObservationIgnored private var session: CLBackgroundActivitySession?
+    /// Moves the Live Activity on even when they stand still (waiting at a stop, riding).
+    @ObservationIgnored private var tick: Task<Void, Never>?
 
     override init() {
         super.init()
@@ -41,8 +43,15 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
         // On the way with the phone in a pocket: fixes keep coming, under "while using the app".
         session = CLBackgroundActivitySession()
         manager.allowsBackgroundLocationUpdates = true
-        manager.showsBackgroundLocationIndicator = true
+        // The trip's Live Activity already says Expadu is guiding; a second indicator would split the island.
+        manager.showsBackgroundLocationIndicator = false
         manager.startUpdatingLocation()
+        tick = Task { [weak self] in
+            while !Task.isCancelled {
+                self?.island()
+                try? await Task.sleep(for: .seconds(30))
+            }
+        }
     }
 
     func stop() {
@@ -52,6 +61,14 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
         manager.allowsBackgroundLocationUpdates = false
         session?.invalidate()
         session = nil
+        tick?.cancel()
+        tick = nil
+    }
+
+    /// The Lock Screen and the Dynamic Island, from where they are now.
+    private func island(at date: Date = .now) {
+        guard let trip else { return }
+        TripActivity.shared.sync(trip, here: here, offFor: offSince.map { date.timeIntervalSince($0) } ?? 0, at: date)
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -70,6 +87,7 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
         self.here = here
         reached = max(reached, here.leg)
         offSince = here.offRoute ? (offSince ?? date) : nil
+        island(at: date)
         // Said aloud, each once: the turn as it comes close, being off the way, arriving.
         guard UserDefaults.standard.bool(forKey: "speakTurns") else { return }
         let key = trip.arriveTime ?? trip.to

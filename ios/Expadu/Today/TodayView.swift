@@ -3010,6 +3010,8 @@ final class TodayModel {
             if phase != .ready { waveSince = .now }
             phase = .ready
             reportShown(api)
+            // No trip: the Leave card's countdown in the island when it's close; a trip ended elsewhere, gone.
+            if page?.trip == nil { TripActivity.shared.leave(page?.leave) }
         } catch {
             if page != nil, quietly { return }
             phase = .problem(error == .signedOut ? "You’ve been signed out." : "Couldn’t reach Expadu. Check your connection.")
@@ -3280,6 +3282,7 @@ final class TodayModel {
     func endTrip(_ api: AppAPI, arrived: Bool) async {
         do throws(APIFailure) {
             try await api.endTrip()
+            TripActivity.shared.end()
             await load(api, quietly: true)
             cardFlips += 1
             if arrived {

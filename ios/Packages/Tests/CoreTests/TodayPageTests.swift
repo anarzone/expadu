@@ -156,4 +156,15 @@ struct GuideTests {
         let walking = trip.live(at: start.addingTimeInterval(240), guided: 0)
         #expect(walking.current == 0)
     }
+
+    @Test func theIslandWaitsAtTheStopUntilTheRideLeaves() {
+        // At the stop, on the tram's line, a minute before it leaves.
+        let atStop = Guide(trip: trip).position(of: .init(latitude: 50.9370, longitude: 6.9460), at: start.addingTimeInterval(120), after: 1)
+        let phase = TripPhase.of(trip, here: atStop, offFor: 0, at: start.addingTimeInterval(120))
+        #expect(phase.kind == .wait)
+        #expect(phase.badge == "18")
+        let riding = TripPhase.of(trip, here: nil, offFor: 0, at: start.addingTimeInterval(300))
+        #expect(riding.kind == .ride)
+        #expect(riding.short == "3′")
+    }
 }

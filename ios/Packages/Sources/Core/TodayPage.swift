@@ -942,6 +942,15 @@ public struct TodayPage: Equatable, Sendable {
         return calendar.component(.hour, from: date)
     }
 
+    /// "16:02" on the day of `date`, in Cologne's time.
+    public static func today(_ clock: String, on date: Date) -> Date? {
+        let parts = clock.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = berlin
+        return calendar.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: date)
+    }
+
     /// "19:00", in Cologne's time.
     public static func clock(_ date: Date) -> String {
         let say = DateFormatter()

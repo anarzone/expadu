@@ -40,6 +40,7 @@ extension EnvironmentValues {
 /// Apple's own apps), and the Composer button: a dark disc in a turning ring of the brand's
 /// colours. Tap it to open Composer; hold it to say what you need.
 struct ShellView: View {
+    @Environment(Session.self) private var session
     @State private var tab = AppTab.today
     @State private var today = TodayModel()
     @State private var compact = false
@@ -75,6 +76,26 @@ struct ShellView: View {
             }
         }
         .environment(today)
+        // From the trip's Live Activity: start the Leave card's way, or a new way from here.
+        .onOpenURL { url in
+            guard let link = DeepLink(url: url) else { return }
+            switch link {
+            case .tripStart:
+                withAnimation(.snappy) { tab = .today }
+                if let way = today.page?.leave?.ways.first {
+                    Task { _ = await today.startTrip(session.api, way: way, replace: false) }
+                }
+            case .tripNewWay:
+                withAnimation(.snappy) { tab = .today }
+                if let trip = today.page?.trip, let place = today.place {
+                    Task { _ = await today.newWay(session.api, trip: trip, from: TodayPage.Point(latitude: place.latitude, longitude: place.longitude)) }
+                }
+            case .today: withAnimation(.snappy) { tab = .today }
+            case .travel: withAnimation(.snappy) { tab = .travel }
+            case .paperwork: withAnimation(.snappy) { tab = .paperwork }
+            case .lab: break
+            }
+        }
         .environment(\.shell, ShellActions(
             openComposer: { composer = ComposerOpening(words: nil) },
             show: { section in withAnimation(.snappy) { tab = section; compact = false } },

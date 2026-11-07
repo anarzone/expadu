@@ -23,8 +23,10 @@
       "name": "Products",
       "children": [
         { "path": "<PRODUCTS>/Expadu.app", "id": "000000000000000000000120", "type": "wrapper.application", "index": false },
+        { "path": "<PRODUCTS>/ExpaduWidgets.appex", "id": "292E4002309F8B14006D631F", "type": "wrapper.app-extension", "index": false, "target-membership": [ { "build-phase": "Expadu/copy/Embed Foundation Extensions", "header-preservation": "remove-on-copy" } ] },
       ],
     },
+    { "kind": "folder", "path": "ExpaduWidgets", "target-membership": [ "ExpaduWidgets" ] },
   ],
   "targets": [
     {
@@ -32,23 +34,31 @@
       "id": "000000000000000100000000",
       "product": "Products/Expadu.app",
       "product-type": "application",
+      "dependencies": [
+        "ExpaduWidgets",
+      ],
       "build-phases": [
         "compile-sources",
         "frameworks",
         "resources",
+        {
+          "kind": "copy",
+          "name": "Embed Foundation Extensions",
+          "bundle-base-path": "plugins-directory",
+        },
       ],
       "package-product-members": [
         {
+          "package": "Packages",
+          "product-name": "API",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
           "package": "Packages",
           "product-name": "Core",
           "build-phase": { "build-phase": "frameworks" },
         }, {
           "package": "Packages",
           "product-name": "DesignSystem",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "package": "Packages",
-          "product-name": "API",
           "build-phase": { "build-phase": "frameworks" },
         }, {
           "package": "Packages",
@@ -67,11 +77,10 @@
         "INFOPLIST_FILE": "Config/Expadu-Info.plist",
         "INFOPLIST_KEY_CFBundleDisplayName": "Expadu",
         "INFOPLIST_KEY_LSApplicationCategoryType": "public.app-category.travel",
-        "MAP_STYLE_LIGHT": "",
-        "MAP_STYLE_DARK": "",
         "INFOPLIST_KEY_NSLocationWhenInUseUsageDescription": "Expadu shows the departures from the stop closest to you, and guides you step by step while you’re on your way.",
         "INFOPLIST_KEY_NSMicrophoneUsageDescription": "Hold the Composer button and say what you need; Expadu listens only while you hold it.",
         "INFOPLIST_KEY_NSSpeechRecognitionUsageDescription": "Apple’s speech recognition turns what you say into text, so Composer can answer it. Expadu listens only while you hold the button.",
+        "INFOPLIST_KEY_NSSupportsLiveActivities": "YES",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
         "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
         "INFOPLIST_KEY_UILaunchScreen_Generation": "YES",
@@ -79,6 +88,8 @@
         "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone": "UIInterfaceOrientationPortrait",
         "IPHONEOS_DEPLOYMENT_TARGET": "26.0",
         "LD_RUNPATH_SEARCH_PATHS": "@executable_path/Frameworks",
+        "MAP_STYLE_DARK": "",
+        "MAP_STYLE_LIGHT": "",
         "MARKETING_VERSION": "0.1",
         "PRODUCT_BUNDLE_IDENTIFIER": "com.expadu.app",
         "PRODUCT_NAME": "$(TARGET_NAME)",
@@ -88,6 +99,50 @@
         "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
         "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
         "SWIFT_EMIT_LOC_STRINGS": "YES",
+        "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
+        "SWIFT_VERSION": "6.0",
+        "TARGETED_DEVICE_FAMILY": "1,2",
+      },
+    }, {
+      "name": "ExpaduWidgets",
+      "id": "292E4001309F8B14006D631F",
+      "product": "Products/ExpaduWidgets.appex",
+      "product-type": "app-extension",
+      "build-phases": [
+        "compile-sources",
+        "frameworks",
+        "resources",
+      ],
+      "package-product-members": [
+        {
+          "package": "Packages",
+          "product-name": "Core",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Packages",
+          "product-name": "DesignSystem",
+          "build-phase": { "build-phase": "frameworks" },
+        },
+      ],
+      "build-settings": {
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "1",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "Config/ExpaduWidgets-Info.plist",
+        "INFOPLIST_KEY_CFBundleDisplayName": "Expadu",
+        "IPHONEOS_DEPLOYMENT_TARGET": "26.0",
+        "LD_RUNPATH_SEARCH_PATHS": [
+          "@executable_path/Frameworks",
+          "@executable_path/../../Frameworks",
+        ],
+        "MARKETING_VERSION": "0.1",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.expadu.app.widgets",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "SDKROOT": "iphoneos",
+        "SKIP_INSTALL": "YES",
+        "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator",
+        "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
+        "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
         "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
         "SWIFT_VERSION": "6.0",
         "TARGETED_DEVICE_FAMILY": "1,2",
