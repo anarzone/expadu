@@ -103,7 +103,6 @@ struct EventDetail: View {
         .background(Palette.canvas.ignoresSafeArea())
         .overlay(alignment: .top) { nav }
         .overlay(alignment: .bottom) { foot }
-        .navigationBarBackButtonHidden(true)
         .toolbar { buttons }
         .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $going) {
@@ -130,16 +129,10 @@ struct EventDetail: View {
         .allowsHitTesting(false)
     }
 
-    /// Back, share and save in the toolbar, drawn by the system in Liquid Glass (iOS 26): back on
-    /// its own, share and save grouped.
+    /// Share and save in the toolbar, drawn by the system in Liquid Glass (iOS 26); back is the
+    /// system's own, so the edge swipe goes back too.
     @ToolbarContentBuilder
     private var buttons: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button(action: back) {
-                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-            }
-            .accessibilityLabel("Back to What's on")
-        }
         ToolbarItem(placement: .topBarTrailing) {
             ShareLink(item: listing.source ?? URL(string: "https://expadu.com")!, subject: Text(idea.title), message: Text(shareLine)) {
                 Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
