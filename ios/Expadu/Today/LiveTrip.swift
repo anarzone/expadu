@@ -49,6 +49,8 @@ struct LiveTrip: View {
             let live = trip.live(at: timeline.date, picked: picked, guided: here?.step)
             let all = trip.steps
             let last = live.current == all.count - 1
+            // Well past the time it was due there: ask, rather than keep counting a trip that's over.
+            let late = !live.waiting && (all.last.map { timeline.date.timeIntervalSince($0.at) > 15 * 60 } ?? false)
             VStack(alignment: .leading, spacing: 0) {
                 if let say = model.cardNote {
                     CardSay(note: say).padding(.bottom, 12)
@@ -100,7 +102,8 @@ struct LiveTrip: View {
                         .padding(.top, 12)
                         .transition(.opacity.combined(with: .offset(y: -6)))
                 }
-                if live.waiting {
+                if live.waiting || late {
+                    // Long past due, a missed tram or a wrong turn is old news: the question is whether they're there.
                     EmptyView()
                 } else if let here, let missed = here.missed {
                     TripTrouble(text: "\(missed.name) at \(missed.departTime) has left.", busy: replanning) { replan() }
@@ -117,19 +120,26 @@ struct LiveTrip: View {
                         .padding(.top, 14).padding(.horizontal, 2)
                         .transition(.opacity.combined(with: .offset(y: -6)))
                 }
-                // There: the one thing left to do. On the way, everything else is a long press away.
-                if last && picked == nil {
-                    action("Done", symbol: "checkmark", grow: true) { end(arrived: true) }
-                        .disabled(ending)
+                // There, or well past when it was due: the one thing to do now, prominent.
+                if late, let due = all.last {
+                    Text("You were due there at \(due.time).").font(.geist(14, .semibold)).foregroundStyle(Palette.text)
                         .padding(.top, 12)
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                } else {
-                    Text("Swipe for the next step · tap for all · hold for more")
-                        .font(.geist(12)).foregroundStyle(Palette.textSoft)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 10)
-                        .accessibilityHidden(true)
+                        .transition(.opacity)
                 }
+                if (last || late) && picked == nil {
+                    action(late ? "I’m there" : "Done", symbol: "checkmark", grow: true, prominent: true) { end(arrived: true) }
+                        .disabled(ending)
+                        .padding(.top, 10)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
+                // The trip's own actions, always in sight (holding the card is a shortcut to the same).
+                HStack(spacing: 8) {
+                    action("Map", symbol: "map", grow: true) { mapOpen = true }
+                    action(steps ? "Hide steps" : "Steps", symbol: "list.bullet", grow: true) { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
+                    action("End", symbol: "stop.circle", grow: true) { end(arrived: false) }
+                        .disabled(ending)
+                }
+                .padding(.top, 10)
             }
             .animation(Motion.ios(0.35), value: live.index)
         }
@@ -214,13 +224,14 @@ struct LiveTrip: View {
         }
     }
 
-    private func action(_ title: String, symbol: String, grow: Bool = false, run: @escaping () -> Void) -> some View {
+    private func action(_ title: String, symbol: String, grow: Bool = false, prominent: Bool = false, run: @escaping () -> Void) -> some View {
         Button(action: run) {
             Label(title, systemImage: symbol).labelStyle(Tight())
-                .font(.geist(15, .medium)).foregroundStyle(Palette.text)
-                .padding(.horizontal, 14).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
-                .buttonFace(Palette.quiet)
-                .contentShape(.capsule)
+                .font(.geist(15, prominent ? .semibold : .medium)).foregroundStyle(prominent ? Palette.onAction : Palette.text)
+                .lineLimit(1).minimumScaleFactor(0.85)
+                .padding(.horizontal, 12).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
+                .buttonFace(prominent ? Palette.action : Palette.quiet)
+                .contentShape(.rect(cornerRadius: 12))
         }
         .buttonStyle(PressStyle())
     }
