@@ -268,9 +268,10 @@ struct AskComposerLabel: View {
             let turn = Angle.degrees((timeline.date.timeIntervalSinceReferenceDate / 12).truncatingRemainder(dividingBy: 1) * 360)
             HStack(spacing: 8) {
                 Image(.composerSpark).resizable().frame(width: 18, height: 18)
-                Text(title)
+                Text(title).lineLimit(1).minimumScaleFactor(0.85)
             }
             .font(.geist(16, .semibold)).foregroundStyle(.white)
+            .padding(.horizontal, 14)
             .frame(maxWidth: .infinity).frame(height: height)
             .background(ComposerLook.ink, in: .capsule).raised(Capsule())
             .overlay { Capsule().strokeBorder(ComposerLook.ring(turn: turn), lineWidth: 2.5) }

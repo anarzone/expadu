@@ -71,8 +71,8 @@ struct EmptyDay: View {
     var body: some View {
         let evening = TodayPage.greeting(at: page.now, name: "").hasPrefix("Guten Abend")
         let words: (String, String, String) = page.plans.isEmpty
-            ? (page.welcome ? ("No plans yet", "Add one, or let Composer plan your day.", "Plan my day") : ("No plans added for today", "Your day is open.", "Plan the rest of today"))
-            : evening ? ("No more plans today", "Tomorrow is still open.", "Plan tomorrow") : ("No plans left today", "Everything is done.", "Plan the rest of today")
+            ? (page.welcome ? ("No plans yet", "Add one, or let Composer plan your day.", "Plan my day") : ("No plans added for today", "Your day is open.", "Plan the rest"))
+            : evening ? ("No more plans today", "Tomorrow is still open.", "Plan tomorrow") : ("No plans left today", "Everything is done.", "Plan the rest")
         VStack(alignment: .leading, spacing: 0) {
             Text(words.0).font(.geist(16, .semibold)).foregroundStyle(Palette.text)
             Text(words.1).font(.geist(13.5)).foregroundStyle(Palette.textSoft).padding(.top, 2)
@@ -82,7 +82,8 @@ struct EmptyDay: View {
                 }
                 .buttonStyle(PressStyle())
                 Button { shell.show(.travel) } label: {
-                    Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text)
+                    Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text).lineLimit(1)
+                        .fixedSize()
                         .padding(.horizontal, 16).frame(height: 44)
                         .background(Palette.quiet, in: .capsule).raised(Capsule())
                 }
