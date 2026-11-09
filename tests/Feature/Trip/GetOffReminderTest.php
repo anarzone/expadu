@@ -14,19 +14,21 @@ beforeEach(function () {
 /** A two-transit-leg trip (change + final exit) with future arrival times. */
 function reminderPayload(array $overrides = []): array
 {
-    $change = now()->addMinutes(10)->toIso8601String();
-    $exit = now()->addMinutes(20)->toIso8601String();
+    // One clock read, so no leg can end a second after the journey does.
+    $now = now();
+    $change = $now->copy()->addMinutes(10)->toIso8601String();
+    $exit = $now->copy()->addMinutes(20)->toIso8601String();
 
     return array_replace_recursive([
         'journey' => [
-            'depart_at' => now()->toIso8601String(),
-            'arrive_at' => now()->addMinutes(21)->toIso8601String(),
+            'depart_at' => $now->toIso8601String(),
+            'arrive_at' => $now->copy()->addMinutes(21)->toIso8601String(),
             'legs' => [
-                ['mode' => 'walk', 'depart_at' => now()->toIso8601String(), 'arrive_at' => now()->addMinute()->toIso8601String(), 'to' => ['name' => 'Board Stop']],
+                ['mode' => 'walk', 'depart_at' => $now->toIso8601String(), 'arrive_at' => $now->copy()->addMinute()->toIso8601String(), 'to' => ['name' => 'Board Stop']],
                 [
                     'mode' => 'tram',
                     'line' => '12',
-                    'depart_at' => now()->addMinute()->toIso8601String(),
+                    'depart_at' => $now->copy()->addMinute()->toIso8601String(),
                     'arrive_at' => $change,
                     'to' => ['name' => 'Change Stop'],
                 ],
@@ -37,7 +39,7 @@ function reminderPayload(array $overrides = []): array
                     'arrive_at' => $exit,
                     'to' => ['name' => 'Exit Stop'],
                 ],
-                ['mode' => 'walk', 'depart_at' => $exit, 'arrive_at' => now()->addMinutes(21)->toIso8601String(), 'to' => ['name' => 'Destination']],
+                ['mode' => 'walk', 'depart_at' => $exit, 'arrive_at' => $now->copy()->addMinutes(21)->toIso8601String(), 'to' => ['name' => 'Destination']],
             ],
         ],
         'destination' => ['name' => 'Destination', 'lat' => 50.94, 'lng' => 6.95],
