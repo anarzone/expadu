@@ -57,7 +57,7 @@ final class BringList
             // Both steps or neither: a half-done tick never leaves "You have it" behind on its own.
             DB::transaction(fn () => $ready
                 ? $this->ready($user, $person, $model, $plan, $process, $row)
-                : $this->notReady($user, $person, $model, $plan, $process, $row));
+                : $this->notReady($user, $model, $process, $row));
         }
 
         return $this->for($user, $occurrence);
@@ -77,6 +77,8 @@ final class BringList
                 'label' => $existing['details']['label'] ?? $row['label'],
                 'kind' => $existing['details']['kind'] ?? 'document',
                 'reported_available' => true,
+                // A record left out of the write loses it: the expiry they gave stays.
+                'expires_on' => $existing['details']['expires_on'] ?? null,
                 'requirement_refs' => array_values(array_unique([...($existing['details']['requirement_refs'] ?? []), $row['id']])),
             ], (int) ($existing['version'] ?? 0), (string) Str::uuid());
             [$evidenceId, $version] = [$receipt->id, $receipt->version];
@@ -84,20 +86,15 @@ final class BringList
         $this->confirm->execute($user, $model, $row['id'], $evidenceId, (int) $process['version'], (int) $version, $row['semantic_hash'], (string) Str::uuid());
     }
 
-    /** "I don't have it": the confirmation withdrawn, and the document no longer said to answer it. */
-    private function notReady(User $user, BureaucracyPerson $person, BureaucracyProcess $model, array $plan, array $process, array $row): void
+    /**
+     * Unticked on Today: not ready for this task yet. Only the confirmation goes; the document's
+     * record, its expiry and what it answers stay, so ticking it again puts it back as it was.
+     * "I don't have it" is Paperwork's own, stronger step.
+     */
+    private function notReady(User $user, BureaucracyProcess $model, array $process, array $row): void
     {
         if ($row['evidence_id'] !== null) {
             $this->withdraw->execute($user, $model, $row['id'], (int) $process['version'], (string) Str::uuid());
-        }
-        foreach ($this->items($plan, $person) as $item) {
-            $refs = $item['details']['requirement_refs'] ?? [];
-            if (! in_array($row['id'], $refs, true)) {
-                continue;
-            }
-            $refs = array_values(array_filter($refs, fn (string $ref) => $ref !== $row['id']));
-            $this->evidence->execute($user, $person, $item['id'], [...$item['details'], 'requirement_refs' => $refs],
-                (int) $item['version'], (string) Str::uuid(), $refs === [] ? 'archived' : 'active');
         }
     }
 
