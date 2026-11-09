@@ -107,7 +107,7 @@ struct IdeaRow: View {
                     FillingBookmark(filled: idea.saved, size: 16, weight: .semibold)
                         .foregroundStyle(idea.saved ? Palette.text : Palette.textSoft)
                 }
-                .buttonStyle(RaisedStyle(fill: idea.saved ? Palette.quiet : Palette.surface, size: 38))
+                .buttonStyle(IconTileStyle(fill: idea.saved ? Palette.quiet : Palette.surface, size: 38))
                 .animation(.easeInOut(duration: 0.45), value: idea.saved)
                 .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
                 .sensoryFeedback(.selection, trigger: idea.saved)

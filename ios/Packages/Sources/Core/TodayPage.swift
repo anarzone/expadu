@@ -631,6 +631,13 @@ public struct TodayPage: Equatable, Sendable {
         public let startsAt: Date?
         public let endsAt: Date?
         public let timed: Bool
+
+        /// The start to be there for: only a timed start still ahead. Once it's on, there's nothing
+        /// to be late for; Getting there just gets them there.
+        public func aimFor(now: Date = .now) -> Date? {
+            guard timed, let startsAt, startsAt > now else { return nil }
+            return startsAt
+        }
         /// The series ("Daily until Thu 5 Nov") for a listing with no time.
         public let untimed: String?
         public let tomorrow: Bool

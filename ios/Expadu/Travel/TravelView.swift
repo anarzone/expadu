@@ -63,7 +63,7 @@ struct TravelView: View {
                 Button("Try again") { Task { await model.load(session.api) } }
                     .font(.geist(16, .semibold))
                     .padding(.horizontal, 18).frame(height: 44)
-                    .background(.white.opacity(0.22), in: .capsule)
+                    .background(.white.opacity(0.22), in: .rect(cornerRadius: 12, style: .continuous))
             }
             .frame(maxWidth: .infinity).padding(.horizontal, 32).padding(.top, 60)
         case .ready:

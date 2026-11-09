@@ -49,6 +49,8 @@ struct LiveTrip: View {
             let live = trip.live(at: timeline.date, picked: picked, guided: here?.step)
             let all = trip.steps
             let last = live.current == all.count - 1
+            // Well past the time it was due there: ask, rather than keep counting a trip that's over.
+            let late = !live.waiting && (all.last.map { timeline.date.timeIntervalSince($0.at) > 15 * 60 } ?? false)
             VStack(alignment: .leading, spacing: 0) {
                 if let say = model.cardNote {
                     CardSay(note: say).padding(.bottom, 12)
@@ -69,15 +71,14 @@ struct LiveTrip: View {
                 bars(all, current: live.current)
                     .padding(.top, 12).padding(.bottom, 4)
                     .modifier(Rise(order: 1))
-                // Swipe sideways: the step before or after; tap: every step. It comes back to now by itself.
+                // Swipe sideways: the step before or after. It comes back to now by itself.
                 nowCard(live)
                     .id(live.index)
                     .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: swipedLeft ? 40 : -40)),
                                             removal: .opacity.combined(with: .offset(x: swipedLeft ? -40 : 40))))
                     .offset(x: drag)
                     .contentShape(.rect(cornerRadius: 16))
-                    .onTapGesture { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
-                    .simultaneousGesture(
+                    .gesture(
                         DragGesture(minimumDistance: 18)
                             .onChanged { value in
                                 guard abs(value.translation.width) > abs(value.translation.height) * 1.4 else { return }
@@ -93,14 +94,14 @@ struct LiveTrip: View {
                     .modifier(Rise(order: 2))
                     .accessibilityAction(named: "Next step") { look(by: 1, from: live.index, current: live.current, count: all.count) }
                     .accessibilityAction(named: "Previous step") { look(by: -1, from: live.index, current: live.current, count: all.count) }
-                    .accessibilityAction(named: steps ? "Hide steps" : "All steps") { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
                 // On foot: the next turn, by where the phone is on our router's way.
                 if picked == nil, !live.waiting, let here, let turn = here.turn, !here.offRoute {
                     TurnRow(turn: turn, metres: here.metresToTurn)
                         .padding(.top, 12)
                         .transition(.opacity.combined(with: .offset(y: -6)))
                 }
-                if live.waiting {
+                if live.waiting || late {
+                    // Long past due, a missed tram or a wrong turn is old news: the question is whether they're there.
                     EmptyView()
                 } else if let here, let missed = here.missed {
                     TripTrouble(text: "\(missed.name) at \(missed.departTime) has left.", busy: replanning) { replan() }
@@ -117,38 +118,65 @@ struct LiveTrip: View {
                         .padding(.top, 14).padding(.horizontal, 2)
                         .transition(.opacity.combined(with: .offset(y: -6)))
                 }
-                // There: the one thing left to do. On the way, everything else is a long press away.
-                if last && picked == nil {
-                    action("Done", symbol: "checkmark", grow: true) { end(arrived: true) }
-                        .disabled(ending)
+                // There, or well past when it was due: the one thing to do now, prominent.
+                if late, let due = all.last {
+                    Text("You were due there at \(due.time).").font(.geist(14, .semibold)).foregroundStyle(Palette.text)
                         .padding(.top, 12)
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                } else {
-                    Text("Swipe for the next step · tap for all · hold for more")
-                        .font(.geist(12)).foregroundStyle(Palette.textSoft)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 10)
-                        .accessibilityHidden(true)
+                        .transition(.opacity)
                 }
+                if (last || late) && picked == nil {
+                    action(late ? "I’m there" : "Done", symbol: "checkmark", grow: true, prominent: true) { end(arrived: true) }
+                        .disabled(ending)
+                        .padding(.top, 10)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
+                // The trip's own actions, always in sight (holding the card is a shortcut to the same).
+                HStack(spacing: 8) {
+                    action("Map", symbol: "map", grow: true) { mapOpen = true }
+                    action(steps ? "Hide steps" : "Steps", symbol: "list.bullet", grow: true) { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
+                    action("End", symbol: "stop.circle", grow: true) { end(arrived: false) }
+                        .disabled(ending)
+                }
+                .padding(.top, 10)
+                Text("Swipe for other steps · hold for more")
+                    .font(.geist(12)).foregroundStyle(Palette.textSoft)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+                    .accessibilityHidden(true)
             }
             .animation(Motion.ios(0.35), value: live.index)
         }
         .padding(14)
+        // Ending: the card's content steps back and the finish lands on it, then the card goes.
+        .blur(radius: model.finishing != nil ? 6 : 0)
+        .opacity(model.finishing != nil ? 0.25 : 1)
+        .overlay {
+            if let arrived = model.finishing {
+                VStack(spacing: 10) {
+                    Image(systemName: arrived ? "checkmark" : "stop.fill")
+                        .font(.system(size: 26, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 64, height: 64)
+                        .background(arrived ? Motion.green : Palette.textSoft, in: .circle)
+                        .symbolEffect(.bounce, value: arrived)
+                    Text(arrived ? "You made it" : "Trip ended").font(.posterGrotesque(22)).foregroundStyle(Palette.text)
+                }
+                .transition(.scale(scale: 0.6).combined(with: .opacity))
+            }
+        }
+        .sensoryFeedback(.success, trigger: model.finishing == true)
         .background(Palette.surface, in: .rect(cornerRadius: 20))
-        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green.opacity(0.6), lineWidth: 1.5) }
+        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green.opacity(model.finishing == true ? 1 : 0.6), lineWidth: 1.5) }
+        .allowsHitTesting(model.finishing == nil)
         .sensoryFeedback(.selection, trigger: picked)
         .contentShape(.contextMenuPreview, .rect(cornerRadius: 20))
+        // Map, Steps and End are on the card; holding it gives only the rarer ones, never the same twice.
         .contextMenu {
-            Button { mapOpen = true } label: { Label("Show the map", systemImage: "map") }
-            Button { withAnimation(Motion.ios(0.35)) { steps.toggle() } } label: { Label(steps ? "Hide steps" : "All steps", systemImage: "list.bullet") }
             Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
             Button { replan() } label: { Label("New way from here", systemImage: "arrow.triangle.turn.up.right.diamond") }
                 .disabled(follow.point == nil)
-            Divider()
-            Button(role: .destructive) { end(arrived: false) } label: { Label("End trip", systemImage: "stop.circle") }
         }
-        .accessibilityAction(named: "Show the map") { mapOpen = true }
-        .accessibilityAction(named: "End trip") { end(arrived: false) }
+        .accessibilityAction(named: speak ? "Stop speaking turns" : "Speak turns") { speak.toggle() }
+        .accessibilityAction(named: "New way from here") { replan() }
         .animation(Motion.spring, value: model.cardNote)
         .sheet(isPresented: $mapOpen) { WayMap(to: trip.to, legs: trip.legs, guiding: (trip, follow)) }
         .onAppear {
@@ -214,13 +242,14 @@ struct LiveTrip: View {
         }
     }
 
-    private func action(_ title: String, symbol: String, grow: Bool = false, run: @escaping () -> Void) -> some View {
+    private func action(_ title: String, symbol: String, grow: Bool = false, prominent: Bool = false, run: @escaping () -> Void) -> some View {
         Button(action: run) {
             Label(title, systemImage: symbol).labelStyle(Tight())
-                .font(.geist(15, .medium)).foregroundStyle(Palette.text)
-                .padding(.horizontal, 14).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
-                .background(Palette.quiet, in: .capsule).raised(Capsule())
-                .contentShape(.capsule)
+                .font(.geist(15, prominent ? .semibold : .medium)).foregroundStyle(prominent ? Palette.onAction : Palette.text)
+                .lineLimit(1).minimumScaleFactor(0.85)
+                .padding(.horizontal, 12).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
+                .buttonFace(prominent ? Palette.action : Palette.quiet)
+                .contentShape(.rect(cornerRadius: 12))
         }
         .buttonStyle(PressStyle())
     }
@@ -367,7 +396,7 @@ struct OtherWaysSheet: View {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                             .frame(width: 44, height: 44)
                     }
-                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+                    .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
                     .accessibilityLabel("Close")
                 }
                 ForEach(Array(leave.ways.enumerated()), id: \.element.id) { index, way in
@@ -397,7 +426,7 @@ struct OtherWaysSheet: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(way.spareWords).font(.geist(13, .bold)).foregroundStyle(spareTone.0)
                     .padding(.horizontal, 10).frame(height: 26)
-                    .background(spareTone.1, in: .capsule)
+                    .background(spareTone.1, in: .rect(cornerRadius: 7, style: .continuous))
                 WhyLines(way: way, start: leave.start)
                 if open.contains(way.id) {
                     StepList(steps: TodayPage.Step.of(way.legs, to: leave.to, start: leave.start))
@@ -409,7 +438,7 @@ struct OtherWaysSheet: View {
                         Label("Your way", systemImage: "checkmark").labelStyle(Tight())
                             .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
                             .frame(maxWidth: .infinity).frame(height: 44)
-                            .background(Palette.quiet, in: .capsule)
+                            .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
                     } else {
                         Button {
                             busy = way.id
@@ -427,7 +456,7 @@ struct OtherWaysSheet: View {
                             }
                             .font(.geist(15, .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 44)
-                            .background(Palette.action, in: .capsule).raised(Capsule())
+                            .buttonFace(Palette.action)
                             .contentShape(.capsule)
                         }
                         .buttonStyle(PressStyle())
@@ -518,7 +547,7 @@ struct TicketTop: View {
         .overlay(alignment: .topTrailing) {
             Text("\(way.minutes) min").font(.geist(13, .bold)).foregroundStyle(ink)
                 .padding(.horizontal, 11).frame(height: 28)
-                .background(.black.opacity(0.28), in: .capsule)
+                .background(.black.opacity(0.28), in: .rect(cornerRadius: 8, style: .continuous))
                 .padding(16)
         }
         .background(fill)

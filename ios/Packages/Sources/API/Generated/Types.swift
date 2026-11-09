@@ -26,6 +26,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /me/delete`.
     /// - Remark: Generated from `#/paths//me/delete/post(account.destroy)`.
     func account_destroy(_ input: Operations.Account_destroy.Input) async throws -> Operations.Account_destroy.Output
+    /// - Remark: HTTP `GET /paperwork/v2/plan`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/plan/get(paperwork.v2.plan)`.
+    func paperwork_v2_plan(_ input: Operations.Paperwork_v2_plan.Input) async throws -> Operations.Paperwork_v2_plan.Output
     /// The bell's sheet: the web's Alerts list (AlertController::index), shaped for the app
     ///
     /// - Remark: HTTP `GET /alerts`.
@@ -43,6 +46,30 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /day/command`.
     /// - Remark: Generated from `#/paths//day/command/post(day.command)`.
     func day_command(_ input: Operations.Day_command.Input) async throws -> Operations.Day_command.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/sharing`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/sharing/get(paperwork.v2.people.sharing)`.
+    func paperwork_v2_people_sharing(_ input: Operations.Paperwork_v2_people_sharing.Input) async throws -> Operations.Paperwork_v2_people_sharing.Output
+    /// - Remark: HTTP `POST /paperwork/v2/invitations`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/post(paperwork.v2.invitations.store)`.
+    func paperwork_v2_invitations_store(_ input: Operations.Paperwork_v2_invitations_store.Input) async throws -> Operations.Paperwork_v2_invitations_store.Output
+    /// - Remark: HTTP `POST /paperwork/v2/invitations/inspect`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/inspect/post(paperwork.v2.invitations.inspect)`.
+    func paperwork_v2_invitations_inspect(_ input: Operations.Paperwork_v2_invitations_inspect.Input) async throws -> Operations.Paperwork_v2_invitations_inspect.Output
+    /// - Remark: HTTP `POST /paperwork/v2/invitations/accept`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/accept/post(paperwork.v2.invitations.accept)`.
+    func paperwork_v2_invitations_accept(_ input: Operations.Paperwork_v2_invitations_accept.Input) async throws -> Operations.Paperwork_v2_invitations_accept.Output
+    /// - Remark: HTTP `DELETE /paperwork/v2/invitations/{invitation}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/{invitation}/delete(paperwork.v2.invitations.cancel)`.
+    func paperwork_v2_invitations_cancel(_ input: Operations.Paperwork_v2_invitations_cancel.Input) async throws -> Operations.Paperwork_v2_invitations_cancel.Output
+    /// - Remark: HTTP `DELETE /paperwork/v2/grants/{grant}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/grants/{grant}/delete(paperwork.v2.grants.revoke)`.
+    func paperwork_v2_grants_revoke(_ input: Operations.Paperwork_v2_grants_revoke.Input) async throws -> Operations.Paperwork_v2_grants_revoke.Output
+    /// - Remark: HTTP `POST /paperwork/v2/dependents`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/dependents/post(paperwork.v2.dependents.store)`.
+    func paperwork_v2_dependents_store(_ input: Operations.Paperwork_v2_dependents_store.Input) async throws -> Operations.Paperwork_v2_dependents_store.Output
+    /// - Remark: HTTP `DELETE /paperwork/v2/authorities/{authority}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/authorities/{authority}/delete(paperwork.v2.authorities.revoke)`.
+    func paperwork_v2_authorities_revoke(_ input: Operations.Paperwork_v2_authorities_revoke.Input) async throws -> Operations.Paperwork_v2_authorities_revoke.Output
     /// What's on for a day (All events on Today): the web panel's listings (App\Home\WhatsOn).
     /// Today drops what has already ended and says how many
     ///
@@ -54,6 +81,32 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /events/saved`.
     /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
     func events_save(_ input: Operations.Events_save.Input) async throws -> Operations.Events_save.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/paperwork`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)`.
+    func paperwork_v2_paperwork_index(_ input: Operations.Paperwork_v2_paperwork_index.Input) async throws -> Operations.Paperwork_v2_paperwork_index.Output
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/evidence/{evidenceId}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/evidence/{evidenceId}/put(paperwork.v2.evidence.update)`.
+    func paperwork_v2_evidence_update(_ input: Operations.Paperwork_v2_evidence_update.Input) async throws -> Operations.Paperwork_v2_evidence_update.Output
+    /// - Remark: HTTP `GET /paperwork/v2/evidence/{evidence}/shares`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/get(paperwork.v2.evidence.shares.index)`.
+    func paperwork_v2_evidence_shares_index(_ input: Operations.Paperwork_v2_evidence_shares_index.Input) async throws -> Operations.Paperwork_v2_evidence_shares_index.Output
+    /// - Remark: HTTP `POST /paperwork/v2/evidence/{evidence}/shares`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/post(paperwork.v2.evidence.shares.store)`.
+    func paperwork_v2_evidence_shares_store(_ input: Operations.Paperwork_v2_evidence_shares_store.Input) async throws -> Operations.Paperwork_v2_evidence_shares_store.Output
+    /// - Remark: HTTP `DELETE /paperwork/v2/evidence/{evidence}/shares/{share}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)`.
+    func paperwork_v2_evidence_shares_destroy(_ input: Operations.Paperwork_v2_evidence_shares_destroy.Input) async throws -> Operations.Paperwork_v2_evidence_shares_destroy.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/fact-conflicts`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/get(paperwork.v2.fact-conflicts.index)`.
+    func paperwork_v2_factConflicts_index(_ input: Operations.Paperwork_v2_factConflicts_index.Input) async throws -> Operations.Paperwork_v2_factConflicts_index.Output
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/fact-conflicts/{key}/resolve`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/post(paperwork.v2.fact-conflicts.resolve)`.
+    func paperwork_v2_factConflicts_resolve(_ input: Operations.Paperwork_v2_factConflicts_resolve.Input) async throws -> Operations.Paperwork_v2_factConflicts_resolve.Output
+    /// Public reviewed registry wording and answer shapes only; no person, value or legacy mapping
+    ///
+    /// - Remark: HTTP `GET /paperwork/v2/facts/schema`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/facts/schema/get(paperwork.v2.facts.schema)`.
+    func paperwork_v2_facts_schema(_ input: Operations.Paperwork_v2_facts_schema.Input) async throws -> Operations.Paperwork_v2_facts_schema.Output
     /// - Remark: HTTP `POST /journey/plan`.
     /// - Remark: Generated from `#/paths//journey/plan/post(journey.plan)`.
     func journey_plan(_ input: Operations.Journey_plan.Input) async throws -> Operations.Journey_plan.Output
@@ -62,6 +115,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /journey/start`.
     /// - Remark: Generated from `#/paths//journey/start/post(journey.start)`.
     func journey_start(_ input: Operations.Journey_start.Input) async throws -> Operations.Journey_start.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
+    func paperwork_v2_onboarding_draft_show(_ input: Operations.Paperwork_v2_onboarding_draft_show.Input) async throws -> Operations.Paperwork_v2_onboarding_draft_show.Output
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/put(paperwork.v2.onboarding.draft.update)`.
+    func paperwork_v2_onboarding_draft_update(_ input: Operations.Paperwork_v2_onboarding_draft_update.Input) async throws -> Operations.Paperwork_v2_onboarding_draft_update.Output
+    /// - Remark: HTTP `DELETE /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)`.
+    func paperwork_v2_onboarding_draft_destroy(_ input: Operations.Paperwork_v2_onboarding_draft_destroy.Input) async throws -> Operations.Paperwork_v2_onboarding_draft_destroy.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/review`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/review/get(paperwork.v2.onboarding.review)`.
+    func paperwork_v2_onboarding_review(_ input: Operations.Paperwork_v2_onboarding_review.Input) async throws -> Operations.Paperwork_v2_onboarding_review.Output
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/onboarding/complete`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/complete/post(paperwork.v2.onboarding.complete)`.
+    func paperwork_v2_onboarding_complete(_ input: Operations.Paperwork_v2_onboarding_complete.Input) async throws -> Operations.Paperwork_v2_onboarding_complete.Output
     /// What to bring to a Paperwork appointment (Today's plans' `bring.process`): its documents, each ready or not
     ///
     /// - Remark: HTTP `GET /paperwork/{process}/documents`.
@@ -72,6 +140,88 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /paperwork/{process}/documents/{document}`.
     /// - Remark: Generated from `#/paths//paperwork/{process}/documents/{document}/post(paperworkDocuments.update)`.
     func paperworkDocuments_update(_ input: Operations.PaperworkDocuments_update.Input) async throws -> Operations.PaperworkDocuments_update.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/get(paperwork.v2.people.index)`.
+    func paperwork_v2_people_index(_ input: Operations.Paperwork_v2_people_index.Input) async throws -> Operations.Paperwork_v2_people_index.Output
+    /// - Remark: HTTP `POST /paperwork/v2/people/self`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/self/post(paperwork.v2.people.self)`.
+    func paperwork_v2_people_self(_ input: Operations.Paperwork_v2_people_self.Input) async throws -> Operations.Paperwork_v2_people_self.Output
+    /// Where you live: Paperwork's first answer, since the city decides which
+    /// office's tasks apply (AccountHolderPlan::jurisdiction). It's the account's
+    /// own city, the one Settings shows too
+    ///
+    /// - Remark: HTTP `PUT /paperwork/v2/people/self/city`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/self/city/put(paperwork.v2.people.self.city)`.
+    func paperwork_v2_people_self_city(_ input: Operations.Paperwork_v2_people_self_city.Input) async throws -> Operations.Paperwork_v2_people_self_city.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/get(paperwork.v2.people.show)`.
+    func paperwork_v2_people_show(_ input: Operations.Paperwork_v2_people_show.Input) async throws -> Operations.Paperwork_v2_people_show.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/facts`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/get(paperwork.v2.facts.index)`.
+    func paperwork_v2_facts_index(_ input: Operations.Paperwork_v2_facts_index.Input) async throws -> Operations.Paperwork_v2_facts_index.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/facts/{key}/history`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/history/get(paperwork.v2.facts.history)`.
+    func paperwork_v2_facts_history(_ input: Operations.Paperwork_v2_facts_history.Input) async throws -> Operations.Paperwork_v2_facts_history.Output
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/facts/{key}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/put(paperwork.v2.facts.change)`.
+    func paperwork_v2_facts_change(_ input: Operations.Paperwork_v2_facts_change.Input) async throws -> Operations.Paperwork_v2_facts_change.Output
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/facts/{fact}/corrections`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{fact}/corrections/post(paperwork.v2.facts.correct)`.
+    func paperwork_v2_facts_correct(_ input: Operations.Paperwork_v2_facts_correct.Input) async throws -> Operations.Paperwork_v2_facts_correct.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/plan`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/plan/get(paperwork.v2.people.plan)`.
+    func paperwork_v2_people_plan(_ input: Operations.Paperwork_v2_people_plan.Input) async throws -> Operations.Paperwork_v2_people_plan.Output
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/processing-restriction`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)`.
+    func paperwork_v2_people_processingRestriction(_ input: Operations.Paperwork_v2_people_processingRestriction.Input) async throws -> Operations.Paperwork_v2_people_processingRestriction.Output
+    /// - Remark: HTTP `GET /paperwork/v2/processes/{process}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/get(paperwork.v2.processes.show)`.
+    func paperwork_v2_processes_show(_ input: Operations.Paperwork_v2_processes_show.Input) async throws -> Operations.Paperwork_v2_processes_show.Output
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/events`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/post(paperwork.v2.processes.events)`.
+    func paperwork_v2_processes_events(_ input: Operations.Paperwork_v2_processes_events.Input) async throws -> Operations.Paperwork_v2_processes_events.Output
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/review`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/review/post(paperwork.v2.processes.review)`.
+    func paperwork_v2_processes_review(_ input: Operations.Paperwork_v2_processes_review.Input) async throws -> Operations.Paperwork_v2_processes_review.Output
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/events/{event}/corrections`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/{event}/corrections/post(paperwork.v2.processes.correct)`.
+    func paperwork_v2_processes_correct(_ input: Operations.Paperwork_v2_processes_correct.Input) async throws -> Operations.Paperwork_v2_processes_correct.Output
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/processes`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)`.
+    func paperwork_v2_processes_start(_ input: Operations.Paperwork_v2_processes_start.Input) async throws -> Operations.Paperwork_v2_processes_start.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/question-preview`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)`.
+    func paperwork_v2_questions_preview(_ input: Operations.Paperwork_v2_questions_preview.Input) async throws -> Operations.Paperwork_v2_questions_preview.Output
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/question-sessions`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-sessions/post(paperwork.v2.question-sessions.store)`.
+    func paperwork_v2_questionSessions_store(_ input: Operations.Paperwork_v2_questionSessions_store.Input) async throws -> Operations.Paperwork_v2_questionSessions_store.Output
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/next`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/next/post(paperwork.v2.question-sessions.next)`.
+    func paperwork_v2_questionSessions_next(_ input: Operations.Paperwork_v2_questionSessions_next.Input) async throws -> Operations.Paperwork_v2_questionSessions_next.Output
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/answers/{question}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/answers/{question}/post(paperwork.v2.question-sessions.answer)`.
+    func paperwork_v2_questionSessions_answer(_ input: Operations.Paperwork_v2_questionSessions_answer.Input) async throws -> Operations.Paperwork_v2_questionSessions_answer.Output
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/defer/{question}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)`.
+    func paperwork_v2_questionSessions_defer(_ input: Operations.Paperwork_v2_questionSessions_defer.Input) async throws -> Operations.Paperwork_v2_questionSessions_defer.Output
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/resume`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)`.
+    func paperwork_v2_questionSessions_resume(_ input: Operations.Paperwork_v2_questionSessions_resume.Input) async throws -> Operations.Paperwork_v2_questionSessions_resume.Output
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/relationships`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/get(paperwork.v2.relationships.index)`.
+    func paperwork_v2_relationships_index(_ input: Operations.Paperwork_v2_relationships_index.Input) async throws -> Operations.Paperwork_v2_relationships_index.Output
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/relationships`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/post(paperwork.v2.relationships.store)`.
+    func paperwork_v2_relationships_store(_ input: Operations.Paperwork_v2_relationships_store.Input) async throws -> Operations.Paperwork_v2_relationships_store.Output
+    /// - Remark: HTTP `DELETE /paperwork/v2/people/{person}/relationships/{relationship}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/{relationship}/delete(paperwork.v2.relationships.destroy)`.
+    func paperwork_v2_relationships_destroy(_ input: Operations.Paperwork_v2_relationships_destroy.Input) async throws -> Operations.Paperwork_v2_relationships_destroy.Output
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/requirements/{requirement}/confirm`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirm/post(paperwork.v2.requirements.confirm)`.
+    func paperwork_v2_requirements_confirm(_ input: Operations.Paperwork_v2_requirements_confirm.Input) async throws -> Operations.Paperwork_v2_requirements_confirm.Output
+    /// - Remark: HTTP `DELETE /paperwork/v2/processes/{process}/requirements/{requirement}/confirmation`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)`.
+    func paperwork_v2_requirements_withdraw(_ input: Operations.Paperwork_v2_requirements_withdraw.Input) async throws -> Operations.Paperwork_v2_requirements_withdraw.Output
     /// Email and password. An account with two-step sign-in gets a challenge, not a token
     ///
     /// - Remark: HTTP `POST /auth/token`.
@@ -186,6 +336,11 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// - Remark: HTTP `GET /paperwork/v2/plan`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/plan/get(paperwork.v2.plan)`.
+    public func paperwork_v2_plan(headers: Operations.Paperwork_v2_plan.Input.Headers = .init()) async throws -> Operations.Paperwork_v2_plan.Output {
+        try await paperwork_v2_plan(Operations.Paperwork_v2_plan.Input(headers: headers))
+    }
     /// The bell's sheet: the web's Alerts list (AlertController::index), shaped for the app
     ///
     /// - Remark: HTTP `GET /alerts`.
@@ -221,6 +376,94 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/sharing`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/sharing/get(paperwork.v2.people.sharing)`.
+    public func paperwork_v2_people_sharing(
+        path: Operations.Paperwork_v2_people_sharing.Input.Path,
+        headers: Operations.Paperwork_v2_people_sharing.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_people_sharing.Output {
+        try await paperwork_v2_people_sharing(Operations.Paperwork_v2_people_sharing.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/invitations`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/post(paperwork.v2.invitations.store)`.
+    public func paperwork_v2_invitations_store(
+        headers: Operations.Paperwork_v2_invitations_store.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_invitations_store.Input.Body
+    ) async throws -> Operations.Paperwork_v2_invitations_store.Output {
+        try await paperwork_v2_invitations_store(Operations.Paperwork_v2_invitations_store.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/invitations/inspect`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/inspect/post(paperwork.v2.invitations.inspect)`.
+    public func paperwork_v2_invitations_inspect(
+        headers: Operations.Paperwork_v2_invitations_inspect.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_invitations_inspect.Input.Body
+    ) async throws -> Operations.Paperwork_v2_invitations_inspect.Output {
+        try await paperwork_v2_invitations_inspect(Operations.Paperwork_v2_invitations_inspect.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/invitations/accept`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/accept/post(paperwork.v2.invitations.accept)`.
+    public func paperwork_v2_invitations_accept(
+        headers: Operations.Paperwork_v2_invitations_accept.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_invitations_accept.Input.Body
+    ) async throws -> Operations.Paperwork_v2_invitations_accept.Output {
+        try await paperwork_v2_invitations_accept(Operations.Paperwork_v2_invitations_accept.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/invitations/{invitation}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/{invitation}/delete(paperwork.v2.invitations.cancel)`.
+    public func paperwork_v2_invitations_cancel(
+        path: Operations.Paperwork_v2_invitations_cancel.Input.Path,
+        headers: Operations.Paperwork_v2_invitations_cancel.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_invitations_cancel.Output {
+        try await paperwork_v2_invitations_cancel(Operations.Paperwork_v2_invitations_cancel.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/grants/{grant}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/grants/{grant}/delete(paperwork.v2.grants.revoke)`.
+    public func paperwork_v2_grants_revoke(
+        path: Operations.Paperwork_v2_grants_revoke.Input.Path,
+        headers: Operations.Paperwork_v2_grants_revoke.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_grants_revoke.Output {
+        try await paperwork_v2_grants_revoke(Operations.Paperwork_v2_grants_revoke.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/dependents`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/dependents/post(paperwork.v2.dependents.store)`.
+    public func paperwork_v2_dependents_store(
+        headers: Operations.Paperwork_v2_dependents_store.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_dependents_store.Input.Body
+    ) async throws -> Operations.Paperwork_v2_dependents_store.Output {
+        try await paperwork_v2_dependents_store(Operations.Paperwork_v2_dependents_store.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/authorities/{authority}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/authorities/{authority}/delete(paperwork.v2.authorities.revoke)`.
+    public func paperwork_v2_authorities_revoke(
+        path: Operations.Paperwork_v2_authorities_revoke.Input.Path,
+        headers: Operations.Paperwork_v2_authorities_revoke.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_authorities_revoke.Output {
+        try await paperwork_v2_authorities_revoke(Operations.Paperwork_v2_authorities_revoke.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// What's on for a day (All events on Today): the web panel's listings (App\Home\WhatsOn).
     /// Today drops what has already ended and says how many
     ///
@@ -248,6 +491,98 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/paperwork`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)`.
+    public func paperwork_v2_paperwork_index(
+        path: Operations.Paperwork_v2_paperwork_index.Input.Path,
+        query: Operations.Paperwork_v2_paperwork_index.Input.Query,
+        headers: Operations.Paperwork_v2_paperwork_index.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_paperwork_index.Output {
+        try await paperwork_v2_paperwork_index(Operations.Paperwork_v2_paperwork_index.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/evidence/{evidenceId}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/evidence/{evidenceId}/put(paperwork.v2.evidence.update)`.
+    public func paperwork_v2_evidence_update(
+        path: Operations.Paperwork_v2_evidence_update.Input.Path,
+        headers: Operations.Paperwork_v2_evidence_update.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_evidence_update.Input.Body
+    ) async throws -> Operations.Paperwork_v2_evidence_update.Output {
+        try await paperwork_v2_evidence_update(Operations.Paperwork_v2_evidence_update.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/evidence/{evidence}/shares`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/get(paperwork.v2.evidence.shares.index)`.
+    public func paperwork_v2_evidence_shares_index(
+        path: Operations.Paperwork_v2_evidence_shares_index.Input.Path,
+        headers: Operations.Paperwork_v2_evidence_shares_index.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_evidence_shares_index.Output {
+        try await paperwork_v2_evidence_shares_index(Operations.Paperwork_v2_evidence_shares_index.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/evidence/{evidence}/shares`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/post(paperwork.v2.evidence.shares.store)`.
+    public func paperwork_v2_evidence_shares_store(
+        path: Operations.Paperwork_v2_evidence_shares_store.Input.Path,
+        headers: Operations.Paperwork_v2_evidence_shares_store.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_evidence_shares_store.Input.Body
+    ) async throws -> Operations.Paperwork_v2_evidence_shares_store.Output {
+        try await paperwork_v2_evidence_shares_store(Operations.Paperwork_v2_evidence_shares_store.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/evidence/{evidence}/shares/{share}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)`.
+    public func paperwork_v2_evidence_shares_destroy(
+        path: Operations.Paperwork_v2_evidence_shares_destroy.Input.Path,
+        headers: Operations.Paperwork_v2_evidence_shares_destroy.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_evidence_shares_destroy.Output {
+        try await paperwork_v2_evidence_shares_destroy(Operations.Paperwork_v2_evidence_shares_destroy.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/fact-conflicts`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/get(paperwork.v2.fact-conflicts.index)`.
+    public func paperwork_v2_factConflicts_index(
+        path: Operations.Paperwork_v2_factConflicts_index.Input.Path,
+        headers: Operations.Paperwork_v2_factConflicts_index.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_factConflicts_index.Output {
+        try await paperwork_v2_factConflicts_index(Operations.Paperwork_v2_factConflicts_index.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/fact-conflicts/{key}/resolve`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/post(paperwork.v2.fact-conflicts.resolve)`.
+    public func paperwork_v2_factConflicts_resolve(
+        path: Operations.Paperwork_v2_factConflicts_resolve.Input.Path,
+        headers: Operations.Paperwork_v2_factConflicts_resolve.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_factConflicts_resolve.Input.Body
+    ) async throws -> Operations.Paperwork_v2_factConflicts_resolve.Output {
+        try await paperwork_v2_factConflicts_resolve(Operations.Paperwork_v2_factConflicts_resolve.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Public reviewed registry wording and answer shapes only; no person, value or legacy mapping
+    ///
+    /// - Remark: HTTP `GET /paperwork/v2/facts/schema`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/facts/schema/get(paperwork.v2.facts.schema)`.
+    public func paperwork_v2_facts_schema(headers: Operations.Paperwork_v2_facts_schema.Input.Headers = .init()) async throws -> Operations.Paperwork_v2_facts_schema.Output {
+        try await paperwork_v2_facts_schema(Operations.Paperwork_v2_facts_schema.Input(headers: headers))
+    }
     /// - Remark: HTTP `POST /journey/plan`.
     /// - Remark: Generated from `#/paths//journey/plan/post(journey.plan)`.
     public func journey_plan(
@@ -268,6 +603,67 @@ extension APIProtocol {
         body: Operations.Journey_start.Input.Body
     ) async throws -> Operations.Journey_start.Output {
         try await journey_start(Operations.Journey_start.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
+    public func paperwork_v2_onboarding_draft_show(
+        path: Operations.Paperwork_v2_onboarding_draft_show.Input.Path,
+        headers: Operations.Paperwork_v2_onboarding_draft_show.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_onboarding_draft_show.Output {
+        try await paperwork_v2_onboarding_draft_show(Operations.Paperwork_v2_onboarding_draft_show.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/put(paperwork.v2.onboarding.draft.update)`.
+    public func paperwork_v2_onboarding_draft_update(
+        path: Operations.Paperwork_v2_onboarding_draft_update.Input.Path,
+        headers: Operations.Paperwork_v2_onboarding_draft_update.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_onboarding_draft_update.Input.Body
+    ) async throws -> Operations.Paperwork_v2_onboarding_draft_update.Output {
+        try await paperwork_v2_onboarding_draft_update(Operations.Paperwork_v2_onboarding_draft_update.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)`.
+    public func paperwork_v2_onboarding_draft_destroy(
+        path: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Path,
+        query: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Query,
+        headers: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_onboarding_draft_destroy.Output {
+        try await paperwork_v2_onboarding_draft_destroy(Operations.Paperwork_v2_onboarding_draft_destroy.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/review`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/review/get(paperwork.v2.onboarding.review)`.
+    public func paperwork_v2_onboarding_review(
+        path: Operations.Paperwork_v2_onboarding_review.Input.Path,
+        headers: Operations.Paperwork_v2_onboarding_review.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_onboarding_review.Output {
+        try await paperwork_v2_onboarding_review(Operations.Paperwork_v2_onboarding_review.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/onboarding/complete`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/complete/post(paperwork.v2.onboarding.complete)`.
+    public func paperwork_v2_onboarding_complete(
+        path: Operations.Paperwork_v2_onboarding_complete.Input.Path,
+        headers: Operations.Paperwork_v2_onboarding_complete.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_onboarding_complete.Input.Body
+    ) async throws -> Operations.Paperwork_v2_onboarding_complete.Output {
+        try await paperwork_v2_onboarding_complete(Operations.Paperwork_v2_onboarding_complete.Input(
+            path: path,
             headers: headers,
             body: body
         ))
@@ -298,6 +694,318 @@ extension APIProtocol {
             path: path,
             headers: headers,
             body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/get(paperwork.v2.people.index)`.
+    public func paperwork_v2_people_index(headers: Operations.Paperwork_v2_people_index.Input.Headers = .init()) async throws -> Operations.Paperwork_v2_people_index.Output {
+        try await paperwork_v2_people_index(Operations.Paperwork_v2_people_index.Input(headers: headers))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/self`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/self/post(paperwork.v2.people.self)`.
+    public func paperwork_v2_people_self(headers: Operations.Paperwork_v2_people_self.Input.Headers = .init()) async throws -> Operations.Paperwork_v2_people_self.Output {
+        try await paperwork_v2_people_self(Operations.Paperwork_v2_people_self.Input(headers: headers))
+    }
+    /// Where you live: Paperwork's first answer, since the city decides which
+    /// office's tasks apply (AccountHolderPlan::jurisdiction). It's the account's
+    /// own city, the one Settings shows too
+    ///
+    /// - Remark: HTTP `PUT /paperwork/v2/people/self/city`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/self/city/put(paperwork.v2.people.self.city)`.
+    public func paperwork_v2_people_self_city(
+        headers: Operations.Paperwork_v2_people_self_city.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_people_self_city.Input.Body
+    ) async throws -> Operations.Paperwork_v2_people_self_city.Output {
+        try await paperwork_v2_people_self_city(Operations.Paperwork_v2_people_self_city.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/get(paperwork.v2.people.show)`.
+    public func paperwork_v2_people_show(
+        path: Operations.Paperwork_v2_people_show.Input.Path,
+        headers: Operations.Paperwork_v2_people_show.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_people_show.Output {
+        try await paperwork_v2_people_show(Operations.Paperwork_v2_people_show.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/facts`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/get(paperwork.v2.facts.index)`.
+    public func paperwork_v2_facts_index(
+        path: Operations.Paperwork_v2_facts_index.Input.Path,
+        headers: Operations.Paperwork_v2_facts_index.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_facts_index.Output {
+        try await paperwork_v2_facts_index(Operations.Paperwork_v2_facts_index.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/facts/{key}/history`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/history/get(paperwork.v2.facts.history)`.
+    public func paperwork_v2_facts_history(
+        path: Operations.Paperwork_v2_facts_history.Input.Path,
+        headers: Operations.Paperwork_v2_facts_history.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_facts_history.Output {
+        try await paperwork_v2_facts_history(Operations.Paperwork_v2_facts_history.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/facts/{key}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/put(paperwork.v2.facts.change)`.
+    public func paperwork_v2_facts_change(
+        path: Operations.Paperwork_v2_facts_change.Input.Path,
+        headers: Operations.Paperwork_v2_facts_change.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_facts_change.Input.Body
+    ) async throws -> Operations.Paperwork_v2_facts_change.Output {
+        try await paperwork_v2_facts_change(Operations.Paperwork_v2_facts_change.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/facts/{fact}/corrections`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{fact}/corrections/post(paperwork.v2.facts.correct)`.
+    public func paperwork_v2_facts_correct(
+        path: Operations.Paperwork_v2_facts_correct.Input.Path,
+        headers: Operations.Paperwork_v2_facts_correct.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_facts_correct.Input.Body
+    ) async throws -> Operations.Paperwork_v2_facts_correct.Output {
+        try await paperwork_v2_facts_correct(Operations.Paperwork_v2_facts_correct.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/plan`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/plan/get(paperwork.v2.people.plan)`.
+    public func paperwork_v2_people_plan(
+        path: Operations.Paperwork_v2_people_plan.Input.Path,
+        query: Operations.Paperwork_v2_people_plan.Input.Query,
+        headers: Operations.Paperwork_v2_people_plan.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_people_plan.Output {
+        try await paperwork_v2_people_plan(Operations.Paperwork_v2_people_plan.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/processing-restriction`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)`.
+    public func paperwork_v2_people_processingRestriction(
+        path: Operations.Paperwork_v2_people_processingRestriction.Input.Path,
+        headers: Operations.Paperwork_v2_people_processingRestriction.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_people_processingRestriction.Input.Body
+    ) async throws -> Operations.Paperwork_v2_people_processingRestriction.Output {
+        try await paperwork_v2_people_processingRestriction(Operations.Paperwork_v2_people_processingRestriction.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/processes/{process}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/get(paperwork.v2.processes.show)`.
+    public func paperwork_v2_processes_show(
+        path: Operations.Paperwork_v2_processes_show.Input.Path,
+        headers: Operations.Paperwork_v2_processes_show.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_processes_show.Output {
+        try await paperwork_v2_processes_show(Operations.Paperwork_v2_processes_show.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/events`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/post(paperwork.v2.processes.events)`.
+    public func paperwork_v2_processes_events(
+        path: Operations.Paperwork_v2_processes_events.Input.Path,
+        headers: Operations.Paperwork_v2_processes_events.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_processes_events.Input.Body
+    ) async throws -> Operations.Paperwork_v2_processes_events.Output {
+        try await paperwork_v2_processes_events(Operations.Paperwork_v2_processes_events.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/review`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/review/post(paperwork.v2.processes.review)`.
+    public func paperwork_v2_processes_review(
+        path: Operations.Paperwork_v2_processes_review.Input.Path,
+        headers: Operations.Paperwork_v2_processes_review.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_processes_review.Input.Body
+    ) async throws -> Operations.Paperwork_v2_processes_review.Output {
+        try await paperwork_v2_processes_review(Operations.Paperwork_v2_processes_review.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/events/{event}/corrections`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/{event}/corrections/post(paperwork.v2.processes.correct)`.
+    public func paperwork_v2_processes_correct(
+        path: Operations.Paperwork_v2_processes_correct.Input.Path,
+        headers: Operations.Paperwork_v2_processes_correct.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_processes_correct.Input.Body
+    ) async throws -> Operations.Paperwork_v2_processes_correct.Output {
+        try await paperwork_v2_processes_correct(Operations.Paperwork_v2_processes_correct.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/processes`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)`.
+    public func paperwork_v2_processes_start(
+        path: Operations.Paperwork_v2_processes_start.Input.Path,
+        headers: Operations.Paperwork_v2_processes_start.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_processes_start.Input.Body
+    ) async throws -> Operations.Paperwork_v2_processes_start.Output {
+        try await paperwork_v2_processes_start(Operations.Paperwork_v2_processes_start.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/question-preview`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)`.
+    public func paperwork_v2_questions_preview(
+        path: Operations.Paperwork_v2_questions_preview.Input.Path,
+        query: Operations.Paperwork_v2_questions_preview.Input.Query,
+        headers: Operations.Paperwork_v2_questions_preview.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_questions_preview.Output {
+        try await paperwork_v2_questions_preview(Operations.Paperwork_v2_questions_preview.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/question-sessions`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-sessions/post(paperwork.v2.question-sessions.store)`.
+    public func paperwork_v2_questionSessions_store(
+        path: Operations.Paperwork_v2_questionSessions_store.Input.Path,
+        headers: Operations.Paperwork_v2_questionSessions_store.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_questionSessions_store.Input.Body
+    ) async throws -> Operations.Paperwork_v2_questionSessions_store.Output {
+        try await paperwork_v2_questionSessions_store(Operations.Paperwork_v2_questionSessions_store.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/next`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/next/post(paperwork.v2.question-sessions.next)`.
+    public func paperwork_v2_questionSessions_next(
+        path: Operations.Paperwork_v2_questionSessions_next.Input.Path,
+        headers: Operations.Paperwork_v2_questionSessions_next.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_questionSessions_next.Input.Body
+    ) async throws -> Operations.Paperwork_v2_questionSessions_next.Output {
+        try await paperwork_v2_questionSessions_next(Operations.Paperwork_v2_questionSessions_next.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/answers/{question}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/answers/{question}/post(paperwork.v2.question-sessions.answer)`.
+    public func paperwork_v2_questionSessions_answer(
+        path: Operations.Paperwork_v2_questionSessions_answer.Input.Path,
+        headers: Operations.Paperwork_v2_questionSessions_answer.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_questionSessions_answer.Input.Body
+    ) async throws -> Operations.Paperwork_v2_questionSessions_answer.Output {
+        try await paperwork_v2_questionSessions_answer(Operations.Paperwork_v2_questionSessions_answer.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/defer/{question}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)`.
+    public func paperwork_v2_questionSessions_defer(
+        path: Operations.Paperwork_v2_questionSessions_defer.Input.Path,
+        headers: Operations.Paperwork_v2_questionSessions_defer.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_questionSessions_defer.Input.Body
+    ) async throws -> Operations.Paperwork_v2_questionSessions_defer.Output {
+        try await paperwork_v2_questionSessions_defer(Operations.Paperwork_v2_questionSessions_defer.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/resume`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)`.
+    public func paperwork_v2_questionSessions_resume(
+        path: Operations.Paperwork_v2_questionSessions_resume.Input.Path,
+        headers: Operations.Paperwork_v2_questionSessions_resume.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_questionSessions_resume.Input.Body
+    ) async throws -> Operations.Paperwork_v2_questionSessions_resume.Output {
+        try await paperwork_v2_questionSessions_resume(Operations.Paperwork_v2_questionSessions_resume.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/relationships`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/get(paperwork.v2.relationships.index)`.
+    public func paperwork_v2_relationships_index(
+        path: Operations.Paperwork_v2_relationships_index.Input.Path,
+        headers: Operations.Paperwork_v2_relationships_index.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_relationships_index.Output {
+        try await paperwork_v2_relationships_index(Operations.Paperwork_v2_relationships_index.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/relationships`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/post(paperwork.v2.relationships.store)`.
+    public func paperwork_v2_relationships_store(
+        path: Operations.Paperwork_v2_relationships_store.Input.Path,
+        headers: Operations.Paperwork_v2_relationships_store.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_relationships_store.Input.Body
+    ) async throws -> Operations.Paperwork_v2_relationships_store.Output {
+        try await paperwork_v2_relationships_store(Operations.Paperwork_v2_relationships_store.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/people/{person}/relationships/{relationship}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/{relationship}/delete(paperwork.v2.relationships.destroy)`.
+    public func paperwork_v2_relationships_destroy(
+        path: Operations.Paperwork_v2_relationships_destroy.Input.Path,
+        headers: Operations.Paperwork_v2_relationships_destroy.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_relationships_destroy.Output {
+        try await paperwork_v2_relationships_destroy(Operations.Paperwork_v2_relationships_destroy.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/requirements/{requirement}/confirm`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirm/post(paperwork.v2.requirements.confirm)`.
+    public func paperwork_v2_requirements_confirm(
+        path: Operations.Paperwork_v2_requirements_confirm.Input.Path,
+        headers: Operations.Paperwork_v2_requirements_confirm.Input.Headers = .init(),
+        body: Operations.Paperwork_v2_requirements_confirm.Input.Body
+    ) async throws -> Operations.Paperwork_v2_requirements_confirm.Output {
+        try await paperwork_v2_requirements_confirm(Operations.Paperwork_v2_requirements_confirm.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/processes/{process}/requirements/{requirement}/confirmation`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)`.
+    public func paperwork_v2_requirements_withdraw(
+        path: Operations.Paperwork_v2_requirements_withdraw.Input.Path,
+        query: Operations.Paperwork_v2_requirements_withdraw.Input.Query,
+        headers: Operations.Paperwork_v2_requirements_withdraw.Input.Headers = .init()
+    ) async throws -> Operations.Paperwork_v2_requirements_withdraw.Output {
+        try await paperwork_v2_requirements_withdraw(Operations.Paperwork_v2_requirements_withdraw.Input(
+            path: path,
+            query: query,
+            headers: headers
         ))
     }
     /// Email and password. An account with two-step sign-in gets a challenge, not a token

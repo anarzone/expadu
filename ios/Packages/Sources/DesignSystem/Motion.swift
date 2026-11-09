@@ -72,8 +72,8 @@ public final class MotionStore {
     }
 }
 
-/// Every button's press: it sinks a touch and settles back, smoothly, no bounce. Its label learns
-/// it's held (`buttonPressed`), so a raised face can sink with it.
+/// Every button's press: it sinks a touch and settles back, smoothly, no bounce. The face's glass
+/// (`buttonFace`) lights up under the finger on its own.
 public struct PressStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.isEnabled) private var enabled
@@ -83,53 +83,20 @@ public struct PressStyle: ButtonStyle {
     public func makeBody(configuration: Configuration) -> some View {
         let down = configuration.isPressed && enabled
         configuration.label
-            .environment(\.buttonPressed, down)
-            .scaleEffect(down && !reduceMotion ? 0.96 : 1)
+            .scaleEffect(down && !reduceMotion ? 0.97 : 1)
             .animation(MotionStore.shared.animation(.press, reduceMotion: reduceMotion), value: down)
     }
 }
 
-extension EnvironmentValues {
-    /// The button around this view is held down.
-    @Entry public var buttonPressed = false
-}
-
-/// A little volume for a button's face: lit from above, a soft shadow under it. While the button is
-/// held the light dims and the shadow pulls in, so it reads as pushed down.
-public struct Raised<S: InsettableShape>: ViewModifier {
-    let shape: S
-    @Environment(\.buttonPressed) private var down
-    @Environment(\.colorScheme) private var scheme
-
-    public func body(content: Content) -> some View {
-        let dark = scheme == .dark
-        content
-            .overlay {
-                shape.fill(LinearGradient(colors: [.white.opacity(dark ? 0.08 : 0.28), .clear, .black.opacity(dark ? 0.14 : 0.05)],
-                                          startPoint: .top, endPoint: .bottom))
-                    .opacity(down ? 0.3 : 1)
-                    .allowsHitTesting(false)
-            }
-            .overlay { shape.strokeBorder(.black.opacity(dark ? 0.35 : 0.06), lineWidth: 0.5).allowsHitTesting(false) }
-            .compositingGroup()
-            .shadow(color: .black.opacity(dark ? 0.45 : (down ? 0.06 : 0.13)), radius: down ? 1 : 4, y: down ? 0.5 : 2.5)
-            .animation(.easeOut(duration: down ? 0.12 : 0.22), value: down)
-    }
-}
-
-extension View {
-    /// The button face in `shape` gets a little volume and sinks with the press.
-    public func raised<S: InsettableShape>(_ shape: S) -> some View { modifier(Raised(shape: shape)) }
-}
-
-/// A round icon button with a little volume: a domed face lit from above on a soft shadow. Pressed,
-/// it sinks: a touch smaller, the shadow pulled in, the light dimmed, with a light tick. No bounce.
-public struct RaisedStyle: ButtonStyle {
+/// An icon button as iOS 26 draws one: a rounded square of Liquid Glass whose corners follow the
+/// card around it (concentric), tinted with its face colour. Pressed, the glass lights and flexes
+/// and it sinks a touch, with a light tick.
+public struct IconTileStyle: ButtonStyle {
     private let fill: Color
     private let tint: Color
     private let size: CGFloat
+    private let glass: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.colorScheme) private var scheme
     @Environment(\.isEnabled) private var enabled
 
     /// `fill` is the face; `tint` washes over it (an added plan's green).
@@ -137,28 +104,38 @@ public struct RaisedStyle: ButtonStyle {
         self.fill = fill
         self.tint = tint
         self.size = size
+        glass = false
+    }
+
+    /// Floating over a map or a picture: the system's Liquid Glass in the same shape.
+    public init(glassSize size: CGFloat) {
+        fill = .clear
+        tint = .clear
+        self.size = size
+        glass = true
     }
 
     public func makeBody(configuration: Configuration) -> some View {
         let down = configuration.isPressed && enabled
-        let dark = scheme == .dark
+        let shape = RoundedRectangle(cornerRadius: (size * 0.3).rounded(), style: .continuous)
         configuration.label
             .frame(width: size, height: size)
-            .background {
-                Circle().fill(fill)
-                    .overlay { Circle().fill(tint) }
-                    // The dome: light from the top, a little shade at the foot.
-                    .overlay {
-                        Circle().fill(LinearGradient(colors: [.white.opacity(dark ? 0.10 : 0.55), .clear, .black.opacity(dark ? 0.18 : 0.05)],
-                                                     startPoint: .top, endPoint: .bottom))
-                            .opacity(down ? 0.35 : 1)
-                    }
-                    .overlay { Circle().strokeBorder(.black.opacity(dark ? 0.35 : 0.07), lineWidth: 0.5) }
-                    .shadow(color: .black.opacity(dark ? 0.45 : (down ? 0.06 : 0.13)), radius: down ? 1 : 4, y: down ? 0.5 : 2.5)
-            }
-            .contentShape(.circle)
-            .scaleEffect(down && !reduceMotion ? 0.92 : 1)
+            // Depth from Liquid Glass, tinted with the face's colour: lit at its edges, and it
+            // flexes and glows under the finger. No drawn gradient, no drop shadow.
+            .glassEffect(glass ? .regular.interactive() : .regular.tint(fill).interactive(), in: shape)
+            .overlay { shape.fill(tint).allowsHitTesting(false) }
+            .contentShape(shape)
+            .scaleEffect(down && !reduceMotion ? 0.94 : 1)
             .animation(.easeOut(duration: down ? 0.12 : 0.22), value: down)
             .sensoryFeedback(.impact(weight: .light, intensity: 0.5), trigger: down) { _, now in now }
+    }
+}
+
+extension View {
+    /// A text button's face, iOS 26: Liquid Glass tinted with the button's colour in a rounded
+    /// rectangle that follows its card. It catches light at its edges and flexes and glows under
+    /// the finger, which is the button's depth; no drawn gradient, no drop shadow.
+    public func buttonFace(_ color: Color, radius: CGFloat = 12) -> some View {
+        glassEffect(.regular.tint(color).interactive(), in: .rect(cornerRadius: radius, style: .continuous))
     }
 }

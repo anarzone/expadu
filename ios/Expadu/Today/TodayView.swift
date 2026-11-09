@@ -61,7 +61,7 @@ struct TodayView: View {
                         Button("Try again") { Task { await model.load(session.api) } }
                             .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
                             .padding(.horizontal, 18).frame(height: 44)
-                            .background(Palette.quiet, in: .capsule).raised(Capsule())
+                            .buttonFace(Palette.quiet)
                     }
                     .frame(maxWidth: .infinity).padding(.top, 40)
                 case .ready:
@@ -225,7 +225,7 @@ struct NoteBar: View {
                 Button("Undo") { Task { await model.undo(session.api) } }
                     .font(.geist(15, .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 14).frame(height: 36)
-                    .background(.white.opacity(0.16), in: .capsule)
+                    .background(.white.opacity(0.16), in: .rect(cornerRadius: 10, style: .continuous))
                     .contentShape(.rect.inset(by: -4))
             }
         }

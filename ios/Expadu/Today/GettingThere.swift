@@ -33,7 +33,6 @@ struct GettingThere: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            top
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     if let plan, let way {
@@ -55,7 +54,19 @@ struct GettingThere: View {
         // The one thing to do here is always on screen: it floats, the page scrolls under it.
         .overlay(alignment: .bottom) { if let way, live == nil { actions(way) } }
         .background(Palette.canvas.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
+        // Back is the system's own (glass, and the edge swipe works); swiping the sheet down closes it all.
+        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Getting there").font(.posterGrotesque(20)).tracking(-0.3).foregroundStyle(Palette.text)
+                    Text(sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                }
+                .fixedSize()
+            }
+            .sharedBackgroundVisibility(.hidden)
+        }
         .fullScreenCover(isPresented: $mapOpen) {
             if let way {
                 WayMap(to: idea.place ?? idea.title, legs: live?.legs ?? way.legs, ways: live == nil ? plan?.ways ?? [] : [],
@@ -68,7 +79,7 @@ struct GettingThere: View {
                            shell.show(.travel)
                        },
                        know: plan.map { goodToKnow($0, way) } ?? [],
-                       starts: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil)
+                       starts: idea.aimFor().map(TodayPage.clock))
                     .navigationTransition(.zoom(sourceID: "way-map", in: mapZoom))
             }
         }
@@ -82,28 +93,8 @@ struct GettingThere: View {
 
     // MARK: Top
 
-    private var top: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
-            .accessibilityLabel("Back")
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Getting there").font(.posterGrotesque(24)).tracking(-0.3).foregroundStyle(Palette.text)
-                Text(sub).font(.geist(13)).foregroundStyle(Palette.textSoft).lineLimit(1)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 10)
-        // The page scrolls under it (.go-top), never through it.
-        .background(Palette.canvas)
-        .zIndex(1)
-    }
-
     private var sub: String {
-        "To \(idea.title)" + ((idea.timed ? idea.startsAt : nil).map { " · starts \(TodayPage.clock($0))" } ?? "")
+        "To \(idea.title)" + (idea.aimFor().map { " · starts \(TodayPage.clock($0))" } ?? (idea.startsAt != nil && idea.timed ? " · on now" : ""))
     }
 
     // MARK: Content
@@ -152,16 +143,16 @@ struct GettingThere: View {
                     .frame(height: 2).padding(.horizontal, 14)
                     .background(Palette.surface)
                 VStack(alignment: .leading, spacing: 10) {
-                    if idea.timed, idea.startsAt != nil {
+                    if idea.aimFor() != nil {
                         Text(way.spareWords).font(.geist(13, .bold)).foregroundStyle(spareInk(way))
                             .padding(.horizontal, 10).frame(height: 26)
-                            .background(spareTint(way), in: .capsule)
+                            .background(spareTint(way), in: .rect(cornerRadius: 7, style: .continuous))
                     }
                     // On foot: our router's own turns.
                     if onFoot(way), let turns = way.legs.first?.turns, !turns.isEmpty {
                         TurnList(turns: turns, to: idea.place ?? idea.title)
                     } else {
-                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil))
+                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.aimFor().map(TodayPage.clock)))
                     }
                 }
                 .padding(.top, 14).padding(.horizontal, 18).padding(.bottom, 14)
@@ -238,7 +229,7 @@ struct GettingThere: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Leave \(way.leaveTime)").font(.geist(16, .bold)).foregroundStyle(Palette.text).monospacedDigit()
                             .contentTransition(.numericText())
-                        Text(way.spareWords).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                        Text(idea.aimFor() == nil ? "There \(way.arriveTime)" : way.spareWords).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                     }
                     .minimumScaleFactor(0.8)
                     .padding(.leading, 14)
@@ -251,13 +242,13 @@ struct GettingThere: View {
                         .font(.geist(17, .semibold)).foregroundStyle(.white)
                         .fixedSize()
                         .padding(.horizontal, 20).frame(height: 50)
-                        .background(Palette.action, in: .capsule).raised(Capsule())
+                        .buttonFace(Palette.action)
                     }
                     .buttonStyle(PressStyle())
                     .disabled(starting)
                 }
                 .padding(6)
-                .glassEffect(.regular, in: .capsule)
+                .glassEffect(.regular, in: .rect(cornerRadius: 28, style: .continuous))
                 .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
                 .animation(.easeInOut(duration: 0.3), value: way.leaveTime)
             }

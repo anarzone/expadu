@@ -42,7 +42,7 @@ let package = Package(
             ],
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
-        .testTarget(name: "CoreTests", dependencies: ["Core"]),
+        .testTarget(name: "CoreTests", dependencies: ["Core"], resources: [.copy("Fixtures")]),
         .testTarget(name: "APITests", dependencies: ["API"]),
     ]
 )

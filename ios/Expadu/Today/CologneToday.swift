@@ -162,7 +162,7 @@ struct PaperworkCard: View {
                         }
                         .frame(width: 58, height: 58)
                     } else {
-                        Image(systemName: "doc.text.fill").font(.system(size: 20)).frame(width: 58, height: 58).background(Palette.quiet, in: .circle)
+                        Image(systemName: "doc.text.fill").font(.system(size: 20)).frame(width: 58, height: 58).background(Palette.quiet, in: .rect(cornerRadius: 16, style: .continuous))
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         if let paperwork {
@@ -322,7 +322,7 @@ struct CityLinks: View {
                             Label(link.name, systemImage: link.symbol).labelStyle(Tight())
                                 .font(.geist(13.5, .semibold)).foregroundStyle(TodayLink.ink)
                                 .padding(.horizontal, 12).frame(height: 34)
-                                .background(Palette.quiet, in: .capsule).raised(Capsule())
+                                .buttonFace(Palette.quiet)
                         }
                         .buttonStyle(PressStyle())
                     }

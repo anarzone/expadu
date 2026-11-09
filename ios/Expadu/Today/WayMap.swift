@@ -115,13 +115,13 @@ struct WayMap: View {
                         .foregroundStyle(speak ? Palette.action : Palette.text)
                         .contentTransition(.symbolEffect(.replace))
                 }
-                .buttonStyle(RaisedStyle(fill: Palette.surface, size: 48))
+                .buttonStyle(IconTileStyle(glassSize: 48))
                 .accessibilityLabel(speak ? "Stop speaking turns" : "Speak turns")
                 Button { following.toggle(); if !following { focus = nil; whole += 1 } } label: {
                     Image(systemName: following ? "location.north.line.fill" : "location").font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(following ? Color(hex: 0x2F6FD0) : Palette.text)
                 }
-                .buttonStyle(RaisedStyle(fill: Palette.surface, size: 48))
+                .buttonStyle(IconTileStyle(glassSize: 48))
                 .accessibilityLabel(following ? "Show the whole way" : "Follow me")
             }
         }
@@ -146,13 +146,13 @@ struct WayMap: View {
                     Button { close() } label: {
                         Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Palette.textSoft)
                     }
-                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 36))
+                    .buttonStyle(IconTileStyle(fill: Palette.surface, size: 36))
                     .accessibilityLabel("Close the map")
                 }
                 if let now = nowWords {
                     HStack(spacing: 8) {
                         Text("Now").font(.geist(12, .bold)).foregroundStyle(.white)
-                            .padding(.horizontal, 8).frame(height: 22).background(Motion.green, in: .capsule)
+                            .padding(.horizontal, 8).frame(height: 22).background(Motion.green, in: .rect(cornerRadius: 6, style: .continuous))
                         Text(now).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
                     }
                 }
@@ -164,7 +164,7 @@ struct WayMap: View {
                         }
                         .font(.geist(17, .semibold)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 50)
-                        .background(Palette.action, in: .capsule).raised(Capsule())
+                        .buttonFace(Palette.action)
                     }
                     .buttonStyle(PressStyle())
                     .disabled(starting)
@@ -229,7 +229,7 @@ struct WayMap: View {
         }
         .frame(maxWidth: .infinity).frame(height: 62)
         .background(Palette.surface, in: .rect(cornerRadius: 16))
-        .raised(RoundedRectangle(cornerRadius: 16))
+        
     }
 
     private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
@@ -268,7 +268,7 @@ struct WayMap: View {
     /// "Leave 16:45 · there 16:55 · 5 min spare"; while guiding, when they'll be there.
     private var summary: String {
         if let trip = guiding?.trip { return "There at \(trip.legs.last?.arriveTime ?? trip.arriveTime ?? "")" }
-        if let way { return "Leave \(way.leaveTime) · there \(way.arriveTime) · \(way.spareWords)" }
+        if let way { return "Leave \(way.leaveTime) · there \(way.arriveTime)" + (starts == nil ? "" : " · \(way.spareWords)") }
         guard let first = legs.first, let last = legs.last else { return "" }
         return "Leave \(first.departTime) · there \(last.arriveTime)"
     }
@@ -301,7 +301,7 @@ struct WayMap: View {
                         .frame(width: 34)
                         VStack(alignment: .leading, spacing: 1) {
                             Text("Leave \(other.leaveTime)").font(.geist(15, .semibold)).foregroundStyle(Palette.text).monospacedDigit()
-                            Text(other.spareWords).font(.geist(12.5)).foregroundStyle(other.spareMinutes < 0 ? Palette.conflictText : Palette.textSoft)
+                            Text(starts == nil ? "There \(other.arriveTime)" : other.spareWords).font(.geist(12.5)).foregroundStyle(other.spareMinutes < 0 ? Palette.conflictText : Palette.textSoft)
                         }
                         Spacer(minLength: 0)
                         Text("\(other.minutes) min").font(.geist(15, .semibold)).foregroundStyle(Palette.text).monospacedDigit()
@@ -342,8 +342,9 @@ struct WayMap: View {
     }
 }
 
-/// The way as one bar, each part as long as it takes (Citymapper's): rides in their line's colour
-/// with the line on them, walking dotted. Tap a part and the map flies to it; tap again for all.
+/// The way as one bar, each part as long as it takes (Citymapper's): rides solid in their line's
+/// colour with the line on them, walking a soft fill of its ink. Rounded only at the bar's two ends;
+/// the part you're on is marked by a green line under it. Tap a part and the map flies to it.
 struct RouteBar: View {
     let legs: [TodayPage.Trip.Leg]
     @Binding var focus: Int?
@@ -364,7 +365,7 @@ struct RouteBar: View {
                             let on = focus == index
                             focus = on ? nil : index
                             tapped(!on)
-                        } label: { part(leg, index: index).frame(width: width) }
+                        } label: { part(leg, index: index, count: legs.count).frame(width: width) }
                         .buttonStyle(PressStyle())
                         .accessibilityLabel(WayMap.words(leg))
                         .accessibilityHint(focus == index ? "Shows the whole way" : "Shows this part on the map")
@@ -372,7 +373,7 @@ struct RouteBar: View {
                     }
                 }
             }
-            .frame(height: 30)
+            .frame(height: 36)
             // When each part starts, under it.
             HStack(spacing: 0) {
                 Text(legs.first?.departTime ?? "")
@@ -385,19 +386,24 @@ struct RouteBar: View {
     }
 
     @ViewBuilder
-    private func part(_ leg: TodayPage.Trip.Leg, index: Int) -> some View {
+    private func part(_ leg: TodayPage.Trip.Leg, index: Int, count: Int) -> some View {
         let dim = focus != nil && focus != index
         let colour = WayMap.colour(leg)
+        let outer: CGFloat = 10, inner: CGFloat = 3
+        let shape = UnevenRoundedRectangle(topLeadingRadius: index == 0 ? outer : inner, bottomLeadingRadius: index == 0 ? outer : inner,
+                                           bottomTrailingRadius: index == count - 1 ? outer : inner, topTrailingRadius: index == count - 1 ? outer : inner,
+                                           style: .continuous)
+        VStack(spacing: 3) {
         ZStack {
             if leg.rides {
-                Capsule().fill(colour)
+                shape.fill(colour)
                 HStack(spacing: 4) {
                     Image(systemName: WayMap.symbol(leg)).font(.system(size: 11, weight: .bold))
                     Text(leg.line.map { Board.badge($0) } ?? "").font(.geist(13, .bold)).lineLimit(1)
                 }
                 .foregroundStyle(.white).padding(.horizontal, 6)
             } else {
-                Capsule().strokeBorder(colour.opacity(0.55), style: StrokeStyle(lineWidth: 2, dash: [3, 3]))
+                shape.fill(colour.opacity(0.14))
                 HStack(spacing: 2) {
                     Image(systemName: WayMap.symbol(leg)).font(.system(size: 11, weight: .bold))
                     Text("\(leg.minutes)").font(.geist(12, .semibold)).monospacedDigit()
@@ -406,7 +412,9 @@ struct RouteBar: View {
             }
         }
         .frame(height: 30)
-        .overlay { if current == index { Capsule().strokeBorder(Motion.green, lineWidth: 2.5).padding(-3) } }
+            // Where you are: a short green line under that part.
+            RoundedRectangle(cornerRadius: 1.5).fill(current == index ? Motion.green : .clear).frame(height: 3)
+        }
         .opacity(dim ? 0.35 : 1)
     }
 }
