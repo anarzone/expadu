@@ -304,9 +304,9 @@ struct LineTrouble: View {
                     if pushed {
                         Button { dismiss() } label: {
                             Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                                .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
+                                .frame(width: 44, height: 44)
                         }
-                        .buttonStyle(PressStyle())
+                        .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
                         .accessibilityLabel("Back to Alerts")
                     }
                     LineBadge(line: line, color: need.color, height: 30)
@@ -423,9 +423,8 @@ struct CloseButton: View {
         Button(action: action) {
             Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                 .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: .circle)
         }
-        .buttonStyle(PressStyle())
+        .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
         .accessibilityLabel("Close")
     }
 }

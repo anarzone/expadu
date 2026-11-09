@@ -87,9 +87,8 @@ struct WhatsOnSheet: View {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                             .frame(width: 44, height: 44)
-                            .glassEffect(.regular.interactive(), in: .circle)
                     }
-                    .buttonStyle(PressStyle())
+                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
                     .accessibilityLabel("Close")
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -182,15 +181,13 @@ struct WhatsOnSheet: View {
 
     private func toggle(_ symbol: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
         Button {
-            withAnimation(.spring(duration: 0.35, bounce: 0.3)) { action() }
+            withAnimation(.easeInOut(duration: 0.3)) { action() }
         } label: {
             Image(systemName: symbol).font(.system(size: 17, weight: .medium))
                 .foregroundStyle(on ? Color(light: 0x005F70, dark: 0x73D3E2) : Palette.text)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 44, height: 44)
-                .background(on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : Palette.quiet, in: .circle)
         }
-        .buttonStyle(PressStyle())
+        .buttonStyle(RaisedStyle(fill: on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : Palette.surface, size: 44))
         .accessibilityLabel(label)
         .accessibilityAddTraits(on ? [.isSelected] : [])
         .sensoryFeedback(.selection, trigger: on)
@@ -300,7 +297,7 @@ struct WhatsOnSheet: View {
                     Button("Undo") { undoHide() }
                         .font(.geist(14, .bold)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 14).frame(height: 32)
-                        .background(Palette.surface, in: .capsule)
+                        .background(Palette.surface, in: .capsule).raised(Capsule())
                         .overlay { Capsule().strokeBorder(Palette.border) }
                 }
                 .foregroundStyle(Palette.text)
@@ -364,7 +361,7 @@ struct WhatsOnSheet: View {
                     Button { query = word.lowercased() } label: {
                         Text(word).font(.geist(15, .medium)).foregroundStyle(Palette.text)
                             .padding(.horizontal, 14).frame(height: 36)
-                            .background(Palette.surface, in: .capsule)
+                            .background(Palette.surface, in: .capsule).raised(Capsule())
                             .overlay { Capsule().strokeBorder(Palette.border) }
                     }
                     .buttonStyle(PressStyle())

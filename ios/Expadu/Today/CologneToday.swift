@@ -293,7 +293,7 @@ struct CityLinks: View {
                             Label(link.name, systemImage: link.symbol).labelStyle(Tight())
                                 .font(.geist(13.5, .semibold)).foregroundStyle(TodayLink.ink)
                                 .padding(.horizontal, 12).frame(height: 34)
-                                .background(Palette.quiet, in: .capsule)
+                                .background(Palette.quiet, in: .capsule).raised(Capsule())
                         }
                         .buttonStyle(PressStyle())
                     }

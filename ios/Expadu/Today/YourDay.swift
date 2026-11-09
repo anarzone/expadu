@@ -84,7 +84,7 @@ struct EmptyDay: View {
                 Button { shell.show(.travel) } label: {
                     Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .capsule)
+                        .background(Palette.quiet, in: .capsule).raised(Capsule())
                 }
                 .buttonStyle(PressStyle())
             }
@@ -504,7 +504,7 @@ struct LeaveCard: View {
                     }
                     .font(.geist(15, .semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(Palette.action, in: .capsule)
+                    .background(Palette.action, in: .capsule).raised(Capsule())
                     .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -513,7 +513,7 @@ struct LeaveCard: View {
                     Label("Other ways", systemImage: "arrow.triangle.branch")
                         .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .capsule)
+                        .background(Palette.quiet, in: .capsule).raised(Capsule())
                         .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -739,9 +739,9 @@ struct NearbyMap: View {
         .overlay(alignment: .topTrailing) {
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                    .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
+                    .frame(width: 44, height: 44)
             }
-            .buttonStyle(PressStyle())
+            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .padding(16)
             .accessibilityLabel("Close")
         }
@@ -826,9 +826,9 @@ struct AddPlanSheet: View {
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))
-                        .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
+                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(PressStyle())
+                .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
                 .accessibilityLabel("Close")
             }
             .foregroundStyle(Palette.text)
@@ -857,7 +857,7 @@ struct AddPlanSheet: View {
                 .font(.geist(16, .semibold))
                 .foregroundStyle(ready ? .white : Palette.textSoft)
                 .frame(maxWidth: .infinity).frame(height: 52)
-                .background(ready ? Palette.action : Palette.quiet, in: .capsule)
+                .background(ready ? Palette.action : Palette.quiet, in: .capsule).raised(Capsule())
             }
             .buttonStyle(PressStyle())
             .disabled(!ready || saving)

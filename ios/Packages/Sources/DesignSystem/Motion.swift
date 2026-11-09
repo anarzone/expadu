@@ -37,7 +37,7 @@ public enum MotionToken: String, CaseIterable, Identifiable, Codable, Sendable {
             ]
         case .press:
             [
-                MotionVariant("Mock", .timingCurve(0.22, 1, 0.36, 1, duration: 0.16)),
+                MotionVariant("Sink", .easeOut(duration: 0.16)),
                 MotionVariant("Off", nil),
             ]
         }
@@ -72,17 +72,54 @@ public final class MotionStore {
     }
 }
 
-/// The mock's press: 0.97, on the settle curve.
+/// Every button's press: it sinks a touch and settles back, smoothly, no bounce. Its label learns
+/// it's held (`buttonPressed`), so a raised face can sink with it.
 public struct PressStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var enabled
 
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
+        let down = configuration.isPressed && enabled
         configuration.label
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
-            .animation(MotionStore.shared.animation(.press, reduceMotion: reduceMotion), value: configuration.isPressed)
+            .environment(\.buttonPressed, down)
+            .scaleEffect(down && !reduceMotion ? 0.96 : 1)
+            .animation(MotionStore.shared.animation(.press, reduceMotion: reduceMotion), value: down)
     }
+}
+
+extension EnvironmentValues {
+    /// The button around this view is held down.
+    @Entry public var buttonPressed = false
+}
+
+/// A little volume for a button's face: lit from above, a soft shadow under it. While the button is
+/// held the light dims and the shadow pulls in, so it reads as pushed down.
+public struct Raised<S: InsettableShape>: ViewModifier {
+    let shape: S
+    @Environment(\.buttonPressed) private var down
+    @Environment(\.colorScheme) private var scheme
+
+    public func body(content: Content) -> some View {
+        let dark = scheme == .dark
+        content
+            .overlay {
+                shape.fill(LinearGradient(colors: [.white.opacity(dark ? 0.08 : 0.28), .clear, .black.opacity(dark ? 0.14 : 0.05)],
+                                          startPoint: .top, endPoint: .bottom))
+                    .opacity(down ? 0.3 : 1)
+                    .allowsHitTesting(false)
+            }
+            .overlay { shape.strokeBorder(.black.opacity(dark ? 0.35 : 0.06), lineWidth: 0.5).allowsHitTesting(false) }
+            .compositingGroup()
+            .shadow(color: .black.opacity(dark ? 0.45 : (down ? 0.06 : 0.13)), radius: down ? 1 : 4, y: down ? 0.5 : 2.5)
+            .animation(.easeOut(duration: down ? 0.12 : 0.22), value: down)
+    }
+}
+
+extension View {
+    /// The button face in `shape` gets a little volume and sinks with the press.
+    public func raised<S: InsettableShape>(_ shape: S) -> some View { modifier(Raised(shape: shape)) }
 }
 
 /// A round icon button with a little volume: a domed face lit from above on a soft shadow. Pressed,

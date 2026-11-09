@@ -75,9 +75,8 @@ struct GettingThere: View {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
                     .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
             }
-            .buttonStyle(PressStyle())
+            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Back")
             VStack(alignment: .leading, spacing: 2) {
                 Text("Getting there").font(.posterGrotesque(24)).tracking(-0.3).foregroundStyle(Palette.text)
@@ -221,7 +220,7 @@ struct GettingThere: View {
                 }
                 .font(.geist(17, .semibold)).foregroundStyle(.white)
                 .frame(maxWidth: .infinity).frame(height: 50)
-                .background(Palette.action, in: .capsule)
+                .background(Palette.action, in: .capsule).raised(Capsule())
             }
             .buttonStyle(PressStyle())
             .disabled(starting)

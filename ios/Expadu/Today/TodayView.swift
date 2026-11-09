@@ -61,7 +61,7 @@ struct TodayView: View {
                         Button("Try again") { Task { await model.load(session.api) } }
                             .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
                             .padding(.horizontal, 18).frame(height: 44)
-                            .background(Palette.quiet, in: .capsule)
+                            .background(Palette.quiet, in: .capsule).raised(Capsule())
                     }
                     .frame(maxWidth: .infinity).padding(.top, 40)
                 case .ready:

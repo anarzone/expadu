@@ -91,6 +91,8 @@ struct EventDetail: View {
             .padding(.horizontal, 16).padding(.bottom, 128)
         }
         .scrollIndicators(.hidden)
+        // The poster runs to the top; no system fade over it.
+        .scrollEdgeEffectHidden(true, for: .top)
         .ignoresSafeArea(edges: .top)
         .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 250 } action: { _, on in
             withAnimation(Motion.ios(0.3)) { bar = on }
@@ -125,28 +127,38 @@ struct EventDetail: View {
         .allowsHitTesting(false)
     }
 
-    /// Back, share and save as the toolbar's own glass circles: the navigation bar is the top layer
-    /// even when it shows nothing, so buttons drawn under it never got the back tap.
+    /// Back, share and save in the toolbar (the navigation bar is the top layer even when it shows
+    /// nothing, so buttons drawn under it never got the tap), as raised circles of their own.
     @ToolbarContentBuilder
     private var buttons: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button(action: back) {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
             }
+            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Back to What's on")
         }
-        ToolbarItemGroup(placement: .topBarTrailing) {
+        .sharedBackgroundVisibility(.hidden)
+        ToolbarItem(placement: .topBarTrailing) {
             ShareLink(item: listing.source ?? URL(string: "https://expadu.com")!, subject: Text(idea.title), message: Text(shareLine)) {
                 Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
             }
+            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Share")
+        }
+        .sharedBackgroundVisibility(.hidden)
+        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+        ToolbarItem(placement: .topBarTrailing) {
             Button { save(listing) } label: {
                 FillingBookmark(filled: idea.saved, size: 18, weight: .semibold)
                     .foregroundStyle(WhatsOnLook.saveInk)
             }
+            .buttonStyle(RaisedStyle(fill: idea.saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, size: 44))
+            .animation(.easeInOut(duration: 0.45), value: idea.saved)
             .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
             .sensoryFeedback(.selection, trigger: idea.saved)
         }
+        .sharedBackgroundVisibility(.hidden)
     }
 
     private var shareLine: String {
@@ -359,7 +371,7 @@ struct EventDetail: View {
                     .foregroundStyle(added ? Color(hex: 0xA9320B) : .white)
                     .contentTransition(.interpolate)
                     .padding(.horizontal, 24).frame(height: 50)
-                    .background(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E), in: .capsule)
+                    .background(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E), in: .capsule).raised(Capsule())
             }
             .buttonStyle(PressStyle())
             .disabled(added || idea.candidate.isEmpty)

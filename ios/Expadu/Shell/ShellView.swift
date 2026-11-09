@@ -272,7 +272,7 @@ struct AskComposerLabel: View {
             }
             .font(.geist(16, .semibold)).foregroundStyle(.white)
             .frame(maxWidth: .infinity).frame(height: height)
-            .background(ComposerLook.ink, in: .capsule)
+            .background(ComposerLook.ink, in: .capsule).raised(Capsule())
             .overlay { Capsule().strokeBorder(ComposerLook.ring(turn: turn), lineWidth: 2.5) }
         }
     }
@@ -443,7 +443,6 @@ private struct ShellHeader: View {
             Button { alertsOpen = true } label: {
                 Image(systemName: "bell.fill").font(.system(size: 18, weight: .medium))
                     .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
                     .overlay(alignment: .topTrailing) {
                         if today.alerts > 0 {
                             Text("\(today.alerts)")
@@ -456,7 +455,7 @@ private struct ShellHeader: View {
                         }
                     }
             }
-            .buttonStyle(PressStyle())
+            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel(today.alerts > 0 ? "Alerts, \(today.alerts)" : "Alerts")
             AccountButton()
         }

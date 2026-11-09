@@ -216,7 +216,7 @@ struct LiveTrip: View {
             Label(title, systemImage: symbol).labelStyle(Tight())
                 .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                 .padding(.horizontal, 14).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
-                .background(Palette.quiet, in: .capsule)
+                .background(Palette.quiet, in: .capsule).raised(Capsule())
                 .contentShape(.capsule)
         }
         .buttonStyle(PressStyle())
@@ -389,14 +389,16 @@ struct WayMap: View {
                         Image(systemName: speak ? "speaker.wave.2.fill" : "speaker.slash.fill").font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(speak ? Palette.action : Palette.text)
                             .contentTransition(.symbolEffect(.replace))
-                            .frame(width: 48, height: 48).glassEffect(.regular.interactive(), in: .circle)
+                            .frame(width: 48, height: 48)
                     }
+                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 48))
                     .accessibilityLabel(speak ? "Stop speaking turns" : "Speak turns")
                     Button { following.toggle() } label: {
                         Image(systemName: following ? "location.north.line.fill" : "location").font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(following ? Color(hex: 0x2F6FD0) : Palette.text)
-                            .frame(width: 48, height: 48).glassEffect(.regular.interactive(), in: .circle)
+                            .frame(width: 48, height: 48)
                     }
+                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 48))
                     .accessibilityLabel(following ? "Show the whole way" : "Follow me")
                 }
                 .buttonStyle(PressStyle())
@@ -452,9 +454,8 @@ struct OtherWaysSheet: View {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                             .frame(width: 44, height: 44)
-                            .glassEffect(.regular.interactive(), in: .circle)
                     }
-                    .buttonStyle(PressStyle())
+                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
                     .accessibilityLabel("Close")
                 }
                 ForEach(Array(leave.ways.enumerated()), id: \.element.id) { index, way in
@@ -514,7 +515,7 @@ struct OtherWaysSheet: View {
                             }
                             .font(.geist(15, .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 44)
-                            .background(Palette.action, in: .capsule)
+                            .background(Palette.action, in: .capsule).raised(Capsule())
                             .contentShape(.capsule)
                         }
                         .buttonStyle(PressStyle())
