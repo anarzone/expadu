@@ -57,7 +57,7 @@ struct LiveTrip: View {
                     HStack(spacing: 5) {
                         Circle().fill(Motion.green).frame(width: 7, height: 7)
                             .background { Circle().fill(Motion.green.opacity(0.25)).scaleEffect(pulse ? 2.4 : 1).opacity(pulse ? 0 : 1) }
-                        Text("On your way · live").font(.geist(13.5, .bold))
+                        Text(live.waiting ? "Trip set" : "On your way · live").font(.geist(13.5, .bold)).lineLimit(1)
                     }
                     .foregroundStyle(Motion.green)
                     Spacer(minLength: 0)
@@ -95,12 +95,14 @@ struct LiveTrip: View {
                     .accessibilityAction(named: "Previous step") { look(by: -1, from: live.index, current: live.current, count: all.count) }
                     .accessibilityAction(named: steps ? "Hide steps" : "All steps") { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
                 // On foot: the next turn, by where the phone is on our router's way.
-                if picked == nil, let here, let turn = here.turn, !here.offRoute {
+                if picked == nil, !live.waiting, let here, let turn = here.turn, !here.offRoute {
                     TurnRow(turn: turn, metres: here.metresToTurn)
                         .padding(.top, 12)
                         .transition(.opacity.combined(with: .offset(y: -6)))
                 }
-                if let here, let missed = here.missed {
+                if live.waiting {
+                    EmptyView()
+                } else if let here, let missed = here.missed {
                     TripTrouble(text: "\(missed.name) at \(missed.departTime) has left.", busy: replanning) { replan() }
                         .padding(.top, 12).transition(.opacity)
                 } else if let here, here.offRoute, let since = follow.offSince, timeline.date.timeIntervalSince(since) > 15 {
@@ -199,6 +201,7 @@ struct LiveTrip: View {
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 4) {
                 Text(live.big).font(.posterGrotesque(28)).monospacedDigit().foregroundStyle(colour)
+                    .lineLimit(1).minimumScaleFactor(0.6)
                     .contentTransition(.numericText(countsDown: true))
                 Text(live.bigNote).font(.geist(12, .semibold)).foregroundStyle(Palette.textSoft)
             }

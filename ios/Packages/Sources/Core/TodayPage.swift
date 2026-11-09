@@ -369,6 +369,14 @@ public struct TodayPage: Equatable, Sendable {
         /// The live card at this moment: the step they're on by the clock, or the one tapped.
         public func live(at date: Date, picked: Int? = nil, guided: Int? = nil) -> Live {
             let steps = steps
+            // Started well before leaving (from an event's Getting there): the card waits for the
+            // leave time instead of saying "walk now" hours early.
+            if picked == nil, (guided ?? 0) == 0, let first = steps.first, first.at.timeIntervalSince(date) > 60 {
+                let ride = steps.first { $0.kind == .ride }
+                return Live(index: 0, current: 0, label: "Leave at \(first.time)", step: first,
+                            big: Self.span(first.at.timeIntervalSince(date)),
+                            bigNote: ride.map { "\($0.name) at \($0.time)" } ?? "there at \(steps[steps.count - 1].time)", waiting: true)
+            }
             // On foot the phone says where they are (walking pace varies); on a ride the timetable
             // does, unless the phone is already further on. Without the phone, the clock.
             let clock = Self.current(steps, at: date)
@@ -393,6 +401,12 @@ public struct TodayPage: Equatable, Sendable {
             return Live(index: k, current: current,
                         label: last ? "Arrived" : k == 0 ? "Now" : "Step \(k + 1) of \(steps.count)",
                         step: step, big: last ? "There" : "\(minutes) min", bigNote: note)
+        }
+
+        /// "28 min", "2 h 28 min".
+        static func span(_ seconds: TimeInterval) -> String {
+            let minutes = max(1, Int((seconds / 60).rounded(.up)))
+            return minutes < 60 ? "\(minutes) min" : minutes % 60 == 0 ? "\(minutes / 60) h" : "\(minutes / 60) h \(minutes % 60) min"
         }
 
         /// The last step whose time has come; the first before any has.
@@ -522,6 +536,8 @@ public struct TodayPage: Equatable, Sendable {
         public let step: Step
         public let big: String
         public let bigNote: String
+        /// Started early: nothing to do until the leave time, so no step is "now" yet.
+        public var waiting = false
     }
 
     /// Paperwork's most urgent date.
@@ -840,13 +856,14 @@ public struct TodayPage: Equatable, Sendable {
     public enum Lead: Equatable, Sendable { case day, ideas, paperwork }
 
     public var lead: Lead {
-        if !ahead.isEmpty { return .day }
+        // A trip under way, or one they're about to leave for, is the day.
+        if !ahead.isEmpty || trip != nil || leave != nil { return .day }
         return welcome || (ideas.isEmpty && free == nil) ? .paperwork : .ideas
     }
 
     /// What keeps the lead steady: it moves only when plans or whether there are ideas change, never on the clock.
     public var leadKey: String {
-        plans.map { "\($0.id):\($0.completed)" }.joined(separator: "|") + "#\(!ideas.isEmpty || free != nil)#\(welcome)"
+        plans.map { "\($0.id):\($0.completed)" }.joined(separator: "|") + "#\(!ideas.isEmpty || free != nil)#\(welcome)#\(trip?.to ?? "")#\(leave != nil)"
     }
     public let weather: Weather?
     public let plans: [Plan]
@@ -920,10 +937,18 @@ public struct TodayPage: Equatable, Sendable {
     /// their part of the day begins, "Nothing in your plan yet" with none left; tomorrow, its day.
     public var ideasLead: String? {
         if ideasPart == "tomorrow" { return tomorrowDate.flatMap { Self.day($0, format: "EEEE") } }
+        if ahead.isEmpty, let leave = tripLeave { return "Before you leave at \(leave.time)" }
+        if ahead.isEmpty, trip != nil { return nil }
         guard let last = ahead.last else { return "Nothing in your plan yet" }
         let begins = ["morning": "06:00", "afternoon": "12:00", "evening": "17:00", "night": "21:00"][ideasPart]
         guard let begins, let ends = last.end ?? last.start, ends <= begins else { return nil }
         return "After \(last.title)"
+    }
+
+    /// The trip they've set but not left for yet: when it leaves, and where to.
+    public var tripLeave: (time: String, to: String)? {
+        guard let trip, let first = trip.legs.first, first.departAt.timeIntervalSince(now) > 60 else { return nil }
+        return (first.departTime, trip.to)
     }
 
     /// The plans still ahead today, in order.
@@ -941,6 +966,10 @@ public struct TodayPage: Equatable, Sendable {
     /// The free time the places are for: "3 hours free · 15:00–18:00", or "Free from 15:00".
     public var freeLine: String? {
         guard let free else { return nil }
+        // A trip set for later: the time is theirs until they leave.
+        if let leave = tripLeave, let minutes = Self.minutes(from: free.anchorEnd ?? free.at, to: leave.time), minutes > 0 {
+            return "\(Trip.span(Double(minutes) * 60)) free · until you leave at \(leave.time)"
+        }
         let from = free.anchorEnd ?? free.at
         let next = ahead.compactMap(\.start).sorted().first { $0 > from }
         guard let next, let minutes = Self.minutes(from: from, to: next), minutes >= 60 else { return "Free from \(from)" }

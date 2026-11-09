@@ -157,6 +157,15 @@ struct GuideTests {
         #expect(walking.current == 0)
     }
 
+    @Test func startedHoursEarlyTheCardWaitsForTheLeaveTime() {
+        let early = trip.live(at: start.addingTimeInterval(-2 * 3600 - 28 * 60))
+        #expect(early.waiting)
+        #expect(early.big == "2 h 28 min")
+        #expect(early.bigNote == "Tram 18 at 15:03")
+        // At the leave time it's the walk, now.
+        #expect(trip.live(at: start).waiting == false)
+    }
+
     @Test func theIslandWaitsAtTheStopUntilTheRideLeaves() {
         // At the stop, on the tram's line, a minute before it leaves.
         let atStop = Guide(trip: trip).position(of: .init(latitude: 50.9370, longitude: 6.9460), at: start.addingTimeInterval(120), after: 1)

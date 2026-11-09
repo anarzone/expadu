@@ -30,14 +30,19 @@ struct YourDay: View {
                 }
                 .frame(height: 22).padding(.bottom, 6)
                 // A trip to something that isn't a plan (an event's Getting there) goes at now, not under a plan.
-                if let trip = page.trip, !page.ahead.contains(where: { $0.title == trip.to }) {
+                let tripHere = page.trip.flatMap { trip in page.ahead.contains(where: { $0.title == trip.to }) ? nil : trip }
+                if let trip = tripHere {
                     LiveTrip(trip: trip).padding(.bottom, 14)
                         .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
                                                 removal: .opacity.combined(with: .offset(y: -10)).combined(with: .scale(scale: 0.97))))
                 }
                 if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
-                if page.free?.anchorTitle == nil, let free = page.free { FreeTime(page: page, free: free) }
-                if page.ahead.isEmpty {
+                // Free time is before they leave; once on the way it isn't theirs to fill.
+                if page.free?.anchorTitle == nil, let free = page.free, tripHere == nil || page.tripLeave != nil { FreeTime(page: page, free: free) }
+                if let trip = tripHere {
+                    // Where the day is going: the trip's own destination, as a stop on the line.
+                    TripEnd(trip: trip).padding(.bottom, 12)
+                } else if page.ahead.isEmpty {
                     EmptyDay(page: page).padding(.top, 4).padding(.bottom, 12)
                 }
                 ForEach(Array(page.ahead.enumerated()), id: \.element.id) { index, plan in
@@ -61,6 +66,24 @@ struct YourDay: View {
     }
 
     static let line = Color(hex: 0xE6421F)
+}
+
+/// The destination of a trip that isn't a plan (an event's Getting there): its time and name.
+struct TripEnd: View {
+    let trip: TodayPage.Trip
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(trip.startTime ?? trip.arriveTime ?? "").font(.posterGrotesque(20)).foregroundStyle(Palette.text).monospacedDigit()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(trip.to).font(.geist(16, .semibold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+                if let there = trip.arriveTime {
+                    Text(trip.startTime == nil ? "You’re there" : "Starts · you’re there at \(there)").font(.geist(13)).foregroundStyle(Palette.textSoft)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
 }
 
 /// A day with nothing ahead (the canvas's .ln-empty): what that means now, and two ways on.
