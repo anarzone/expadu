@@ -106,11 +106,9 @@ struct IdeaRow: View {
                     // Saved: the bookmark fills, in a quiet circle (.id-btn.on).
                     FillingBookmark(filled: idea.saved, size: 16, weight: .semibold)
                         .foregroundStyle(idea.saved ? Palette.text : Palette.textSoft)
-                        .frame(width: 36, height: 36)
-                        .background(Palette.quiet.opacity(idea.saved ? 1 : 0), in: .circle)
-                        .frame(width: 36, height: 36).contentShape(.circle)
                 }
-                .buttonStyle(PressStyle())
+                .buttonStyle(RaisedStyle(fill: idea.saved ? Palette.quiet : Palette.surface, size: 38))
+                .animation(.easeInOut(duration: 0.45), value: idea.saved)
                 .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
                 .sensoryFeedback(.selection, trigger: idea.saved)
                 AddButton(candidate: idea.candidate, date: idea.tomorrow ? (tomorrow ?? date) : date, title: idea.title)

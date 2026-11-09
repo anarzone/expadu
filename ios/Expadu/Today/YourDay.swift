@@ -939,11 +939,9 @@ struct AddButton: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(added ? Motion.green : Palette.action)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 36, height: 36)
-                .background(Motion.green.opacity(added ? 0.14 : 0), in: .circle)
-                .contentShape(.circle)
         }
-        .buttonStyle(PressStyle())
+        .buttonStyle(RaisedStyle(fill: Palette.surface, tint: Motion.green.opacity(added ? 0.14 : 0), size: 38))
+        .animation(.easeInOut(duration: 0.35), value: added)
         .disabled(added || candidate.isEmpty)
         .accessibilityLabel(added ? "\(title) is in your plan" : "Add \(title) to your plan")
         .sensoryFeedback(.success, trigger: added)

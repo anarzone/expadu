@@ -513,11 +513,8 @@ struct SaveButton: View {
         Button { save(listing) } label: {
             FillingBookmark(filled: saved, size: 17, weight: .medium)
                 .foregroundStyle(WhatsOnLook.saveInk)
-                .frame(width: 44, height: 44)
-                .background(saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, in: .circle)
-                .overlay { Circle().strokeBorder(saved ? Color(light: 0xD9C9EF, dark: 0x4A3A66) : Palette.border) }
         }
-        .buttonStyle(PressStyle())
+        .buttonStyle(RaisedStyle(fill: saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, size: 44))
         .accessibilityLabel(saved ? "Saved: \(listing.idea.title)" : "Save \(listing.idea.title)")
         .sensoryFeedback(.selection, trigger: saved)
     }

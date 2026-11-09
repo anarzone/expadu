@@ -84,3 +84,44 @@ public struct PressStyle: ButtonStyle {
             .animation(MotionStore.shared.animation(.press, reduceMotion: reduceMotion), value: configuration.isPressed)
     }
 }
+
+/// A round icon button with a little volume: a domed face lit from above on a soft shadow. Pressed,
+/// it sinks: a touch smaller, the shadow pulled in, the light dimmed, with a light tick. No bounce.
+public struct RaisedStyle: ButtonStyle {
+    private let fill: Color
+    private let tint: Color
+    private let size: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.isEnabled) private var enabled
+
+    /// `fill` is the face; `tint` washes over it (an added plan's green).
+    public init(fill: Color, tint: Color = .clear, size: CGFloat = 44) {
+        self.fill = fill
+        self.tint = tint
+        self.size = size
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        let down = configuration.isPressed && enabled
+        let dark = scheme == .dark
+        configuration.label
+            .frame(width: size, height: size)
+            .background {
+                Circle().fill(fill)
+                    .overlay { Circle().fill(tint) }
+                    // The dome: light from the top, a little shade at the foot.
+                    .overlay {
+                        Circle().fill(LinearGradient(colors: [.white.opacity(dark ? 0.10 : 0.55), .clear, .black.opacity(dark ? 0.18 : 0.05)],
+                                                     startPoint: .top, endPoint: .bottom))
+                            .opacity(down ? 0.35 : 1)
+                    }
+                    .overlay { Circle().strokeBorder(.black.opacity(dark ? 0.35 : 0.07), lineWidth: 0.5) }
+                    .shadow(color: .black.opacity(dark ? 0.45 : (down ? 0.06 : 0.13)), radius: down ? 1 : 4, y: down ? 0.5 : 2.5)
+            }
+            .contentShape(.circle)
+            .scaleEffect(down && !reduceMotion ? 0.92 : 1)
+            .animation(.easeOut(duration: down ? 0.12 : 0.22), value: down)
+            .sensoryFeedback(.impact(weight: .light, intensity: 0.5), trigger: down) { _, now in now }
+    }
+}
