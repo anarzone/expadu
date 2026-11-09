@@ -637,8 +637,11 @@ public struct TodayPage: Equatable, Sendable {
         public let price: String?
         public let place: String?
         public let area: String?
+        /// "en", "de", "mixed" or "none_needed", only when the listing's own text says so.
+        public let language: String?
 
-        public init(id: Int, candidate: String = "", saved: Bool = false, why: String? = nil, reasons: [String] = [], title: String, category: String, emoji: String?, startsAt: Date?, endsAt: Date?, timed: Bool, untimed: String?, tomorrow: Bool, price: String?, place: String?, area: String?) {
+        public init(id: Int, candidate: String = "", saved: Bool = false, why: String? = nil, reasons: [String] = [], title: String, category: String, emoji: String?, startsAt: Date?, endsAt: Date?, timed: Bool, untimed: String?, tomorrow: Bool, price: String?, place: String?, area: String?, language: String? = nil) {
+            self.language = language
             self.id = id
             self.candidate = candidate
             self.saved = saved
@@ -662,6 +665,28 @@ public struct TodayPage: Equatable, Sendable {
             guard timed, let startsAt else { return "All day" }
             if startsAt <= now, (endsAt ?? startsAt.addingTimeInterval(3600)) > now { return "Now" }
             return TodayPage.clock(startsAt)
+        }
+
+        /// Today's row, beside a poster that already shows the start: how long, where, and the
+        /// language when it's known. "Until 21:00 · Kreuzblume · In German".
+        public func rowLine(at now: Date) -> String {
+            var when: String?
+            if !timed || startsAt == nil {
+                when = untimed ?? "All day"
+            } else if let startsAt, startsAt <= now {
+                when = endsAt.map { "On now · until \(TodayPage.clock($0))" } ?? "On now"
+            } else {
+                let until = endsAt.map { "until \(TodayPage.clock($0))" }
+                when = tomorrow ? (["Tomorrow", until].compactMap { $0 }.joined(separator: " ")) : until.map { $0.prefix(1).uppercased() + $0.dropFirst() }
+            }
+            let words: String? = switch language {
+            case "en": "In English"
+            case "de": "In German"
+            case "mixed": "English and German"
+            case "none_needed": "No German needed"
+            default: nil
+            }
+            return [when, place ?? area, words].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
         }
 
         /// "Tonight 19:00–23:00 · Café Central", "Daily until Thu 5 Nov · Stadtgebiet".

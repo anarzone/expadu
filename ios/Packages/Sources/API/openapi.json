@@ -3432,6 +3432,12 @@
                                         "string",
                                         "null"
                                     ]
+                                },
+                                "language": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
                                 }
                             },
                             "required": [
@@ -3450,7 +3456,8 @@
                                 "tomorrow",
                                 "price",
                                 "place",
-                                "area"
+                                "area",
+                                "language"
                             ]
                         }
                     },

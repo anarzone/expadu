@@ -92,7 +92,7 @@ class TodayResource extends JsonResource
                 'color' => ($need['line'] ?? null) === null ? null : KvbLineColors::for((string) $need['line']),
                 'alert_id' => isset($need['alert_id']) ? (int) $need['alert_id'] : null,
             ], $this->resource['needs']['items'] ?? []),
-            /** @var array<int, array{id: int, candidate: string, saved: bool, why: string|null, reasons: array<int, string>, title: string, category: string, emoji: string|null, starts_at: string|null, ends_at: string|null, timed: bool, untimed: string|null, tomorrow: bool, price: string|null, place: string|null, area: string|null}> */
+            /** @var array<int, array{id: int, candidate: string, saved: bool, why: string|null, reasons: array<int, string>, title: string, category: string, emoji: string|null, starts_at: string|null, ends_at: string|null, timed: bool, untimed: string|null, tomorrow: bool, price: string|null, place: string|null, area: string|null, language: string|null}> */
             'ideas' => array_map(fn (array $event) => $this->idea($event), array_slice($this->resource['discovery']['events'] ?? [], 0, 6)),
             'ideas_part' => (string) ($this->resource['discovery']['part'] ?? ''),
             /** @var array{anchor: array{title: string, area: string, start: string|null, end: string|null}|null, near: string|null, at: string, places: array<int, array{id: int, candidate: string, name: string, kind: string, label: string, km: float|null, open_until: string|null, lat: float|null, lng: float|null}>}|null */
@@ -328,6 +328,8 @@ class TodayResource extends JsonResource
             'price' => $event['price_text'] ?? null,
             'place' => $event['venue']['name'] ?? null,
             'area' => $event['venue']['veedel'] ?? null,
+            // en, de, mixed or none_needed, only when the listing's own text says so (EventEvidence).
+            'language' => $event['language'] ?? null,
         ];
     }
 

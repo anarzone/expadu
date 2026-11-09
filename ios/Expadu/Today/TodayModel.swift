@@ -97,7 +97,11 @@ final class TodayModel {
     /// Ideas already reported shown, so each counts once a day.
     private var seen: Set<String> = []
 
-    var shownIdeas: [TodayPage.Idea] { (page?.ideas ?? []).filter { !hidden.contains($0.id) } }
+    /// Ideas still to show: not turned down, and not the event they're already on their way to.
+    var shownIdeas: [TodayPage.Idea] {
+        let going = page?.trip?.to
+        return (page?.ideas ?? []).filter { !hidden.contains($0.id) && $0.title != going }
+    }
     /// What was added this session, so its + shows a check at once.
     private(set) var added: Set<String> = []
     private var noteTimer: Task<Void, Never>?

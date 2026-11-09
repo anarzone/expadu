@@ -58,6 +58,9 @@ struct TodayPageTests {
         #expect(tonight.whenLine(at: now) == "Tonight 20:30 · Venloer Str.")
         #expect(allDay.posterLabel(at: now) == "All day")
         #expect(allDay.whenLine(at: now) == "Daily until Thu 5 Nov · Stadtgebiet")
+        // Beside the poster: no second start time, the language when known.
+        let tour = TodayPage.Idea(id: 4, title: "Brauhaustour", category: "Tours", emoji: nil, startsAt: at("2026-09-30T17:00:00Z"), endsAt: at("2026-09-30T19:00:00Z"), timed: true, untimed: nil, tomorrow: false, price: nil, place: "Kreuzblume", area: nil, language: "de")
+        #expect(tour.rowLine(at: now) == "Until 21:00 · Kreuzblume · In German")
     }
 
     @Test func theDeadlineSaysWhatExpiresAndWhen() {

@@ -474,7 +474,7 @@ public struct AppAPI: Sendable {
                 ideas: today.ideas.map {
                     TodayPage.Idea(id: $0.id, candidate: $0.candidate, saved: $0.saved, why: $0.why, reasons: $0.reasons, title: $0.title, category: $0.category, emoji: $0.emoji, startsAt: $0.startsAt.flatMap(Self.date(from:)),
                                    endsAt: $0.endsAt.flatMap(Self.date(from:)), timed: $0.timed, untimed: $0.untimed, tomorrow: $0.tomorrow,
-                                   price: $0.price, place: $0.place, area: $0.area)
+                                   price: $0.price, place: $0.place, area: $0.area, language: $0.language)
                 },
                 ideasPart: today.ideasPart,
                 free: today.free.map { f in

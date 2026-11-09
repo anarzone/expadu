@@ -64,7 +64,12 @@ struct CologneToday: View {
                 if open {
                     VStack(spacing: 0) {
                         if let board = model.board {
-                            ForEach(Array(board.departures.prefix(5).enumerated()), id: \.element.id) { index, row in
+                            // Only what they can still reach on foot: a train leaving now 14 min away is no use.
+                            let reachable = board.departures.filter { row in
+                                let walk = board.stops.first { $0.name == row.stop }?.walkMinutes ?? 0
+                                return row.minutes.contains { $0 >= walk }
+                            }
+                            ForEach(Array(reachable.prefix(5).enumerated()), id: \.element.id) { index, row in
                                 if index > 0 { Rectangle().fill(Palette.border).frame(height: 0.5).padding(.leading, 62) }
                                 Button {
                                     withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { departure = departure == row.id ? nil : row.id }
@@ -74,7 +79,7 @@ struct CologneToday: View {
                                 }
                                 .buttonStyle(PressStyle())
                             }
-                            if board.departures.isEmpty {
+                            if reachable.isEmpty {
                                 Text("Nothing leaves nearby in the next hour.").font(.geist(14)).foregroundStyle(Palette.textSoft).padding(14)
                             }
                         } else {

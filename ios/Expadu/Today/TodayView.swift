@@ -266,6 +266,7 @@ struct Chips: View {
     @Binding var sheet: TodaySheet?
     let intro: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(TodayModel.self) private var model
 
     var body: some View {
         HStack(spacing: 8) {
@@ -273,8 +274,12 @@ struct Chips: View {
                 chip(symbol: WeatherSymbol.name(weather.icon), tint: WeatherSymbol.tint(weather.icon), title: "\(weather.temperature)°",
                      note: weather.summary ?? weather.condition, order: 0, spins: true) { sheet = .weather(page) }
             }
-            if !page.ideas.isEmpty {
-                chip(symbol: "calendar", tint: Color(hex: 0x6B4FD0), title: "\(page.ideas.count) events", note: page.ideasWhen,
+            if !model.shownIdeas.isEmpty {
+                let shown = model.shownIdeas
+                // From the first start among them: "6 events · from 17:00" says what the list holds.
+                let first = shown.filter(\.timed).compactMap(\.startsAt).filter { $0 > page.now }.min()
+                chip(symbol: "calendar", tint: Color(hex: 0x6B4FD0), title: shown.count == 1 ? "1 event" : "\(shown.count) events",
+                     note: first.map { "from \(TodayPage.clock($0))" } ?? page.ideasWhen,
                      order: page.weather == nil ? 0 : 1, spins: false) { sheet = .whatsOn() }
             }
         }
