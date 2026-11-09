@@ -1,0 +1,942 @@
+{
+ "schema": 2,
+ "active": "58694fdd-ab21-4189-8887-a23a2854c6a1",
+ "focus": null,
+ "plans": {
+  "2026-11-06": {
+   "date": "2026-11-06",
+   "slots": [
+    {
+     "id": "manual:ios-sim-1",
+     "lat": 50.9409,
+     "lng": 6.9306,
+     "why": null,
+     "band": "Evening",
+     "date": "2026-11-06",
+     "name": "Dinner with Sara",
+     "type": "manual",
+     "end_at": "2026-11-07T01:30:00+01:00",
+     "veedel": "Neustadt-Nord",
+     "outdoor": false,
+     "category": "meetup",
+     "end_time": "01:30",
+     "leave_by": null,
+     "location": "Stadtgarten, Venloer Str.",
+     "routable": true,
+     "start_at": "2026-11-06T23:30:00+01:00",
+     "subtitle": null,
+     "closes_at": null,
+     "cost_tier": "free",
+     "swappable": false,
+     "end_listed": true,
+     "start_time": "23:30",
+     "is_landmark": true,
+     "place_facts": [],
+     "travel_known": true,
+     "hours_assumed": false,
+     "distance_basis": "straight_line_to_routing_point",
+     "duration_known": true,
+     "duration_label": "~3h",
+     "is_appointment": false,
+     "destination_group_id": null,
+     "may_overlap_previous": false,
+     "recommendation_status": "available",
+     "distance_km_from_origin": 1.9855266548043318,
+     "travel_min_from_previous": 0
+    },
+    {
+     "id": "manual:ios-sim-3",
+     "lat": 50.9513,
+     "lng": 6.9177,
+     "why": null,
+     "band": "Evening",
+     "date": "2026-11-06",
+     "name": "Late drink",
+     "type": "manual",
+     "end_at": "2026-11-07T00:58:00+01:00",
+     "veedel": "Ehrenfeld",
+     "outdoor": false,
+     "category": "meetup",
+     "end_time": "00:58",
+     "leave_by": null,
+     "location": "Ehrenfeld Bahnhof",
+     "routable": true,
+     "start_at": "2026-11-06T23:58:00+01:00",
+     "subtitle": null,
+     "closes_at": null,
+     "cost_tier": "free",
+     "swappable": false,
+     "end_listed": true,
+     "start_time": "23:58",
+     "is_landmark": true,
+     "place_facts": [],
+     "travel_known": true,
+     "hours_assumed": false,
+     "distance_basis": "straight_line_to_routing_point",
+     "duration_known": true,
+     "duration_label": "~3h",
+     "is_appointment": false,
+     "destination_group_id": null,
+     "may_overlap_previous": false,
+     "recommendation_status": "available",
+     "distance_km_from_origin": 1.9855266548043318,
+     "travel_min_from_previous": 0
+    }
+   ],
+   "constraints": {
+    "window_end": "2026-10-28T23:59:00",
+    "window_start": "2026-10-28T08:00:00"
+   },
+   "feasibility_checked": false
+  },
+  "2026-11-07": {
+   "date": "2026-11-07",
+   "slots": [
+    {
+     "id": "manual:ios-sim-2",
+     "lat": 50.9409,
+     "lng": 6.9306,
+     "why": null,
+     "band": "Morning",
+     "date": "2026-11-07",
+     "name": "Brunch with Sara",
+     "type": "manual",
+     "end_at": "2026-11-07T12:30:00+01:00",
+     "veedel": "Neustadt-Nord",
+     "outdoor": false,
+     "category": "meetup",
+     "end_time": "12:30",
+     "leave_by": null,
+     "location": "Stadtgarten, Venloer Str.",
+     "routable": true,
+     "start_at": "2026-11-07T11:00:00+01:00",
+     "subtitle": null,
+     "closes_at": null,
+     "cost_tier": "free",
+     "swappable": false,
+     "end_listed": true,
+     "start_time": "11:00",
+     "is_landmark": true,
+     "place_facts": [],
+     "travel_known": true,
+     "hours_assumed": false,
+     "distance_basis": "straight_line_to_routing_point",
+     "duration_known": true,
+     "duration_label": "~1.5h",
+     "is_appointment": false,
+     "destination_group_id": null,
+     "may_overlap_previous": false,
+     "recommendation_status": "available",
+     "distance_km_from_origin": 1.9855266548043318,
+     "travel_min_from_previous": 0
+    },
+    {
+     "id": "event:1555",
+     "lat": 50.968232280157,
+     "lng": 7.0148818194866,
+     "why": null,
+     "band": "Afternoon",
+     "name": "Van Dyck Roastery Tour",
+     "type": "event",
+     "end_at": "2026-11-07T16:30:00+01:00",
+     "veedel": "Mülheim",
+     "outdoor": false,
+     "category": "tours",
+     "end_time": "16:30",
+     "leave_by": null,
+     "routable": true,
+     "start_at": "2026-11-07T14:30:00+01:00",
+     "subtitle": null,
+     "closes_at": null,
+     "cost_tier": "normal",
+     "swappable": false,
+     "end_listed": true,
+     "start_time": "14:30",
+     "is_landmark": false,
+     "place_facts": [],
+     "travel_known": true,
+     "hours_assumed": false,
+     "distance_basis": "straight_line_to_routing_point",
+     "duration_known": true,
+     "duration_label": "~2h",
+     "is_appointment": false,
+     "destination_group_id": null,
+     "may_overlap_previous": false,
+     "distance_km_from_origin": 5.12794948592556,
+     "travel_min_from_previous": 0
+    },
+    {
+     "id": "manual:ios-sim-4",
+     "lat": 50.9466,
+     "lng": 6.9766,
+     "why": null,
+     "band": "Afternoon",
+     "date": "2026-11-07",
+     "name": "Walk in the Rheinpark",
+     "type": "manual",
+     "end_at": "2026-11-07T17:30:00+01:00",
+     "veedel": "Deutz",
+     "outdoor": false,
+     "category": "meetup",
+     "end_time": "17:30",
+     "leave_by": null,
+     "location": "Rheinpark, Deutz",
+     "routable": true,
+     "start_at": "2026-11-07T16:30:00+01:00",
+     "subtitle": null,
+     "closes_at": null,
+     "cost_tier": "free",
+     "swappable": false,
+     "end_listed": true,
+     "start_time": "16:30",
+     "is_landmark": true,
+     "place_facts": [],
+     "travel_known": true,
+     "hours_assumed": false,
+     "distance_basis": "straight_line_to_routing_point",
+     "duration_known": true,
+     "duration_label": "~1h",
+     "is_appointment": false,
+     "destination_group_id": null,
+     "may_overlap_previous": false,
+     "recommendation_status": "available",
+     "distance_km_from_origin": 1.9855266548043318,
+     "travel_min_from_previous": 0
+    }
+   ],
+   "constraints": {
+    "window_end": "2026-11-07T23:59:00",
+    "window_start": "2026-11-07T08:00:00"
+   },
+   "feasibility_checked": false
+  },
+  "2026-11-09": {
+   "date": "2026-11-09",
+   "slots": [
+    {
+     "id": "spot:8305",
+     "lat": 50.9266714,
+     "lng": 6.9380142,
+     "why": "open till 22:30",
+     "band": "Afternoon",
+     "name": "Bingo Club",
+     "type": "spot",
+     "end_at": "2026-11-09T17:34:00+01:00",
+     "veedel": "Neustadt-Süd",
+     "outdoor": false,
+     "category": "cafe",
+     "end_time": "17:34",
+     "leave_by": null,
+     "routable": true,
+     "start_at": "2026-11-09T16:34:00+01:00",
+     "subtitle": null,
+     "closes_at": "22:30",
+     "cost_tier": "unknown",
+     "swappable": true,
+     "end_listed": true,
+     "start_time": "16:34",
+     "is_landmark": false,
+     "place_facts": {
+      "identity": {
+       "canonical_id": 8305,
+       "provider": "osm",
+       "provider_record_id": "node/1140753690"
+      },
+      "name": {
+       "value": "Bingo Club",
+       "status": "known",
+       "source_url": "https://www.openstreetmap.org/node/1140753690",
+       "observed_at": "2026-10-07T19:13:41+00:00",
+       "reviewed_at": null
+      },
+      "name_kind": "source",
+      "display_name": "Bingo Club",
+      "generic_name": false,
+      "aliases": [],
+      "location": {
+       "map_point": {
+        "lat": 50.9266714,
+        "lng": 6.9380142,
+        "kind": "source_node",
+        "boundary_reference": null,
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null
+       },
+       "entrance_point": {
+        "lat": null,
+        "lng": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       }
+      },
+      "access": {
+       "value": "unknown",
+       "status": "unknown",
+       "source_url": "https://www.openstreetmap.org/node/1140753690",
+       "observed_at": "2026-10-07T19:13:41+00:00",
+       "reviewed_at": null,
+       "raw": null,
+       "conditional": null,
+       "reviewed_value": null
+      },
+      "fee": {
+       "value": "unknown",
+       "status": "unknown",
+       "source_url": "https://www.openstreetmap.org/node/1140753690",
+       "observed_at": "2026-10-07T19:13:41+00:00",
+       "reviewed_at": null,
+       "raw": null,
+       "conditional": null,
+       "charge": null,
+       "charge_conditional": null,
+       "amount": null,
+       "currency": null
+      },
+      "public_use": {
+       "value": "unknown",
+       "free": "unknown",
+       "basis": null,
+       "source_url": null
+      },
+      "hours": {
+       "value": {
+        "mon": [
+         [
+          "14:00",
+          "22:30"
+         ]
+        ],
+        "tue": [],
+        "wed": [
+         [
+          "14:00",
+          "22:30"
+         ]
+        ],
+        "thu": [
+         [
+          "14:00",
+          "22:30"
+         ]
+        ],
+        "fri": [
+         [
+          "14:00",
+          "24:00"
+         ]
+        ],
+        "sat": [
+         [
+          "12:00",
+          "24:00"
+         ]
+        ],
+        "sun": [
+         [
+          "12:00",
+          "20:30"
+         ]
+        ]
+       },
+       "status": "known",
+       "source_url": "https://www.openstreetmap.org/node/1140753690",
+       "observed_at": "2026-10-07T19:13:41+00:00",
+       "reviewed_at": null,
+       "raw": "Mo,We,Th 14:00-22:30; Fr 14:00-24:00; Sa 12:00-24:00; Su 12:00-20:30",
+       "parsed": {
+        "mon": [
+         [
+          "14:00",
+          "22:30"
+         ]
+        ],
+        "tue": [],
+        "wed": [
+         [
+          "14:00",
+          "22:30"
+         ]
+        ],
+        "thu": [
+         [
+          "14:00",
+          "22:30"
+         ]
+        ],
+        "fri": [
+         [
+          "14:00",
+          "24:00"
+         ]
+        ],
+        "sat": [
+         [
+          "12:00",
+          "24:00"
+         ]
+        ],
+        "sun": [
+         [
+          "12:00",
+          "20:30"
+         ]
+        ]
+       }
+      },
+      "contact": {
+       "website": {
+        "value": "https://brettspielecafekoeln.de",
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null,
+        "disputed_by": [
+         "overture"
+        ]
+       },
+       "phone": {
+        "value": "+49 221 80055985",
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null
+       },
+       "address": {
+        "value": "Otto-Fischer-Straße 9, Köln",
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null
+       }
+      },
+      "description": {
+       "value": null,
+       "status": "unknown",
+       "source_url": "https://www.openstreetmap.org/node/1140753690",
+       "observed_at": "2026-10-07T19:13:41+00:00",
+       "reviewed_at": null
+      },
+      "negative_facts": {
+       "wheelchair": "no"
+      },
+      "within": null,
+      "inside": null,
+      "practical": {
+       "sport": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "surface": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "lit": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "covered": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "indoor": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "wheelchair": {
+        "value": "no",
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null
+       },
+       "toilets": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "drinking_water": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "hoops": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "reservation": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "booking": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "capacity": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "operator": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "barrier": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "reservation:conditional": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "booking:conditional": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "opening_hours:conditional": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "internet_access": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "outdoor_seating": {
+        "value": "yes",
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null
+       },
+       "cuisine": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "dog": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "diet:vegetarian": {
+        "value": "yes",
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null
+       },
+       "diet:vegan": {
+        "value": "yes",
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null
+       },
+       "diet:halal": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "diet:kosher": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "diet:gluten_free": {
+        "value": "yes",
+        "status": "known",
+        "source_url": "https://www.openstreetmap.org/node/1140753690",
+        "observed_at": "2026-10-07T19:13:41+00:00",
+        "reviewed_at": null
+       },
+       "power_supply": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "laptops": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "laptops:conditional": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       },
+       "quiet": {
+        "value": null,
+        "status": "unknown",
+        "source_url": null,
+        "observed_at": null,
+        "reviewed_at": null
+       }
+      },
+      "activities": [],
+      "conflicts": [],
+      "revision": 21543
+     },
+     "travel_known": true,
+     "hours_assumed": false,
+     "distance_basis": "straight_line_to_routing_point",
+     "duration_known": true,
+     "duration_label": "~1h",
+     "is_appointment": false,
+     "destination_group_id": "spot:8305",
+     "may_overlap_previous": false,
+     "distance_km_from_origin": 1.972049498870623,
+     "travel_min_from_previous": 0,
+     "recommendation_status": "available",
+     "availability_message": null
+    },
+    {
+     "id": "event:1272:1794247200",
+     "lat": 50.941292229358,
+     "lng": 6.9563895463943,
+     "why": "",
+     "band": "Evening",
+     "name": "Brewery Tour - English-language City Tour",
+     "type": "event",
+     "end_at": "2026-11-09T21:00:00+01:00",
+     "veedel": "Altstadt-Nord",
+     "outdoor": false,
+     "category": "tours",
+     "end_time": "21:00",
+     "leave_by": null,
+     "routable": true,
+     "start_at": "2026-11-09T19:00:00+01:00",
+     "subtitle": null,
+     "closes_at": null,
+     "cost_tier": "normal",
+     "swappable": false,
+     "end_listed": true,
+     "start_time": "19:00",
+     "is_landmark": false,
+     "place_facts": [],
+     "travel_known": true,
+     "hours_assumed": false,
+     "distance_basis": "straight_line_to_routing_point",
+     "duration_known": true,
+     "duration_label": "~2h",
+     "is_appointment": false,
+     "destination_group_id": null,
+     "may_overlap_previous": false,
+     "distance_km_from_origin": 0.5028789260128174,
+     "travel_min_from_previous": 0,
+     "recommendation_status": "available",
+     "availability_message": null
+    }
+   ],
+   "constraints": {
+    "window_end": "2026-11-09T23:59:00",
+    "window_start": "2026-11-09T08:00:00"
+   },
+   "feasibility_checked": false
+  },
+  "2026-11-10": {
+   "date": "2026-11-10",
+   "slots": [
+    {
+     "id": "event:993",
+     "lat": 50.9224987,
+     "lng": 6.9590257,
+     "why": "",
+     "band": "Morning",
+     "name": "Picture Books – the literary baby crawling group",
+     "type": "event",
+     "end_at": "2026-11-10T10:30:00+01:00",
+     "veedel": "Altstadt-Süd",
+     "outdoor": false,
+     "category": "kids",
+     "end_time": "10:30",
+     "leave_by": null,
+     "routable": true,
+     "start_at": "2026-11-10T09:30:00+01:00",
+     "subtitle": null,
+     "closes_at": null,
+     "cost_tier": "free",
+     "swappable": false,
+     "end_listed": true,
+     "start_time": "09:30",
+     "is_landmark": false,
+     "place_facts": [],
+     "travel_known": true,
+     "hours_assumed": false,
+     "distance_basis": "straight_line_to_routing_point",
+     "duration_known": true,
+     "duration_label": "~1h",
+     "is_appointment": false,
+     "destination_group_id": null,
+     "may_overlap_previous": false,
+     "distance_km_from_origin": 1.670457424666703,
+     "travel_min_from_previous": 0,
+     "recommendation_status": "available",
+     "availability_message": null
+    }
+   ],
+   "constraints": {
+    "window_end": "2026-11-10T23:59:00",
+    "window_start": "2026-11-10T08:00:00"
+   },
+   "feasibility_checked": false
+  }
+ },
+ "changes": [
+  {
+   "id": "eb78230d-9941-42db-be0c-4d6e486ee623",
+   "date": "2026-11-07",
+   "label": "Added Van Dyck Roastery Tour",
+   "rows": [
+    {
+     "id": "event:1555",
+     "to": "14:30–16:30",
+     "kind": "added",
+     "type": "event",
+     "title": "Van Dyck Roastery Tour"
+    }
+   ],
+   "created_at": "2026-11-07T13:31:40+01:00",
+   "undone_at": null,
+   "undoable": true
+  },
+  {
+   "id": "39f7d90c-ff2e-490d-898c-7af65bc21218",
+   "date": "2026-11-09",
+   "label": "Added Bingo Club",
+   "rows": [
+    {
+     "id": "spot:8305",
+     "to": "16:34–17:34",
+     "kind": "added",
+     "type": "spot",
+     "title": "Bingo Club"
+    }
+   ],
+   "created_at": "2026-11-09T16:33:49+01:00",
+   "undone_at": null,
+   "undoable": false
+  },
+  {
+   "id": "b9889f49-1eed-4a2c-a0ac-b2f1b4ec646a",
+   "date": "2026-11-09",
+   "label": "Added Brewery Tour - English-language City Tour",
+   "rows": [
+    {
+     "id": "event:1272:1794247200",
+     "to": "19:00–21:00",
+     "kind": "added",
+     "type": "event",
+     "title": "Brewery Tour - English-language City Tour"
+    }
+   ],
+   "created_at": "2026-11-09T16:34:09+01:00",
+   "undone_at": null,
+   "undoable": true
+  },
+  {
+   "id": "100f32f3-7dfa-453b-9fd1-56a09b01c0b7",
+   "date": "2026-11-10",
+   "label": "Added Picture Books – the literary baby crawling group",
+   "rows": [
+    {
+     "id": "event:993",
+     "to": "09:30–10:30",
+     "kind": "added",
+     "type": "event",
+     "title": "Picture Books – the literary baby crawling group"
+    }
+   ],
+   "created_at": "2026-11-09T20:59:08+01:00",
+   "undone_at": null,
+   "undoable": true
+  }
+ ],
+ "conversations": [
+  {
+   "id": "58694fdd-ab21-4189-8887-a23a2854c6a1",
+   "title": "Somewhere quiet to work near Neumarkt",
+   "messages": [
+    {
+     "id": "df884047-db3f-4f02-9582-d4b31261ce86",
+     "role": "user",
+     "text": "Somewhere quiet to work near Neumarkt",
+     "created_at": "2026-11-09T22:30:39+01:00"
+    },
+    {
+     "id": "54959361-ba39-4eae-85f9-8ae5ac40611c",
+     "kind": "around",
+     "lead": "I can’t answer messages right now, so I can’t answer that. Nothing more is listed in Cologne tonight.",
+     "role": "assistant",
+     "text": "I can’t answer messages right now, so I can’t answer that. Nothing more is listed in Cologne tonight.",
+     "facts": [
+      {
+       "known": true,
+       "label": "Tomorrow 09:30",
+       "value": "Picture Books – the literary baby crawling group"
+      },
+      {
+       "known": true,
+       "label": "KVB 18",
+       "value": "Line 18 split between Bonn Hauptbahnhof and Dransdorf or Alfter until 23 Nov 2026"
+      }
+     ],
+     "blocks": [
+      {
+       "type": "facts",
+       "facts": [
+        {
+         "known": true,
+         "label": "Tomorrow 09:30",
+         "value": "Picture Books – the literary baby crawling group"
+        },
+        {
+         "known": true,
+         "label": "KVB 18",
+         "value": "Line 18 split between Bonn Hauptbahnhof and Dransdorf or Alfter until 23 Nov 2026"
+        }
+       ],
+       "sources": [
+        {
+         "href": "https://www.kvb.koeln/fahrtinfo/baustellen/index.html",
+         "label": "KVB notice"
+        }
+       ]
+      }
+     ],
+     "request": "ask",
+     "sources": [
+      {
+       "href": "https://www.kvb.koeln/fahrtinfo/baustellen/index.html",
+       "label": "KVB notice"
+      }
+     ],
+     "written": "code",
+     "created_at": "2026-11-09T22:30:41+01:00",
+     "without_ai": "off",
+     "suggestions": [
+      {
+       "label": "Plan my Saturday",
+       "prompt": "Help me plan Saturday"
+      }
+     ]
+    },
+    {
+     "id": "5876723d-720d-4b86-90aa-ac9478eaf251",
+     "role": "user",
+     "text": "What's on tonight?",
+     "created_at": "2026-11-09T22:30:42+01:00"
+    },
+    {
+     "id": "a987df6a-5488-4af4-b949-6fe117e79c05",
+     "kind": "around",
+     "lead": "I can’t answer messages right now, so I can’t answer that. Nothing more is listed in Cologne tonight.",
+     "role": "assistant",
+     "text": "I can’t answer messages right now, so I can’t answer that. Nothing more is listed in Cologne tonight.",
+     "request": "ask",
+     "written": "code",
+     "created_at": "2026-11-09T22:30:43+01:00",
+     "without_ai": "off",
+     "suggestions": [
+      {
+       "label": "Plan my Saturday",
+       "prompt": "Help me plan Saturday"
+      }
+     ]
+    },
+    {
+     "id": "25694616-09db-4167-8a00-9b20515f0265",
+     "role": "user",
+     "text": "When is the next tram from Neumarkt?",
+     "created_at": "2026-11-09T22:30:44+01:00"
+    },
+    {
+     "id": "1125f3a7-6606-4f08-9180-856ab3e103db",
+     "role": "assistant",
+     "text": "I can’t answer messages right now, so I can’t answer that. Nothing more is listed in Cologne tonight.",
+     "created_at": "2026-11-09T22:30:45+01:00",
+     "request": "ask",
+     "kind": "around",
+     "lead": "I can’t answer messages right now, so I can’t answer that. Nothing more is listed in Cologne tonight.",
+     "written": "code",
+     "without_ai": "off",
+     "suggestions": [
+      {
+       "label": "Plan my Saturday",
+       "prompt": "Help me plan Saturday"
+      }
+     ]
+    }
+   ],
+   "created_at": "2026-11-09T22:30:36+01:00",
+   "asked": 3,
+   "last_at": "2026-11-09T22:30:45+01:00"
+  }
+ ],
+ "revision": 20,
+ "refusal": null
+}

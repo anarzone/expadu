@@ -524,6 +524,145 @@ public struct AppAPI: Sendable {
 
     private static func requestID() -> String { UUID().uuidString.lowercased() }
 
+    // MARK: Composer (the web's own routes, routes/app/composer-shared.php)
+
+    /// What a write came back with: the workspace as it now is, and the server's words when it refused.
+    public struct ComposerReply: Sendable {
+        public let workspace: ComposerWorkspace?
+        public let refusal: String?
+    }
+
+    public func composerWorkspace() async throws(APIFailure) -> ComposerWorkspace {
+        let data = try await composer("GET", "composer/workspace").data
+        do { return try ComposerWorkspace.decode(data) } catch { throw .unreachable }
+    }
+
+    /// One command on the workspace (message, fresh, resume, add, remove, undo, …). A stale revision
+    /// (someone else wrote first: the web, another phone) reads the workspace again and tries once more.
+    public func composerCommand(_ action: String, revision: Int, _ fields: [String: String] = [:]) async throws(APIFailure) -> ComposerReply {
+        var body: [String: Any] = fields
+        body["action"] = action
+        body["revision"] = revision
+        var reply = try await composer("POST", "composer/workspace", body)
+        if reply.status == 409 {
+            let fresh = try await composerWorkspace()
+            body["revision"] = fresh.revision
+            reply = try await composer("POST", "composer/workspace", body)
+        }
+        return Self.composerReply(reply)
+    }
+
+    /// Composer answers the last message: with the go-ahead to send it on (`processing`) when the
+    /// notice was shown, and where they are, so the answer starts there.
+    public func composerAsk(latitude: Double?, longitude: Double?, from label: String?, processing: ComposerProcessing?) async throws(APIFailure) -> ComposerReply {
+        var body: [String: Any] = ["page": "Composer"]
+        if let latitude, let longitude { body["lat"] = latitude; body["lng"] = longitude }
+        if let label { body["from_label"] = label }
+        if let processing { body["processing"] = processing.json }
+        return Self.composerReply(try await composer("POST", "composer/ask", body, timeout: 75))
+    }
+
+    /// How far the assistant has got with a request.
+    public func composerProgress(_ requestID: String) async -> ComposerProgress? {
+        guard let reply = try? await composer("GET", "composer/progress/\(requestID)"), reply.status == 200 else { return nil }
+        return try? ComposerProgress.decode(reply.data)
+    }
+
+    /// Apply a proposal, or undo a change Composer made (24 hours).
+    public func composerApply(_ token: String) async throws(APIFailure) -> ComposerReply {
+        Self.composerReply(try await composer("POST", "composer/apply", ["token": token]))
+    }
+
+    public func composerUndo(_ token: String) async throws(APIFailure) -> ComposerReply {
+        Self.composerReply(try await composer("POST", "composer/undo", ["token": token]))
+    }
+
+    /// A Paperwork answer changed on its card ("Change" on a record row).
+    public func composerAct(key: String, value: String) async throws(APIFailure) -> ComposerReply {
+        Self.composerReply(try await composer("POST", "composer/act", ["action": "paperwork_fact", "key": key, "value": value]))
+    }
+
+    /// Rename (an empty title brings back the automatic one) or delete a conversation for good.
+    public func renameConversation(_ id: String, title: String) async throws(APIFailure) -> ComposerReply {
+        Self.composerReply(try await composer("PATCH", "composer/conversations/\(id)", ["title": title.isEmpty ? NSNull() : title]))
+    }
+
+    public func deleteConversation(_ id: String) async throws(APIFailure) -> ComposerReply {
+        Self.composerReply(try await composer("DELETE", "composer/conversations/\(id)"))
+    }
+
+    /// The places and events that can go into a day's plan (saved ones only, or all near where they are).
+    public func composerCatalogue(date: String, saved: Bool, latitude: Double?, longitude: Double?) async throws(APIFailure) -> [ComposerSlot] {
+        var query = "composer/catalogue?date=\(date)&saved=\(saved ? 1 : 0)"
+        if let latitude, let longitude { query += "&lat=\(latitude)&lng=\(longitude)" }
+        struct Items: Decodable { let items: [ComposerSlot] }
+        let data = try await composer("GET", query).data
+        do { return try JSONDecoder.composer.decode(Items.self, from: data).items } catch { throw .unreachable }
+    }
+
+    /// What a processing purpose sends, to whom, and whether it's on at all.
+    public func processingNotice(_ purpose: String) async throws(APIFailure) -> ComposerDisclosure {
+        let data = try await composer("GET", "privacy/processing/\(purpose)").data
+        do { return try ComposerDisclosure.decode(data) } catch { throw .unreachable }
+    }
+
+    /// Stop it: future processing ends and saved responses are removed. The server's own words come back.
+    public func withdrawProcessing(_ purpose: String) async throws(APIFailure) -> String? {
+        let data = try await composer("DELETE", "privacy/processing/\(purpose)").data
+        return (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["message"] as? String
+    }
+
+    /// Composer's remembered permission to read their Paperwork record.
+    public func paperworkPermission() async throws(APIFailure) -> (enabled: Bool, available: Bool, hasRecord: Bool) {
+        let data = try await composer("GET", "composer/paperwork-permission").data
+        let json = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        return (json["enabled"] as? Bool ?? false, json["available"] as? Bool ?? false, json["has_record"] as? Bool ?? false)
+    }
+
+    public func setPaperworkPermission(_ enabled: Bool, disclosure: ComposerDisclosure?) async throws(APIFailure) {
+        var body: [String: Any] = ["enabled": enabled]
+        if enabled, let disclosure { body["notice_version"] = disclosure.noticeVersion; body["provider_version"] = disclosure.providerVersion }
+        _ = Self.composerReply(try await composer("PUT", "composer/paperwork-permission", body))
+    }
+
+    private struct Raw: Sendable {
+        let status: Int
+        let data: Data
+    }
+
+    private static func composerReply(_ raw: Raw) -> ComposerReply {
+        let json = (try? JSONSerialization.jsonObject(with: raw.data) as? [String: Any]) ?? [:]
+        if (200..<300).contains(raw.status) { return ComposerReply(workspace: try? ComposerWorkspace.decode(raw.data), refusal: nil) }
+        // A refusal says why, in the server's words, and may carry the workspace as it now is.
+        let workspace = (json["workspace"]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }.flatMap { try? ComposerWorkspace.decode($0) }
+        let refusal = (json["refusal"] as? [String: Any])?["message"] as? String ?? json["message"] as? String ?? (json["text"] as? String)
+        return ComposerReply(workspace: workspace, refusal: refusal ?? "That didn’t go through. Try again in a moment.")
+    }
+
+    /// Composer's requests: JSON with the token. Signed out and too many tries throw; any other
+    /// answer comes back with its status, for the caller to read.
+    private func composer(_ method: String, _ path: String, _ body: [String: Any]? = nil, timeout: TimeInterval = 30) async throws(APIFailure) -> Raw {
+        guard let url = URL(string: path, relativeTo: baseURL.appendingPathComponent("")) else { throw .unreachable }
+        var request = URLRequest(url: url, timeoutInterval: timeout)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token = token() { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if let body {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        }
+        let data: Data, response: URLResponse
+        do { (data, response) = try await URLSession.shared.data(for: request) } catch { throw .unreachable }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        switch status {
+        case 401: throw .signedOut
+        case 403 where path.hasPrefix("composer/workspace"): throw .refused("Confirm your email address first.")
+        case 429: throw .tooManyTries
+        case 500...: throw .unreachable
+        default: return Raw(status: status, data: data)
+        }
+    }
+
     /// The bell's full record, newest first.
     public func alerts() async throws(APIFailure) -> [BellCard] {
         let output = try await calling { try await client.alerts_index() }

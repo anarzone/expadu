@@ -129,8 +129,14 @@ struct ShellView: View {
             }
         }
         .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.3), value: talk)
-        .sheet(item: $composer) { opening in
-            ComposerPage(words: opening.words).presentationDetents([.large])
+        .fullScreenCover(item: $composer) { opening in
+            ComposerScreen(opening: opening.words)
+                .environment(today)
+                .environment(\.shell, ShellActions(
+                    openComposer: {},
+                    show: { section in withAnimation(.snappy) { tab = section; compact = false } },
+                    scrolled: { _ in }
+                ))
         }
     }
 
@@ -401,30 +407,6 @@ private struct VoiceBars: View {
             .frame(height: 22)
         }
         .accessibilityHidden(true)
-    }
-}
-
-/// Composer's page until it's built (next after Paperwork): what was said waits here as the question.
-private struct ComposerPage: View {
-    let words: String?
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                if let words {
-                    Text("You asked").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
-                    Text(words).font(.posterGrotesque(24)).foregroundStyle(Palette.text)
-                }
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
-            .background(Palette.canvas)
-            .navigationTitle("Composer")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
-        }
     }
 }
 
