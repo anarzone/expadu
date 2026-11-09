@@ -368,3 +368,34 @@ extension PaperworkPlan {
         return (title, parts.joined(separator: " · "))
     }
 }
+
+/// A sheet as tall as what's in it: the header and the body's own height, never a tall empty
+/// page. It grows and shrinks with its content (a new question, a calendar) on the same curve, and
+/// can still be pulled up to full height when the content is longer than the screen.
+struct FittedSheet: ViewModifier {
+    let height: CGFloat
+    @State private var fit: PresentationDetent = .medium
+    @State private var detent: PresentationDetent = .medium
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .presentationDetents([fit, .large], selection: $detent)
+            .presentationDragIndicator(.visible)
+            .onChange(of: height, initial: true) {
+                guard height > 0 else { return }
+                let next = PresentationDetent.height(max(220, height.rounded()))
+                guard next != fit else { return }
+                // The first size lands without a jump; later ones move on the page's curve.
+                let first = fit == .medium
+                withAnimation(first || reduceMotion ? nil : Motion.ios(0.38)) {
+                    fit = next
+                    detent = next
+                }
+            }
+    }
+}
+
+extension View {
+    func fittedSheet(_ height: CGFloat) -> some View { modifier(FittedSheet(height: height)) }
+}

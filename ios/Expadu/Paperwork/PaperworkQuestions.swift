@@ -20,6 +20,8 @@ struct PaperworkQuestionsSheet: View {
     @State private var answered = 0
     @State private var pending = false
     @State private var problem: String?
+    @State private var headHeight: CGFloat = 0
+    @State private var bodyHeight: CGFloat = 0
     @State private var city = "Cologne"
     @State private var other = ""
 
@@ -34,12 +36,13 @@ struct PaperworkQuestionsSheet: View {
                 CloseButton { finish() }
             }
             .padding(.horizontal, 20).padding(.top, 22).padding(.bottom, 14)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headHeight = $0 }
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     switch stage {
                     case .city: cityStep
                     case .loading:
-                        ProgressView().frame(maxWidth: .infinity).padding(.top, 50)
+                        ProgressView().frame(maxWidth: .infinity).padding(.vertical, 40)
                     case let .question(question):
                         PaperworkAnswerForm(question: question, pending: pending, canSkip: mode != .setup || question.canSkip != false) { answer, state in
                             Task { await submit(question, answer, state) }
@@ -58,14 +61,14 @@ struct PaperworkQuestionsSheet: View {
                             .font(.geist(14, .semibold)).foregroundStyle(PaperworkLook.red)
                     }
                 }
-                .padding(.horizontal, 20).padding(.bottom, 30)
+                .padding(.horizontal, 20).padding(.bottom, 10)
                 .animation(reduceMotion ? nil : Motion.ios(0.38), value: stage)
             }
             .scrollIndicators(.hidden)
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentSize.height } action: { _, now in bodyHeight = now }
         }
         .background(Palette.canvas)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .fittedSheet(headHeight + bodyHeight)
         .interactiveDismissDisabled(pending)
         .task {
             if mode == .setup { stage = .city } else { await begin() }

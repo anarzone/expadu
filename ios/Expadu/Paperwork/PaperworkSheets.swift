@@ -11,6 +11,8 @@ struct PaperworkSheetFrame<Content: View>: View {
     @ViewBuilder let content: Content
     @Environment(\.dismiss) private var dismiss
     @Environment(PaperworkModel.self) private var model
+    @State private var headHeight: CGFloat = 0
+    @State private var bodyHeight: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -23,6 +25,7 @@ struct PaperworkSheetFrame<Content: View>: View {
                 CloseButton { dismiss() }
             }
             .padding(.horizontal, 20).padding(.top, 22).padding(.bottom, 14)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headHeight = $0 }
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     content
@@ -31,9 +34,10 @@ struct PaperworkSheetFrame<Content: View>: View {
                             .padding(.top, 4)
                     }
                 }
-                .padding(.horizontal, 16).padding(.bottom, 30)
+                .padding(.horizontal, 16).padding(.bottom, 10)
             }
             .scrollIndicators(.hidden)
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentSize.height } action: { _, now in bodyHeight = now }
         }
         .background(Palette.canvas)
         // What just changed shows here too: the page's own line is behind the sheet.
@@ -44,7 +48,7 @@ struct PaperworkSheetFrame<Content: View>: View {
             }
         }
         .animation(.spring(duration: 0.5, bounce: 0.3), value: model.note)
-        .flexibleSheet()
+        .fittedSheet(headHeight + bodyHeight)
     }
 }
 
