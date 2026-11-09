@@ -193,8 +193,8 @@ struct PaperworkMini: View {
     }
 }
 
-/// A button as iOS 26 draws one in content: a rounded rectangle whose corners follow the card
-/// it sits in (Apple's concentric shapes), a flat face, the press sinking it. Prominent for the
+/// A button as iOS 26 draws one: tinted Liquid Glass in a rounded rectangle whose corners follow
+/// the card it sits in (Apple's concentric shapes); the glass lights and flexes under the finger. Prominent for the
 /// one action a view leads with; quiet for the rest; plain (tinted words) for small side actions.
 struct PaperworkButton: View {
     let title: String
@@ -218,13 +218,21 @@ struct PaperworkButton: View {
             .padding(.horizontal, plain ? 2 : small ? 14 : 20)
             .frame(maxWidth: grow ? .infinity : nil)
             .frame(height: plain ? 44 : small ? 42 : 52)
-            .background {
-                if !plain { RoundedRectangle(cornerRadius: small ? 12 : 16, style: .continuous).fill(quiet ? Palette.quiet : Palette.action) }
-            }
+            .modifier(Face(on: !plain, color: quiet ? Palette.quiet : Palette.action, radius: small ? 12 : 16))
             .contentShape(.rect(cornerRadius: small ? 12 : 16))
         }
         .buttonStyle(PressStyle())
         .disabled(working)
+    }
+}
+
+private struct Face: ViewModifier {
+    let on: Bool
+    let color: Color
+    let radius: CGFloat
+
+    func body(content: Content) -> some View {
+        if on { content.buttonFace(color, radius: radius) } else { content }
     }
 }
 

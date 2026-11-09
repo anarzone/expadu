@@ -164,7 +164,7 @@ struct WayMap: View {
                         }
                         .font(.geist(17, .semibold)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 50)
-                        .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
+                        .buttonFace(Palette.action)
                     }
                     .buttonStyle(PressStyle())
                     .disabled(starting)

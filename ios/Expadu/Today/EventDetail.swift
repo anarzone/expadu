@@ -147,11 +147,15 @@ struct EventDetail: View {
             .accessibilityLabel("Share")
         }
         ToolbarItem(placement: .topBarTrailing) {
+            // The toolbar draws its items itself and drops a masked overlay, so the fill is the
+            // symbol's own: the outline fills in one smooth replace, no bounce.
             Button { save(listing) } label: {
-                FillingBookmark(filled: idea.saved, size: 18, weight: .semibold)
+                Image(systemName: idea.saved ? "bookmark.fill" : "bookmark")
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(WhatsOnLook.saveInk)
+                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace.offUp)))
             }
-            .animation(.easeInOut(duration: 0.45), value: idea.saved)
+            .animation(.easeInOut(duration: 0.35), value: idea.saved)
             .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
             .sensoryFeedback(.selection, trigger: idea.saved)
         }
@@ -375,7 +379,7 @@ struct EventDetail: View {
                         .foregroundStyle(added ? Color(hex: 0xA9320B) : .white)
                         .contentTransition(.interpolate)
                         .padding(.horizontal, 22).frame(height: 50)
-                        .background(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E), in: .rect(cornerRadius: 12, style: .continuous))
+                        .buttonFace(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E))
                 }
                 .buttonStyle(PressStyle())
                 .disabled(added || idea.candidate.isEmpty)

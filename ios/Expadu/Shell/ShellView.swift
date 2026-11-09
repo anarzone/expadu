@@ -274,7 +274,7 @@ struct AskComposerLabel: View {
             .font(.geist(16, .semibold)).foregroundStyle(.white)
             .padding(.horizontal, 14)
             .frame(maxWidth: .infinity).frame(height: height)
-            .background(ComposerLook.ink, in: .rect(cornerRadius: 12, style: .continuous))
+            .glassEffect(.regular.tint(ComposerLook.ink).interactive(), in: .capsule)
             .overlay { Capsule().strokeBorder(ComposerLook.ring(turn: turn), lineWidth: 2.5) }
         }
     }

@@ -219,7 +219,7 @@ struct LiveTrip: View {
             Label(title, systemImage: symbol).labelStyle(Tight())
                 .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                 .padding(.horizontal, 14).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
-                .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
+                .buttonFace(Palette.quiet)
                 .contentShape(.capsule)
         }
         .buttonStyle(PressStyle())
@@ -427,7 +427,7 @@ struct OtherWaysSheet: View {
                             }
                             .font(.geist(15, .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 44)
-                            .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
+                            .buttonFace(Palette.action)
                             .contentShape(.capsule)
                         }
                         .buttonStyle(PressStyle())

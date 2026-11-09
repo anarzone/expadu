@@ -23,6 +23,8 @@ struct WhatsOnSheet: View {
     @State private var hidden: Set<String> = []
     @State private var hiding: (listing: WhatsOn.Listing, send: Task<Void, Never>)?
     @State private var problem: String?
+    /// Why a save didn't go through, said where it happened; the bookmark goes back with it.
+    @State private var saveRefusal: String?
     @State private var query = ""
     @State private var free = false
     @State private var savedOnly = false
@@ -51,6 +53,18 @@ struct WhatsOnSheet: View {
                     }
                 }
         }
+        .overlay(alignment: .bottom) {
+            if let saveRefusal {
+                Label(saveRefusal, systemImage: "exclamationmark.circle.fill").labelStyle(Tight())
+                    .font(.geist(15)).foregroundStyle(.white)
+                    .padding(.horizontal, 18).padding(.vertical, 14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(hex: 0x2B2720), in: .rect(cornerRadius: 22, style: .continuous))
+                    .padding(.horizontal, 16).padding(.bottom, 100)
+                    .transition(.offset(y: 30).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(duration: 0.45, bounce: 0.2), value: saveRefusal)
         .flexibleSheet()
         .presentationBackground(Palette.canvas)
         .task(id: date) { await load() }
@@ -297,7 +311,7 @@ struct WhatsOnSheet: View {
                     Button("Undo") { undoHide() }
                         .font(.geist(14, .bold)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 14).frame(height: 32)
-                        .background(Palette.surface, in: .rect(cornerRadius: 12, style: .continuous))
+                        .buttonFace(Palette.surface)
                         .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Palette.border) }
                 }
                 .foregroundStyle(Palette.text)
@@ -361,7 +375,7 @@ struct WhatsOnSheet: View {
                     Button { query = word.lowercased() } label: {
                         Text(word).font(.geist(15, .medium)).foregroundStyle(Palette.text)
                             .padding(.horizontal, 14).frame(height: 36)
-                            .background(Palette.surface, in: .rect(cornerRadius: 12, style: .continuous))
+                            .buttonFace(Palette.surface)
                             .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Palette.border) }
                     }
                     .buttonStyle(PressStyle())
@@ -410,6 +424,10 @@ struct WhatsOnSheet: View {
                 today.markSaved(listing.idea.candidate, saved: saving)
             } catch {
                 withAnimation { day?.listings[index].idea.saved = !saving }
+                // Never back silently: say why, in the server's own words when it gave them.
+                if case let .refused(message) = error { saveRefusal = message } else { saveRefusal = "Couldn’t save it just now. Try again in a moment." }
+                try? await Task.sleep(for: .seconds(4))
+                saveRefusal = nil
             }
         }
     }

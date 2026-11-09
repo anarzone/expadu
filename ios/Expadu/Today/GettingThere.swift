@@ -251,7 +251,7 @@ struct GettingThere: View {
                         .font(.geist(17, .semibold)).foregroundStyle(.white)
                         .fixedSize()
                         .padding(.horizontal, 20).frame(height: 50)
-                        .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
+                        .buttonFace(Palette.action)
                     }
                     .buttonStyle(PressStyle())
                     .disabled(starting)

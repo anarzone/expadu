@@ -119,7 +119,7 @@ struct EmptyDay: View {
                     Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text).lineLimit(1)
                         .fixedSize()
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
+                        .buttonFace(Palette.quiet)
                 }
                 .buttonStyle(PressStyle())
             }
@@ -539,7 +539,7 @@ struct LeaveCard: View {
                     }
                     .font(.geist(15, .semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
+                    .buttonFace(Palette.action)
                     .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -548,7 +548,7 @@ struct LeaveCard: View {
                     Label("Other ways", systemImage: "arrow.triangle.branch")
                         .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
+                        .buttonFace(Palette.quiet)
                         .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -894,7 +894,7 @@ struct AddPlanSheet: View {
                 .font(.geist(16, .semibold))
                 .foregroundStyle(ready ? .white : Palette.textSoft)
                 .frame(maxWidth: .infinity).frame(height: 52)
-                .background(ready ? Palette.action : Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
+                .buttonFace(ready ? Palette.action : Palette.quiet)
             }
             .buttonStyle(PressStyle())
             .disabled(!ready || saving)

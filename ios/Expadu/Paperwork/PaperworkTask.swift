@@ -341,7 +341,7 @@ struct PaperworkTaskPage: View {
                     }
                     .foregroundStyle(item.done ? Palette.text : PaperworkLook.greenInk)
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(item.done ? Palette.quiet : PaperworkLook.greenSoft, in: .rect(cornerRadius: 12, style: .continuous))
+                    .buttonFace(item.done ? Palette.quiet : PaperworkLook.greenSoft)
                 }
                 .buttonStyle(PressStyle())
                 .disabled(model.busy != nil)

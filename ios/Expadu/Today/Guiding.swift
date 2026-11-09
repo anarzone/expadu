@@ -247,7 +247,7 @@ struct TripTrouble: View {
                 }
                 .font(.geist(15, .semibold)).foregroundStyle(.white)
                 .frame(maxWidth: .infinity).frame(height: 44)
-                .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
+                .buttonFace(Palette.action)
             }
             .buttonStyle(PressStyle())
             .disabled(busy)
