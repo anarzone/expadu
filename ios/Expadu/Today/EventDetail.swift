@@ -319,7 +319,7 @@ struct EventDetail: View {
         let from = today.place
         do throws(APIFailure) {
             let next = try await session.api.planWay(to: idea.title, latitude: latitude, longitude: longitude, fromLatitude: from?.latitude, fromLongitude: from?.longitude,
-                                                     startsAt: idea.timed ? idea.startsAt : nil)
+                                                     startsAt: idea.aimFor())
             withAnimation(.snappy) { plan = next; planProblem = next.ways.isEmpty ? "No way there was found for this time. Try again in a moment." : nil }
         } catch {
             withAnimation(.snappy) { planProblem = Self.words(error) }

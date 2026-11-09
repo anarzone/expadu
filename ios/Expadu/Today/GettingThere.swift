@@ -68,7 +68,7 @@ struct GettingThere: View {
                            shell.show(.travel)
                        },
                        know: plan.map { goodToKnow($0, way) } ?? [],
-                       starts: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil)
+                       starts: idea.aimFor().map(TodayPage.clock))
                     .navigationTransition(.zoom(sourceID: "way-map", in: mapZoom))
             }
         }
@@ -103,7 +103,7 @@ struct GettingThere: View {
     }
 
     private var sub: String {
-        "To \(idea.title)" + ((idea.timed ? idea.startsAt : nil).map { " · starts \(TodayPage.clock($0))" } ?? "")
+        "To \(idea.title)" + (idea.aimFor().map { " · starts \(TodayPage.clock($0))" } ?? (idea.startsAt != nil && idea.timed ? " · on now" : ""))
     }
 
     // MARK: Content
@@ -152,7 +152,7 @@ struct GettingThere: View {
                     .frame(height: 2).padding(.horizontal, 14)
                     .background(Palette.surface)
                 VStack(alignment: .leading, spacing: 10) {
-                    if idea.timed, idea.startsAt != nil {
+                    if idea.aimFor() != nil {
                         Text(way.spareWords).font(.geist(13, .bold)).foregroundStyle(spareInk(way))
                             .padding(.horizontal, 10).frame(height: 26)
                             .background(spareTint(way), in: .rect(cornerRadius: 7, style: .continuous))
@@ -161,7 +161,7 @@ struct GettingThere: View {
                     if onFoot(way), let turns = way.legs.first?.turns, !turns.isEmpty {
                         TurnList(turns: turns, to: idea.place ?? idea.title)
                     } else {
-                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil))
+                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.aimFor().map(TodayPage.clock)))
                     }
                 }
                 .padding(.top, 14).padding(.horizontal, 18).padding(.bottom, 14)
@@ -238,7 +238,7 @@ struct GettingThere: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Leave \(way.leaveTime)").font(.geist(16, .bold)).foregroundStyle(Palette.text).monospacedDigit()
                             .contentTransition(.numericText())
-                        Text(way.spareWords).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                        Text(idea.aimFor() == nil ? "There \(way.arriveTime)" : way.spareWords).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                     }
                     .minimumScaleFactor(0.8)
                     .padding(.leading, 14)

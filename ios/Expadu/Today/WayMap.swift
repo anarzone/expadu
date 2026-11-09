@@ -268,7 +268,7 @@ struct WayMap: View {
     /// "Leave 16:45 · there 16:55 · 5 min spare"; while guiding, when they'll be there.
     private var summary: String {
         if let trip = guiding?.trip { return "There at \(trip.legs.last?.arriveTime ?? trip.arriveTime ?? "")" }
-        if let way { return "Leave \(way.leaveTime) · there \(way.arriveTime) · \(way.spareWords)" }
+        if let way { return "Leave \(way.leaveTime) · there \(way.arriveTime)" + (starts == nil ? "" : " · \(way.spareWords)") }
         guard let first = legs.first, let last = legs.last else { return "" }
         return "Leave \(first.departTime) · there \(last.arriveTime)"
     }
@@ -301,7 +301,7 @@ struct WayMap: View {
                         .frame(width: 34)
                         VStack(alignment: .leading, spacing: 1) {
                             Text("Leave \(other.leaveTime)").font(.geist(15, .semibold)).foregroundStyle(Palette.text).monospacedDigit()
-                            Text(other.spareWords).font(.geist(12.5)).foregroundStyle(other.spareMinutes < 0 ? Palette.conflictText : Palette.textSoft)
+                            Text(starts == nil ? "There \(other.arriveTime)" : other.spareWords).font(.geist(12.5)).foregroundStyle(other.spareMinutes < 0 ? Palette.conflictText : Palette.textSoft)
                         }
                         Spacer(minLength: 0)
                         Text("\(other.minutes) min").font(.geist(15, .semibold)).foregroundStyle(Palette.text).monospacedDigit()
