@@ -15,7 +15,9 @@ struct CologneToday: View {
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
     @Environment(\.shell) private var shell
-    @State private var open = false
+    /// nil until they choose: open on a day with no plans left (the canvas's free day), folded otherwise.
+    @State private var chosen: Bool?
+    private var open: Bool { chosen ?? page.ahead.isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -34,8 +36,9 @@ struct CologneToday: View {
                     Divider().overlay(Palette.border)
                 }
                 Button {
-                    withAnimation(.snappy) { open.toggle() }
-                    if open { Task { await model.loadBoard(session.api) } }
+                    let next = !open
+                    withAnimation(.snappy) { chosen = next }
+                    if next { Task { await model.loadBoard(session.api) } }
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: "tram.fill").font(.system(size: 16))
@@ -74,6 +77,7 @@ struct CologneToday: View {
             .clipShape(.rect(cornerRadius: 22))
             .card(radius: 22)
         }
+        .task(id: open) { if open, model.board == nil { await model.loadBoard(session.api) } }
     }
 }
 
