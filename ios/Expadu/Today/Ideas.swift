@@ -103,12 +103,9 @@ struct IdeaRow: View {
             Spacer(minLength: 0)
             HStack(spacing: 4) {
                 Button { Task { await model.toggleSave(session.api, idea: idea) } } label: {
-                    // Saved: a star in a quiet circle (.id-btn.on); not yet: the bookmark.
-                    Image(systemName: idea.saved ? "star.fill" : "bookmark")
-                        .font(.system(size: 16, weight: .semibold))
+                    // Saved: the bookmark fills, in a quiet circle (.id-btn.on).
+                    FillingBookmark(filled: idea.saved, size: 16, weight: .semibold)
                         .foregroundStyle(idea.saved ? Palette.text : Palette.textSoft)
-                        .contentTransition(.symbolEffect(.replace))
-                        .symbolEffect(.bounce, value: idea.saved)
                         .frame(width: 36, height: 36)
                         .background(Palette.quiet.opacity(idea.saved ? 1 : 0), in: .circle)
                         .frame(width: 36, height: 36).contentShape(.circle)

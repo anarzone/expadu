@@ -154,3 +154,22 @@ struct FlexibleSheet: ViewModifier {
 extension View {
     func flexibleSheet() -> some View { modifier(FlexibleSheet()) }
 }
+
+/// Save's bookmark: the outline always, and its fill rising smoothly from the bottom when saved,
+/// draining the same way when not. No bounce; the colour stays the outline's.
+struct FillingBookmark: View {
+    let filled: Bool
+    var size: CGFloat = 17
+    var weight: Font.Weight = .medium
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Image(systemName: "bookmark").font(.system(size: size, weight: weight))
+            .overlay {
+                Image(systemName: "bookmark.fill").font(.system(size: size, weight: weight))
+                    .mask { Rectangle().scaleEffect(x: 1, y: filled ? 1 : 0, anchor: .bottom) }
+            }
+            .animation(reduceMotion ? .easeOut(duration: 0.15) : .easeInOut(duration: 0.45), value: filled)
+            .accessibilityHidden(true)
+    }
+}

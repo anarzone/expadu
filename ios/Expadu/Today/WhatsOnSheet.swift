@@ -406,7 +406,7 @@ struct WhatsOnSheet: View {
     private func save(_ listing: WhatsOn.Listing) {
         guard let index = day?.listings.firstIndex(where: { $0.id == listing.id }), let startsAt = listing.idea.startsAt else { return }
         let saving = !listing.idea.saved
-        withAnimation(.spring(duration: 0.45, bounce: 0.4)) { day?.listings[index].idea.saved = saving }
+        withAnimation(.easeInOut(duration: 0.45)) { day?.listings[index].idea.saved = saving }
         Task {
             do throws(APIFailure) {
                 _ = try await session.api.saveEvent(id: listing.idea.id, startsAt: startsAt, saved: saving)
@@ -511,10 +511,8 @@ struct SaveButton: View {
     var body: some View {
         let saved = listing.idea.saved
         Button { save(listing) } label: {
-            Image(systemName: saved ? "bookmark.fill" : "bookmark").font(.system(size: 17, weight: .medium))
+            FillingBookmark(filled: saved, size: 17, weight: .medium)
                 .foregroundStyle(WhatsOnLook.saveInk)
-                .contentTransition(.symbolEffect(.replace))
-                .symbolEffect(.bounce, value: saved)
                 .frame(width: 44, height: 44)
                 .background(saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, in: .circle)
                 .overlay { Circle().strokeBorder(saved ? Color(light: 0xD9C9EF, dark: 0x4A3A66) : Palette.border) }

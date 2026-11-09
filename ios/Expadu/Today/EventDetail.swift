@@ -141,10 +141,8 @@ struct EventDetail: View {
             }
             .accessibilityLabel("Share")
             Button { save(listing) } label: {
-                Image(systemName: idea.saved ? "bookmark.fill" : "bookmark").font(.system(size: 18, weight: .semibold))
+                FillingBookmark(filled: idea.saved, size: 18, weight: .semibold)
                     .foregroundStyle(WhatsOnLook.saveInk)
-                    .contentTransition(.symbolEffect(.replace))
-                    .symbolEffect(.bounce, value: idea.saved)
             }
             .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
             .sensoryFeedback(.selection, trigger: idea.saved)
