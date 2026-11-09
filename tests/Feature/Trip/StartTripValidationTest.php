@@ -6,14 +6,18 @@ use App\Models\User;
 
 function datedTripPayload(): array
 {
+    // One clock read: a second ticking over between the journey's arrival and the leg's would put
+    // the leg after the journey, and the start would be refused for that, not for what's tested.
+    $now = now()->toImmutable();
+
     return [
         'journey' => [
-            'mode' => 'transit', 'depart_at' => now()->addMinute()->toIso8601String(),
-            'arrive_at' => now()->addMinutes(20)->toIso8601String(),
+            'mode' => 'transit', 'depart_at' => $now->addMinute()->toIso8601String(),
+            'arrive_at' => $now->addMinutes(20)->toIso8601String(),
             'legs' => [[
                 'mode' => 'tram', 'line' => '1',
-                'depart_at' => now()->addMinute()->toIso8601String(),
-                'arrive_at' => now()->addMinutes(20)->toIso8601String(),
+                'depart_at' => $now->addMinute()->toIso8601String(),
+                'arrive_at' => $now->addMinutes(20)->toIso8601String(),
                 'to' => ['name' => 'Destination'],
             ]],
         ],

@@ -441,8 +441,7 @@ private struct StreetPill: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(height: 40)
-            .background(Palette.surface, in: .capsule)
-            .cssShadow(Capsule(), y: 6, blur: 18, spread: -10, color: Color(hex: 0x211D15, opacity: 0.6))
+            .glassEffect(.regular, in: .rect(cornerRadius: 12, style: .continuous))
     }
 }
 

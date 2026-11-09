@@ -38,3 +38,17 @@ test('a past or far-off day reads as today', function () {
     $this->withToken($token)->getJson('/api/v1/events?date=2026-11-01')->assertOk()->assertJsonPath('date', '2026-11-07');
     $this->withToken($token)->getJson('/api/v1/events?date=2027-01-01')->assertOk()->assertJsonPath('date', '2026-11-07');
 });
+
+test('an event on now can be saved; one that has ended can’t', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-09 20:15', 'Europe/Berlin'));
+    $token = User::factory()->create()->createToken('iPhone')->plainTextToken;
+    $tour = CarbonImmutable::parse('2026-11-09 19:00', 'Europe/Berlin');
+    $onNow = Event::factory()->create(['status' => 'active', 'starts_at' => $tour, 'ends_at' => $tour->addHours(2)]);
+    $matinee = CarbonImmutable::parse('2026-11-09 10:00', 'Europe/Berlin');
+    $ended = Event::factory()->create(['status' => 'active', 'starts_at' => $matinee, 'ends_at' => $matinee->addMinutes(45)]);
+
+    $this->withToken($token)->postJson('/api/v1/events/saved', ['event_id' => $onNow->id, 'occurrence_start' => $tour->toIso8601String(), 'saved' => true])
+        ->assertOk()->assertJsonPath('saved', true);
+    $this->withToken($token)->postJson('/api/v1/events/saved', ['event_id' => $ended->id, 'occurrence_start' => $matinee->toIso8601String(), 'saved' => true])
+        ->assertUnprocessable()->assertJsonValidationErrors('occurrence_start');
+});

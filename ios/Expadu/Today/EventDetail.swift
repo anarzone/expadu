@@ -8,17 +8,22 @@ import SwiftUI
 /// listing's own tip), when, where, price and language, what it is, Not interested, and a bar
 /// at the bottom to add it to the day.
 struct EventDetail: View {
-    let listing: WhatsOn.Listing
-    let day: WhatsOn
+    /// What's on's own day, read live, so a save here shows here at once.
+    @Binding var day: WhatsOn
+    /// The listing as it was opened, in case the day reloads without it.
+    let opened: WhatsOn.Listing
     let page: TodayPage?
     let save: (WhatsOn.Listing) -> Void
     let notInterested: (WhatsOn.Listing) -> Void
+    /// Back to the list that pushed it.
+    let back: () -> Void
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The title in a bar once the poster has scrolled away (.wd.bar).
     @State private var bar = false
+    /// How far the page has scrolled: the poster's kind and tape fade before they reach the buttons.
+    @State private var scrolled: CGFloat = 0
     @State private var going = false
     /// Getting there's ways, planned when the details open; the Where row shows the first one's time.
     @State private var plan: WayPlan?
@@ -27,6 +32,7 @@ struct EventDetail: View {
     /// Why Add to my day didn't go in, said here: Today's own note is under this sheet.
     @State private var refusal: String?
 
+    private var listing: WhatsOn.Listing { day.listings.first { $0.id == opened.id } ?? opened }
     private var idea: TodayPage.Idea { listing.idea }
     private var now: Date { .now }
 
@@ -87,14 +93,18 @@ struct EventDetail: View {
             .padding(.horizontal, 16).padding(.bottom, 128)
         }
         .scrollIndicators(.hidden)
+        // The poster runs to the top; no system fade over it.
+        .scrollEdgeEffectHidden(true, for: .top)
         .ignoresSafeArea(edges: .top)
+        .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, now in scrolled = now }
         .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 250 } action: { _, on in
             withAnimation(Motion.ios(0.3)) { bar = on }
         }
         .background(Palette.canvas.ignoresSafeArea())
         .overlay(alignment: .top) { nav }
         .overlay(alignment: .bottom) { foot }
-        .toolbar(.hidden, for: .navigationBar)
+        .toolbar { buttons }
+        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $going) {
             GettingThere(listing: listing, day: day, plan: $plan, problem: $planProblem, replan: replan)
         }
@@ -104,6 +114,7 @@ struct EventDetail: View {
 
     // MARK: Top
 
+    /// The title in a bar once the poster has scrolled away (.wd.bar); the buttons are the toolbar's.
     private var nav: some View {
         ZStack(alignment: .top) {
             if bar {
@@ -114,39 +125,29 @@ struct EventDetail: View {
                     .overlay(alignment: .bottom) { Rectangle().fill(Palette.border).frame(height: 0.5) }
                     .transition(.offset(y: -20).combined(with: .opacity))
             }
-            HStack(spacing: 10) {
-                circle("chevron.left", label: "Back to What's on") { dismiss() }
-                Spacer()
-                ShareLink(item: listing.source ?? URL(string: "https://expadu.com")!, subject: Text(idea.title), message: Text(shareLine)) {
-                    Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .accessibilityLabel("Share")
-                Button { save(listing) } label: {
-                    Image(systemName: idea.saved ? "bookmark.fill" : "bookmark").font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(WhatsOnLook.saveInk)
-                        .contentTransition(.symbolEffect(.replace))
-                        .symbolEffect(.bounce, value: idea.saved)
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .buttonStyle(PressStyle())
-                .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
-                .sensoryFeedback(.selection, trigger: idea.saved)
-            }
-            .padding(.horizontal, 16).padding(.top, 14)
         }
+        .allowsHitTesting(false)
     }
 
-    private func circle(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: .circle)
+    /// Share and save in the toolbar, drawn by the system in Liquid Glass (iOS 26); back is the
+    /// system's own, so the edge swipe goes back too.
+    @ToolbarContentBuilder
+    private var buttons: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            ShareLink(item: listing.source ?? URL(string: "https://expadu.com")!, subject: Text(idea.title), message: Text(shareLine)) {
+                Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
+            }
+            .accessibilityLabel("Share")
         }
-        .buttonStyle(PressStyle())
-        .accessibilityLabel(label)
+        ToolbarItem(placement: .topBarTrailing) {
+            // The same save as everywhere else: the fill rises from the bottom, no bounce.
+            Button { save(listing) } label: {
+                FillingBookmark(filled: idea.saved, size: 18, weight: .semibold)
+                    .foregroundStyle(WhatsOnLook.saveInk)
+            }
+            .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
+            .sensoryFeedback(.selection, trigger: idea.saved)
+        }
     }
 
     private var shareLine: String {
@@ -159,15 +160,18 @@ struct EventDetail: View {
         let ink = night ? WhatsOnLook.yellow : WhatsOnLook.indigo
         return VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(idea.category).font(.geist(12, .semibold)).foregroundStyle(ink)
-                    .padding(.horizontal, 9).padding(.vertical, 3)
-                    .background(.white.opacity(0.2), in: .capsule)
-                    .overlay { Capsule().strokeBorder(.white.opacity(0.45)) }
-                Text(WhatsOnLook.stamp(idea, day: day, now: now).uppercased()).font(.posterMarker(14))
-                    .foregroundStyle(Color(hex: 0x211D15))
-                    .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(WhatsOnLook.yellow)
-                    .rotationEffect(.degrees(-2))
+                Group {
+                    Text(idea.category).font(.geist(12, .semibold)).foregroundStyle(ink)
+                        .padding(.horizontal, 9).padding(.vertical, 3)
+                        .background(.white.opacity(0.2), in: .rect(cornerRadius: 6, style: .continuous))
+                        .overlay { RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.white.opacity(0.45)) }
+                    Text(WhatsOnLook.stamp(idea, day: day, now: now).uppercased()).font(.posterMarker(14))
+                        .foregroundStyle(Color(hex: 0x211D15))
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(WhatsOnLook.yellow)
+                        .rotationEffect(.degrees(-2))
+                }
+                .opacity(max(0, 1 - scrolled / 50))
                 Spacer(minLength: 0)
                 HStack(alignment: .bottom, spacing: 10) {
                     Text(idea.title.uppercased()).font(.posterGrotesque(30)).lineSpacing(-5).foregroundStyle(ink)
@@ -308,7 +312,7 @@ struct EventDetail: View {
         let from = today.place
         do throws(APIFailure) {
             let next = try await session.api.planWay(to: idea.title, latitude: latitude, longitude: longitude, fromLatitude: from?.latitude, fromLongitude: from?.longitude,
-                                                     startsAt: idea.timed ? idea.startsAt : nil)
+                                                     startsAt: idea.aimFor())
             withAnimation(.snappy) { plan = next; planProblem = next.ways.isEmpty ? "No way there was found for this time. Try again in a moment." : nil }
         } catch {
             withAnimation(.snappy) { planProblem = Self.words(error) }
@@ -330,6 +334,8 @@ struct EventDetail: View {
 
     // MARK: Bottom bar
 
+    /// The action floats (the tab bar's way): a glass pill set in from the edges, the price and
+    /// when on its left, Add to my day filling the rest. The page scrolls under it, no strip, no line.
     private var foot: some View {
         let added = today.isAdded(idea.candidate)
         return VStack(alignment: .leading, spacing: 10) {
@@ -337,41 +343,43 @@ struct EventDetail: View {
                 Label(refusal, systemImage: "exclamationmark.circle.fill")
                     .font(.geist(13.5, .semibold)).foregroundStyle(Palette.conflictText)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Palette.surface, in: .rect(cornerRadius: 16))
                     .transition(.offset(y: 8).combined(with: .opacity))
             }
-            HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(idea.price ?? "Price not listed").font(.geist(17, .bold)).foregroundStyle(Palette.text)
-                Text(whenLine).font(.geist(13)).foregroundStyle(Palette.textSoft).lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Button {
-                Task {
-                    await today.change(session.api, action: "add", date: day.date, candidate: idea.candidate, symbol: "calendar.badge.plus")
-                    if let note = today.note, note.problem {
-                        withAnimation(.spring(duration: 0.45, bounce: 0.3)) { refusal = note.text }
-                        try? await Task.sleep(for: .seconds(6))
-                        withAnimation(.easeOut(duration: 0.25)) { refusal = nil }
-                    }
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(idea.price ?? "Price not listed").font(.geist(16, .bold)).foregroundStyle(Palette.text).lineLimit(1)
+                    Text(whenLine).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                 }
-            } label: {
-                Text(added ? "✓ In your plan" : "Add to my day").font(.geist(17, .semibold))
-                    .foregroundStyle(added ? Color(hex: 0xA9320B) : .white)
-                    .contentTransition(.interpolate)
-                    .padding(.horizontal, 24).frame(height: 50)
-                    .background(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E), in: .capsule)
+                .padding(.leading, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Button {
+                    Task {
+                        await today.change(session.api, action: "add", date: day.date, candidate: idea.candidate, symbol: "calendar.badge.plus")
+                        if let note = today.note, note.problem {
+                            withAnimation(.easeOut(duration: 0.3)) { refusal = note.text }
+                            try? await Task.sleep(for: .seconds(6))
+                            withAnimation(.easeOut(duration: 0.25)) { refusal = nil }
+                        }
+                    }
+                } label: {
+                    Text(added ? "✓ In your plan" : "Add to my day").font(.geist(17, .semibold))
+                        .foregroundStyle(added ? Color(hex: 0xA9320B) : .white)
+                        .contentTransition(.interpolate)
+                        .padding(.horizontal, 22).frame(height: 50)
+                        .buttonFace(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E))
+                }
+                .buttonStyle(PressStyle())
+                .disabled(added || idea.candidate.isEmpty)
+                .animation(.easeInOut(duration: 0.35), value: added)
+                .sensoryFeedback(.success, trigger: added)
             }
-            .buttonStyle(PressStyle())
-            .disabled(added || idea.candidate.isEmpty)
-            .animation(.spring(duration: 0.4, bounce: 0.35), value: added)
-            .sensoryFeedback(.success, trigger: added)
-            }
+            .padding(6)
+            .glassEffect(.regular, in: .rect(cornerRadius: 28, style: .continuous))
+            .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
         }
-        .padding(.leading, 20).padding(.trailing, 16).padding(.top, 12).padding(.bottom, 30)
-        .background(Palette.canvas.opacity(0.74))
-        .background(.ultraThinMaterial)
-        .overlay(alignment: .top) { Rectangle().fill(Palette.border).frame(height: 0.5) }
-        .ignoresSafeArea(edges: .bottom)
+        .padding(.horizontal, 16).padding(.bottom, 6)
     }
 }
 
@@ -397,7 +405,7 @@ private struct DetailRow: View {
                 Label(go.text, systemImage: go.symbol).labelStyle(Tight())
                     .font(.geist(14, .semibold)).foregroundStyle(Color(hex: 0x2F6FD0))
                     .padding(.horizontal, 10).frame(height: 28)
-                    .background(Color(light: 0xEAF1F8, dark: 0x1E2C40), in: .capsule)
+                    .background(Color(light: 0xEAF1F8, dark: 0x1E2C40), in: .rect(cornerRadius: 8, style: .continuous))
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
             if chevron {

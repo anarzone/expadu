@@ -37,7 +37,7 @@ public enum MotionToken: String, CaseIterable, Identifiable, Codable, Sendable {
             ]
         case .press:
             [
-                MotionVariant("Mock", .timingCurve(0.22, 1, 0.36, 1, duration: 0.16)),
+                MotionVariant("Sink", .easeOut(duration: 0.16)),
                 MotionVariant("Off", nil),
             ]
         }
@@ -72,15 +72,70 @@ public final class MotionStore {
     }
 }
 
-/// The mock's press: 0.97, on the settle curve.
+/// Every button's press: it sinks a touch and settles back, smoothly, no bounce. The face's glass
+/// (`buttonFace`) lights up under the finger on its own.
 public struct PressStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var enabled
 
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
+        let down = configuration.isPressed && enabled
         configuration.label
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
-            .animation(MotionStore.shared.animation(.press, reduceMotion: reduceMotion), value: configuration.isPressed)
+            .scaleEffect(down && !reduceMotion ? 0.97 : 1)
+            .animation(MotionStore.shared.animation(.press, reduceMotion: reduceMotion), value: down)
+    }
+}
+
+/// An icon button as iOS 26 draws one: a rounded square of Liquid Glass whose corners follow the
+/// card around it (concentric), tinted with its face colour. Pressed, the glass lights and flexes
+/// and it sinks a touch, with a light tick.
+public struct IconTileStyle: ButtonStyle {
+    private let fill: Color
+    private let tint: Color
+    private let size: CGFloat
+    private let glass: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var enabled
+
+    /// `fill` is the face; `tint` washes over it (an added plan's green).
+    public init(fill: Color, tint: Color = .clear, size: CGFloat = 44) {
+        self.fill = fill
+        self.tint = tint
+        self.size = size
+        glass = false
+    }
+
+    /// Floating over a map or a picture: the system's Liquid Glass in the same shape.
+    public init(glassSize size: CGFloat) {
+        fill = .clear
+        tint = .clear
+        self.size = size
+        glass = true
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        let down = configuration.isPressed && enabled
+        let shape = RoundedRectangle(cornerRadius: (size * 0.3).rounded(), style: .continuous)
+        configuration.label
+            .frame(width: size, height: size)
+            // Depth from Liquid Glass, tinted with the face's colour: lit at its edges, and it
+            // flexes and glows under the finger. No drawn gradient, no drop shadow.
+            .glassEffect(glass ? .regular.interactive() : .regular.tint(fill).interactive(), in: shape)
+            .overlay { shape.fill(tint).allowsHitTesting(false) }
+            .contentShape(shape)
+            .scaleEffect(down && !reduceMotion ? 0.94 : 1)
+            .animation(.easeOut(duration: down ? 0.12 : 0.22), value: down)
+            .sensoryFeedback(.impact(weight: .light, intensity: 0.5), trigger: down) { _, now in now }
+    }
+}
+
+extension View {
+    /// A text button's face, iOS 26: Liquid Glass tinted with the button's colour in a rounded
+    /// rectangle that follows its card. It catches light at its edges and flexes and glows under
+    /// the finger, which is the button's depth; no drawn gradient, no drop shadow.
+    public func buttonFace(_ color: Color, radius: CGFloat = 12) -> some View {
+        glassEffect(.regular.tint(color).interactive(), in: .rect(cornerRadius: radius, style: .continuous))
     }
 }

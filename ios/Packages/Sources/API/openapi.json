@@ -165,6 +165,112 @@
                 }
             }
         },
+        "/paperwork/v2/plan": {
+            "get": {
+                "operationId": "paperwork.v2.plan",
+                "tags": [
+                    "AccountPlan"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "schema_version": {
+                                                    "type": "string",
+                                                    "const": "bureaucracy.account-entry.1"
+                                                },
+                                                "state": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ready",
+                                                        "record_unavailable",
+                                                        "setup_required"
+                                                    ]
+                                                },
+                                                "plan": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                }
+                                            },
+                                            "required": [
+                                                "schema_version",
+                                                "state",
+                                                "plan"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "schema_version": {
+                                                    "type": "string",
+                                                    "const": "bureaucracy.account-entry.1"
+                                                },
+                                                "state": {
+                                                    "type": "string",
+                                                    "const": "processing_stopped"
+                                                },
+                                                "stopped_at": {
+                                                    "type": "string"
+                                                },
+                                                "plan": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "schema_version",
+                                                "state",
+                                                "stopped_at",
+                                                "plan"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "schema_version": {
+                                                    "type": "string",
+                                                    "const": "bureaucracy.account-entry.1"
+                                                },
+                                                "state": {
+                                                    "type": "string",
+                                                    "const": "erased"
+                                                },
+                                                "erased_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "plan": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "schema_version",
+                                                "state",
+                                                "erased_at",
+                                                "plan"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/alerts": {
             "get": {
                 "operationId": "alerts.index",
@@ -302,6 +408,413 @@
                 }
             }
         },
+        "/paperwork/v2/people/{person}/sharing": {
+            "get": {
+                "operationId": "paperwork.v2.people.sharing",
+                "tags": [
+                    "Delegation"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "grants": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "scopes": {
+                                                        "type": "array",
+                                                        "items": {}
+                                                    },
+                                                    "name": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "is_my_access": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "accepted_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "expires_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "revoked_at": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "scopes",
+                                                    "name",
+                                                    "is_my_access",
+                                                    "accepted_at",
+                                                    "expires_at",
+                                                    "revoked_at"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "grants"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/invitations": {
+            "post": {
+                "operationId": "paperwork.v2.invitations.store",
+                "tags": [
+                    "Delegation"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InviteFamilyMemberRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "invitation_id": {
+                                            "type": "integer"
+                                        },
+                                        "token": {
+                                            "type": "string"
+                                        },
+                                        "expires_at": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "invitation_id",
+                                        "token",
+                                        "expires_at"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/invitations/inspect": {
+            "post": {
+                "operationId": "paperwork.v2.invitations.inspect",
+                "tags": [
+                    "Delegation"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InspectFamilyInvitationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "invitation": {
+                                            "type": "object",
+                                            "properties": {
+                                                "requested_scopes": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "requested_by": {},
+                                                "notice_version": {
+                                                    "type": "string"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                },
+                                                "maximum_grant_days": {}
+                                            },
+                                            "required": [
+                                                "requested_scopes",
+                                                "requested_by",
+                                                "notice_version",
+                                                "expires_at",
+                                                "maximum_grant_days"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "invitation"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/invitations/accept": {
+            "post": {
+                "operationId": "paperwork.v2.invitations.accept",
+                "tags": [
+                    "Delegation"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AcceptFamilyInvitationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "person_id": {
+                                            "type": "integer"
+                                        },
+                                        "record_version": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "person_id",
+                                        "record_version"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/invitations/{invitation}": {
+            "delete": {
+                "operationId": "paperwork.v2.invitations.cancel",
+                "tags": [
+                    "Delegation"
+                ],
+                "parameters": [
+                    {
+                        "name": "invitation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The invitation ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/grants/{grant}": {
+            "delete": {
+                "operationId": "paperwork.v2.grants.revoke",
+                "tags": [
+                    "Delegation"
+                ],
+                "parameters": [
+                    {
+                        "name": "grant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The grant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/dependents": {
+            "post": {
+                "operationId": "paperwork.v2.dependents.store",
+                "tags": [
+                    "DependentAuthority"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RequestDependentAuthorityRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "request_id": {
+                                            "type": "integer"
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "const": "pending_authority_review"
+                                        },
+                                        "access_granted": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "request_id",
+                                        "status",
+                                        "access_granted"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/authorities/{authority}": {
+            "delete": {
+                "operationId": "paperwork.v2.authorities.revoke",
+                "tags": [
+                    "DependentAuthority"
+                ],
+                "parameters": [
+                    {
+                        "name": "authority",
+                        "in": "path",
+                        "required": true,
+                        "description": "The authority ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/events": {
             "get": {
                 "operationId": "events.day",
@@ -393,6 +906,504 @@
                 }
             }
         },
+        "/paperwork/v2/people/{person}/paperwork": {
+            "get": {
+                "operationId": "paperwork.v2.paperwork.index",
+                "tags": [
+                    "Evidence"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "jurisdiction",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 80
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/evidence/{evidenceId}": {
+            "put": {
+                "operationId": "paperwork.v2.evidence.update",
+                "tags": [
+                    "Evidence"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "evidenceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordEvidenceRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "version": {
+                                            "type": "integer"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "version",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/evidence/{evidence}/shares": {
+            "get": {
+                "operationId": "paperwork.v2.evidence.shares.index",
+                "tags": [
+                    "EvidenceSharing"
+                ],
+                "parameters": [
+                    {
+                        "name": "evidence",
+                        "in": "path",
+                        "required": true,
+                        "description": "The evidence ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "notice_version": {
+                                            "type": "string",
+                                            "const": "2026-09-08.single-requirement.1"
+                                        },
+                                        "notice": {
+                                            "type": "string",
+                                            "const": "Share this document record only for the selected person, process and requirement until the date you choose. Their authorised helpers may see it for that use. No file is uploaded or sent to AI. You can withdraw sharing here."
+                                        },
+                                        "shares": {}
+                                    },
+                                    "required": [
+                                        "notice_version",
+                                        "notice",
+                                        "shares"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "paperwork.v2.evidence.shares.store",
+                "tags": [
+                    "EvidenceSharing"
+                ],
+                "parameters": [
+                    {
+                        "name": "evidence",
+                        "in": "path",
+                        "required": true,
+                        "description": "The evidence ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ShareEvidenceRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "share_id": {
+                                            "type": "integer"
+                                        },
+                                        "expires_at": {
+                                            "type": "string"
+                                        },
+                                        "revoked_at": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "share_id",
+                                        "expires_at",
+                                        "revoked_at"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/evidence/{evidence}/shares/{share}": {
+            "delete": {
+                "operationId": "paperwork.v2.evidence.shares.destroy",
+                "tags": [
+                    "EvidenceSharing"
+                ],
+                "parameters": [
+                    {
+                        "name": "evidence",
+                        "in": "path",
+                        "required": true,
+                        "description": "The evidence ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "share",
+                        "in": "path",
+                        "required": true,
+                        "description": "The share ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/fact-conflicts": {
+            "get": {
+                "operationId": "paperwork.v2.fact-conflicts.index",
+                "tags": [
+                    "FactConflict"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve": {
+            "post": {
+                "operationId": "paperwork.v2.fact-conflicts.resolve",
+                "tags": [
+                    "FactConflict"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResolveFactConflictRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/facts/schema": {
+            "get": {
+                "operationId": "paperwork.v2.facts.schema",
+                "summary": "Public reviewed registry wording and answer shapes only; no person, value or legacy mapping",
+                "tags": [
+                    "FactSchema"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "schema_version": {
+                                            "type": "string",
+                                            "const": "bureaucracy.fact-schema.1"
+                                        },
+                                        "registry_version": {
+                                            "type": "string"
+                                        },
+                                        "facts": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "options": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "question": {
+                                                        "type": "string"
+                                                    },
+                                                    "why": {
+                                                        "type": "string"
+                                                    },
+                                                    "date_semantics": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "allows_not_applicable": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "subject_scope": {
+                                                        "type": "string"
+                                                    },
+                                                    "sensitivity": {
+                                                        "type": "string"
+                                                    },
+                                                    "reconfirm_after_days": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key",
+                                                    "type",
+                                                    "options",
+                                                    "question",
+                                                    "why",
+                                                    "date_semantics",
+                                                    "allows_not_applicable",
+                                                    "subject_scope",
+                                                    "sensitivity",
+                                                    "reconfirm_after_days"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "schema_version",
+                                        "registry_version",
+                                        "facts"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/journey/plan": {
             "post": {
                 "operationId": "journey.plan",
@@ -459,6 +1470,348 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/onboarding/draft": {
+            "get": {
+                "operationId": "paperwork.v2.onboarding.draft.show",
+                "tags": [
+                    "OnboardingDraft"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "draft": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "items": {}
+                                        },
+                                        "schema_version": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "draft",
+                                        "schema_version"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "paperwork.v2.onboarding.draft.update",
+                "tags": [
+                    "OnboardingDraft"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveOnboardingDraftRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "draft": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "draft"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "paperwork.v2.onboarding.draft.destroy",
+                "tags": [
+                    "OnboardingDraft"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draft_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "expected_version",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/onboarding/review": {
+            "get": {
+                "operationId": "paperwork.v2.onboarding.review",
+                "tags": [
+                    "OnboardingDraft"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "draft_id": {},
+                                        "draft_version": {},
+                                        "answers": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "fact_key": {
+                                                        "type": "string"
+                                                    },
+                                                    "question": {
+                                                        "type": "string"
+                                                    },
+                                                    "value": {
+                                                        "type": "string"
+                                                    },
+                                                    "answer_state": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "value"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "operation": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "assert"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "effective_from": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "fact_key",
+                                                    "question",
+                                                    "value",
+                                                    "answer_state",
+                                                    "operation",
+                                                    "effective_from"
+                                                ]
+                                            }
+                                        },
+                                        "omitted_fact_keys": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "draft_id",
+                                        "draft_version",
+                                        "answers",
+                                        "omitted_fact_keys"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/onboarding/complete": {
+            "post": {
+                "operationId": "paperwork.v2.onboarding.complete",
+                "tags": [
+                    "OnboardingDraft"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CompleteOnboardingDraftRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -551,6 +1904,1666 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people": {
+            "get": {
+                "operationId": "paperwork.v2.people.index",
+                "tags": [
+                    "People"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "people": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": [
+                                                    "object",
+                                                    "null"
+                                                ],
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "label": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "kind": {
+                                                        "type": "string"
+                                                    },
+                                                    "is_self": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "workspace_id": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "record_version": {
+                                                        "type": "integer"
+                                                    },
+                                                    "scopes": {
+                                                        "type": "array",
+                                                        "items": {}
+                                                    },
+                                                    "can_manage_sharing": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "label",
+                                                    "kind",
+                                                    "is_self",
+                                                    "workspace_id",
+                                                    "record_version",
+                                                    "scopes",
+                                                    "can_manage_sharing"
+                                                ]
+                                            }
+                                        },
+                                        "next_cursor": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "people",
+                                        "next_cursor"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/self": {
+            "post": {
+                "operationId": "paperwork.v2.people.self",
+                "tags": [
+                    "People"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "person": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "label": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "kind": {
+                                                    "type": "string"
+                                                },
+                                                "is_self": {
+                                                    "type": "boolean"
+                                                },
+                                                "workspace_id": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "record_version": {
+                                                    "type": "integer"
+                                                },
+                                                "scopes": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "can_manage_sharing": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "label",
+                                                "kind",
+                                                "is_self",
+                                                "workspace_id",
+                                                "record_version",
+                                                "scopes",
+                                                "can_manage_sharing"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "person"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/self/city": {
+            "put": {
+                "operationId": "paperwork.v2.people.self.city",
+                "summary": "Where you live: Paperwork's first answer, since the city decides which\noffice's tasks apply (AccountHolderPlan::jurisdiction). It's the account's\nown city, the one Settings shows too",
+                "tags": [
+                    "People"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "city": {
+                                        "type": "string",
+                                        "minLength": 2,
+                                        "maxLength": 80
+                                    }
+                                },
+                                "required": [
+                                    "city"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "city": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "jurisdiction": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "city",
+                                        "jurisdiction"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}": {
+            "get": {
+                "operationId": "paperwork.v2.people.show",
+                "tags": [
+                    "People"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "person": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "label": {
+                                                    "type": "string"
+                                                },
+                                                "kind": {
+                                                    "type": "string"
+                                                },
+                                                "is_self": {
+                                                    "type": "boolean"
+                                                },
+                                                "workspace_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "record_version": {
+                                                    "type": "string"
+                                                },
+                                                "scopes": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "can_manage_sharing": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "label",
+                                                "kind",
+                                                "is_self",
+                                                "workspace_id",
+                                                "record_version",
+                                                "scopes",
+                                                "can_manage_sharing"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "person"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/facts": {
+            "get": {
+                "operationId": "paperwork.v2.facts.index",
+                "tags": [
+                    "PersonFact"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/facts/{key}/history": {
+            "get": {
+                "operationId": "paperwork.v2.facts.history",
+                "tags": [
+                    "PersonFact"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "schema_version": {
+                                            "type": "string",
+                                            "const": "bureaucracy.fact-history.1"
+                                        },
+                                        "person_id": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "key": {
+                                            "type": "string"
+                                        },
+                                        "revision": {
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "schema_version",
+                                        "person_id",
+                                        "key",
+                                        "revision",
+                                        "entries"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/facts/{key}": {
+            "put": {
+                "operationId": "paperwork.v2.facts.change",
+                "tags": [
+                    "PersonFact"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordFactChangeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fact_id": {
+                                            "type": "integer"
+                                        },
+                                        "revision": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "fact_id",
+                                        "revision"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/facts/{fact}/corrections": {
+            "post": {
+                "operationId": "paperwork.v2.facts.correct",
+                "tags": [
+                    "PersonFact"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "fact",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CorrectFactRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fact_id": {
+                                            "type": "integer"
+                                        },
+                                        "revision": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "fact_id",
+                                        "revision"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/plan": {
+            "get": {
+                "operationId": "paperwork.v2.people.plan",
+                "tags": [
+                    "PersonPlan"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "jurisdiction",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "de-nrw-cologne",
+                                "outside_coverage"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PersonPlanResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PersonPlanResource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/processing-restriction": {
+            "put": {
+                "operationId": "paperwork.v2.people.processing-restriction",
+                "tags": [
+                    "PersonRestriction"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "stopped": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "stopped"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "processing_stopped_at": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "processing_stopped_at"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/processes/{process}": {
+            "get": {
+                "operationId": "paperwork.v2.processes.show",
+                "tags": [
+                    "Process"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "description": "The process ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "assessment_revision": {},
+                                        "evaluated_at": {},
+                                        "next_reassessment_at": {}
+                                    },
+                                    "required": [
+                                        "assessment_revision",
+                                        "evaluated_at",
+                                        "next_reassessment_at"
+                                    ],
+                                    "additionalProperties": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/processes/{process}/events": {
+            "post": {
+                "operationId": "paperwork.v2.processes.events",
+                "tags": [
+                    "Process"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "description": "The process ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordProcessEventRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "event_id": {
+                                            "type": "integer"
+                                        },
+                                        "process_id": {
+                                            "type": "integer"
+                                        },
+                                        "version": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "event_id",
+                                        "process_id",
+                                        "version"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/processes/{process}/review": {
+            "post": {
+                "operationId": "paperwork.v2.processes.review",
+                "tags": [
+                    "Process"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "description": "The process ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReviewProcessChangesRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "event_id": {
+                                            "type": "integer"
+                                        },
+                                        "process_id": {
+                                            "type": "integer"
+                                        },
+                                        "version": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "event_id",
+                                        "process_id",
+                                        "version"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/processes/{process}/events/{event}/corrections": {
+            "post": {
+                "operationId": "paperwork.v2.processes.correct",
+                "tags": [
+                    "Process"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "description": "The process ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "event",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CorrectProcessEventRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "event_id": {
+                                            "type": "integer"
+                                        },
+                                        "process_id": {
+                                            "type": "integer"
+                                        },
+                                        "version": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "event_id",
+                                        "process_id",
+                                        "version"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/processes": {
+            "post": {
+                "operationId": "paperwork.v2.processes.start",
+                "tags": [
+                    "Process"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartProcessRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/question-preview": {
+            "get": {
+                "operationId": "paperwork.v2.questions.preview",
+                "tags": [
+                    "QuestionSession"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "jurisdiction",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "de-nrw-cologne",
+                                "outside_coverage"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "assessment_revision": {}
+                                    },
+                                    "required": [
+                                        "assessment_revision"
+                                    ],
+                                    "additionalProperties": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/question-sessions": {
+            "post": {
+                "operationId": "paperwork.v2.question-sessions.store",
+                "tags": [
+                    "QuestionSession"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartQuestionSessionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "session_id": {
+                                            "type": "integer"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "expires_at": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "session_id",
+                                        "status",
+                                        "expires_at"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/question-sessions/{session}/next": {
+            "post": {
+                "operationId": "paperwork.v2.question-sessions.next",
+                "tags": [
+                    "QuestionSession"
+                ],
+                "parameters": [
+                    {
+                        "name": "session",
+                        "in": "path",
+                        "required": true,
+                        "description": "The session ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NextQuestionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/question-sessions/{session}/answers/{question}": {
+            "post": {
+                "operationId": "paperwork.v2.question-sessions.answer",
+                "tags": [
+                    "QuestionSession"
+                ],
+                "parameters": [
+                    {
+                        "name": "session",
+                        "in": "path",
+                        "required": true,
+                        "description": "The session ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "question",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SubmitQuestionAnswerRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/question-sessions/{session}/defer/{question}": {
+            "post": {
+                "operationId": "paperwork.v2.question-sessions.defer",
+                "tags": [
+                    "QuestionSession"
+                ],
+                "parameters": [
+                    {
+                        "name": "session",
+                        "in": "path",
+                        "required": true,
+                        "description": "The session ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "question",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/QuestionTokenRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/question-sessions/{session}/resume": {
+            "post": {
+                "operationId": "paperwork.v2.question-sessions.resume",
+                "tags": [
+                    "QuestionSession"
+                ],
+                "parameters": [
+                    {
+                        "name": "session",
+                        "in": "path",
+                        "required": true,
+                        "description": "The session ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResumeQuestionSessionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/relationships": {
+            "get": {
+                "operationId": "paperwork.v2.relationships.index",
+                "tags": [
+                    "Relationship"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "paperwork.v2.relationships.store",
+                "tags": [
+                    "Relationship"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordRelationshipRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "relationship_id": {
+                                            "type": "integer"
+                                        },
+                                        "record_version": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "relationship_id",
+                                        "record_version"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/people/{person}/relationships/{relationship}": {
+            "delete": {
+                "operationId": "paperwork.v2.relationships.destroy",
+                "tags": [
+                    "Relationship"
+                ],
+                "parameters": [
+                    {
+                        "name": "person",
+                        "in": "path",
+                        "required": true,
+                        "description": "The person ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "relationship",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/processes/{process}/requirements/{requirement}/confirm": {
+            "post": {
+                "operationId": "paperwork.v2.requirements.confirm",
+                "tags": [
+                    "RequirementUse"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "description": "The process ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "requirement",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmRequirementUseRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "use_id": {
+                                            "type": "integer"
+                                        },
+                                        "process_id": {
+                                            "type": "integer"
+                                        },
+                                        "version": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "use_id",
+                                        "process_id",
+                                        "version"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation": {
+            "delete": {
+                "operationId": "paperwork.v2.requirements.withdraw",
+                "tags": [
+                    "RequirementUse"
+                ],
+                "parameters": [
+                    {
+                        "name": "process",
+                        "in": "path",
+                        "required": true,
+                        "description": "The process ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "requirement",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "request_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "expected_version",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "use_id": {
+                                            "type": "integer"
+                                        },
+                                        "process_id": {
+                                            "type": "integer"
+                                        },
+                                        "version": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "use_id",
+                                        "process_id",
+                                        "version"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -1359,6 +4372,50 @@
     },
     "components": {
         "schemas": {
+            "AcceptFamilyInvitationRequest": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9]+$",
+                        "minLength": 64,
+                        "maxLength": 64
+                    },
+                    "scopes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "view_plan",
+                                "view_facts",
+                                "edit_facts",
+                                "manage_process",
+                                "manage_evidence",
+                                "request_ai"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "uniqueItems": true
+                    },
+                    "notice_version": {
+                        "type": "string",
+                        "enum": [
+                            "2026-09-08.scoped-family.1"
+                        ]
+                    },
+                    "accept": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "token",
+                    "scopes",
+                    "notice_version",
+                    "accept"
+                ],
+                "title": "AcceptFamilyInvitationRequest"
+            },
             "AlertsResource": {
                 "type": "object",
                 "properties": {
@@ -1506,6 +4563,152 @@
                     "documents"
                 ],
                 "title": "BringListResource"
+            },
+            "CompleteOnboardingDraftRequest": {
+                "type": "object",
+                "properties": {
+                    "draft_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "draft_version": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "expected_fact_revision": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "confirmed": {
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    }
+                },
+                "required": [
+                    "draft_id",
+                    "draft_version",
+                    "expected_fact_revision",
+                    "request_id",
+                    "confirmed"
+                ],
+                "title": "CompleteOnboardingDraftRequest"
+            },
+            "ConfirmRequirementUseRequest": {
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "expected_version": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "evidence_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "evidence_version": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "requirement_hash": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "confirmed": {
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    }
+                },
+                "required": [
+                    "request_id",
+                    "expected_version",
+                    "evidence_id",
+                    "evidence_version",
+                    "requirement_hash",
+                    "confirmed"
+                ],
+                "title": "ConfirmRequirementUseRequest"
+            },
+            "CorrectFactRequest": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string"
+                    },
+                    "expected_revision": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "answer_state": {
+                        "type": "string",
+                        "enum": [
+                            "value",
+                            "unknown",
+                            "declined",
+                            "not_applicable"
+                        ]
+                    }
+                },
+                "required": [
+                    "value",
+                    "expected_revision"
+                ],
+                "title": "CorrectFactRequest"
+            },
+            "CorrectProcessEventRequest": {
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "expected_version": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "payload": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 10
+                    },
+                    "confirmed": {
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    }
+                },
+                "required": [
+                    "request_id",
+                    "expected_version",
+                    "payload",
+                    "confirmed"
+                ],
+                "title": "CorrectProcessEventRequest"
             },
             "DayCommandRequest": {
                 "type": "object",
@@ -1815,6 +5018,57 @@
                     "listings"
                 ],
                 "title": "EventsDayResource"
+            },
+            "InspectFamilyInvitationRequest": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9]+$",
+                        "minLength": 64,
+                        "maxLength": 64
+                    }
+                },
+                "required": [
+                    "token"
+                ],
+                "title": "InspectFamilyInvitationRequest"
+            },
+            "InviteFamilyMemberRequest": {
+                "type": "object",
+                "properties": {
+                    "workspace_id": {
+                        "type": "integer"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 254
+                    },
+                    "scopes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "view_plan",
+                                "view_facts",
+                                "edit_facts",
+                                "manage_process",
+                                "manage_evidence",
+                                "request_ai"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "uniqueItems": true
+                    }
+                },
+                "required": [
+                    "workspace_id",
+                    "email",
+                    "scopes"
+                ],
+                "title": "InviteFamilyMemberRequest"
             },
             "JourneyPlanRequest": {
                 "type": "object",
@@ -2273,10 +5527,260 @@
                 ],
                 "title": "NearbyDeparturesResource"
             },
+            "NextQuestionRequest": {
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "request_id"
+                ],
+                "title": "NextQuestionRequest"
+            },
+            "PersonPlanResource": {
+                "type": "array",
+                "items": {},
+                "title": "PersonPlanResource"
+            },
             "ProfileDeleteRequest": {
                 "type": "object",
                 "description": "Deleting the account asks for the password, or, for an account made with\nGoogle that has none, the code just emailed to it (EXP-174).",
                 "title": "ProfileDeleteRequest"
+            },
+            "QuestionTokenRequest": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "minLength": 64,
+                        "maxLength": 64
+                    }
+                },
+                "required": [
+                    "token"
+                ],
+                "title": "QuestionTokenRequest"
+            },
+            "RecordEvidenceRequest": {
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "expected_version": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "archived"
+                        ]
+                    },
+                    "details": {
+                        "type": "object",
+                        "properties": {
+                            "label": {
+                                "type": "string",
+                                "maxLength": 160
+                            },
+                            "kind": {
+                                "type": "string",
+                                "maxLength": 100
+                            },
+                            "reported_available": {
+                                "type": "boolean"
+                            },
+                            "expires_on": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "date"
+                            },
+                            "requirement_refs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "maxLength": 200
+                                },
+                                "maxItems": 50
+                            }
+                        },
+                        "required": [
+                            "label",
+                            "kind",
+                            "reported_available"
+                        ]
+                    }
+                },
+                "required": [
+                    "request_id",
+                    "expected_version",
+                    "details"
+                ],
+                "title": "RecordEvidenceRequest"
+            },
+            "RecordFactChangeRequest": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "enum": [
+                            "current_residence_title",
+                            "residence_title_expires_at",
+                            "case_goal",
+                            "sponsor",
+                            "sponsor_current_title",
+                            "blue_card_qualifying_months",
+                            "family_residence_permit_held_since",
+                            "has_children",
+                            "marital_household_continues",
+                            "weekly_work_hours",
+                            "livelihood_secured",
+                            "housing_sufficient",
+                            "legal_social_knowledge_proved",
+                            "entry_mode",
+                            "visa_expires_at",
+                            "german_level",
+                            "citizenship_group",
+                            "purpose",
+                            "permit_track",
+                            "arrival_planned",
+                            "arrival_date",
+                            "moved_in_at",
+                            "housing_provider_confirmation",
+                            "registration_status",
+                            "residence_card_expires_at",
+                            "tax_id_available",
+                            "health_coverage_confirmed",
+                            "bank_account_help_needed",
+                            "sponsor_title_at_entry"
+                        ]
+                    },
+                    "value": {
+                        "type": "string"
+                    },
+                    "effective_from": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "expected_revision": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "answer_state": {
+                        "type": "string",
+                        "enum": [
+                            "value",
+                            "unknown",
+                            "declined",
+                            "not_applicable"
+                        ]
+                    }
+                },
+                "required": [
+                    "key",
+                    "value",
+                    "expected_revision"
+                ],
+                "title": "RecordFactChangeRequest"
+            },
+            "RecordProcessEventRequest": {
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "expected_version": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "event": {
+                        "type": "string",
+                        "enum": [
+                            "preparation_started",
+                            "step_completed",
+                            "step_reopened",
+                            "submission_recorded",
+                            "submission_retracted",
+                            "blocked_reported",
+                            "waiting_reported",
+                            "action_required_reported",
+                            "completion_reported",
+                            "cancellation_reported",
+                            "process_reopened",
+                            "process_untracked",
+                            "appointment_recorded",
+                            "appointment_cancelled"
+                        ]
+                    },
+                    "payload": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 10
+                    },
+                    "review_token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[a-f0-9]{64}$"
+                    }
+                },
+                "required": [
+                    "request_id",
+                    "expected_version",
+                    "event",
+                    "payload"
+                ],
+                "title": "RecordProcessEventRequest"
+            },
+            "RecordRelationshipRequest": {
+                "type": "object",
+                "properties": {
+                    "related_person_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "sponsor",
+                            "spouse",
+                            "parent",
+                            "child"
+                        ]
+                    },
+                    "effective_from": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "expected_revision": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "related_person_id",
+                    "type",
+                    "expected_revision"
+                ],
+                "title": "RecordRelationshipRequest"
             },
             "RecordSignalsRequest": {
                 "type": "object",
@@ -2345,6 +5849,157 @@
                 ],
                 "title": "RecordSignalsRequest"
             },
+            "RequestDependentAuthorityRequest": {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "label"
+                ],
+                "title": "RequestDependentAuthorityRequest"
+            },
+            "ResolveFactConflictRequest": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "enum": [
+                            "current_residence_title",
+                            "residence_title_expires_at",
+                            "case_goal",
+                            "sponsor",
+                            "sponsor_current_title",
+                            "blue_card_qualifying_months",
+                            "family_residence_permit_held_since",
+                            "has_children",
+                            "marital_household_continues",
+                            "weekly_work_hours",
+                            "livelihood_secured",
+                            "housing_sufficient",
+                            "legal_social_knowledge_proved",
+                            "entry_mode",
+                            "visa_expires_at",
+                            "german_level",
+                            "citizenship_group",
+                            "purpose",
+                            "permit_track",
+                            "arrival_planned",
+                            "arrival_date",
+                            "moved_in_at",
+                            "housing_provider_confirmation",
+                            "registration_status",
+                            "residence_card_expires_at",
+                            "tax_id_available",
+                            "health_coverage_confirmed",
+                            "bank_account_help_needed",
+                            "sponsor_title_at_entry"
+                        ]
+                    },
+                    "value": {
+                        "type": "string"
+                    },
+                    "effective_from": {
+                        "type": "string"
+                    },
+                    "expected_revision": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "answer_state": {
+                        "type": "string",
+                        "enum": [
+                            "value",
+                            "unknown",
+                            "declined",
+                            "not_applicable"
+                        ]
+                    },
+                    "confirmed": {
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    },
+                    "review_token": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "key",
+                    "value",
+                    "expected_revision",
+                    "confirmed",
+                    "review_token",
+                    "request_id"
+                ],
+                "title": "ResolveFactConflictRequest"
+            },
+            "ResumeQuestionSessionRequest": {
+                "type": "object",
+                "properties": {
+                    "revisit_deferred": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "revisit_deferred"
+                ],
+                "title": "ResumeQuestionSessionRequest"
+            },
+            "ReviewProcessChangesRequest": {
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "expected_version": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "confirmed": {
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    },
+                    "review_token": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "bind_occurrence": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[a-f0-9]{64}$"
+                    }
+                },
+                "required": [
+                    "request_id",
+                    "expected_version",
+                    "confirmed",
+                    "review_token"
+                ],
+                "title": "ReviewProcessChangesRequest"
+            },
             "SaveEventRequest": {
                 "type": "object",
                 "properties": {
@@ -2366,6 +6021,94 @@
                     "saved"
                 ],
                 "title": "SaveEventRequest"
+            },
+            "SaveOnboardingDraftRequest": {
+                "type": "object",
+                "properties": {
+                    "draft_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "expected_version": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "step": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 4
+                    },
+                    "answers": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 15
+                    }
+                },
+                "required": [
+                    "draft_id",
+                    "expected_version",
+                    "step",
+                    "answers"
+                ],
+                "title": "SaveOnboardingDraftRequest"
+            },
+            "ShareEvidenceRequest": {
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "evidence_version": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "process_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "requirement_id": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "requirement_hash": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "expires_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "notice_version": {
+                        "type": "string",
+                        "enum": [
+                            "2026-09-08.single-requirement.1"
+                        ]
+                    },
+                    "confirmed": {
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    }
+                },
+                "required": [
+                    "request_id",
+                    "evidence_version",
+                    "process_id",
+                    "requirement_id",
+                    "requirement_hash",
+                    "expires_on",
+                    "notice_version",
+                    "confirmed"
+                ],
+                "title": "ShareEvidenceRequest"
             },
             "SignInResource": {
                 "type": "object",
@@ -2419,6 +6162,100 @@
                     "event_sheet"
                 ],
                 "title": "SignalSurface"
+            },
+            "StartProcessRequest": {
+                "type": "object",
+                "properties": {
+                    "jurisdiction": {
+                        "type": "string",
+                        "enum": [
+                            "de-nrw-cologne",
+                            "outside_coverage"
+                        ]
+                    },
+                    "occurrence_key": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "review_token": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "jurisdiction",
+                    "occurrence_key",
+                    "review_token",
+                    "request_id"
+                ],
+                "title": "StartProcessRequest"
+            },
+            "StartQuestionSessionRequest": {
+                "type": "object",
+                "properties": {
+                    "jurisdiction": {
+                        "type": "string",
+                        "enum": [
+                            "de-nrw-cologne",
+                            "outside_coverage"
+                        ]
+                    },
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "jurisdiction",
+                    "request_id"
+                ],
+                "title": "StartQuestionSessionRequest"
+            },
+            "SubmitQuestionAnswerRequest": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "minLength": 64,
+                        "maxLength": 64
+                    },
+                    "value": {
+                        "type": "string"
+                    },
+                    "answer_state": {
+                        "type": "string",
+                        "enum": [
+                            "value",
+                            "unknown",
+                            "declined",
+                            "not_applicable"
+                        ]
+                    },
+                    "operation": {
+                        "type": "string",
+                        "enum": [
+                            "assert",
+                            "correct",
+                            "change"
+                        ]
+                    },
+                    "effective_from": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "token",
+                    "value"
+                ],
+                "title": "SubmitQuestionAnswerRequest"
             },
             "TodayResource": {
                 "type": "object",
@@ -3432,6 +7269,12 @@
                                         "string",
                                         "null"
                                     ]
+                                },
+                                "language": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
                                 }
                             },
                             "required": [
@@ -3450,7 +7293,8 @@
                                 "tomorrow",
                                 "price",
                                 "place",
-                                "area"
+                                "area",
+                                "language"
                             ]
                         }
                     },
@@ -3943,6 +7787,25 @@
             },
             "AuthorizationException": {
                 "description": "Authorization error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ModelNotFoundException": {
+                "description": "Not found",
                 "content": {
                     "application/json": {
                         "schema": {

@@ -61,7 +61,7 @@ struct TodayView: View {
                         Button("Try again") { Task { await model.load(session.api) } }
                             .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
                             .padding(.horizontal, 18).frame(height: 44)
-                            .background(Palette.quiet, in: .capsule)
+                            .buttonFace(Palette.quiet)
                     }
                     .frame(maxWidth: .infinity).padding(.top, 40)
                 case .ready:
@@ -78,7 +78,7 @@ struct TodayView: View {
                             case .paperwork: PaperworkCard(paperwork: page.paperwork)
                             case .pickUp: if let continuation = page.continuation { PickUp(continuation: continuation) }
                             case .saved: if let saved = page.saved { SavedForLater(saved: saved, date: page.date, plans: page.plans) }
-                            case .comingUp: ComingUp(page: page)
+                            case .comingUp: if !page.tomorrow.isEmpty || !page.later.isEmpty { ComingUp(page: page) }
                             case .links: CityLinks(sheet: $sheet)
                             }
                         }
@@ -130,7 +130,6 @@ struct TodayView: View {
             case let .why(idea, when): WhySheet(idea: idea, when: when, sheet: $sheet)
             case let .howWeRank(on): HowWeRankSheet(personalised: on)
             case let .agree(pause): AgreeSheet(pause: pause)
-            case let .line(need, page): LineTrouble(need: need, page: page)
             }
         }
     }
@@ -193,7 +192,6 @@ enum TodaySheet: Identifiable {
     case why(TodayPage.Idea, String)
     case howWeRank(Bool)
     case agree(TodayPage.RankPause)
-    case line(TodayPage.Need, TodayPage)
 
     var id: String {
         switch self {
@@ -204,7 +202,6 @@ enum TodaySheet: Identifiable {
         case let .why(idea, _): "why-\(idea.id)"
         case .howWeRank: "how-we-rank"
         case .agree: "agree"
-        case let .line(need, _): "line-\(need.id)"
         }
     }
 }
@@ -228,7 +225,7 @@ struct NoteBar: View {
                 Button("Undo") { Task { await model.undo(session.api) } }
                     .font(.geist(15, .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 14).frame(height: 36)
-                    .background(.white.opacity(0.16), in: .capsule)
+                    .background(.white.opacity(0.16), in: .rect(cornerRadius: 10, style: .continuous))
                     .contentShape(.rect.inset(by: -4))
             }
         }
@@ -249,10 +246,10 @@ struct Greeting: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(TodayPage.greeting(at: page?.now ?? .now, name: name))
-                .font(.posterGrotesque(34)).tracking(-0.5)
+                .font(.posterGrotesque(28)).tracking(-0.4)
                 .lineLimit(1).minimumScaleFactor(0.7)
             if let page {
-                Text(page.dateLine).font(.geist(15, .medium)).foregroundStyle(Palette.textSoft)
+                Text(page.dateLine).font(.geist(14, .medium)).foregroundStyle(Palette.textSoft)
             }
         }
         .foregroundStyle(Palette.text)
@@ -269,6 +266,7 @@ struct Chips: View {
     @Binding var sheet: TodaySheet?
     let intro: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(TodayModel.self) private var model
 
     var body: some View {
         HStack(spacing: 8) {
@@ -276,8 +274,12 @@ struct Chips: View {
                 chip(symbol: WeatherSymbol.name(weather.icon), tint: WeatherSymbol.tint(weather.icon), title: "\(weather.temperature)°",
                      note: weather.summary ?? weather.condition, order: 0, spins: true) { sheet = .weather(page) }
             }
-            if !page.ideas.isEmpty {
-                chip(symbol: "calendar", tint: Color(hex: 0x6B4FD0), title: "\(page.ideas.count) events", note: page.ideasWhen,
+            if !model.shownIdeas.isEmpty {
+                let shown = model.shownIdeas
+                // From the first start among them: "6 events · from 17:00" says what the list holds.
+                let first = shown.filter(\.timed).compactMap(\.startsAt).filter { $0 > page.now }.min()
+                chip(symbol: "calendar", tint: Color(hex: 0x6B4FD0), title: shown.count == 1 ? "1 event" : "\(shown.count) events",
+                     note: first.map { "from \(TodayPage.clock($0))" } ?? page.ideasWhen,
                      order: page.weather == nil ? 0 : 1, spins: false) { sheet = .whatsOn() }
             }
         }

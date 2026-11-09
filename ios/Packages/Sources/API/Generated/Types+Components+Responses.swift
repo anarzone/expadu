@@ -176,5 +176,50 @@ extension Components {
                 self.body = body
             }
         }
+        public struct ModelNotFoundException: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/ModelNotFoundException/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/ModelNotFoundException/content/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// Error overview.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/ModelNotFoundException/content/json/message`.
+                    public var message: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - message: Error overview.
+                    public init(message: Swift.String) {
+                        self.message = message
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case message
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/ModelNotFoundException/content/application\/json`.
+                case json(Components.Responses.ModelNotFoundException.Body.JsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.ModelNotFoundException.Body.JsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.ModelNotFoundException.Body
+            /// Creates a new `ModelNotFoundException`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.ModelNotFoundException.Body) {
+                self.body = body
+            }
+        }
     }
 }

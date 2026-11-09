@@ -62,13 +62,14 @@ struct ShellView: View {
                         switch section {
                         case .today: TodayView()
                         case .travel: TravelView()
-                        case .paperwork: SectionPage(title: section.title)
+                        // Paperwork keeps its own stack: a task opens over the header, the overview sits under it.
+                        case .paperwork: PaperworkView(header: AnyView(ShellHeader(today: today)))
                         }
                     }
                     // Each page keeps room for the header and the bar; it scrolls under both.
                     // Travel is its line's colour to the top, with its own header (the canvas, 6 Nov).
                     .safeAreaInset(edge: .top, spacing: 0) {
-                        if section != .travel { ShellHeader(today: today) }
+                        if section == .today { ShellHeader(today: today) }
                     }
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 52) }
                     .toolbarVisibility(.hidden, for: .tabBar)
@@ -84,6 +85,8 @@ struct ShellView: View {
                 withAnimation(.snappy) { tab = .today }
                 if let way = today.page?.leave?.ways.first {
                     Task { _ = await today.startTrip(session.api, way: way, replace: false) }
+                } else {
+                    Task { await today.findWay(session.api) }
                 }
             case .tripNewWay:
                 withAnimation(.snappy) { tab = .today }
@@ -268,11 +271,12 @@ struct AskComposerLabel: View {
             let turn = Angle.degrees((timeline.date.timeIntervalSinceReferenceDate / 12).truncatingRemainder(dividingBy: 1) * 360)
             HStack(spacing: 8) {
                 Image(.composerSpark).resizable().frame(width: 18, height: 18)
-                Text(title)
+                Text(title).lineLimit(1).minimumScaleFactor(0.85)
             }
             .font(.geist(16, .semibold)).foregroundStyle(.white)
+            .padding(.horizontal, 14)
             .frame(maxWidth: .infinity).frame(height: height)
-            .background(ComposerLook.ink, in: .capsule)
+            .glassEffect(.regular.tint(ComposerLook.ink).interactive(), in: .capsule)
             .overlay { Capsule().strokeBorder(ComposerLook.ring(turn: turn), lineWidth: 2.5) }
         }
     }
@@ -443,7 +447,6 @@ private struct ShellHeader: View {
             Button { alertsOpen = true } label: {
                 Image(systemName: "bell.fill").font(.system(size: 18, weight: .medium))
                     .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
                     .overlay(alignment: .topTrailing) {
                         if today.alerts > 0 {
                             Text("\(today.alerts)")
@@ -456,7 +459,7 @@ private struct ShellHeader: View {
                         }
                     }
             }
-            .buttonStyle(PressStyle())
+            .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel(today.alerts > 0 ? "Alerts, \(today.alerts)" : "Alerts")
             AccountButton()
         }
@@ -498,19 +501,5 @@ struct AccountButton: View {
                 .contentShape(.circle)
         }
         .accessibilityLabel("Your account")
-    }
-}
-
-/// Empty until the section's own milestone: nothing here is sample data.
-private struct SectionPage: View {
-    let title: String
-
-    var body: some View {
-        ZStack {
-            Palette.canvas.ignoresSafeArea()
-            Text(title)
-                .font(.geist(17, .semibold))
-                .foregroundStyle(Palette.textSoft)
-        }
     }
 }

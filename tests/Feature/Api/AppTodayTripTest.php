@@ -12,7 +12,10 @@ use Carbon\CarbonImmutable;
 /** A way leaving in `$in` minutes: a walk to the stop, then tram 1. */
 function wayIn(int $in, string $line = '1'): array
 {
-    $at = fn (int $minutes) => CarbonImmutable::now('Europe/Berlin')->addMinutes($minutes);
+    // One clock read for the whole way: read again for each time, a second ticking over between
+    // the way's arrival and a leg's put the leg after the way, and the server rightly refused it.
+    $now = CarbonImmutable::now('Europe/Berlin');
+    $at = fn (int $minutes) => $now->addMinutes($minutes);
     $leg = fn (string $mode, ?string $name, int $from, int $to) => ['mode' => $mode, 'line' => $name, 'from' => ['name' => 'Köln Rudolfplatz'], 'to' => ['name' => 'Stadtgarten'],
         'depart_at' => $at($from)->toIso8601String(), 'arrive_at' => $at($to)->toIso8601String(), 'depart_time' => $at($from)->format('H:i'), 'arrive_time' => $at($to)->format('H:i'), 'duration_min' => $to - $from];
 

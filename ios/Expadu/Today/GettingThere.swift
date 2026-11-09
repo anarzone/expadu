@@ -33,7 +33,6 @@ struct GettingThere: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            top
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     if let plan, let way {
@@ -48,15 +47,39 @@ struct GettingThere: View {
                         .frame(maxWidth: .infinity).padding(.top, 80)
                     }
                 }
-                .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 40)
+                .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, day.isToday ? 110 : 40)
             }
             .scrollIndicators(.hidden)
         }
+        // The one thing to do here is always on screen: it floats, the page scrolls under it.
+        .overlay(alignment: .bottom) { if let way, live == nil { actions(way) } }
         .background(Palette.canvas.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
+        // Back is the system's own (glass, and the edge swipe works); swiping the sheet down closes it all.
+        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Getting there").font(.posterGrotesque(20)).tracking(-0.3).foregroundStyle(Palette.text)
+                    Text(sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                }
+                .fixedSize()
+            }
+            .sharedBackgroundVisibility(.hidden)
+        }
         .fullScreenCover(isPresented: $mapOpen) {
             if let way {
-                WayMap(title: "Your way to \(idea.place ?? idea.title)", legs: live?.legs ?? way.legs)
+                WayMap(to: idea.place ?? idea.title, legs: live?.legs ?? way.legs, ways: live == nil ? plan?.ways ?? [] : [],
+                       picked: $picked,
+                       start: day.isToday && live == nil ? { mapOpen = false; start(replace: false) } : nil,
+                       starting: starting,
+                       travel: {
+                           mapOpen = false
+                           dismiss()
+                           shell.show(.travel)
+                       },
+                       know: plan.map { goodToKnow($0, way) } ?? [],
+                       starts: idea.aimFor().map(TodayPage.clock))
                     .navigationTransition(.zoom(sourceID: "way-map", in: mapZoom))
             }
         }
@@ -70,29 +93,8 @@ struct GettingThere: View {
 
     // MARK: Top
 
-    private var top: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-                    .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
-            }
-            .buttonStyle(PressStyle())
-            .accessibilityLabel("Back")
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Getting there").font(.posterGrotesque(24)).tracking(-0.3).foregroundStyle(Palette.text)
-                Text(sub).font(.geist(13)).foregroundStyle(Palette.textSoft).lineLimit(1)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 10)
-        // The page scrolls under it (.go-top), never through it.
-        .background(Palette.canvas)
-        .zIndex(1)
-    }
-
     private var sub: String {
-        "To \(idea.title)" + ((idea.timed ? idea.startsAt : nil).map { " · starts \(TodayPage.clock($0))" } ?? "")
+        "To \(idea.title)" + (idea.aimFor().map { " · starts \(TodayPage.clock($0))" } ?? (idea.startsAt != nil && idea.timed ? " · on now" : ""))
     }
 
     // MARK: Content
@@ -141,16 +143,16 @@ struct GettingThere: View {
                     .frame(height: 2).padding(.horizontal, 14)
                     .background(Palette.surface)
                 VStack(alignment: .leading, spacing: 10) {
-                    if idea.timed, idea.startsAt != nil {
+                    if idea.aimFor() != nil {
                         Text(way.spareWords).font(.geist(13, .bold)).foregroundStyle(spareInk(way))
                             .padding(.horizontal, 10).frame(height: 26)
-                            .background(spareTint(way), in: .capsule)
+                            .background(spareTint(way), in: .rect(cornerRadius: 7, style: .continuous))
                     }
                     // On foot: our router's own turns.
                     if onFoot(way), let turns = way.legs.first?.turns, !turns.isEmpty {
                         TurnList(turns: turns, to: idea.place ?? idea.title)
                     } else {
-                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil))
+                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.aimFor().map(TodayPage.clock)))
                     }
                 }
                 .padding(.top, 14).padding(.horizontal, 18).padding(.bottom, 14)
@@ -162,7 +164,6 @@ struct GettingThere: View {
             .padding(.top, 14)
             .id(flips)
             .modifier(TicketFlip(trigger: flips))
-            actions
         }
         heading("Other ways")
         VStack(spacing: 0) {
@@ -210,28 +211,48 @@ struct GettingThere: View {
             .font(.geist(12)).foregroundStyle(Palette.textSoft).frame(maxWidth: .infinity)
     }
 
-    /// I'm on my way: on the day itself; another day only plans.
+    /// I'm on my way, floating as the event page's action does: when to leave and the spare time on
+    /// the left, the button filling the rest. On the day itself; another day only plans.
     @ViewBuilder
-    private var actions: some View {
+    private func actions(_ way: TodayPage.Way) -> some View {
         if day.isToday {
-            Button { start(replace: false) } label: {
-                HStack(spacing: 8) {
-                    if starting { ProgressView().tint(.white) } else { Image(systemName: "figure.walk") }
-                    Text("I’m on my way")
+            VStack(alignment: .leading, spacing: 10) {
+                if let startProblem {
+                    Label(startProblem, systemImage: "exclamationmark.circle.fill")
+                        .font(.geist(13.5, .semibold)).foregroundStyle(Palette.conflictText)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 14).padding(.vertical, 10)
+                        .background(Palette.surface, in: .rect(cornerRadius: 16))
+                        .transition(.opacity.combined(with: .offset(y: 8)))
                 }
-                .font(.geist(17, .semibold)).foregroundStyle(.white)
-                .frame(maxWidth: .infinity).frame(height: 50)
-                .background(Palette.action, in: .capsule)
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Leave \(way.leaveTime)").font(.geist(16, .bold)).foregroundStyle(Palette.text).monospacedDigit()
+                            .contentTransition(.numericText())
+                        Text(idea.aimFor() == nil ? "There \(way.arriveTime)" : way.spareWords).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                    }
+                    .minimumScaleFactor(0.8)
+                    .padding(.leading, 14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Button { start(replace: false) } label: {
+                        HStack(spacing: 8) {
+                            if starting { ProgressView().tint(.white) } else { Image(systemName: "figure.walk") }
+                            Text("I’m on my way").lineLimit(1)
+                        }
+                        .font(.geist(17, .semibold)).foregroundStyle(.white)
+                        .fixedSize()
+                        .padding(.horizontal, 20).frame(height: 50)
+                        .buttonFace(Palette.action)
+                    }
+                    .buttonStyle(PressStyle())
+                    .disabled(starting)
+                }
+                .padding(6)
+                .glassEffect(.regular, in: .rect(cornerRadius: 28, style: .continuous))
+                .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
+                .animation(.easeInOut(duration: 0.3), value: way.leaveTime)
             }
-            .buttonStyle(PressStyle())
-            .disabled(starting)
-            .padding(.top, 16)
-            if let startProblem {
-                Label(startProblem, systemImage: "exclamationmark.circle.fill")
-                    .font(.geist(13.5, .semibold)).foregroundStyle(Palette.conflictText)
-                    .padding(.top, 8)
-                    .transition(.opacity.combined(with: .offset(y: -6)))
-            }
+            .padding(.horizontal, 16).padding(.bottom, 6)
         }
     }
 
@@ -341,7 +362,7 @@ private struct WayRow: View {
 }
 
 /// A Good to know row: a coloured tile, its line and a note.
-private struct KnowRow: View {
+struct KnowRow: View {
     struct Row {
         let symbol: String
         let tint: Color

@@ -45,11 +45,12 @@ final class TodayModel {
         }
     }
 
-    func load(_ api: AppAPI, quietly: Bool = false) async {
+    func load(_ api: AppAPI, quietly: Bool = false, animated: Animation? = nil) async {
         let place = await locator.coordinate()
         self.place = place
         do throws(APIFailure) {
-            page = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            let fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            withAnimation(animated) { page = fresh }
             if phase != .ready { waveSince = .now }
             phase = .ready
             reportShown(api)
@@ -97,7 +98,11 @@ final class TodayModel {
     /// Ideas already reported shown, so each counts once a day.
     private var seen: Set<String> = []
 
-    var shownIdeas: [TodayPage.Idea] { (page?.ideas ?? []).filter { !hidden.contains($0.id) } }
+    /// Ideas still to show: not turned down, and not the event they're already on their way to.
+    var shownIdeas: [TodayPage.Idea] {
+        let going = page?.trip?.to
+        return (page?.ideas ?? []).filter { !hidden.contains($0.id) && $0.title != going }
+    }
     /// What was added this session, so its + shows a check at once.
     private(set) var added: Set<String> = []
     private var noteTimer: Task<Void, Never>?
@@ -276,6 +281,19 @@ final class TodayModel {
     /// Where the phone was when Today was last read; Getting there plans from here too.
     private(set) var place: CLLocationCoordinate2D?
 
+    /// I'm on my way with no way to hand (the Leave card's not loaded, or the Lock Screen asked after
+    /// it went): Today again, then the first way if there is one now, else why not, in words.
+    func findWay(_ api: AppAPI) async {
+        await load(api, quietly: true)
+        if let way = page?.leave?.ways.first {
+            _ = await startTrip(api, way: way, replace: false)
+        } else if page?.leave == nil {
+            say(Note(text: "Nothing to leave for right now. Open an event’s Getting there to start a trip.", symbol: "info.circle"))
+        } else {
+            say(Note(text: "No way there was found for now. Try again in a moment.", symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
     /// I'm on my way. True when another trip is running and they should be asked first.
     func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool) async -> Bool {
         do throws(APIFailure) {
@@ -322,19 +340,33 @@ final class TodayModel {
         }
     }
 
+    /// The trip being ended: true when they made it. The card shows it in place before it goes.
+    private(set) var finishing: Bool?
+
     func endTrip(_ api: AppAPI, arrived: Bool) async {
+        withAnimation(.spring(duration: 0.45, bounce: 0.25)) { finishing = arrived }
+        let shown = Date.now
         do throws(APIFailure) {
             try await api.endTrip()
             TripActivity.shared.end()
-            await load(api, quietly: true)
-            cardFlips += 1
-            if arrived {
-                sayInCard(Note(text: "You made it.", symbol: "checkmark"))
-            } else {
-                sayInCard(Note(text: page?.leave?.leaveTime.map { "Trip ended. Leave at \($0) still stands." } ?? "Trip ended.", symbol: "checkmark"))
-            }
         } catch {
+            withAnimation(.easeOut(duration: 0.25)) { finishing = nil }
             say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            return
+        }
+        // Let the finish be seen, then the card leaves (its own removal transition) and the day closes up.
+        let left = 1.1 - Date.now.timeIntervalSince(shown)
+        if left > 0 { try? await Task.sleep(for: .seconds(left)) }
+        await load(api, quietly: true, animated: Motion.ios(0.5))
+        // Cleared only once the card is gone, so it leaves still showing the finish.
+        Task { try? await Task.sleep(for: .seconds(0.7)); finishing = nil }
+        let text = arrived ? "You made it." : page?.leave?.leaveTime.map { "Trip ended. Leave at \($0) still stands." } ?? "Trip ended."
+        // In the Leave card when there is one; otherwise the line over the bar.
+        if page?.leave?.isKnown == true {
+            cardFlips += 1
+            sayInCard(Note(text: text, symbol: "checkmark"))
+        } else {
+            say(Note(text: text, symbol: "checkmark"))
         }
     }
 

@@ -40,7 +40,7 @@ struct ListRow: View {
                     .overlay { Circle().strokeBorder(ComposerLook.ring(), lineWidth: 2) }
             } else {
                 Image(systemName: symbol).font(.system(size: 15, weight: .semibold))
-                    .frame(width: 36, height: 36).background(Palette.quiet, in: .circle)
+                    .frame(width: 36, height: 36).background(Palette.quiet, in: .rect(cornerRadius: 10, style: .continuous))
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.geist(15.5, .semibold)).lineLimit(2).multilineTextAlignment(.leading)
@@ -117,7 +117,8 @@ enum PlaceSymbol {
         case "pharmacy": "cross.case.fill"
         case "cafe": "cup.and.saucer.fill"
         case "bakery": "birthday.cake.fill"
-        case "grocery": "cart.fill"
+        case "grocery", "supermarket", "convenience", "greengrocer": "cart.fill"
+        case "drugstore": "cross.case.fill"
         case "playground", "park", "nature": "leaf.fill"
         case "library": "books.vertical.fill"
         case "restaurant", "fastfood": "fork.knife"
@@ -125,6 +126,11 @@ enum PlaceSymbol {
         case "sports": "figure.run"
         default: "mappin"
         }
+    }
+
+    /// Somewhere to spend free time, worth a place in the plan; not a quick errand.
+    static func stays(_ kind: String) -> Bool {
+        !["pharmacy", "drugstore", "bakery", "supermarket", "convenience", "greengrocer", "grocery"].contains(kind)
     }
 }
 
@@ -136,5 +142,40 @@ enum NeedTone {
         case "attention", "warning": Color(hex: 0xC98208)
         default: Color(hex: 0x2F78C8)
         }
+    }
+}
+
+/// A sheet opens tall, as the canvas draws them, and stops at half on the way down so Today shows
+/// above it; a further pull closes it.
+struct FlexibleSheet: ViewModifier {
+    @State private var detent: PresentationDetent = .large
+
+    func body(content: Content) -> some View {
+        content
+            .presentationDetents([.medium, .large], selection: $detent)
+            .presentationDragIndicator(.visible)
+    }
+}
+
+extension View {
+    func flexibleSheet() -> some View { modifier(FlexibleSheet()) }
+}
+
+/// Save's bookmark: the outline always, and its fill rising smoothly from the bottom when saved,
+/// draining the same way when not. No bounce; the colour stays the outline's.
+struct FillingBookmark: View {
+    let filled: Bool
+    var size: CGFloat = 17
+    var weight: Font.Weight = .medium
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Image(systemName: "bookmark").font(.system(size: size, weight: weight))
+            .overlay {
+                Image(systemName: "bookmark.fill").font(.system(size: size, weight: weight))
+                    .mask { Rectangle().scaleEffect(x: 1, y: filled ? 1 : 0, anchor: .bottom) }
+            }
+            .animation(reduceMotion ? .easeOut(duration: 0.15) : .easeInOut(duration: 0.45), value: filled)
+            .accessibilityHidden(true)
     }
 }

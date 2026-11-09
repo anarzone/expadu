@@ -29,25 +29,28 @@ struct YourDay: View {
                     Text("Now · \(TodayPage.clock(page.now))").font(.geist(13, .bold)).foregroundStyle(Self.line)
                 }
                 .frame(height: 22).padding(.bottom, 6)
-                // A trip to something that isn't a plan (an event's Getting there) goes at now, not under a plan.
-                if let trip = page.trip, !page.ahead.contains(where: { $0.title == trip.to }) {
+                // A trip to something that isn't a plan (an event's Getting there) takes its place in time:
+                // plans before its leave time come first, the trip and where it goes, then the rest.
+                let tripHere = page.trip.flatMap { trip in page.ahead.contains(where: { $0.title == trip.to }) ? nil : trip }
+                let leaveAt = tripHere == nil ? nil : page.tripLeave?.time
+                let before = leaveAt.map { at in page.ahead.filter { ($0.start ?? "") < at } } ?? []
+                let after = page.ahead.filter { plan in !before.contains { $0.id == plan.id } }
+                if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
+                plans(before, firstIsNext: true)
+                if let trip = tripHere {
                     LiveTrip(trip: trip).padding(.bottom, 14)
                         .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
                                                 removal: .opacity.combined(with: .offset(y: -10)).combined(with: .scale(scale: 0.97))))
                 }
-                if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
-                if page.free?.anchorTitle == nil, let free = page.free { FreeTime(page: page, free: free) }
-                if page.ahead.isEmpty {
+                // Free time is before they leave; once on the way it isn't theirs to fill.
+                if page.free?.anchorTitle == nil, let free = page.free, tripHere == nil || page.tripLeave != nil { FreeTime(page: page, free: free) }
+                if let trip = tripHere {
+                    // Where the day is going: the trip's own destination, as a stop on the line.
+                    TripEnd(trip: trip).padding(.bottom, 12)
+                } else if page.ahead.isEmpty {
                     EmptyDay(page: page).padding(.top, 4).padding(.bottom, 12)
                 }
-                ForEach(Array(page.ahead.enumerated()), id: \.element.id) { index, plan in
-                    Stop(page: page, plan: plan, next: index == 0)
-                    if let free = page.free, free.anchorTitle == plan.title {
-                        FreeTime(page: page, free: free)
-                    } else if let link = page.link(after: plan), index < page.ahead.count - 1 {
-                        LinkLine(link: link)
-                    }
-                }
+                plans(after, firstIsNext: before.isEmpty && tripHere == nil)
                 AddPlan(date: page.date)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,6 +64,37 @@ struct YourDay: View {
     }
 
     static let line = Color(hex: 0xE6421F)
+
+    /// Plans on the line, each with what follows it (free time, or the way to the next).
+    @ViewBuilder
+    private func plans(_ list: [TodayPage.Plan], firstIsNext: Bool) -> some View {
+        ForEach(Array(list.enumerated()), id: \.element.id) { index, plan in
+            Stop(page: page, plan: plan, next: firstIsNext && index == 0)
+            if let free = page.free, free.anchorTitle == plan.title {
+                FreeTime(page: page, free: free)
+            } else if let link = page.link(after: plan), index < list.count - 1 {
+                LinkLine(link: link)
+            }
+        }
+    }
+}
+
+/// The destination of a trip that isn't a plan (an event's Getting there): its time and name.
+struct TripEnd: View {
+    let trip: TodayPage.Trip
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(trip.startTime ?? trip.arriveTime ?? "").font(.posterGrotesque(20)).foregroundStyle(Palette.text).monospacedDigit()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(trip.to).font(.geist(16, .semibold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+                if let there = trip.arriveTime {
+                    Text(trip.startTime == nil ? "You’re there" : "Starts · you’re there at \(there)").font(.geist(13)).foregroundStyle(Palette.textSoft)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
 }
 
 /// A day with nothing ahead (the canvas's .ln-empty): what that means now, and two ways on.
@@ -71,8 +105,8 @@ struct EmptyDay: View {
     var body: some View {
         let evening = TodayPage.greeting(at: page.now, name: "").hasPrefix("Guten Abend")
         let words: (String, String, String) = page.plans.isEmpty
-            ? (page.welcome ? ("No plans yet", "Add one, or let Composer plan your day.", "Plan my day") : ("No plans added for today", "Your day is open.", "Plan the rest of today"))
-            : evening ? ("No more plans today", "Tomorrow is still open.", "Plan tomorrow") : ("No plans left today", "Everything is done.", "Plan the rest of today")
+            ? (page.welcome ? ("No plans yet", "Add one, or let Composer plan your day.", "Plan my day") : ("No plans added for today", "Your day is open.", "Plan the rest"))
+            : evening ? ("No more plans today", "Tomorrow is still open.", "Plan tomorrow") : ("No plans left today", "Everything is done.", "Plan the rest")
         VStack(alignment: .leading, spacing: 0) {
             Text(words.0).font(.geist(16, .semibold)).foregroundStyle(Palette.text)
             Text(words.1).font(.geist(13.5)).foregroundStyle(Palette.textSoft).padding(.top, 2)
@@ -82,9 +116,10 @@ struct EmptyDay: View {
                 }
                 .buttonStyle(PressStyle())
                 Button { shell.show(.travel) } label: {
-                    Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text)
+                    Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text).lineLimit(1)
+                        .fixedSize()
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .capsule)
+                        .buttonFace(Palette.quiet)
                 }
                 .buttonStyle(PressStyle())
             }
@@ -422,7 +457,7 @@ struct CardSay: View {
                 Button("Undo") { Task { await model.undoCard(session.api) } }
                     .font(.geist(13.5, .bold))
                     .padding(.horizontal, 12).frame(height: 30)
-                    .background(Color(hex: 0x17603A, opacity: 0.12), in: .capsule)
+                    .background(Color(hex: 0x17603A, opacity: 0.12), in: .rect(cornerRadius: 8, style: .continuous))
                     .contentShape(.rect.inset(by: -7))
             }
         }
@@ -504,16 +539,16 @@ struct LeaveCard: View {
                     }
                     .font(.geist(15, .semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(Palette.action, in: .capsule)
+                    .buttonFace(Palette.action)
                     .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
-                .disabled(starting || leave.ways.isEmpty)
+                .disabled(starting)
                 Button { othersOpen = true } label: {
                     Label("Other ways", systemImage: "arrow.triangle.branch")
                         .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .capsule)
+                        .buttonFace(Palette.quiet)
                         .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -544,7 +579,15 @@ struct LeaveCard: View {
 
     /// I'm on my way, on the way the card shows; a trip already running asks first.
     private func start(replace: Bool) {
-        guard let way = leave.ways.first else { return }
+        // No way loaded yet: never a dead button. Look again and say what came of it.
+        guard let way = leave.ways.first else {
+            starting = true
+            Task {
+                await model.findWay(session.api)
+                starting = false
+            }
+            return
+        }
         starting = true
         Task {
             let running = await model.startTrip(session.api, way: way, replace: replace)
@@ -652,13 +695,14 @@ struct FreeTime: View {
                 ForEach(free.places) { place in
                     HStack(spacing: 12) {
                         Image(systemName: PlaceSymbol.name(place.kind)).font(.system(size: 14, weight: .semibold))
-                            .frame(width: 32, height: 32).background(Palette.surface, in: .circle)
+                            .frame(width: 32, height: 32).background(Palette.surface, in: .rect(cornerRadius: 9, style: .continuous))
                         VStack(alignment: .leading, spacing: 1) {
                             Text(place.name).font(.geist(15.5, .semibold)).lineLimit(1)
                             Text(place.line).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                         }
                         Spacer(minLength: 0)
-                        AddButton(candidate: place.candidate, date: page.date, title: place.name)
+                        // A place to spend the time can go in the plan; an errand (pharmacy, bakery) just shows.
+                        if PlaceSymbol.stays(place.kind) { AddButton(candidate: place.candidate, date: page.date, title: place.name) }
                     }
                     .foregroundStyle(Palette.text)
                     .padding(.horizontal, 12).padding(.vertical, 6)
@@ -712,13 +756,14 @@ struct NearbyMap: View {
                 ForEach(free.places) { place in
                     HStack(spacing: 12) {
                         Image(systemName: PlaceSymbol.name(place.kind)).font(.system(size: 14, weight: .semibold))
-                            .frame(width: 32, height: 32).background(Palette.quiet, in: .circle)
+                            .frame(width: 32, height: 32).background(Palette.quiet, in: .rect(cornerRadius: 9, style: .continuous))
                         VStack(alignment: .leading, spacing: 1) {
                             Text(place.name).font(.geist(15.5, .semibold)).lineLimit(1)
                             Text(place.line).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                         }
                         Spacer(minLength: 0)
-                        AddButton(candidate: place.candidate, date: page.date, title: place.name)
+                        // A place to spend the time can go in the plan; an errand (pharmacy, bakery) just shows.
+                        if PlaceSymbol.stays(place.kind) { AddButton(candidate: place.candidate, date: page.date, title: place.name) }
                     }
                     .padding(.vertical, 6)
                     Divider().overlay(Palette.border)
@@ -739,9 +784,9 @@ struct NearbyMap: View {
         .overlay(alignment: .topTrailing) {
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                    .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
+                    .frame(width: 44, height: 44)
             }
-            .buttonStyle(PressStyle())
+            .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
             .padding(16)
             .accessibilityLabel("Close")
         }
@@ -826,9 +871,9 @@ struct AddPlanSheet: View {
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))
-                        .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
+                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(PressStyle())
+                .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
                 .accessibilityLabel("Close")
             }
             .foregroundStyle(Palette.text)
@@ -857,7 +902,7 @@ struct AddPlanSheet: View {
                 .font(.geist(16, .semibold))
                 .foregroundStyle(ready ? .white : Palette.textSoft)
                 .frame(maxWidth: .infinity).frame(height: 52)
-                .background(ready ? Palette.action : Palette.quiet, in: .capsule)
+                .buttonFace(ready ? Palette.action : Palette.quiet)
             }
             .buttonStyle(PressStyle())
             .disabled(!ready || saving)
@@ -939,11 +984,9 @@ struct AddButton: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(added ? Motion.green : Palette.action)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 36, height: 36)
-                .background(Motion.green.opacity(added ? 0.14 : 0), in: .circle)
-                .contentShape(.circle)
         }
-        .buttonStyle(PressStyle())
+        .buttonStyle(IconTileStyle(fill: Palette.surface, tint: Motion.green.opacity(added ? 0.14 : 0), size: 38))
+        .animation(.easeInOut(duration: 0.35), value: added)
         .disabled(added || candidate.isEmpty)
         .accessibilityLabel(added ? "\(title) is in your plan" : "Add \(title) to your plan")
         .sensoryFeedback(.success, trigger: added)

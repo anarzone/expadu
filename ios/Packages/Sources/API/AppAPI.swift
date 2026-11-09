@@ -22,8 +22,13 @@ public enum APIFailure: Error, Equatable, Sendable {
 public struct AppAPI: Sendable {
     private let client: Client
     private let device: String
+    /// Paperwork's v2 plan is the web's own record, read as JSON with its own model (Core/Paperwork).
+    private let baseURL: URL
+    private let token: @Sendable () -> String?
 
     public init(baseURL: URL, device: String, token: @escaping @Sendable () -> String?) {
+        self.baseURL = baseURL
+        self.token = token
         let middleware = BearerToken(token: token)
         client = Client(
             serverURL: baseURL,
@@ -355,6 +360,170 @@ public struct AppAPI: Sendable {
     }
 
     /// What's on for a day (today when nil).
+    // MARK: Paperwork (the web's v2 routes, routes/app/paperwork-v2.php)
+
+    /// Their Paperwork record: ready, set up still, or stopped.
+    public func paperwork() async throws(APIFailure) -> PaperworkEntry {
+        let data = try await paperwork("GET", "plan")
+        do { return try PaperworkEntry.decode(data) } catch { throw .unreachable }
+    }
+
+    /// First time: the city, then their own record. The questions follow in a session.
+    public func setUpPaperwork(city: String) async throws(APIFailure) {
+        _ = try await paperwork("PUT", "people/self/city", ["city": city])
+        _ = try await paperwork("POST", "people/self")
+    }
+
+    /// A question session; its questions come one at a time.
+    public func startQuestions(person: Int, jurisdiction: String) async throws(APIFailure) -> Int {
+        let data = try await paperwork("POST", "people/\(person)/question-sessions", ["jurisdiction": jurisdiction, "request_id": Self.requestID()])
+        guard let id = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["session_id"] as? Int else { throw .unreachable }
+        return id
+    }
+
+    public func nextQuestion(session: Int) async throws(APIFailure) -> PaperworkOffer {
+        let data = try await paperwork("POST", "question-sessions/\(session)/next", ["request_id": Self.requestID()])
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        do { return try decoder.decode(PaperworkOffer.self, from: data) } catch { throw .unreachable }
+    }
+
+    /// "value", or "unknown" (I'm not sure) / "declined" (prefer not to say) / "not_applicable".
+    public func answer(session: Int, question: PaperworkQuestion, value: PaperworkAnswer, state: String = "value") async throws(APIFailure) {
+        guard let id = question.id, let token = question.token else { throw .unreachable }
+        _ = try await paperwork("POST", "question-sessions/\(session)/answers/\(id)",
+                                ["token": token, "value": value.json, "answer_state": state, "operation": "assert"])
+    }
+
+    public func skip(session: Int, question: PaperworkQuestion) async throws(APIFailure) {
+        guard let id = question.id, let token = question.token else { throw .unreachable }
+        _ = try await paperwork("POST", "question-sessions/\(session)/defer/\(id)", ["token": token])
+    }
+
+    /// Start tracking a proposed task.
+    public func track(_ process: PaperworkProcess, person: Int, jurisdiction: String) async throws(APIFailure) {
+        guard let review = process.reviewToken else { throw .unreachable }
+        _ = try await paperwork("POST", "people/\(person)/processes",
+                                ["jurisdiction": jurisdiction, "occurrence_key": process.occurrenceKey, "review_token": review, "request_id": Self.requestID()])
+    }
+
+    /// A step ticked or unticked, a status reported, a submission recorded: the task's own event.
+    /// Undoing a record (untracking, retracting, cancelling an appointment) goes without the review token, as on the web.
+    public func record(_ event: String, on process: PaperworkProcess, payload: [String: Any] = [:], reviewed: Bool = true) async throws(APIFailure) {
+        guard let id = process.id else { throw .unreachable }
+        var body: [String: Any] = ["request_id": Self.requestID(), "expected_version": process.version, "event": event, "payload": payload]
+        body["review_token"] = (reviewed ? process.reviewToken : nil) ?? NSNull()
+        _ = try await paperwork("POST", "processes/\(id)/events", body)
+    }
+
+    /// "I have this": their record of a document, one per name, keeping what it already says.
+    public func have(_ requirement: PaperworkRequirement, existing: PaperworkEvidence?, person: Int, available: Bool = true) async throws(APIFailure) {
+        let refs = Array(Set((existing?.details.requirementRefs ?? []) + [requirement.id])).sorted()
+        let details: [String: Any] = ["label": existing?.details.label ?? requirement.label, "kind": existing?.details.kind ?? "document",
+                                      "reported_available": available, "expires_on": existing?.details.expiresOn ?? NSNull(), "requirement_refs": refs]
+        _ = try await paperwork("PUT", "people/\(person)/evidence/\(existing?.id ?? UUID().uuidString.lowercased())",
+                                ["request_id": Self.requestID(), "expected_version": existing?.version ?? 0, "details": details])
+    }
+
+    /// "I don't have it": the document's record lets go of this need (archived when nothing else uses it).
+    public func release(_ requirement: PaperworkRequirement, holders: [PaperworkEvidence], person: Int) async throws(APIFailure) {
+        for item in holders {
+            let refs = (item.details.requirementRefs ?? []).filter { $0 != requirement.id }
+            let details: [String: Any] = ["label": item.details.label, "kind": item.details.kind, "reported_available": item.details.reportedAvailable,
+                                          "expires_on": item.details.expiresOn ?? NSNull(), "requirement_refs": refs]
+            _ = try await paperwork("PUT", "people/\(person)/evidence/\(item.id)",
+                                    ["request_id": Self.requestID(), "expected_version": item.version, "details": details, "status": refs.isEmpty ? "archived" : "active"])
+        }
+    }
+
+    /// Changed guidance: keep going with the updated steps; recorded progress stays.
+    public func review(_ process: PaperworkProcess) async throws(APIFailure) {
+        guard let id = process.id, let token = process.reviewToken else { throw .unreachable }
+        _ = try await paperwork("POST", "processes/\(id)/review", ["request_id": Self.requestID(), "expected_version": process.version, "review_token": token,
+                                                                    "bind_occurrence": process.bindOccurrence ?? NSNull(), "confirmed": true])
+    }
+
+    /// Their own record's person, for when there's no plan to read it from (processing stopped).
+    public func paperworkPerson() async -> Int? {
+        guard let data = try? await paperwork("GET", "people"),
+              let people = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["people"] as? [[String: Any]] else { return nil }
+        return people.first { $0["is_self"] as? Bool == true }?["id"] as? Int
+    }
+
+    /// A paused run of questions carries on.
+    public func resumeQuestions(session: Int) async throws(APIFailure) {
+        _ = try await paperwork("POST", "question-sessions/\(session)/resume", ["revisit_deferred": false])
+    }
+
+    /// Their answers, for Your situation.
+    public func facts(person: Int) async throws(APIFailure) -> PaperworkFacts {
+        let data = try await paperwork("GET", "people/\(person)/facts")
+        do { return try PaperworkFacts.decode(data) } catch { throw .unreachable }
+    }
+
+    /// What each answer asks, so it can be changed in place.
+    public func factSchema() async throws(APIFailure) -> [PaperworkFactDefinition] {
+        struct List: Decodable { let facts: [PaperworkFactDefinition] }
+        let data = try await paperwork("GET", "facts/schema")
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        do { return try decoder.decode(List.self, from: data).facts } catch { throw .unreachable }
+    }
+
+    /// A real change in their circumstances, or a first answer outside a question.
+    public func changeFact(person: Int, key: String, value: PaperworkAnswer, state: String = "value", revision: Int) async throws(APIFailure) {
+        _ = try await paperwork("PUT", "people/\(person)/facts/\(key)",
+                                ["value": value.json, "answer_state": state, "effective_from": NSNull(), "expected_revision": revision])
+    }
+
+    /// "Mark as ready": checked for this task.
+    public func confirm(_ requirement: PaperworkRequirement, evidence: PaperworkEvidence, on process: PaperworkProcess) async throws(APIFailure) {
+        guard let id = process.id else { throw .unreachable }
+        _ = try await paperwork("POST", "processes/\(id)/requirements/\(requirement.id)/confirm",
+                                ["request_id": Self.requestID(), "expected_version": process.version, "evidence_id": evidence.id,
+                                 "evidence_version": evidence.version, "requirement_hash": requirement.semanticHash, "confirmed": true])
+    }
+
+    /// Not ready after all: only the check goes; the document's record stays.
+    public func unconfirm(_ requirement: PaperworkRequirement, on process: PaperworkProcess) async throws(APIFailure) {
+        guard let id = process.id else { throw .unreachable }
+        _ = try await paperwork("DELETE", "processes/\(id)/requirements/\(requirement.id)/confirmation",
+                                ["request_id": Self.requestID(), "expected_version": process.version])
+    }
+
+    /// Stop (GDPR Art. 18) or resume Paperwork using their record.
+    public func setPaperworkStopped(_ stopped: Bool, person: Int) async throws(APIFailure) {
+        _ = try await paperwork("PUT", "people/\(person)/processing-restriction", ["stopped": stopped])
+    }
+
+    /// The web app this API belongs to: where downloading or deleting the record happens, behind the password.
+    public var site: URL { baseURL.deletingLastPathComponent().deletingLastPathComponent() }
+
+    private func paperwork(_ method: String, _ path: String, _ body: [String: Any]? = nil) async throws(APIFailure) -> Data {
+        var request = URLRequest(url: baseURL.appending(path: "paperwork/v2/" + path))
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token = token() { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if let body {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        }
+        let data: Data, response: URLResponse
+        do { (data, response) = try await URLSession.shared.data(for: request) } catch { throw .unreachable }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        switch status {
+        case 200..<300: return data
+        case 401: throw .signedOut
+        case 429: throw .tooManyTries
+        default:
+            // A stale version, a stopped record or a refused answer says why, in the server's words.
+            let message = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["message"] as? String
+            throw message.map { .refused($0) } ?? .unreachable
+        }
+    }
+
+    private static func requestID() -> String { UUID().uuidString.lowercased() }
+
     /// The bell's full record, newest first.
     public func alerts() async throws(APIFailure) -> [BellCard] {
         let output = try await calling { try await client.alerts_index() }
@@ -474,7 +643,7 @@ public struct AppAPI: Sendable {
                 ideas: today.ideas.map {
                     TodayPage.Idea(id: $0.id, candidate: $0.candidate, saved: $0.saved, why: $0.why, reasons: $0.reasons, title: $0.title, category: $0.category, emoji: $0.emoji, startsAt: $0.startsAt.flatMap(Self.date(from:)),
                                    endsAt: $0.endsAt.flatMap(Self.date(from:)), timed: $0.timed, untimed: $0.untimed, tomorrow: $0.tomorrow,
-                                   price: $0.price, place: $0.place, area: $0.area)
+                                   price: $0.price, place: $0.place, area: $0.area, language: $0.language)
                 },
                 ideasPart: today.ideasPart,
                 free: today.free.map { f in

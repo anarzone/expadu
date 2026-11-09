@@ -11,6 +11,56 @@ public import Foundation
 extension Components {
     /// Types generated from the `#/components/schemas` section of the OpenAPI document.
     public enum Schemas {
+        /// - Remark: Generated from `#/components/schemas/AcceptFamilyInvitationRequest`.
+        public struct AcceptFamilyInvitationRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AcceptFamilyInvitationRequest/token`.
+            public var token: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AcceptFamilyInvitationRequest/ScopesPayload`.
+            @frozen public enum ScopesPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case viewPlan = "view_plan"
+                case viewFacts = "view_facts"
+                case editFacts = "edit_facts"
+                case manageProcess = "manage_process"
+                case manageEvidence = "manage_evidence"
+                case requestAi = "request_ai"
+            }
+            /// - Remark: Generated from `#/components/schemas/AcceptFamilyInvitationRequest/scopes`.
+            public typealias ScopesPayload = [Components.Schemas.AcceptFamilyInvitationRequest.ScopesPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/AcceptFamilyInvitationRequest/scopes`.
+            public var scopes: Components.Schemas.AcceptFamilyInvitationRequest.ScopesPayload
+            /// - Remark: Generated from `#/components/schemas/AcceptFamilyInvitationRequest/notice_version`.
+            @frozen public enum NoticeVersionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case _20260908_scopedFamily_1 = "2026-09-08.scoped-family.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/AcceptFamilyInvitationRequest/notice_version`.
+            public var noticeVersion: Components.Schemas.AcceptFamilyInvitationRequest.NoticeVersionPayload
+            /// - Remark: Generated from `#/components/schemas/AcceptFamilyInvitationRequest/accept`.
+            public var accept: Swift.String
+            /// Creates a new `AcceptFamilyInvitationRequest`.
+            ///
+            /// - Parameters:
+            ///   - token:
+            ///   - scopes:
+            ///   - noticeVersion:
+            ///   - accept:
+            public init(
+                token: Swift.String,
+                scopes: Components.Schemas.AcceptFamilyInvitationRequest.ScopesPayload,
+                noticeVersion: Components.Schemas.AcceptFamilyInvitationRequest.NoticeVersionPayload,
+                accept: Swift.String
+            ) {
+                self.token = token
+                self.scopes = scopes
+                self.noticeVersion = noticeVersion
+                self.accept = accept
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+                case scopes
+                case noticeVersion = "notice_version"
+                case accept
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/AlertsResource`.
         public struct AlertsResource: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/AlertsResource/AlertsPayload`.
@@ -200,6 +250,165 @@ extension Components {
                 case ready
                 case total
                 case documents
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CompleteOnboardingDraftRequest`.
+        public struct CompleteOnboardingDraftRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CompleteOnboardingDraftRequest/draft_id`.
+            public var draftId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CompleteOnboardingDraftRequest/draft_version`.
+            public var draftVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/CompleteOnboardingDraftRequest/expected_fact_revision`.
+            public var expectedFactRevision: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/CompleteOnboardingDraftRequest/request_id`.
+            public var requestId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CompleteOnboardingDraftRequest/confirmed`.
+            public var confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            /// Creates a new `CompleteOnboardingDraftRequest`.
+            ///
+            /// - Parameters:
+            ///   - draftId:
+            ///   - draftVersion:
+            ///   - expectedFactRevision:
+            ///   - requestId:
+            ///   - confirmed:
+            public init(
+                draftId: Swift.String,
+                draftVersion: Swift.Int,
+                expectedFactRevision: Swift.Int,
+                requestId: Swift.String,
+                confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            ) {
+                self.draftId = draftId
+                self.draftVersion = draftVersion
+                self.expectedFactRevision = expectedFactRevision
+                self.requestId = requestId
+                self.confirmed = confirmed
+            }
+            public enum CodingKeys: String, CodingKey {
+                case draftId = "draft_id"
+                case draftVersion = "draft_version"
+                case expectedFactRevision = "expected_fact_revision"
+                case requestId = "request_id"
+                case confirmed
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ConfirmRequirementUseRequest`.
+        public struct ConfirmRequirementUseRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConfirmRequirementUseRequest/request_id`.
+            public var requestId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ConfirmRequirementUseRequest/expected_version`.
+            public var expectedVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ConfirmRequirementUseRequest/evidence_id`.
+            public var evidenceId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ConfirmRequirementUseRequest/evidence_version`.
+            public var evidenceVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ConfirmRequirementUseRequest/requirement_hash`.
+            public var requirementHash: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ConfirmRequirementUseRequest/confirmed`.
+            public var confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            /// Creates a new `ConfirmRequirementUseRequest`.
+            ///
+            /// - Parameters:
+            ///   - requestId:
+            ///   - expectedVersion:
+            ///   - evidenceId:
+            ///   - evidenceVersion:
+            ///   - requirementHash:
+            ///   - confirmed:
+            public init(
+                requestId: Swift.String,
+                expectedVersion: Swift.Int,
+                evidenceId: Swift.String,
+                evidenceVersion: Swift.Int,
+                requirementHash: Swift.String,
+                confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            ) {
+                self.requestId = requestId
+                self.expectedVersion = expectedVersion
+                self.evidenceId = evidenceId
+                self.evidenceVersion = evidenceVersion
+                self.requirementHash = requirementHash
+                self.confirmed = confirmed
+            }
+            public enum CodingKeys: String, CodingKey {
+                case requestId = "request_id"
+                case expectedVersion = "expected_version"
+                case evidenceId = "evidence_id"
+                case evidenceVersion = "evidence_version"
+                case requirementHash = "requirement_hash"
+                case confirmed
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CorrectFactRequest`.
+        public struct CorrectFactRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CorrectFactRequest/value`.
+            public var value: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CorrectFactRequest/expected_revision`.
+            public var expectedRevision: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/CorrectFactRequest/answer_state`.
+            @frozen public enum AnswerStatePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case value = "value"
+                case unknown = "unknown"
+                case declined = "declined"
+                case notApplicable = "not_applicable"
+            }
+            /// - Remark: Generated from `#/components/schemas/CorrectFactRequest/answer_state`.
+            public var answerState: Components.Schemas.CorrectFactRequest.AnswerStatePayload?
+            /// Creates a new `CorrectFactRequest`.
+            ///
+            /// - Parameters:
+            ///   - value:
+            ///   - expectedRevision:
+            ///   - answerState:
+            public init(
+                value: Swift.String,
+                expectedRevision: Swift.Int,
+                answerState: Components.Schemas.CorrectFactRequest.AnswerStatePayload? = nil
+            ) {
+                self.value = value
+                self.expectedRevision = expectedRevision
+                self.answerState = answerState
+            }
+            public enum CodingKeys: String, CodingKey {
+                case value
+                case expectedRevision = "expected_revision"
+                case answerState = "answer_state"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CorrectProcessEventRequest`.
+        public struct CorrectProcessEventRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CorrectProcessEventRequest/request_id`.
+            public var requestId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CorrectProcessEventRequest/expected_version`.
+            public var expectedVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/CorrectProcessEventRequest/payload`.
+            public var payload: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/CorrectProcessEventRequest/confirmed`.
+            public var confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            /// Creates a new `CorrectProcessEventRequest`.
+            ///
+            /// - Parameters:
+            ///   - requestId:
+            ///   - expectedVersion:
+            ///   - payload:
+            ///   - confirmed:
+            public init(
+                requestId: Swift.String,
+                expectedVersion: Swift.Int,
+                payload: [Swift.String],
+                confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            ) {
+                self.requestId = requestId
+                self.expectedVersion = expectedVersion
+                self.payload = payload
+                self.confirmed = confirmed
+            }
+            public enum CodingKeys: String, CodingKey {
+                case requestId = "request_id"
+                case expectedVersion = "expected_version"
+                case payload
+                case confirmed
             }
         }
         /// A change to the day from the iPhone's Today: the same commands the web's Today sends to the
@@ -588,6 +797,61 @@ extension Components {
                 case days
                 case categories
                 case listings
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/InspectFamilyInvitationRequest`.
+        public struct InspectFamilyInvitationRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/InspectFamilyInvitationRequest/token`.
+            public var token: Swift.String
+            /// Creates a new `InspectFamilyInvitationRequest`.
+            ///
+            /// - Parameters:
+            ///   - token:
+            public init(token: Swift.String) {
+                self.token = token
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/InviteFamilyMemberRequest`.
+        public struct InviteFamilyMemberRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/InviteFamilyMemberRequest/workspace_id`.
+            public var workspaceId: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/InviteFamilyMemberRequest/email`.
+            public var email: Swift.String
+            /// - Remark: Generated from `#/components/schemas/InviteFamilyMemberRequest/ScopesPayload`.
+            @frozen public enum ScopesPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case viewPlan = "view_plan"
+                case viewFacts = "view_facts"
+                case editFacts = "edit_facts"
+                case manageProcess = "manage_process"
+                case manageEvidence = "manage_evidence"
+                case requestAi = "request_ai"
+            }
+            /// - Remark: Generated from `#/components/schemas/InviteFamilyMemberRequest/scopes`.
+            public typealias ScopesPayload = [Components.Schemas.InviteFamilyMemberRequest.ScopesPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/InviteFamilyMemberRequest/scopes`.
+            public var scopes: Components.Schemas.InviteFamilyMemberRequest.ScopesPayload
+            /// Creates a new `InviteFamilyMemberRequest`.
+            ///
+            /// - Parameters:
+            ///   - workspaceId:
+            ///   - email:
+            ///   - scopes:
+            public init(
+                workspaceId: Swift.Int,
+                email: Swift.String,
+                scopes: Components.Schemas.InviteFamilyMemberRequest.ScopesPayload
+            ) {
+                self.workspaceId = workspaceId
+                self.email = email
+                self.scopes = scopes
+            }
+            public enum CodingKeys: String, CodingKey {
+                case workspaceId = "workspace_id"
+                case email
+                case scopes
             }
         }
         /// Getting there: where to, from where the phone is, and when it starts.
@@ -1203,11 +1467,304 @@ extension Components {
                 case departures
             }
         }
+        /// - Remark: Generated from `#/components/schemas/NextQuestionRequest`.
+        public struct NextQuestionRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NextQuestionRequest/request_id`.
+            public var requestId: Swift.String
+            /// Creates a new `NextQuestionRequest`.
+            ///
+            /// - Parameters:
+            ///   - requestId:
+            public init(requestId: Swift.String) {
+                self.requestId = requestId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case requestId = "request_id"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PersonPlanResource`.
+        public typealias PersonPlanResource = [OpenAPIRuntime.OpenAPIValueContainer]
         /// Deleting the account asks for the password, or, for an account made with
         /// Google that has none, the code just emailed to it (EXP-174).
         ///
         /// - Remark: Generated from `#/components/schemas/ProfileDeleteRequest`.
         public typealias ProfileDeleteRequest = OpenAPIRuntime.OpenAPIObjectContainer
+        /// - Remark: Generated from `#/components/schemas/QuestionTokenRequest`.
+        public struct QuestionTokenRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/QuestionTokenRequest/token`.
+            public var token: Swift.String
+            /// Creates a new `QuestionTokenRequest`.
+            ///
+            /// - Parameters:
+            ///   - token:
+            public init(token: Swift.String) {
+                self.token = token
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest`.
+        public struct RecordEvidenceRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/request_id`.
+            public var requestId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/expected_version`.
+            public var expectedVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case archived = "archived"
+            }
+            /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/status`.
+            public var status: Components.Schemas.RecordEvidenceRequest.StatusPayload?
+            /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/details`.
+            public struct DetailsPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/details/label`.
+                public var label: Swift.String
+                /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/details/kind`.
+                public var kind: Swift.String
+                /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/details/reported_available`.
+                public var reportedAvailable: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/details/expires_on`.
+                public var expiresOn: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/details/requirement_refs`.
+                public var requirementRefs: [Swift.String]?
+                /// Creates a new `DetailsPayload`.
+                ///
+                /// - Parameters:
+                ///   - label:
+                ///   - kind:
+                ///   - reportedAvailable:
+                ///   - expiresOn:
+                ///   - requirementRefs:
+                public init(
+                    label: Swift.String,
+                    kind: Swift.String,
+                    reportedAvailable: Swift.Bool,
+                    expiresOn: Swift.String? = nil,
+                    requirementRefs: [Swift.String]? = nil
+                ) {
+                    self.label = label
+                    self.kind = kind
+                    self.reportedAvailable = reportedAvailable
+                    self.expiresOn = expiresOn
+                    self.requirementRefs = requirementRefs
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case label
+                    case kind
+                    case reportedAvailable = "reported_available"
+                    case expiresOn = "expires_on"
+                    case requirementRefs = "requirement_refs"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/RecordEvidenceRequest/details`.
+            public var details: Components.Schemas.RecordEvidenceRequest.DetailsPayload
+            /// Creates a new `RecordEvidenceRequest`.
+            ///
+            /// - Parameters:
+            ///   - requestId:
+            ///   - expectedVersion:
+            ///   - status:
+            ///   - details:
+            public init(
+                requestId: Swift.String,
+                expectedVersion: Swift.Int,
+                status: Components.Schemas.RecordEvidenceRequest.StatusPayload? = nil,
+                details: Components.Schemas.RecordEvidenceRequest.DetailsPayload
+            ) {
+                self.requestId = requestId
+                self.expectedVersion = expectedVersion
+                self.status = status
+                self.details = details
+            }
+            public enum CodingKeys: String, CodingKey {
+                case requestId = "request_id"
+                case expectedVersion = "expected_version"
+                case status
+                case details
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecordFactChangeRequest`.
+        public struct RecordFactChangeRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RecordFactChangeRequest/key`.
+            @frozen public enum KeyPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case currentResidenceTitle = "current_residence_title"
+                case residenceTitleExpiresAt = "residence_title_expires_at"
+                case caseGoal = "case_goal"
+                case sponsor = "sponsor"
+                case sponsorCurrentTitle = "sponsor_current_title"
+                case blueCardQualifyingMonths = "blue_card_qualifying_months"
+                case familyResidencePermitHeldSince = "family_residence_permit_held_since"
+                case hasChildren = "has_children"
+                case maritalHouseholdContinues = "marital_household_continues"
+                case weeklyWorkHours = "weekly_work_hours"
+                case livelihoodSecured = "livelihood_secured"
+                case housingSufficient = "housing_sufficient"
+                case legalSocialKnowledgeProved = "legal_social_knowledge_proved"
+                case entryMode = "entry_mode"
+                case visaExpiresAt = "visa_expires_at"
+                case germanLevel = "german_level"
+                case citizenshipGroup = "citizenship_group"
+                case purpose = "purpose"
+                case permitTrack = "permit_track"
+                case arrivalPlanned = "arrival_planned"
+                case arrivalDate = "arrival_date"
+                case movedInAt = "moved_in_at"
+                case housingProviderConfirmation = "housing_provider_confirmation"
+                case registrationStatus = "registration_status"
+                case residenceCardExpiresAt = "residence_card_expires_at"
+                case taxIdAvailable = "tax_id_available"
+                case healthCoverageConfirmed = "health_coverage_confirmed"
+                case bankAccountHelpNeeded = "bank_account_help_needed"
+                case sponsorTitleAtEntry = "sponsor_title_at_entry"
+            }
+            /// - Remark: Generated from `#/components/schemas/RecordFactChangeRequest/key`.
+            public var key: Components.Schemas.RecordFactChangeRequest.KeyPayload
+            /// - Remark: Generated from `#/components/schemas/RecordFactChangeRequest/value`.
+            public var value: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RecordFactChangeRequest/effective_from`.
+            public var effectiveFrom: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/RecordFactChangeRequest/expected_revision`.
+            public var expectedRevision: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RecordFactChangeRequest/answer_state`.
+            @frozen public enum AnswerStatePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case value = "value"
+                case unknown = "unknown"
+                case declined = "declined"
+                case notApplicable = "not_applicable"
+            }
+            /// - Remark: Generated from `#/components/schemas/RecordFactChangeRequest/answer_state`.
+            public var answerState: Components.Schemas.RecordFactChangeRequest.AnswerStatePayload?
+            /// Creates a new `RecordFactChangeRequest`.
+            ///
+            /// - Parameters:
+            ///   - key:
+            ///   - value:
+            ///   - effectiveFrom:
+            ///   - expectedRevision:
+            ///   - answerState:
+            public init(
+                key: Components.Schemas.RecordFactChangeRequest.KeyPayload,
+                value: Swift.String,
+                effectiveFrom: Swift.String? = nil,
+                expectedRevision: Swift.Int,
+                answerState: Components.Schemas.RecordFactChangeRequest.AnswerStatePayload? = nil
+            ) {
+                self.key = key
+                self.value = value
+                self.effectiveFrom = effectiveFrom
+                self.expectedRevision = expectedRevision
+                self.answerState = answerState
+            }
+            public enum CodingKeys: String, CodingKey {
+                case key
+                case value
+                case effectiveFrom = "effective_from"
+                case expectedRevision = "expected_revision"
+                case answerState = "answer_state"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecordProcessEventRequest`.
+        public struct RecordProcessEventRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RecordProcessEventRequest/request_id`.
+            public var requestId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RecordProcessEventRequest/expected_version`.
+            public var expectedVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RecordProcessEventRequest/event`.
+            @frozen public enum EventPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case preparationStarted = "preparation_started"
+                case stepCompleted = "step_completed"
+                case stepReopened = "step_reopened"
+                case submissionRecorded = "submission_recorded"
+                case submissionRetracted = "submission_retracted"
+                case blockedReported = "blocked_reported"
+                case waitingReported = "waiting_reported"
+                case actionRequiredReported = "action_required_reported"
+                case completionReported = "completion_reported"
+                case cancellationReported = "cancellation_reported"
+                case processReopened = "process_reopened"
+                case processUntracked = "process_untracked"
+                case appointmentRecorded = "appointment_recorded"
+                case appointmentCancelled = "appointment_cancelled"
+            }
+            /// - Remark: Generated from `#/components/schemas/RecordProcessEventRequest/event`.
+            public var event: Components.Schemas.RecordProcessEventRequest.EventPayload
+            /// - Remark: Generated from `#/components/schemas/RecordProcessEventRequest/payload`.
+            public var payload: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/RecordProcessEventRequest/review_token`.
+            public var reviewToken: Swift.String?
+            /// Creates a new `RecordProcessEventRequest`.
+            ///
+            /// - Parameters:
+            ///   - requestId:
+            ///   - expectedVersion:
+            ///   - event:
+            ///   - payload:
+            ///   - reviewToken:
+            public init(
+                requestId: Swift.String,
+                expectedVersion: Swift.Int,
+                event: Components.Schemas.RecordProcessEventRequest.EventPayload,
+                payload: [Swift.String],
+                reviewToken: Swift.String? = nil
+            ) {
+                self.requestId = requestId
+                self.expectedVersion = expectedVersion
+                self.event = event
+                self.payload = payload
+                self.reviewToken = reviewToken
+            }
+            public enum CodingKeys: String, CodingKey {
+                case requestId = "request_id"
+                case expectedVersion = "expected_version"
+                case event
+                case payload
+                case reviewToken = "review_token"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecordRelationshipRequest`.
+        public struct RecordRelationshipRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RecordRelationshipRequest/related_person_id`.
+            public var relatedPersonId: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RecordRelationshipRequest/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case sponsor = "sponsor"
+                case spouse = "spouse"
+                case parent = "parent"
+                case child = "child"
+            }
+            /// - Remark: Generated from `#/components/schemas/RecordRelationshipRequest/type`.
+            public var _type: Components.Schemas.RecordRelationshipRequest._TypePayload
+            /// - Remark: Generated from `#/components/schemas/RecordRelationshipRequest/effective_from`.
+            public var effectiveFrom: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/RecordRelationshipRequest/expected_revision`.
+            public var expectedRevision: Swift.Int
+            /// Creates a new `RecordRelationshipRequest`.
+            ///
+            /// - Parameters:
+            ///   - relatedPersonId:
+            ///   - _type:
+            ///   - effectiveFrom:
+            ///   - expectedRevision:
+            public init(
+                relatedPersonId: Swift.Int,
+                _type: Components.Schemas.RecordRelationshipRequest._TypePayload,
+                effectiveFrom: Swift.String? = nil,
+                expectedRevision: Swift.Int
+            ) {
+                self.relatedPersonId = relatedPersonId
+                self._type = _type
+                self.effectiveFrom = effectiveFrom
+                self.expectedRevision = expectedRevision
+            }
+            public enum CodingKeys: String, CodingKey {
+                case relatedPersonId = "related_person_id"
+                case _type = "type"
+                case effectiveFrom = "effective_from"
+                case expectedRevision = "expected_revision"
+            }
+        }
         /// A client batch for the signal ledger: allow-listed actions and surfaces,
         /// catalogue item ids that exist, no free text and no coordinates.
         ///
@@ -1293,6 +1850,175 @@ extension Components {
                 case signals
             }
         }
+        /// - Remark: Generated from `#/components/schemas/RequestDependentAuthorityRequest`.
+        public struct RequestDependentAuthorityRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RequestDependentAuthorityRequest/label`.
+            public var label: Swift.String
+            /// Creates a new `RequestDependentAuthorityRequest`.
+            ///
+            /// - Parameters:
+            ///   - label:
+            public init(label: Swift.String) {
+                self.label = label
+            }
+            public enum CodingKeys: String, CodingKey {
+                case label
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest`.
+        public struct ResolveFactConflictRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/key`.
+            @frozen public enum KeyPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case currentResidenceTitle = "current_residence_title"
+                case residenceTitleExpiresAt = "residence_title_expires_at"
+                case caseGoal = "case_goal"
+                case sponsor = "sponsor"
+                case sponsorCurrentTitle = "sponsor_current_title"
+                case blueCardQualifyingMonths = "blue_card_qualifying_months"
+                case familyResidencePermitHeldSince = "family_residence_permit_held_since"
+                case hasChildren = "has_children"
+                case maritalHouseholdContinues = "marital_household_continues"
+                case weeklyWorkHours = "weekly_work_hours"
+                case livelihoodSecured = "livelihood_secured"
+                case housingSufficient = "housing_sufficient"
+                case legalSocialKnowledgeProved = "legal_social_knowledge_proved"
+                case entryMode = "entry_mode"
+                case visaExpiresAt = "visa_expires_at"
+                case germanLevel = "german_level"
+                case citizenshipGroup = "citizenship_group"
+                case purpose = "purpose"
+                case permitTrack = "permit_track"
+                case arrivalPlanned = "arrival_planned"
+                case arrivalDate = "arrival_date"
+                case movedInAt = "moved_in_at"
+                case housingProviderConfirmation = "housing_provider_confirmation"
+                case registrationStatus = "registration_status"
+                case residenceCardExpiresAt = "residence_card_expires_at"
+                case taxIdAvailable = "tax_id_available"
+                case healthCoverageConfirmed = "health_coverage_confirmed"
+                case bankAccountHelpNeeded = "bank_account_help_needed"
+                case sponsorTitleAtEntry = "sponsor_title_at_entry"
+            }
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/key`.
+            public var key: Components.Schemas.ResolveFactConflictRequest.KeyPayload
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/value`.
+            public var value: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/effective_from`.
+            public var effectiveFrom: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/expected_revision`.
+            public var expectedRevision: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/answer_state`.
+            @frozen public enum AnswerStatePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case value = "value"
+                case unknown = "unknown"
+                case declined = "declined"
+                case notApplicable = "not_applicable"
+            }
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/answer_state`.
+            public var answerState: Components.Schemas.ResolveFactConflictRequest.AnswerStatePayload?
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/confirmed`.
+            public var confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/review_token`.
+            public var reviewToken: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ResolveFactConflictRequest/request_id`.
+            public var requestId: Swift.String
+            /// Creates a new `ResolveFactConflictRequest`.
+            ///
+            /// - Parameters:
+            ///   - key:
+            ///   - value:
+            ///   - effectiveFrom:
+            ///   - expectedRevision:
+            ///   - answerState:
+            ///   - confirmed:
+            ///   - reviewToken:
+            ///   - requestId:
+            public init(
+                key: Components.Schemas.ResolveFactConflictRequest.KeyPayload,
+                value: Swift.String,
+                effectiveFrom: Swift.String? = nil,
+                expectedRevision: Swift.Int,
+                answerState: Components.Schemas.ResolveFactConflictRequest.AnswerStatePayload? = nil,
+                confirmed: OpenAPIRuntime.OpenAPIValueContainer,
+                reviewToken: Swift.String,
+                requestId: Swift.String
+            ) {
+                self.key = key
+                self.value = value
+                self.effectiveFrom = effectiveFrom
+                self.expectedRevision = expectedRevision
+                self.answerState = answerState
+                self.confirmed = confirmed
+                self.reviewToken = reviewToken
+                self.requestId = requestId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case key
+                case value
+                case effectiveFrom = "effective_from"
+                case expectedRevision = "expected_revision"
+                case answerState = "answer_state"
+                case confirmed
+                case reviewToken = "review_token"
+                case requestId = "request_id"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ResumeQuestionSessionRequest`.
+        public struct ResumeQuestionSessionRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ResumeQuestionSessionRequest/revisit_deferred`.
+            public var revisitDeferred: Swift.Bool
+            /// Creates a new `ResumeQuestionSessionRequest`.
+            ///
+            /// - Parameters:
+            ///   - revisitDeferred:
+            public init(revisitDeferred: Swift.Bool) {
+                self.revisitDeferred = revisitDeferred
+            }
+            public enum CodingKeys: String, CodingKey {
+                case revisitDeferred = "revisit_deferred"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ReviewProcessChangesRequest`.
+        public struct ReviewProcessChangesRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ReviewProcessChangesRequest/request_id`.
+            public var requestId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ReviewProcessChangesRequest/expected_version`.
+            public var expectedVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ReviewProcessChangesRequest/confirmed`.
+            public var confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            /// - Remark: Generated from `#/components/schemas/ReviewProcessChangesRequest/review_token`.
+            public var reviewToken: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ReviewProcessChangesRequest/bind_occurrence`.
+            public var bindOccurrence: Swift.String?
+            /// Creates a new `ReviewProcessChangesRequest`.
+            ///
+            /// - Parameters:
+            ///   - requestId:
+            ///   - expectedVersion:
+            ///   - confirmed:
+            ///   - reviewToken:
+            ///   - bindOccurrence:
+            public init(
+                requestId: Swift.String,
+                expectedVersion: Swift.Int,
+                confirmed: OpenAPIRuntime.OpenAPIValueContainer,
+                reviewToken: Swift.String,
+                bindOccurrence: Swift.String? = nil
+            ) {
+                self.requestId = requestId
+                self.expectedVersion = expectedVersion
+                self.confirmed = confirmed
+                self.reviewToken = reviewToken
+                self.bindOccurrence = bindOccurrence
+            }
+            public enum CodingKeys: String, CodingKey {
+                case requestId = "request_id"
+                case expectedVersion = "expected_version"
+                case confirmed
+                case reviewToken = "review_token"
+                case bindOccurrence = "bind_occurrence"
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/SaveEventRequest`.
         public struct SaveEventRequest: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/SaveEventRequest/event_id`.
@@ -1320,6 +2046,104 @@ extension Components {
                 case eventId = "event_id"
                 case occurrenceStart = "occurrence_start"
                 case saved
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SaveOnboardingDraftRequest`.
+        public struct SaveOnboardingDraftRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SaveOnboardingDraftRequest/draft_id`.
+            public var draftId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SaveOnboardingDraftRequest/expected_version`.
+            public var expectedVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/SaveOnboardingDraftRequest/step`.
+            public var step: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/SaveOnboardingDraftRequest/answers`.
+            public var answers: [Swift.String]
+            /// Creates a new `SaveOnboardingDraftRequest`.
+            ///
+            /// - Parameters:
+            ///   - draftId:
+            ///   - expectedVersion:
+            ///   - step:
+            ///   - answers:
+            public init(
+                draftId: Swift.String,
+                expectedVersion: Swift.Int,
+                step: Swift.Int,
+                answers: [Swift.String]
+            ) {
+                self.draftId = draftId
+                self.expectedVersion = expectedVersion
+                self.step = step
+                self.answers = answers
+            }
+            public enum CodingKeys: String, CodingKey {
+                case draftId = "draft_id"
+                case expectedVersion = "expected_version"
+                case step
+                case answers
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest`.
+        public struct ShareEvidenceRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/request_id`.
+            public var requestId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/evidence_version`.
+            public var evidenceVersion: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/process_id`.
+            public var processId: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/requirement_id`.
+            public var requirementId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/requirement_hash`.
+            public var requirementHash: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/expires_on`.
+            public var expiresOn: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/notice_version`.
+            @frozen public enum NoticeVersionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case _20260908_singleRequirement_1 = "2026-09-08.single-requirement.1"
+            }
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/notice_version`.
+            public var noticeVersion: Components.Schemas.ShareEvidenceRequest.NoticeVersionPayload
+            /// - Remark: Generated from `#/components/schemas/ShareEvidenceRequest/confirmed`.
+            public var confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            /// Creates a new `ShareEvidenceRequest`.
+            ///
+            /// - Parameters:
+            ///   - requestId:
+            ///   - evidenceVersion:
+            ///   - processId:
+            ///   - requirementId:
+            ///   - requirementHash:
+            ///   - expiresOn:
+            ///   - noticeVersion:
+            ///   - confirmed:
+            public init(
+                requestId: Swift.String,
+                evidenceVersion: Swift.Int,
+                processId: Swift.Int,
+                requirementId: Swift.String,
+                requirementHash: Swift.String,
+                expiresOn: Swift.String,
+                noticeVersion: Components.Schemas.ShareEvidenceRequest.NoticeVersionPayload,
+                confirmed: OpenAPIRuntime.OpenAPIValueContainer
+            ) {
+                self.requestId = requestId
+                self.evidenceVersion = evidenceVersion
+                self.processId = processId
+                self.requirementId = requirementId
+                self.requirementHash = requirementHash
+                self.expiresOn = expiresOn
+                self.noticeVersion = noticeVersion
+                self.confirmed = confirmed
+            }
+            public enum CodingKeys: String, CodingKey {
+                case requestId = "request_id"
+                case evidenceVersion = "evidence_version"
+                case processId = "process_id"
+                case requirementId = "requirement_id"
+                case requirementHash = "requirement_hash"
+                case expiresOn = "expires_on"
+                case noticeVersion = "notice_version"
+                case confirmed
             }
         }
         /// - Remark: Generated from `#/components/schemas/SignInResource`.
@@ -1379,6 +2203,128 @@ extension Components {
             case alerts = "alerts"
             case placeSheet = "place_sheet"
             case eventSheet = "event_sheet"
+        }
+        /// - Remark: Generated from `#/components/schemas/StartProcessRequest`.
+        public struct StartProcessRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/StartProcessRequest/jurisdiction`.
+            @frozen public enum JurisdictionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case deNrwCologne = "de-nrw-cologne"
+                case outsideCoverage = "outside_coverage"
+            }
+            /// - Remark: Generated from `#/components/schemas/StartProcessRequest/jurisdiction`.
+            public var jurisdiction: Components.Schemas.StartProcessRequest.JurisdictionPayload
+            /// - Remark: Generated from `#/components/schemas/StartProcessRequest/occurrence_key`.
+            public var occurrenceKey: Swift.String
+            /// - Remark: Generated from `#/components/schemas/StartProcessRequest/review_token`.
+            public var reviewToken: Swift.String
+            /// - Remark: Generated from `#/components/schemas/StartProcessRequest/request_id`.
+            public var requestId: Swift.String
+            /// Creates a new `StartProcessRequest`.
+            ///
+            /// - Parameters:
+            ///   - jurisdiction:
+            ///   - occurrenceKey:
+            ///   - reviewToken:
+            ///   - requestId:
+            public init(
+                jurisdiction: Components.Schemas.StartProcessRequest.JurisdictionPayload,
+                occurrenceKey: Swift.String,
+                reviewToken: Swift.String,
+                requestId: Swift.String
+            ) {
+                self.jurisdiction = jurisdiction
+                self.occurrenceKey = occurrenceKey
+                self.reviewToken = reviewToken
+                self.requestId = requestId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case jurisdiction
+                case occurrenceKey = "occurrence_key"
+                case reviewToken = "review_token"
+                case requestId = "request_id"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/StartQuestionSessionRequest`.
+        public struct StartQuestionSessionRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/StartQuestionSessionRequest/jurisdiction`.
+            @frozen public enum JurisdictionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case deNrwCologne = "de-nrw-cologne"
+                case outsideCoverage = "outside_coverage"
+            }
+            /// - Remark: Generated from `#/components/schemas/StartQuestionSessionRequest/jurisdiction`.
+            public var jurisdiction: Components.Schemas.StartQuestionSessionRequest.JurisdictionPayload
+            /// - Remark: Generated from `#/components/schemas/StartQuestionSessionRequest/request_id`.
+            public var requestId: Swift.String
+            /// Creates a new `StartQuestionSessionRequest`.
+            ///
+            /// - Parameters:
+            ///   - jurisdiction:
+            ///   - requestId:
+            public init(
+                jurisdiction: Components.Schemas.StartQuestionSessionRequest.JurisdictionPayload,
+                requestId: Swift.String
+            ) {
+                self.jurisdiction = jurisdiction
+                self.requestId = requestId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case jurisdiction
+                case requestId = "request_id"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest`.
+        public struct SubmitQuestionAnswerRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest/token`.
+            public var token: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest/value`.
+            public var value: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest/answer_state`.
+            @frozen public enum AnswerStatePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case value = "value"
+                case unknown = "unknown"
+                case declined = "declined"
+                case notApplicable = "not_applicable"
+            }
+            /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest/answer_state`.
+            public var answerState: Components.Schemas.SubmitQuestionAnswerRequest.AnswerStatePayload?
+            /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest/operation`.
+            @frozen public enum OperationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case assert = "assert"
+                case correct = "correct"
+                case change = "change"
+            }
+            /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest/operation`.
+            public var operation: Components.Schemas.SubmitQuestionAnswerRequest.OperationPayload?
+            /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest/effective_from`.
+            public var effectiveFrom: Swift.String?
+            /// Creates a new `SubmitQuestionAnswerRequest`.
+            ///
+            /// - Parameters:
+            ///   - token:
+            ///   - value:
+            ///   - answerState:
+            ///   - operation:
+            ///   - effectiveFrom:
+            public init(
+                token: Swift.String,
+                value: Swift.String,
+                answerState: Components.Schemas.SubmitQuestionAnswerRequest.AnswerStatePayload? = nil,
+                operation: Components.Schemas.SubmitQuestionAnswerRequest.OperationPayload? = nil,
+                effectiveFrom: Swift.String? = nil
+            ) {
+                self.token = token
+                self.value = value
+                self.answerState = answerState
+                self.operation = operation
+                self.effectiveFrom = effectiveFrom
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+                case value
+                case answerState = "answer_state"
+                case operation
+                case effectiveFrom = "effective_from"
+            }
         }
         /// - Remark: Generated from `#/components/schemas/TodayResource`.
         public struct TodayResource: Codable, Hashable, Sendable {
@@ -2516,6 +3462,8 @@ extension Components {
                 public var place: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/area`.
                 public var area: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/language`.
+                public var language: Swift.String?
                 /// Creates a new `IdeasPayloadPayload`.
                 ///
                 /// - Parameters:
@@ -2535,6 +3483,7 @@ extension Components {
                 ///   - price:
                 ///   - place:
                 ///   - area:
+                ///   - language:
                 public init(
                     id: Swift.Int,
                     candidate: Swift.String,
@@ -2551,7 +3500,8 @@ extension Components {
                     tomorrow: Swift.Bool,
                     price: Swift.String? = nil,
                     place: Swift.String? = nil,
-                    area: Swift.String? = nil
+                    area: Swift.String? = nil,
+                    language: Swift.String? = nil
                 ) {
                     self.id = id
                     self.candidate = candidate
@@ -2569,6 +3519,7 @@ extension Components {
                     self.price = price
                     self.place = place
                     self.area = area
+                    self.language = language
                 }
                 public enum CodingKeys: String, CodingKey {
                     case id
@@ -2587,6 +3538,7 @@ extension Components {
                     case price
                     case place
                     case area
+                    case language
                 }
             }
             /// - Remark: Generated from `#/components/schemas/TodayResource/ideas`.

@@ -40,7 +40,7 @@ class SavedEvents
                     'event_id' => $bookmark->event_id,
                     'occurrence_start' => $start->toIso8601String(),
                     'title' => $bookmark->title,
-                    'available' => $exists && $start->isFuture(),
+                    'available' => $exists && ! self::over($start, $end),
                     'event' => $exists ? $this->presenter->present($event, $start, $end) + ['distance_km' => null, 'travel_min' => null] : null,
                 ];
             })->all();
@@ -57,6 +57,17 @@ class SavedEvents
             app(TasteSignals::class)->eventSaved($user, $event);
             app(SignalRecorder::class)->record($user, SignalAction::Saved, SignalSurface::EventSheet, SignalItemType::Event, $event->id, $start);
         }
+    }
+
+    /**
+     * Over the way What's on counts it: once its end has passed; with no end given, once its day
+     * is. Something on now (a tour until 21:00, a fair running all week) can still be saved.
+     */
+    public static function over(CarbonImmutable $start, ?CarbonImmutable $end): bool
+    {
+        $now = CarbonImmutable::now('Europe/Berlin');
+
+        return $end !== null ? $end->lessThanOrEqualTo($now) : $start->setTimezone('Europe/Berlin')->endOfDay()->lessThan($now);
     }
 
     /** Whether the person saved this occurrence. */
@@ -76,7 +87,7 @@ class SavedEvents
 
         $occurrence = Event::occurringBetween($start->startOfDay(), $start->endOfDay(), [$eventId])
             ->first(fn ($item) => $item['starts_at']->equalTo($start));
-        if (! $occurrence || ! $start->isFuture()) {
+        if (! $occurrence || self::over($start, $occurrence['ends_at'] ?? null)) {
             throw ValidationException::withMessages(['occurrence_start' => 'This event occurrence is no longer available to save.']);
         }
 
