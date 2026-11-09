@@ -45,11 +45,12 @@ final class TodayModel {
         }
     }
 
-    func load(_ api: AppAPI, quietly: Bool = false) async {
+    func load(_ api: AppAPI, quietly: Bool = false, animated: Animation? = nil) async {
         let place = await locator.coordinate()
         self.place = place
         do throws(APIFailure) {
-            page = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            let fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            withAnimation(animated) { page = fresh }
             if phase != .ready { waveSince = .now }
             phase = .ready
             reportShown(api)
@@ -326,19 +327,33 @@ final class TodayModel {
         }
     }
 
+    /// The trip being ended: true when they made it. The card shows it in place before it goes.
+    private(set) var finishing: Bool?
+
     func endTrip(_ api: AppAPI, arrived: Bool) async {
+        withAnimation(.spring(duration: 0.45, bounce: 0.25)) { finishing = arrived }
+        let shown = Date.now
         do throws(APIFailure) {
             try await api.endTrip()
             TripActivity.shared.end()
-            await load(api, quietly: true)
-            cardFlips += 1
-            if arrived {
-                sayInCard(Note(text: "You made it.", symbol: "checkmark"))
-            } else {
-                sayInCard(Note(text: page?.leave?.leaveTime.map { "Trip ended. Leave at \($0) still stands." } ?? "Trip ended.", symbol: "checkmark"))
-            }
         } catch {
+            withAnimation(.easeOut(duration: 0.25)) { finishing = nil }
             say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            return
+        }
+        // Let the finish be seen, then the card leaves (its own removal transition) and the day closes up.
+        let left = 1.1 - Date.now.timeIntervalSince(shown)
+        if left > 0 { try? await Task.sleep(for: .seconds(left)) }
+        await load(api, quietly: true, animated: Motion.ios(0.5))
+        // Cleared only once the card is gone, so it leaves still showing the finish.
+        Task { try? await Task.sleep(for: .seconds(0.7)); finishing = nil }
+        let text = arrived ? "You made it." : page?.leave?.leaveTime.map { "Trip ended. Leave at \($0) still stands." } ?? "Trip ended."
+        // In the Leave card when there is one; otherwise the line over the bar.
+        if page?.leave?.isKnown == true {
+            cardFlips += 1
+            sayInCard(Note(text: text, symbol: "checkmark"))
+        } else {
+            say(Note(text: text, symbol: "checkmark"))
         }
     }
 

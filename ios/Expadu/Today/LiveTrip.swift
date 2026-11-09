@@ -147,8 +147,26 @@ struct LiveTrip: View {
             .animation(Motion.ios(0.35), value: live.index)
         }
         .padding(14)
+        // Ending: the card's content steps back and the finish lands on it, then the card goes.
+        .blur(radius: model.finishing != nil ? 6 : 0)
+        .opacity(model.finishing != nil ? 0.25 : 1)
+        .overlay {
+            if let arrived = model.finishing {
+                VStack(spacing: 10) {
+                    Image(systemName: arrived ? "checkmark" : "stop.fill")
+                        .font(.system(size: 26, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 64, height: 64)
+                        .background(arrived ? Motion.green : Palette.textSoft, in: .circle)
+                        .symbolEffect(.bounce, value: arrived)
+                    Text(arrived ? "You made it" : "Trip ended").font(.posterGrotesque(22)).foregroundStyle(Palette.text)
+                }
+                .transition(.scale(scale: 0.6).combined(with: .opacity))
+            }
+        }
+        .sensoryFeedback(.success, trigger: model.finishing == true)
         .background(Palette.surface, in: .rect(cornerRadius: 20))
-        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green.opacity(0.6), lineWidth: 1.5) }
+        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green.opacity(model.finishing == true ? 1 : 0.6), lineWidth: 1.5) }
+        .allowsHitTesting(model.finishing == nil)
         .sensoryFeedback(.selection, trigger: picked)
         .contentShape(.contextMenuPreview, .rect(cornerRadius: 20))
         // Map, Steps and End are on the card; holding it gives only the rarer ones, never the same twice.
