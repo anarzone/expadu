@@ -117,7 +117,8 @@ enum PlaceSymbol {
         case "pharmacy": "cross.case.fill"
         case "cafe": "cup.and.saucer.fill"
         case "bakery": "birthday.cake.fill"
-        case "grocery": "cart.fill"
+        case "grocery", "supermarket", "convenience", "greengrocer": "cart.fill"
+        case "drugstore": "cross.case.fill"
         case "playground", "park", "nature": "leaf.fill"
         case "library": "books.vertical.fill"
         case "restaurant", "fastfood": "fork.knife"
@@ -125,6 +126,11 @@ enum PlaceSymbol {
         case "sports": "figure.run"
         default: "mappin"
         }
+    }
+
+    /// Somewhere to spend free time, worth a place in the plan; not a quick errand.
+    static func stays(_ kind: String) -> Bool {
+        !["pharmacy", "drugstore", "bakery", "supermarket", "convenience", "greengrocer", "grocery"].contains(kind)
     }
 }
 

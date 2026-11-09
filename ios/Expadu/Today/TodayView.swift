@@ -78,7 +78,7 @@ struct TodayView: View {
                             case .paperwork: PaperworkCard(paperwork: page.paperwork)
                             case .pickUp: if let continuation = page.continuation { PickUp(continuation: continuation) }
                             case .saved: if let saved = page.saved { SavedForLater(saved: saved, date: page.date, plans: page.plans) }
-                            case .comingUp: ComingUp(page: page)
+                            case .comingUp: if !page.tomorrow.isEmpty || !page.later.isEmpty { ComingUp(page: page) }
                             case .links: CityLinks(sheet: $sheet)
                             }
                         }
@@ -246,10 +246,10 @@ struct Greeting: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(TodayPage.greeting(at: page?.now ?? .now, name: name))
-                .font(.posterGrotesque(34)).tracking(-0.5)
+                .font(.posterGrotesque(28)).tracking(-0.4)
                 .lineLimit(1).minimumScaleFactor(0.7)
             if let page {
-                Text(page.dateLine).font(.geist(15, .medium)).foregroundStyle(Palette.textSoft)
+                Text(page.dateLine).font(.geist(14, .medium)).foregroundStyle(Palette.textSoft)
             }
         }
         .foregroundStyle(Palette.text)

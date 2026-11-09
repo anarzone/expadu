@@ -29,14 +29,19 @@ struct YourDay: View {
                     Text("Now · \(TodayPage.clock(page.now))").font(.geist(13, .bold)).foregroundStyle(Self.line)
                 }
                 .frame(height: 22).padding(.bottom, 6)
-                // A trip to something that isn't a plan (an event's Getting there) goes at now, not under a plan.
+                // A trip to something that isn't a plan (an event's Getting there) takes its place in time:
+                // plans before its leave time come first, the trip and where it goes, then the rest.
                 let tripHere = page.trip.flatMap { trip in page.ahead.contains(where: { $0.title == trip.to }) ? nil : trip }
+                let leaveAt = tripHere == nil ? nil : page.tripLeave?.time
+                let before = leaveAt.map { at in page.ahead.filter { ($0.start ?? "") < at } } ?? []
+                let after = page.ahead.filter { plan in !before.contains { $0.id == plan.id } }
+                if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
+                plans(before, firstIsNext: true)
                 if let trip = tripHere {
                     LiveTrip(trip: trip).padding(.bottom, 14)
                         .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
                                                 removal: .opacity.combined(with: .offset(y: -10)).combined(with: .scale(scale: 0.97))))
                 }
-                if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
                 // Free time is before they leave; once on the way it isn't theirs to fill.
                 if page.free?.anchorTitle == nil, let free = page.free, tripHere == nil || page.tripLeave != nil { FreeTime(page: page, free: free) }
                 if let trip = tripHere {
@@ -45,14 +50,7 @@ struct YourDay: View {
                 } else if page.ahead.isEmpty {
                     EmptyDay(page: page).padding(.top, 4).padding(.bottom, 12)
                 }
-                ForEach(Array(page.ahead.enumerated()), id: \.element.id) { index, plan in
-                    Stop(page: page, plan: plan, next: index == 0)
-                    if let free = page.free, free.anchorTitle == plan.title {
-                        FreeTime(page: page, free: free)
-                    } else if let link = page.link(after: plan), index < page.ahead.count - 1 {
-                        LinkLine(link: link)
-                    }
-                }
+                plans(after, firstIsNext: before.isEmpty && tripHere == nil)
                 AddPlan(date: page.date)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -66,6 +64,19 @@ struct YourDay: View {
     }
 
     static let line = Color(hex: 0xE6421F)
+
+    /// Plans on the line, each with what follows it (free time, or the way to the next).
+    @ViewBuilder
+    private func plans(_ list: [TodayPage.Plan], firstIsNext: Bool) -> some View {
+        ForEach(Array(list.enumerated()), id: \.element.id) { index, plan in
+            Stop(page: page, plan: plan, next: firstIsNext && index == 0)
+            if let free = page.free, free.anchorTitle == plan.title {
+                FreeTime(page: page, free: free)
+            } else if let link = page.link(after: plan), index < list.count - 1 {
+                LinkLine(link: link)
+            }
+        }
+    }
 }
 
 /// The destination of a trip that isn't a plan (an event's Getting there): its time and name.
@@ -682,7 +693,8 @@ struct FreeTime: View {
                             Text(place.line).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                         }
                         Spacer(minLength: 0)
-                        AddButton(candidate: place.candidate, date: page.date, title: place.name)
+                        // A place to spend the time can go in the plan; an errand (pharmacy, bakery) just shows.
+                        if PlaceSymbol.stays(place.kind) { AddButton(candidate: place.candidate, date: page.date, title: place.name) }
                     }
                     .foregroundStyle(Palette.text)
                     .padding(.horizontal, 12).padding(.vertical, 6)
@@ -742,7 +754,8 @@ struct NearbyMap: View {
                             Text(place.line).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                         }
                         Spacer(minLength: 0)
-                        AddButton(candidate: place.candidate, date: page.date, title: place.name)
+                        // A place to spend the time can go in the plan; an errand (pharmacy, bakery) just shows.
+                        if PlaceSymbol.stays(place.kind) { AddButton(candidate: place.candidate, date: page.date, title: place.name) }
                     }
                     .padding(.vertical, 6)
                     Divider().overlay(Palette.border)
