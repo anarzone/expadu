@@ -152,6 +152,8 @@ function DocumentRow({
                         label: existing?.details.label ?? requirement.label,
                         kind: existing?.details.kind ?? 'document',
                         reported_available: true,
+                        // A record left out of the write loses it: the expiry they gave stays.
+                        expires_on: existing?.details.expires_on ?? null,
                         requirement_refs: refs,
                     },
                 ),

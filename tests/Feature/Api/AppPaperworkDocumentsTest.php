@@ -2,12 +2,15 @@
 
 use App\Bureaucracy\Catalogue\CatalogueCompiler;
 use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
+use App\Bureaucracy\Evidence\RecordEvidence;
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\People\PersonAccess;
 use App\Bureaucracy\Processes\ReconcileProcesses;
 use App\Home\TodayPaperwork;
+use App\Models\BureaucracyEvidenceItem;
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 /* What to bring on Today: the documents of their own Paperwork task, ticked in the same record. */
 
@@ -64,6 +67,33 @@ test('ticking a document marks it ready in Paperwork, and unticking takes it bac
     $this->withToken($token)->postJson("/api/v1/paperwork/{$key}/documents/{$id}", ['ready' => false])->assertOk()
         ->assertJsonPath('ready', 0)->assertJsonPath('documents.0.ready', false);
     $this->withToken($token)->postJson("/api/v1/paperwork/{$key}/documents/{$id}", ['ready' => true])->assertOk()->assertJsonPath('ready', 1);
+});
+
+test('ticking keeps what their record says, and unticking keeps the record: only ready goes', function () {
+    [$user, $key] = bringHolder();
+    $token = $user->createToken('iPhone')->plainTextToken;
+    // They wrote their passport down in Paperwork before, with its expiry, not yet for this task.
+    $person = app(EnsureAccountHolder::class)->dossier($user)->person;
+    $passport = (string) Str::uuid();
+    app(RecordEvidence::class)->execute($user, $person, $passport, ['label' => 'Synthetic passport', 'kind' => 'document',
+        'reported_available' => false, 'expires_on' => '2031-04-30', 'requirement_refs' => []], 0, (string) Str::uuid());
+    $id = $this->withToken($token)->getJson("/api/v1/paperwork/{$key}/documents")->json('documents.0.id');
+    $record = fn () => BureaucracyEvidenceItem::query()->findOrFail($passport);
+
+    $this->withToken($token)->postJson("/api/v1/paperwork/{$key}/documents/{$id}", ['ready' => true])->assertOk()->assertJsonPath('documents.0.ready', true);
+    expect($record()->details['expires_on'])->toBe('2031-04-30')
+        ->and($record()->details['requirement_refs'])->toContain($id)
+        ->and(BureaucracyEvidenceItem::query()->where('person_id', $person->id)->count())->toBe(1);
+
+    $this->withToken($token)->postJson("/api/v1/paperwork/{$key}/documents/{$id}", ['ready' => false])->assertOk()->assertJsonPath('documents.0.ready', false);
+    expect($record()->status)->toBe('active')
+        ->and($record()->details['expires_on'])->toBe('2031-04-30')
+        ->and($record()->details['requirement_refs'])->toContain($id);
+
+    // Ticked again, it's the same record, as it was.
+    $this->withToken($token)->postJson("/api/v1/paperwork/{$key}/documents/{$id}", ['ready' => true])->assertOk()->assertJsonPath('documents.0.ready', true);
+    expect(BureaucracyEvidenceItem::query()->where('person_id', $person->id)->count())->toBe(1)
+        ->and($record()->details['expires_on'])->toBe('2031-04-30');
 });
 
 test('🔒 another person’s task can’t be read or ticked', function () {
