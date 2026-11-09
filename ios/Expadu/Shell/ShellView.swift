@@ -85,6 +85,8 @@ struct ShellView: View {
                 withAnimation(.snappy) { tab = .today }
                 if let way = today.page?.leave?.ways.first {
                     Task { _ = await today.startTrip(session.api, way: way, replace: false) }
+                } else {
+                    Task { await today.findWay(session.api) }
                 }
             case .tripNewWay:
                 withAnimation(.snappy) { tab = .today }

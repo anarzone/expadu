@@ -543,7 +543,7 @@ struct LeaveCard: View {
                     .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
-                .disabled(starting || leave.ways.isEmpty)
+                .disabled(starting)
                 Button { othersOpen = true } label: {
                     Label("Other ways", systemImage: "arrow.triangle.branch")
                         .font(.geist(15, .medium)).foregroundStyle(Palette.text)
@@ -579,7 +579,15 @@ struct LeaveCard: View {
 
     /// I'm on my way, on the way the card shows; a trip already running asks first.
     private func start(replace: Bool) {
-        guard let way = leave.ways.first else { return }
+        // No way loaded yet: never a dead button. Look again and say what came of it.
+        guard let way = leave.ways.first else {
+            starting = true
+            Task {
+                await model.findWay(session.api)
+                starting = false
+            }
+            return
+        }
         starting = true
         Task {
             let running = await model.startTrip(session.api, way: way, replace: replace)

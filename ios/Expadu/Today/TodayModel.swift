@@ -281,6 +281,19 @@ final class TodayModel {
     /// Where the phone was when Today was last read; Getting there plans from here too.
     private(set) var place: CLLocationCoordinate2D?
 
+    /// I'm on my way with no way to hand (the Leave card's not loaded, or the Lock Screen asked after
+    /// it went): Today again, then the first way if there is one now, else why not, in words.
+    func findWay(_ api: AppAPI) async {
+        await load(api, quietly: true)
+        if let way = page?.leave?.ways.first {
+            _ = await startTrip(api, way: way, replace: false)
+        } else if page?.leave == nil {
+            say(Note(text: "Nothing to leave for right now. Open an event’s Getting there to start a trip.", symbol: "info.circle"))
+        } else {
+            say(Note(text: "No way there was found for now. Try again in a moment.", symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
     /// I'm on my way. True when another trip is running and they should be asked first.
     func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool) async -> Bool {
         do throws(APIFailure) {
