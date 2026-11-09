@@ -57,8 +57,8 @@ struct Ideas: View {
     /// class · dry, 5°"). The heading already says when, so this doesn't.
     private var sub: String? {
         let weather = page.weather.map { "\(($0.summary ?? $0.condition).lowercased()), \($0.temperature)°" }
-        let words = [page.ideasLead, weather].compactMap { $0 }
-        return words.isEmpty ? nil : words.joined(separator: " · ")
+        let words = [page.ideasLead, weather].compactMap { $0 }.joined(separator: " · ")
+        return words.isEmpty ? nil : words.prefix(1).uppercased() + words.dropFirst()
     }
 }
 

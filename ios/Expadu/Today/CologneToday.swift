@@ -222,7 +222,10 @@ struct SavedForLater: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             SectionHead(title: "Saved for later") {
-                Text("View all \(saved.count)").font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
+                // There's no list of them all yet: only say how many when more are saved than shown.
+                if saved.count > saved.items.count {
+                    Text("\(saved.count) saved").font(.geist(13.5, .medium)).foregroundStyle(Palette.textSoft)
+                }
             }
             VStack(spacing: 0) {
                 ForEach(Array(saved.items.enumerated()), id: \.element.id) { index, item in
