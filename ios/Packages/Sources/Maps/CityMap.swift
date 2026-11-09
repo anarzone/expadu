@@ -72,9 +72,12 @@ public struct CityMap: UIViewRepresentable {
     /// Walking: the camera follows the phone, turned the way it's heading.
     let follow: Bool
     let showsUser: Bool
+    /// A new value fits the camera again even when `fit` is the same (Show the whole way after panning).
+    let fitID: Int
 
     public init(lines: [Line], pins: [Pin], fit: [CLLocationCoordinate2D], padding: UIEdgeInsets = UIEdgeInsets(top: 40, left: 40, bottom: 40, right: 40),
-                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false) {
+                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0) {
+        self.fitID = fitID
         self.lines = lines
         self.pins = pins
         self.fit = fit
@@ -133,6 +136,7 @@ public struct CityMap: UIViewRepresentable {
         private var drawnLines: [Line] = []
         private var drawnPins: [Pin] = []
         private var fitKey = ""
+        private var animateFit = false
         private var pendingFit: (points: [CLLocationCoordinate2D], padding: UIEdgeInsets)?
         private var styleReady = false
 
@@ -144,8 +148,10 @@ public struct CityMap: UIViewRepresentable {
                 if map.userTrackingMode != .followWithCourse { map.setUserTrackingMode(.followWithCourse, animated: true, completionHandler: nil) }
             } else {
                 if map.userTrackingMode != .none { map.userTrackingMode = .none }
-                let key = spec.fit.map { String(format: "%.5f,%.5f", $0.latitude, $0.longitude) }.joined(separator: ";")
+                let key = "\(spec.fitID)|" + spec.fit.map { String(format: "%.5f,%.5f", $0.latitude, $0.longitude) }.joined(separator: ";")
                 if key != fitKey, !spec.fit.isEmpty {
+                    // The first fit sets the scene; every later one flies there.
+                    animateFit = !fitKey.isEmpty
                     fitKey = key
                     pendingFit = (spec.fit, spec.padding)
                     fitIfPending()
@@ -159,16 +165,16 @@ public struct CityMap: UIViewRepresentable {
         func fitIfPending() {
             guard let map, let pending = pendingFit, map.bounds.width > 0, map.bounds.height > 0 else { return }
             pendingFit = nil
-            fitCamera(map, pending.points, padding: pending.padding)
+            fitCamera(map, pending.points, padding: pending.padding, animated: animateFit)
         }
 
-        private func fitCamera(_ map: MLNMapView, _ points: [CLLocationCoordinate2D], padding: UIEdgeInsets) {
+        private func fitCamera(_ map: MLNMapView, _ points: [CLLocationCoordinate2D], padding: UIEdgeInsets, animated: Bool) {
             if points.count == 1 {
-                map.setCenter(points[0], zoomLevel: 15, animated: false)
+                map.setCenter(points[0], zoomLevel: 15, animated: animated)
                 return
             }
             var coordinates = points
-            map.setVisibleCoordinates(&coordinates, count: UInt(coordinates.count), edgePadding: padding, animated: false)
+            map.setVisibleCoordinates(&coordinates, count: UInt(coordinates.count), edgePadding: padding, animated: animated)
         }
 
         private func drawLines(_ map: MLNMapView, _ lines: [Line]) {

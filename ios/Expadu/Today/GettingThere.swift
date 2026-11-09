@@ -58,7 +58,15 @@ struct GettingThere: View {
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(isPresented: $mapOpen) {
             if let way {
-                WayMap(title: "Your way to \(idea.place ?? idea.title)", legs: live?.legs ?? way.legs)
+                WayMap(to: idea.place ?? idea.title, legs: live?.legs ?? way.legs, ways: live == nil ? plan?.ways ?? [] : [],
+                       picked: $picked,
+                       start: day.isToday && live == nil ? { mapOpen = false; start(replace: false) } : nil,
+                       starting: starting,
+                       travel: {
+                           mapOpen = false
+                           dismiss()
+                           shell.show(.travel)
+                       })
                     .navigationTransition(.zoom(sourceID: "way-map", in: mapZoom))
             }
         }
