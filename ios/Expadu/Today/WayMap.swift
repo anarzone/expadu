@@ -20,6 +20,10 @@ struct WayMap: View {
     var starting = false
     /// A different trip, in Travel.
     var travel: (() -> Void)?
+    /// What's good to know on the way (ticket, rain, lifts, notices), as Getting there lists it.
+    var know: [KnowRow.Row] = []
+    /// When the event starts: the last step says so.
+    var starts: String?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("speakTurns") private var speak = false
@@ -29,11 +33,12 @@ struct WayMap: View {
     @State private var focus: Int?
     @State private var whole = 0
     @State private var cardHeight: CGFloat = 260
-    /// The card folds down to its first line so the whole map is free to move and zoom.
-    @State private var folded = false
-    /// The other ways, shown on request so the map stays the map.
-    @State private var comparing = false
-    @State private var cardDrag: CGFloat = 0
+    /// The card is iOS's own sheet (Apple Maps'): small, half or full, the map usable behind it.
+    @State private var detent: PresentationDetent = Self.peek
+    @State private var showCard = true
+    /// What to do once the card has gone: iOS takes one dismissal at a time.
+    @State private var then: (() -> Void)?
+    static let peek = PresentationDetent.height(178)
 
     private var here: Guide.Position? { guiding?.follow.here }
     private var way: TodayPage.Way? { picked.flatMap { ways.indices.contains($0.wrappedValue) ? ways[$0.wrappedValue] : nil } }
@@ -57,59 +62,46 @@ struct WayMap: View {
     var body: some View {
         ZStack(alignment: .top) {
             CityMap(lines: lines, pins: WayDrawing.pins(legs, to: to, start: guiding == nil),
-                    fit: fit, padding: UIEdgeInsets(top: 130, left: 48, bottom: cardHeight + 40, right: 48),
+                    fit: fit, padding: UIEdgeInsets(top: 120, left: 48, bottom: max(cardHeight, 178) + 40, right: 48),
                     follow: guiding != nil && following, showsUser: true, fitID: whole)
                 .ignoresSafeArea()
-            VStack(spacing: 10) {
-                HStack(alignment: .top) {
-                    // Pull down from here: the map shrinks back to where it came from.
-                    Capsule().fill(Palette.textSoft.opacity(0.55)).frame(width: 40, height: 5)
-                        .frame(maxWidth: .infinity).frame(height: 44)
-                        .contentShape(.rect)
-                        .gesture(
-                            DragGesture(minimumDistance: 8)
-                                .onChanged { value in pull = max(0, value.translation.height) }
-                                .onEnded { value in
-                                    if value.translation.height > 90 || value.predictedEndTranslation.height > 220 { dismiss() }
-                                    withAnimation(.easeOut(duration: 0.3)) { pull = 0 }
-                                }
-                        )
-                        .accessibilityAction(named: "Close the map") { dismiss() }
-                        .padding(.leading, 56)
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                    }
-                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
-                    .accessibilityLabel("Close the map")
-                }
-                if let here, let turn = here.turn, !here.offRoute {
-                    TurnRow(turn: turn, metres: here.metresToTurn)
-                        .padding(14)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 22))
-                        .transition(.opacity.combined(with: .offset(y: -8)))
-                } else if let here, here.offRoute {
-                    Label("You’re off the way. Go back to the line, or plan a new way on the card.", systemImage: "exclamationmark.triangle.fill")
-                        .font(.geist(14, .semibold)).foregroundStyle(Palette.warnText)
-                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Palette.warnBackground, in: .rect(cornerRadius: 18))
-                }
+            if let here, let turn = here.turn, !here.offRoute {
+                TurnRow(turn: turn, metres: here.metresToTurn)
+                    .padding(14)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 22))
+                    .padding(.horizontal, 14).padding(.top, 10)
+                    .transition(.opacity.combined(with: .offset(y: -8)))
+            } else if let here, here.offRoute {
+                Label("You’re off the way. Go back to the line, or plan a new way on the card.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.geist(14, .semibold)).foregroundStyle(Palette.warnText)
+                    .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Palette.warnBackground, in: .rect(cornerRadius: 18))
+                    .padding(.horizontal, 14).padding(.top, 10)
             }
-            .padding(.horizontal, 14).padding(.top, 10)
         }
-        .overlay(alignment: .bottom) {
-            VStack(alignment: .trailing, spacing: 12) {
-                controls
-                card
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
-            }
-            .padding(.horizontal, 12).padding(.bottom, 8)
+        // The map's own buttons ride just above the card, whatever its height.
+        .overlay(alignment: .bottomTrailing) {
+            controls.padding(.trailing, 12).padding(.bottom, max(cardHeight, 178) - 20)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: cardHeight)
         }
-        // Following the finger while pulled, as a sheet does.
-        .scaleEffect(1 - min(pull, 300) / 1500, anchor: .top)
-        .offset(y: pull * 0.6)
         .animation(Motion.ios(0.3), value: here?.turn)
         .animation(reduceMotion ? nil : Motion.ios(0.35), value: focus)
+        .sheet(isPresented: $showCard, onDismiss: { then?(); then = nil }) {
+            card
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
+                .presentationDetents([Self.peek, .medium, .large], selection: $detent)
+                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
+                .interactiveDismissDisabled()
+        }
         .presentationDetents([.large])
+    }
+
+    /// The card goes first, then the map (or Travel opens).
+    private func close(then next: (() -> Void)? = nil) {
+        then = next ?? { dismiss() }
+        showCard = false
     }
 
     // MARK: Controls
@@ -132,42 +124,31 @@ struct WayMap: View {
                 .buttonStyle(RaisedStyle(fill: Palette.surface, size: 48))
                 .accessibilityLabel(following ? "Show the whole way" : "Follow me")
             }
-            if guiding == nil || !following {
-                Button {
-                    focus = nil
-                    whole += 1
-                } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                }
-                .buttonStyle(RaisedStyle(fill: Palette.surface, size: 48))
-                .accessibilityLabel("Show the whole way")
-            }
         }
         .padding(.trailing, 4)
     }
 
     // MARK: The card
 
+    /// The card: small shows where to and the one thing to do; half adds the way as a bar, share
+    /// and Travel, and the other ways; full adds every step and what's good to know.
     private var card: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Drag or tap: folds to the first line and the button, and back.
-            Capsule().fill(Palette.textSoft.opacity(0.45)).frame(width: 36, height: 5)
-                .frame(maxWidth: .infinity).frame(height: 14)
-                .padding(.top, -6)
-                .contentShape(.rect)
-                .onTapGesture { fold(!folded) }
-                .accessibilityLabel(folded ? "Show the way's details" : "Fold the card")
-                .accessibilityAddTraits(.isButton)
-            HStack(spacing: 12) {
-                plates
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("To \(to)").font(.geist(17, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
-                    Text(summary).font(.geist(13.5)).foregroundStyle(Palette.textSoft).lineLimit(1).monospacedDigit()
-                        .contentTransition(.numericText())
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    plates
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("To \(to)").font(.geist(17, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
+                        Text(summary).font(.geist(13.5)).foregroundStyle(Palette.textSoft).lineLimit(1).monospacedDigit()
+                            .contentTransition(.numericText())
+                    }
+                    Spacer(minLength: 0)
+                    Button { close() } label: {
+                        Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Palette.textSoft)
+                    }
+                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 36))
+                    .accessibilityLabel("Close the map")
                 }
-                Spacer(minLength: 0)
-            }
-            if !folded {
                 if let now = nowWords {
                     HStack(spacing: 8) {
                         Text("Now").font(.geist(12, .bold)).foregroundStyle(.white)
@@ -175,77 +156,96 @@ struct WayMap: View {
                         Text(now).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
                     }
                 }
+                if let start {
+                    Button { close(then: start) } label: {
+                        HStack(spacing: 8) {
+                            if starting { ProgressView().tint(.white) } else { Image(systemName: "figure.walk") }
+                            Text("I’m on my way").lineLimit(1)
+                        }
+                        .font(.geist(17, .semibold)).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).frame(height: 50)
+                        .background(Palette.action, in: .capsule).raised(Capsule())
+                    }
+                    .buttonStyle(PressStyle())
+                    .disabled(starting)
+                }
                 RouteBar(legs: legs, focus: $focus, current: here?.leg) { on in
                     following = false
                     if !on { whole += 1 }
                 }
+                actions
                 if guiding == nil, ways.count > 1, picked != nil {
-                    Button {
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { comparing.toggle() }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrow.triangle.branch").font(.system(size: 14, weight: .semibold))
-                            Text(comparing ? "Hide other ways" : "\(ways.count - 1) other \(ways.count == 2 ? "way" : "ways")")
-                                .font(.geist(15, .semibold))
-                            Spacer(minLength: 0)
-                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold))
-                                .rotationEffect(.degrees(comparing ? 180 : 0))
+                    section("Other ways") { otherWays }
+                }
+                section("Step by step") {
+                    StepList(steps: TodayPage.Step.of(legs, to: to, start: starts), current: here.map { at in
+                        TodayPage.Step.of(legs, to: to, start: starts).firstIndex { $0.leg == at.leg }
+                    } ?? nil)
+                }
+                if !know.isEmpty {
+                    section("Good to know") {
+                        VStack(spacing: 0) {
+                            ForEach(Array(know.enumerated()), id: \.offset) { index, row in
+                                if index > 0 { Rectangle().fill(Palette.border).frame(height: 0.5).padding(.leading, 59) }
+                                KnowRow(row: row)
+                            }
                         }
-                        .foregroundStyle(Palette.text)
-                        .frame(minHeight: 36).contentShape(.rect)
-                    }
-                    .buttonStyle(PressStyle())
-                    if comparing {
-                        ScrollView { otherWays }
-                            .frame(maxHeight: 200)
-                            .scrollBounceBehavior(.basedOnSize)
-                            .transition(.opacity.combined(with: .offset(y: -6)))
+                        .background(Palette.surface, in: .rect(cornerRadius: 18))
                     }
                 }
             }
-            if let start {
-                Button(action: start) {
-                    HStack(spacing: 8) {
-                        if starting { ProgressView().tint(.white) } else { Image(systemName: "figure.walk") }
-                        Text("I’m on my way").lineLimit(1)
-                    }
-                    .font(.geist(17, .semibold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).frame(height: 50)
-                    .background(Palette.action, in: .capsule).raised(Capsule())
-                }
-                .buttonStyle(PressStyle())
-                .disabled(starting)
-            }
-            if let travel, !folded {
-                Button(action: travel) {
-                    Label("Plan a different trip in Travel", systemImage: "chevron.right").labelStyle(TrailingIcon())
-                        .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
-                        .frame(maxWidth: .infinity).frame(minHeight: 36)
-                }
-                .buttonStyle(PressStyle())
-            }
+            .padding(.horizontal, 18).padding(.top, 20).padding(.bottom, 30)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 28))
-        .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
-        .offset(y: cardDrag)
-        .gesture(
-            DragGesture(minimumDistance: 10)
-                .onChanged { value in cardDrag = folded ? min(0, value.translation.height) / 3 : max(0, value.translation.height) }
-                .onEnded { value in
-                    let down = value.translation.height > 60 || value.predictedEndTranslation.height > 160
-                    let up = value.translation.height < -40 || value.predictedEndTranslation.height < -120
-                    fold(folded ? !up : down)
-                }
-        )
+        .scrollIndicators(.hidden)
+        .scrollDisabled(detent == Self.peek)
     }
 
-    private func fold(_ on: Bool) {
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.32)) {
-            folded = on
-            cardDrag = 0
+    /// Share the way, and a different trip in Travel: two quiet tiles, as Apple Maps' Share ETA.
+    private var actions: some View {
+        HStack(spacing: 10) {
+            ShareLink(item: shareText) {
+                tile("square.and.arrow.up", "Share")
+            }
+            .buttonStyle(PressStyle())
+            if let travel {
+                Button { close(then: travel) } label: { tile("tram.fill", "Travel") }
+                    .buttonStyle(PressStyle())
+                    .accessibilityLabel("Plan a different trip in Travel")
+            }
+            Button {
+                focus = nil
+                following = false
+                whole += 1
+            } label: { tile("arrow.up.left.and.arrow.down.right", "Whole way") }
+            .buttonStyle(PressStyle())
         }
+    }
+
+    private func tile(_ symbol: String, _ title: String) -> some View {
+        VStack(spacing: 5) {
+            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(TodayLink.ink)
+                .frame(height: 24)
+            Text(title).font(.geist(13, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
+        }
+        .frame(maxWidth: .infinity).frame(height: 62)
+        .background(Palette.surface, in: .rect(cornerRadius: 16))
+        .raised(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(.posterGrotesque(18)).foregroundStyle(Palette.text).accessibilityAddTraits(.isHeader)
+            content()
+        }
+        .padding(.top, 4)
+    }
+
+    /// "Tram 18 at 18:47 from Neumarkt, there 18:53 · Kreuzblume".
+    private var shareText: String {
+        let ride = legs.first(where: \.rides)
+        let how = ride.map { "\($0.line.map { "Line \(Board.badge($0))" } ?? $0.mode.capitalized) at \($0.departTime) from \($0.from)" }
+            ?? (legs.first?.mode == "bike" ? "By bike" : "On foot")
+        return "On my way to \(to): \(how), there at \(legs.last?.arriveTime ?? "")."
     }
 
     /// The lines ridden, as plates; on foot or by bike, its sign.
@@ -288,7 +288,6 @@ struct WayMap: View {
                 Button {
                     focus = nil
                     picked?.wrappedValue = index
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3).delay(0.15)) { comparing = false }
                 } label: {
                     HStack(spacing: 10) {
                         Group {

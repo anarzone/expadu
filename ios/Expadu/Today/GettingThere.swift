@@ -53,7 +53,7 @@ struct GettingThere: View {
             .scrollIndicators(.hidden)
         }
         // The one thing to do here is always on screen: it floats, the page scrolls under it.
-        .overlay(alignment: .bottom) { if let way { actions(way) } }
+        .overlay(alignment: .bottom) { if let way, live == nil { actions(way) } }
         .background(Palette.canvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(isPresented: $mapOpen) {
@@ -66,7 +66,9 @@ struct GettingThere: View {
                            mapOpen = false
                            dismiss()
                            shell.show(.travel)
-                       })
+                       },
+                       know: plan.map { goodToKnow($0, way) } ?? [],
+                       starts: idea.timed ? idea.startsAt.map(TodayPage.clock) : nil)
                     .navigationTransition(.zoom(sourceID: "way-map", in: mapZoom))
             }
         }
@@ -369,7 +371,7 @@ private struct WayRow: View {
 }
 
 /// A Good to know row: a coloured tile, its line and a note.
-private struct KnowRow: View {
+struct KnowRow: View {
     struct Row {
         let symbol: String
         let tint: Color
