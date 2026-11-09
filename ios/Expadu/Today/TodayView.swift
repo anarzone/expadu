@@ -130,7 +130,6 @@ struct TodayView: View {
             case let .why(idea, when): WhySheet(idea: idea, when: when, sheet: $sheet)
             case let .howWeRank(on): HowWeRankSheet(personalised: on)
             case let .agree(pause): AgreeSheet(pause: pause)
-            case let .line(need, page): LineTrouble(need: need, page: page)
             }
         }
     }
@@ -193,7 +192,6 @@ enum TodaySheet: Identifiable {
     case why(TodayPage.Idea, String)
     case howWeRank(Bool)
     case agree(TodayPage.RankPause)
-    case line(TodayPage.Need, TodayPage)
 
     var id: String {
         switch self {
@@ -204,7 +202,6 @@ enum TodaySheet: Identifiable {
         case let .why(idea, _): "why-\(idea.id)"
         case .howWeRank: "how-we-rank"
         case .agree: "agree"
-        case let .line(need, _): "line-\(need.id)"
         }
     }
 }

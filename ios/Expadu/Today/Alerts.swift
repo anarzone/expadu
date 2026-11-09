@@ -14,7 +14,8 @@ struct AlertsSheet: View {
     @State private var problem: String?
     @State private var filter = "all"
     @State private var open: Int?
-    @State private var path: [String] = []
+    /// The line note opened in place.
+    @State private var openNeed: String?
     @State private var link: WebPage?
 
     private static let chips = [("all", "All"), ("lines", "Your lines"), ("weather", "Weather"), ("paper", "Paperwork"), ("city", "City")]
@@ -27,7 +28,7 @@ struct AlertsSheet: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
@@ -58,13 +59,16 @@ struct AlertsSheet: View {
                             ForEach(Array(needs.enumerated()), id: \.element.id) { index, need in
                                 if index > 0 { Divider().overlay(Palette.border) }
                                 Button {
-                                    if need.isLine { path.append(need.id) }
+                                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { openNeed = openNeed == need.id ? nil : need.id }
                                 } label: {
                                     AlertRow(symbol: Self.symbol(Self.category(need)), tone: NeedTone.color(need.severity), head: Self.plain(need.headline),
                                              sub: need.detail.map(Self.plain), time: nil, more: need.isLine)
                                 }
                                 .buttonStyle(PressStyle())
                                 .disabled(!need.isLine)
+                                if need.isLine, openNeed == need.id, let page {
+                                    LineTroubleDetail(need: need, page: page)
+                                }
                             }
                         }
                     }
@@ -100,11 +104,6 @@ struct AlertsSheet: View {
             .scrollIndicators(.hidden)
             .background(Palette.canvas)
             .toolbarVisibility(.hidden, for: .navigationBar)
-            .navigationDestination(for: String.self) { id in
-                if let page, let need = page.needs.first(where: { $0.id == id }) {
-                    LineTrouble(need: need, page: page, alerts: alerts ?? [], pushed: true)
-                }
-            }
         }
         .task { await load() }
         .sheet(item: $link) { SafariView(url: $0.url).ignoresSafeArea() }
@@ -192,7 +191,7 @@ private struct AlertRow: View {
             }
             Spacer(minLength: 0)
             if let time, !time.isEmpty { Text(time).font(.geist(12.5)).foregroundStyle(Palette.textSoft) }
-            if more { Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft).padding(.top, 10) }
+            if more { Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft).padding(.top, 10) }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
         .multilineTextAlignment(.leading)
@@ -239,36 +238,41 @@ struct LineBadge: View {
     }
 }
 
-/// Cologne today's line row (.ct-line): one of their lines in trouble, one tap from what it means.
+/// Cologne today's line row (.ct-line): one of their lines in trouble. A tap opens what it means
+/// right under it; nothing slides over the page.
 struct LineRow: View {
     let need: TodayPage.Need
+    var open = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: open ? .top : .center, spacing: 12) {
             LineBadge(line: need.line ?? "", color: need.color, height: 28)
             VStack(alignment: .leading, spacing: 1) {
-                Text(LineTrouble.words(need)).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
+                Text(LineTroubleDetail.words(need)).font(.geist(15, .semibold)).foregroundStyle(Palette.text)
+                    .lineLimit(open ? nil : 2).fixedSize(horizontal: false, vertical: open)
                 if let detail = need.detail { Text(AlertsSheet.plain(detail)).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1) }
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft)
+            Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft)
+                .rotationEffect(.degrees(open ? 180 : 0))
+                .padding(.top, open ? 6 : 0)
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
+        .multilineTextAlignment(.leading)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
-        .accessibilityHint("What it means for you")
+        .accessibilityHint(open ? "Hides what it means for you" : "What it means for you")
     }
 }
 
-/// A line late or disrupted, in place (the canvas's line sheet): whether today's ways use it, what
-/// KVB says, and where. Only what's known is drawn.
-struct LineTrouble: View {
+/// What a line in trouble means for them, in place under its row: whether today's ways ride it,
+/// what KVB says and where (when the bell has its card), and the line's next departures near them.
+/// Only what's known is drawn.
+struct LineTroubleDetail: View {
     let need: TodayPage.Need
     let page: TodayPage
-    var alerts: [BellCard] = []
-    var pushed = false
     @Environment(Session.self) private var session
-    @Environment(\.dismiss) private var dismiss
+    @Environment(TodayModel.self) private var model
     @State private var card: BellCard?
     @State private var link: WebPage?
 
@@ -297,121 +301,75 @@ struct LineTrouble: View {
         return lines.reduce(into: []) { if !$0.contains($1) { $0.append($1) } }
     }
 
+    private var nearby: [Board.Departure] { (model.board?.departures ?? []).filter { $0.line == line } }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .center, spacing: 12) {
-                    if pushed {
-                        Button { dismiss() } label: {
-                            Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                                .frame(width: 44, height: 44)
+        VStack(alignment: .leading, spacing: 12) {
+            yours
+            if let body = card?.body, !body.isEmpty {
+                Text(body).font(.geist(14.5)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+            }
+            if let stops = card?.stops, !stops.isEmpty {
+                Label { Text(stops.joined(separator: " · ")).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: "mappin.and.ellipse") }
+                    .font(.geist(13.5)).foregroundStyle(Palette.textSoft)
+            }
+            if !nearby.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Next \(Board.badge(line)) near you").font(.geist(12.5, .semibold)).foregroundStyle(Palette.textSoft)
+                    ForEach(nearby.prefix(2)) { departure in
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.right").font(.system(size: 11, weight: .bold))
+                            Text(departure.direction).font(.geist(14.5, .semibold)).lineLimit(1)
+                            Text("from \(departure.stop)").font(.geist(13)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                            Spacer(minLength: 4)
+                            Text(DepartureLine.times(departure.minutes)).font(.geist(14, .semibold)).monospacedDigit()
                         }
-                        .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
-                        .accessibilityLabel("Back to Alerts")
+                        .foregroundStyle(Palette.text)
                     }
-                    LineBadge(line: line, color: need.color, height: 30)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Self.words(need)).font(.posterGrotesque(24)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
-                        if let since = card?.when(now: page.now), !since.isEmpty {
-                            Text("\(card?.source ?? "KVB") · since \(since)").font(.geist(13)).foregroundStyle(Palette.textSoft)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                    if !pushed { CloseButton { dismiss() } }
                 }
-
-                yours.padding(.top, 16)
-
-                if let body = card?.body, !body.isEmpty {
-                    Text("What KVB says").font(.posterGrotesque(20)).foregroundStyle(Palette.text).padding(.top, 26).padding(.bottom, 10).padding(.leading, 4)
-                    Text(body).font(.geist(15)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
-                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                        .card(radius: 22)
-                }
-
-                if let stops = card?.stops, !stops.isEmpty {
-                    Text("Where").font(.posterGrotesque(20)).foregroundStyle(Palette.text).padding(.top, 26).padding(.bottom, 10).padding(.leading, 4)
-                    StopStrip(stops: stops, color: LineLook(hex: need.color ?? "#1A4CD4").deep).card(radius: 22)
-                }
-
+            }
+            HStack(spacing: 16) {
                 if let url = card?.url {
                     Button { link = WebPage(url: url) } label: {
                         Label("KVB’s page", systemImage: "arrow.up.right").labelStyle(TrailingIcon())
-                            .font(.geist(15, .semibold)).foregroundStyle(TodayLink.ink).frame(maxWidth: .infinity).frame(height: 48)
                     }
-                    .buttonStyle(PressStyle())
-                    .padding(.top, 14)
                 }
-
-                Text("From KVB.").font(.geist(12)).foregroundStyle(Palette.textSoft).padding(.top, 14).padding(.horizontal, 4)
+                Spacer(minLength: 0)
+                Text("From KVB").foregroundStyle(Palette.textSoft).font(.geist(12))
             }
-            .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 40)
+            .font(.geist(14, .semibold)).foregroundStyle(TodayLink.ink)
         }
-        .scrollIndicators(.hidden)
-        .background(Palette.canvas)
-        .toolbarVisibility(.hidden, for: .navigationBar)
-        .task { await find() }
+        .padding(.leading, 54).padding(.trailing, 14).padding(.bottom, 14)
+        .transition(.opacity.combined(with: .offset(y: -6)))
+        .task {
+            if model.board == nil { await model.loadBoard(session.api) }
+            await find()
+        }
         .sheet(item: $link) { SafariView(url: $0.url).ignoresSafeArea() }
-        .flexibleSheet()
-        .presentationBackground(Palette.canvas)
     }
 
-    /// Whether it touches them today, from their own ways.
+    /// Whether it touches them today, from their own ways: one line, its sign in its tone.
     private var yours: some View {
         let lines = todaysLines
         let onIt = lines.contains(line)
         let others = lines.filter { $0 != line }
-        let tone = onIt ? NeedTone.color("attention") : Motion.green
-        return HStack(spacing: 13) {
-            Image(systemName: onIt ? "exclamationmark" : "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
-                .frame(width: 32, height: 32).background(tone, in: .rect(cornerRadius: 9))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(onIt ? "On your way today" : "Not on your way today").font(.geist(16, .semibold)).foregroundStyle(Palette.text)
-                Text(onIt ? "One of today’s ways rides line \(line)."
-                     : others.isEmpty ? "None of today’s ways ride it." : "Today’s ways ride \(others.count == 1 ? "line" : "lines") \(others.joined(separator: ", ")).")
-                    .font(.geist(13.5)).foregroundStyle(Palette.textSoft)
-            }
-            Spacer(minLength: 0)
+        return Label {
+            Text(onIt ? "On your way today: one of today’s ways rides line \(Board.badge(line))."
+                 : others.isEmpty ? "Not on your way today." : "Not on your way today: you ride \(others.count == 1 ? "line" : "lines") \(others.map { Board.badge($0) }.joined(separator: ", ")).")
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: onIt ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
+                .foregroundStyle(onIt ? NeedTone.color("attention") : Motion.green)
         }
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .card(radius: 22)
-        .accessibilityElement(children: .combine)
+        .font(.geist(14.5, .semibold)).foregroundStyle(Palette.text)
     }
 
     /// The bell's card behind the note: KVB's words, the stops and its page. Opened counts as read.
     private func find() async {
-        guard let id = need.alert else { return }
-        var list = alerts
-        if list.isEmpty { list = (try? await session.api.alerts()) ?? [] }
-        guard let found = list.first(where: { $0.id == id }) else { return }
-        withAnimation(.snappy) { card = found }
+        guard let id = need.alert, card == nil else { return }
+        guard let found = ((try? await session.api.alerts()) ?? []).first(where: { $0.id == id }) else { return }
+        withAnimation(.easeOut(duration: 0.25)) { card = found }
         if !found.read { try? await session.api.readAlert(id) }
-    }
-}
-
-/// The stops where it's happening, on the line's colour (.ln-strip).
-private struct StopStrip: View {
-    let stops: [String]
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(stops.enumerated()), id: \.offset) { index, stop in
-                HStack(spacing: 12) {
-                    Circle().strokeBorder(color, lineWidth: 3).background(Circle().fill(Palette.surface)).frame(width: 14, height: 14)
-                    Text(stop).font(.geist(15, index == 0 || index == stops.count - 1 ? .bold : .regular)).foregroundStyle(Palette.text)
-                    Spacer(minLength: 0)
-                }
-                .frame(minHeight: 40)
-                .padding(.leading, 18).padding(.trailing, 16)
-                .background(alignment: .leading) {
-                    Rectangle().fill(color).frame(width: 4)
-                        .padding(.top, index == 0 ? 20 : 0).padding(.bottom, index == stops.count - 1 ? 20 : 0)
-                        .padding(.leading, 23)
-                }
-            }
-        }
-        .padding(.vertical, 6)
     }
 }
 
