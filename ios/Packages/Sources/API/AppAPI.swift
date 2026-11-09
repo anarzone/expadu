@@ -408,10 +408,11 @@ public struct AppAPI: Sendable {
     }
 
     /// A step ticked or unticked, a status reported, a submission recorded: the task's own event.
-    public func record(_ event: String, on process: PaperworkProcess, payload: [String: Any] = [:]) async throws(APIFailure) {
+    /// Undoing a record (untracking, retracting, cancelling an appointment) goes without the review token, as on the web.
+    public func record(_ event: String, on process: PaperworkProcess, payload: [String: Any] = [:], reviewed: Bool = true) async throws(APIFailure) {
         guard let id = process.id else { throw .unreachable }
         var body: [String: Any] = ["request_id": Self.requestID(), "expected_version": process.version, "event": event, "payload": payload]
-        body["review_token"] = process.reviewToken ?? NSNull()
+        body["review_token"] = (reviewed ? process.reviewToken : nil) ?? NSNull()
         _ = try await paperwork("POST", "processes/\(id)/events", body)
     }
 
@@ -422,6 +423,57 @@ public struct AppAPI: Sendable {
                                       "reported_available": available, "expires_on": existing?.details.expiresOn ?? NSNull(), "requirement_refs": refs]
         _ = try await paperwork("PUT", "people/\(person)/evidence/\(existing?.id ?? UUID().uuidString.lowercased())",
                                 ["request_id": Self.requestID(), "expected_version": existing?.version ?? 0, "details": details])
+    }
+
+    /// "I don't have it": the document's record lets go of this need (archived when nothing else uses it).
+    public func release(_ requirement: PaperworkRequirement, holders: [PaperworkEvidence], person: Int) async throws(APIFailure) {
+        for item in holders {
+            let refs = (item.details.requirementRefs ?? []).filter { $0 != requirement.id }
+            let details: [String: Any] = ["label": item.details.label, "kind": item.details.kind, "reported_available": item.details.reportedAvailable,
+                                          "expires_on": item.details.expiresOn ?? NSNull(), "requirement_refs": refs]
+            _ = try await paperwork("PUT", "people/\(person)/evidence/\(item.id)",
+                                    ["request_id": Self.requestID(), "expected_version": item.version, "details": details, "status": refs.isEmpty ? "archived" : "active"])
+        }
+    }
+
+    /// Changed guidance: keep going with the updated steps; recorded progress stays.
+    public func review(_ process: PaperworkProcess) async throws(APIFailure) {
+        guard let id = process.id, let token = process.reviewToken else { throw .unreachable }
+        _ = try await paperwork("POST", "processes/\(id)/review", ["request_id": Self.requestID(), "expected_version": process.version, "review_token": token,
+                                                                    "bind_occurrence": process.bindOccurrence ?? NSNull(), "confirmed": true])
+    }
+
+    /// Their own record's person, for when there's no plan to read it from (processing stopped).
+    public func paperworkPerson() async -> Int? {
+        guard let data = try? await paperwork("GET", "people"),
+              let people = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["people"] as? [[String: Any]] else { return nil }
+        return people.first { $0["is_self"] as? Bool == true }?["id"] as? Int
+    }
+
+    /// A paused run of questions carries on.
+    public func resumeQuestions(session: Int) async throws(APIFailure) {
+        _ = try await paperwork("POST", "question-sessions/\(session)/resume", ["revisit_deferred": false])
+    }
+
+    /// Their answers, for Your situation.
+    public func facts(person: Int) async throws(APIFailure) -> PaperworkFacts {
+        let data = try await paperwork("GET", "people/\(person)/facts")
+        do { return try PaperworkFacts.decode(data) } catch { throw .unreachable }
+    }
+
+    /// What each answer asks, so it can be changed in place.
+    public func factSchema() async throws(APIFailure) -> [PaperworkFactDefinition] {
+        struct List: Decodable { let facts: [PaperworkFactDefinition] }
+        let data = try await paperwork("GET", "facts/schema")
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        do { return try decoder.decode(List.self, from: data).facts } catch { throw .unreachable }
+    }
+
+    /// A real change in their circumstances, or a first answer outside a question.
+    public func changeFact(person: Int, key: String, value: PaperworkAnswer, state: String = "value", revision: Int) async throws(APIFailure) {
+        _ = try await paperwork("PUT", "people/\(person)/facts/\(key)",
+                                ["value": value.json, "answer_state": state, "effective_from": NSNull(), "expected_revision": revision])
     }
 
     /// "Mark as ready": checked for this task.
@@ -443,6 +495,9 @@ public struct AppAPI: Sendable {
     public func setPaperworkStopped(_ stopped: Bool, person: Int) async throws(APIFailure) {
         _ = try await paperwork("PUT", "people/\(person)/processing-restriction", ["stopped": stopped])
     }
+
+    /// The web app this API belongs to: where downloading or deleting the record happens, behind the password.
+    public var site: URL { baseURL.deletingLastPathComponent().deletingLastPathComponent() }
 
     private func paperwork(_ method: String, _ path: String, _ body: [String: Any]? = nil) async throws(APIFailure) -> Data {
         var request = URLRequest(url: baseURL.appending(path: "paperwork/v2/" + path))

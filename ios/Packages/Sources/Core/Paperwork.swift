@@ -28,11 +28,17 @@ public struct PaperworkPlan: Decodable, Equatable, Sendable {
     public let progress: PaperworkProgress?
     public let coverage: PaperworkCoverage?
     public let scopes: [String]?
+    public let historyCount: Int?
 }
 
 public struct PaperworkProcess: Decodable, Equatable, Sendable, Identifiable {
     public struct State: Decodable, Equatable, Sendable {
+        public struct Report: Decodable, Equatable, Sendable {
+            public let note: String?
+        }
+
         public let workflow: String
+        public let report: Report?
     }
 
     public struct Reason: Decodable, Equatable, Sendable {
@@ -41,6 +47,10 @@ public struct PaperworkProcess: Decodable, Equatable, Sendable, Identifiable {
 
     public struct Option: Decodable, Equatable, Sendable {
         public let event: String
+        /// "required", "optional" or none: whether the report carries the day it happened.
+        public let date: String?
+        /// Whether a short note in their own words can go with it.
+        public let note: Bool?
         public let allowed: Bool?
         public let reason: String?
     }
@@ -63,6 +73,7 @@ public struct PaperworkProcess: Decodable, Equatable, Sendable, Identifiable {
     public let blockingReason: Reason?
     public let untrackable: Bool?
     public let progressOptions: [Option]?
+    public let bindOccurrence: String?
 
     /// The plan's own key for it: stable whether tracked or not.
     public var key: String { occurrenceKey }
@@ -106,6 +117,13 @@ public struct PaperworkStep: Decodable, Equatable, Sendable, Identifiable {
     public struct Counts: Decodable, Equatable, Sendable {
         public let ready: Int
         public let total: Int
+        public let optional: Int?
+    }
+
+    public struct Open: Decodable, Equatable, Sendable {
+        public let id: String
+        public let label: String
+        public let conditional: Bool?
     }
 
     public let id: String
@@ -119,8 +137,11 @@ public struct PaperworkStep: Decodable, Equatable, Sendable, Identifiable {
     public let sources: Sources?
     public let requirements: Counts?
     public let dates: [PaperworkDate]?
+    public let firstOpenRequirement: Open?
 
     public var done: Bool { status == "completed" }
+    /// Documents to check for it (those that may be needed are listed, never counted).
+    public var hasPapers: Bool { (requirements?.total ?? 0) + (requirements?.optional ?? 0) > 0 }
 }
 
 public struct PaperworkDate: Decodable, Equatable, Sendable, Identifiable {
@@ -144,6 +165,10 @@ public struct PaperworkDate: Decodable, Equatable, Sendable, Identifiable {
     public let document: String?
     public let startsAt: String?
     public let location: Place?
+    public let anchorFact: String?
+    public let durationMinutes: Int?
+    public let appointmentId: String?
+    public let eventId: Int?
 
     /// The day it falls on, when it has one.
     public var day: Date? { date.flatMap(PaperworkWords.day) }
@@ -265,8 +290,10 @@ public struct PaperworkCoverage: Decodable, Equatable, Sendable {
     public struct Unit: Decodable, Equatable, Sendable {
         public struct URLs: Decodable, Equatable, Sendable {
             public let official: [String]?
+            public let legal: [String]?
         }
 
+        public let unitId: String?
         public let definitionId: String?
         public let title: String?
         public let verifiedAt: String?
@@ -305,7 +332,10 @@ public extension PaperworkPlan {
     /// What needs them: the open question, and tasks reported blocked or needing their action.
     var needsYou: Int { (questions?.question == nil ? 0 : 1) + processes.filter { $0.tone == "blocked" }.count }
 
-    func process(_ key: String) -> PaperworkProcess? { processes.first { $0.occurrenceKey == key } }
+    /// A task by its key: an open one, or one kept in their history.
+    func process(_ key: String) -> PaperworkProcess? {
+        processes.first { $0.occurrenceKey == key } ?? history?.first { $0.occurrenceKey == key }
+    }
 
     /// Dates and appointments, soonest first; one with no date yet (it waits for an answer) last.
     var dates: [PaperworkDate] {
@@ -318,10 +348,10 @@ public extension PaperworkPlan {
         }
     }
 
-    /// The next dated ones from today, for the tiles.
+    /// The next dated ones from today, for the tiles; a recorded submission is the past, not coming.
     func coming(from today: Date, limit: Int = 2) -> [PaperworkDate] {
         let start = Calendar(identifier: .gregorian).startOfDay(for: today)
-        return dates.filter { ($0.day ?? .distantPast) >= start }.prefix(limit).map { $0 }
+        return dates.filter { $0.kind != "submission_recorded" && ($0.day ?? .distantPast) >= start }.prefix(limit).map { $0 }
     }
 
     /// The evidence record for a document, when they've told Paperwork they have one.
@@ -330,6 +360,59 @@ public extension PaperworkPlan {
         if let id = requirement.evidenceId, let found = all.first(where: { $0.id == id }) { return found }
         return all.first { $0.details.requirementRefs?.contains(requirement.id) == true }
             ?? all.first { PaperworkWords.sameLabel($0.details.label, requirement.label) }
+    }
+}
+
+/// Their answers, as Paperwork keeps them (GET people/{id}/facts).
+public struct PaperworkFacts: Decodable, Equatable, Sendable {
+    public let revision: Int
+    public let values: [String: PaperworkValue]
+    /// "value", "unknown", "declined", "not_applicable", "conflict", "needs_reconfirmation", …
+    public let states: [String: String]
+
+    public static func decode(_ data: Data) throws -> PaperworkFacts {
+        let decoder = JSONDecoder()
+        return try decoder.decode(PaperworkFacts.self, from: data)
+    }
+}
+
+/// One answer's value: text, a number or yes/no.
+public enum PaperworkValue: Decodable, Equatable, Sendable {
+    case text(String)
+    case number(Double)
+    case bool(Bool)
+
+    public init(from decoder: Decoder) throws {
+        let one = try decoder.singleValueContainer()
+        if let value = try? one.decode(Bool.self) { self = .bool(value) } else if let value = try? one.decode(Double.self) { self = .number(value) } else { self = .text(try one.decode(String.self)) }
+    }
+
+    public var raw: String {
+        switch self {
+        case let .text(value): value
+        case let .number(value): value.rounded() == value ? String(Int(value)) : String(value)
+        case let .bool(value): value ? "true" : "false"
+        }
+    }
+}
+
+/// What can be asked about an answer (GET facts/schema).
+public struct PaperworkFactDefinition: Decodable, Equatable, Sendable, Identifiable {
+    public let key: String
+    public let type: String
+    public let options: [String]?
+    public let question: String
+    public let why: String?
+    public let dateSemantics: String?
+    public let allowsNotApplicable: Bool?
+
+    public var id: String { key }
+
+    /// The same shape a question carries, so one editor answers both.
+    public var asQuestion: PaperworkQuestion {
+        PaperworkQuestion(factKey: key, question: question, why: why,
+                          answerSchema: .init(type: type, options: options, dateSemantics: dateSemantics, allowsNotApplicable: allowsNotApplicable),
+                          id: nil, token: nil, canSkip: nil, canAnswerUnknown: true)
     }
 }
 
@@ -392,6 +475,11 @@ public enum PaperworkWords {
         "entry_mode": ("How you entered", ["d_visa": "With a national D visa", "visa_free": "Without a visa", "has_permit": "With a residence permit"]),
         "current_residence_title": ("Current visa or permit", residenceTitles),
         "residence_card_expires_at": ("Residence card expiry", [:]),
+        "arrival_date": ("Arrival in Germany", [:]),
+        "visa_expires_at": ("Entry visa expiry", [:]),
+        "residence_title_expires_at": ("Permit expiry", [:]),
+        "moved_in_at": ("Move-in date", [:]),
+        "weekly_work_hours": ("Weekly working hours", [:]),
         "case_goal": ("What you want to do next", ["blue_card": "Get an EU Blue Card", "family_reunification_permit": "Join my family",
                                                    "renew_current_title": "Renew my current permit", "settlement_permit": "Get a settlement permit",
                                                    "understand_options": "Understand my options"]),
@@ -412,6 +500,16 @@ public enum PaperworkWords {
         "sponsor": ("Family member you’re joining", ["german": "German citizen", "eu_citizen": "EU citizen", "non_eu": "Non-EU citizen"]),
         "sponsor_current_title": ("Your spouse’s residence status", residenceTitles),
         "sponsor_title_at_entry": ("Your sponsor’s status when you joined", residenceTitles),
+    ]
+
+    /// The order Your situation lists answers in (facts.ts registryOrder), then any it doesn't name.
+    public static let order = [
+        "citizenship_group", "arrival_planned", "current_residence_title", "visa_expires_at", "residence_title_expires_at", "purpose",
+        "entry_mode", "arrival_date", "moved_in_at", "case_goal", "permit_track", "registration_status", "housing_provider_confirmation",
+        "health_coverage_confirmed", "residence_card_expires_at", "german_level", "weekly_work_hours", "blue_card_qualifying_months",
+        "livelihood_secured", "housing_sufficient", "legal_social_knowledge_proved", "tax_id_available", "bank_account_help_needed",
+        "family_residence_permit_held_since", "has_children", "marital_household_continues", "sponsor", "sponsor_current_title",
+        "sponsor_title_at_entry",
     ]
 
     public static func label(_ key: String) -> String {

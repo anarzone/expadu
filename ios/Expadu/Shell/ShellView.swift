@@ -62,13 +62,14 @@ struct ShellView: View {
                         switch section {
                         case .today: TodayView()
                         case .travel: TravelView()
-                        case .paperwork: SectionPage(title: section.title)
+                        // Paperwork keeps its own stack: a task opens over the header, the overview sits under it.
+                        case .paperwork: PaperworkView(header: AnyView(ShellHeader(today: today)))
                         }
                     }
                     // Each page keeps room for the header and the bar; it scrolls under both.
                     // Travel is its line's colour to the top, with its own header (the canvas, 6 Nov).
                     .safeAreaInset(edge: .top, spacing: 0) {
-                        if section != .travel { ShellHeader(today: today) }
+                        if section == .today { ShellHeader(today: today) }
                     }
                     .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 52) }
                     .toolbarVisibility(.hidden, for: .tabBar)
@@ -498,19 +499,5 @@ struct AccountButton: View {
                 .contentShape(.circle)
         }
         .accessibilityLabel("Your account")
-    }
-}
-
-/// Empty until the section's own milestone: nothing here is sample data.
-private struct SectionPage: View {
-    let title: String
-
-    var body: some View {
-        ZStack {
-            Palette.canvas.ignoresSafeArea()
-            Text(title)
-                .font(.geist(17, .semibold))
-                .foregroundStyle(Palette.textSoft)
-        }
     }
 }
