@@ -17,6 +17,8 @@ struct WhatsOnSheet: View {
     @State private var day: WhatsOn?
     @State private var date: String?
     @State private var path: [String] = []
+    /// The idea tapped on Today opens once; back from it stays on the list.
+    @State private var openedIdea = false
     /// Not interested: off the list at once; the signal goes when Undo has had its moment.
     @State private var hidden: Set<String> = []
     @State private var hiding: (listing: WhatsOn.Listing, send: Task<Void, Never>)?
@@ -41,8 +43,11 @@ struct WhatsOnSheet: View {
             list
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: String.self) { id in
-                    if let day, let listing = day.listings.first(where: { $0.id == id }) {
-                        EventDetail(listing: listing, day: day, page: today.page, save: save, notInterested: notInterested)
+                    if let loaded = day, let listing = loaded.listings.first(where: { $0.id == id }) {
+                        EventDetail(day: Binding(get: { day ?? loaded }, set: { day = $0 }), opened: listing, page: today.page,
+                                    save: save, notInterested: notInterested) {
+                            withAnimation(Motion.ios(0.4)) { if !path.isEmpty { path.removeLast() } }
+                        }
                     }
                 }
         }
@@ -388,7 +393,10 @@ struct WhatsOnSheet: View {
                 if let category, !next.categories.contains(where: { $0.id == category }) { self.category = nil }
             }
             round += 1
-            if let open, path.isEmpty, next.listings.contains(where: { $0.id == open }) { path = [open] }
+            if let open, !openedIdea, path.isEmpty, next.listings.contains(where: { $0.id == open }) {
+                openedIdea = true
+                path = [open]
+            }
         } catch {
             if day == nil { problem = Self.words(error) }
         }

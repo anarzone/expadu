@@ -8,14 +8,17 @@ import SwiftUI
 /// listing's own tip), when, where, price and language, what it is, Not interested, and a bar
 /// at the bottom to add it to the day.
 struct EventDetail: View {
-    let listing: WhatsOn.Listing
-    let day: WhatsOn
+    /// What's on's own day, read live, so a save here shows here at once.
+    @Binding var day: WhatsOn
+    /// The listing as it was opened, in case the day reloads without it.
+    let opened: WhatsOn.Listing
     let page: TodayPage?
     let save: (WhatsOn.Listing) -> Void
     let notInterested: (WhatsOn.Listing) -> Void
+    /// Back to the list that pushed it.
+    let back: () -> Void
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The title in a bar once the poster has scrolled away (.wd.bar).
     @State private var bar = false
@@ -27,6 +30,7 @@ struct EventDetail: View {
     /// Why Add to my day didn't go in, said here: Today's own note is under this sheet.
     @State private var refusal: String?
 
+    private var listing: WhatsOn.Listing { day.listings.first { $0.id == opened.id } ?? opened }
     private var idea: TodayPage.Idea { listing.idea }
     private var now: Date { .now }
 
@@ -94,7 +98,9 @@ struct EventDetail: View {
         .background(Palette.canvas.ignoresSafeArea())
         .overlay(alignment: .top) { nav }
         .overlay(alignment: .bottom) { foot }
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        .toolbar { buttons }
+        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $going) {
             GettingThere(listing: listing, day: day, plan: $plan, problem: $planProblem, replan: replan)
         }
@@ -104,6 +110,7 @@ struct EventDetail: View {
 
     // MARK: Top
 
+    /// The title in a bar once the poster has scrolled away (.wd.bar); the buttons are the toolbar's.
     private var nav: some View {
         ZStack(alignment: .top) {
             if bar {
@@ -114,39 +121,34 @@ struct EventDetail: View {
                     .overlay(alignment: .bottom) { Rectangle().fill(Palette.border).frame(height: 0.5) }
                     .transition(.offset(y: -20).combined(with: .opacity))
             }
-            HStack(spacing: 10) {
-                circle("chevron.left", label: "Back to What's on") { dismiss() }
-                Spacer()
-                ShareLink(item: listing.source ?? URL(string: "https://expadu.com")!, subject: Text(idea.title), message: Text(shareLine)) {
-                    Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .accessibilityLabel("Share")
-                Button { save(listing) } label: {
-                    Image(systemName: idea.saved ? "bookmark.fill" : "bookmark").font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(WhatsOnLook.saveInk)
-                        .contentTransition(.symbolEffect(.replace))
-                        .symbolEffect(.bounce, value: idea.saved)
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .buttonStyle(PressStyle())
-                .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
-                .sensoryFeedback(.selection, trigger: idea.saved)
-            }
-            .padding(.horizontal, 16).padding(.top, 14)
         }
+        .allowsHitTesting(false)
     }
 
-    private func circle(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: .circle)
+    /// Back, share and save as the toolbar's own glass circles: the navigation bar is the top layer
+    /// even when it shows nothing, so buttons drawn under it never got the back tap.
+    @ToolbarContentBuilder
+    private var buttons: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button(action: back) {
+                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
+            }
+            .accessibilityLabel("Back to What's on")
         }
-        .buttonStyle(PressStyle())
-        .accessibilityLabel(label)
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            ShareLink(item: listing.source ?? URL(string: "https://expadu.com")!, subject: Text(idea.title), message: Text(shareLine)) {
+                Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
+            }
+            .accessibilityLabel("Share")
+            Button { save(listing) } label: {
+                Image(systemName: idea.saved ? "bookmark.fill" : "bookmark").font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(WhatsOnLook.saveInk)
+                    .contentTransition(.symbolEffect(.replace))
+                    .symbolEffect(.bounce, value: idea.saved)
+            }
+            .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
+            .sensoryFeedback(.selection, trigger: idea.saved)
+        }
     }
 
     private var shareLine: String {
