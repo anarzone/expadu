@@ -8,9 +8,9 @@ import SwiftUI
 struct ComposerDrawer: View {
     @Binding var open: Bool
     @Binding var settings: Bool
+    @Binding var searching: Bool
     @Environment(ComposerModel.self) private var model
     @Environment(Session.self) private var session
-    @State private var query = ""
     @State private var all = false
     @State private var renaming: ComposerConversation?
     @State private var name = ""
@@ -21,37 +21,38 @@ struct ComposerDrawer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Composer").font(.posterGrotesque(30)).tracking(-0.4).foregroundStyle(ink)
-                .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 12)
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .semibold)).foregroundStyle(soft)
-                TextField("Search conversations", text: $query).font(.geist(16)).foregroundStyle(ink)
-                if !query.isEmpty {
-                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(soft) }
-                        .buttonStyle(.plain).accessibilityLabel("Clear search")
+            HStack {
+                Text("Composer").font(.posterGrotesque(30)).tracking(-0.4).foregroundStyle(ink)
+                Spacer()
+                Button { searching = true } label: {
+                    Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .semibold)).foregroundStyle(ink).frame(width: 44, height: 44)
                 }
+                .buttonStyle(.glass).buttonBorderShape(.circle)
+                .accessibilityLabel("Search conversations")
             }
-            .padding(.horizontal, 12).frame(height: 42)
-            .background(ink.opacity(0.07), in: .rect(cornerRadius: 12, style: .continuous))
-            .padding(.horizontal, 14)
+            .padding(.leading, 20).padding(.trailing, 14).padding(.top, 10).padding(.bottom, 8)
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(query.isEmpty ? "Recents" : "Matching").font(.geist(14, .medium)).foregroundStyle(soft)
+                    place("My Plans", symbol: "calendar", .plans)
+                    place("Saved", symbol: "bookmark", .saved)
+                    Text("Recents").font(.geist(14, .medium)).foregroundStyle(soft)
                         .padding(.horizontal, 12).padding(.top, 18).padding(.bottom, 6)
                     let rows = recents
                     if rows.isEmpty {
-                        Text(query.isEmpty ? "Your conversations show here once you ask." : "Nothing in your conversations for “\(query)”.")
+                        Text("Your conversations show here once you ask.")
                             .font(.geist(15)).foregroundStyle(soft).padding(.horizontal, 12).padding(.vertical, 8)
                     }
-                    ForEach(all || !query.isEmpty ? rows : Array(rows.prefix(6))) { conversation in
+                    ForEach(all ? rows : Array(rows.prefix(6))) { conversation in
                         row(conversation)
+                            .transition(.opacity.combined(with: .move(edge: .leading)))
                     }
-                    if query.isEmpty, rows.count > 6 {
+                    if rows.count > 6 {
                         Button(all ? "Show fewer" : "See all…") { withAnimation(Motion.ios(0.3)) { all.toggle() } }
                             .font(.geist(16, .medium)).foregroundStyle(ink).padding(.horizontal, 12).frame(height: 48)
                     }
                 }
                 .padding(.horizontal, 8).padding(.bottom, 120)
+                .animation(Motion.ios(0.35), value: recents.map(\.id))
             }
             .scrollIndicators(.hidden)
         }
@@ -80,14 +81,31 @@ struct ComposerDrawer: View {
         }
     }
 
-    private var recents: [ComposerConversation] {
-        let list = model.workspace?.recents ?? []
-        guard !query.isEmpty else { return list }
-        return list.filter { $0.title.localizedCaseInsensitiveContains(query) }
+    private var recents: [ComposerConversation] { model.workspace?.recents ?? [] }
+
+    /// My Plans and Saved: open on the paper, in place of the conversation.
+    private func place(_ title: String, symbol: String, _ collection: ComposerModel.Collection) -> some View {
+        let on = model.collection == collection
+        return Button {
+            withAnimation(Motion.ios(0.4)) {
+                model.collection = collection
+                open = false
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(ink).frame(width: 24)
+                Text(title).font(.geist(17, on ? .semibold : .medium)).foregroundStyle(ink)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12).frame(height: 50)
+            .background(on ? ink.opacity(0.08) : .clear, in: .rect(cornerRadius: 14, style: .continuous))
+            .contentShape(.rect)
+        }
+        .buttonStyle(PressStyle())
     }
 
     private func row(_ conversation: ComposerConversation) -> some View {
-        let on = conversation.id == model.workspace?.active && model.talking
+        let on = conversation.id == model.workspace?.active && model.talking && model.collection == nil
         return Button {
             Task {
                 await model.open(conversation.id, api: session.api)
@@ -172,6 +190,15 @@ struct ComposerSettings: View {
                                 ForEach(disclosure.notice ?? [], id: \.self) { line in
                                     Text(line).font(.geist(13.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                                 }
+                                HStack(spacing: 8) {
+                                    if let link = disclosure.processorPrivacyUrl.flatMap(URL.init(string:)) {
+                                        Link("Privacy notice", destination: link).font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
+                                        Text("·").foregroundStyle(Palette.textSoft)
+                                    }
+                                    Button("Withdraw") { withdrawAsked = true }.font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
+                                        .disabled(model.busy == "withdraw")
+                                }
+                                .frame(minHeight: 36)
                             } else {
                                 Text("Composer answers from Expadu’s own information right now; nothing you type is sent on.")
                                     .font(.geist(14.5)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
@@ -181,20 +208,10 @@ struct ComposerSettings: View {
                         }
                     }
                     .padding(14).frame(maxWidth: .infinity, alignment: .leading).card(radius: 18)
-                    if let paperwork, paperwork.available, paperwork.hasRecord {
-                        Toggle(isOn: Binding(get: { paperwork.enabled }, set: { on in Task { await setPaperwork(on) } })) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Read your Paperwork record").font(.geist(15.5, .semibold)).foregroundStyle(Palette.text)
-                                Text("Composer asks first; this remembers your Allow until you turn it off.").font(.geist(13)).foregroundStyle(Palette.textSoft)
-                            }
-                        }
-                        .tint(PaperworkLook.green)
-                        .padding(14).card(radius: 18)
-                    }
                     VStack(spacing: 0) {
-                        if model.disclosure?.available == true {
-                            Button { withdrawAsked = true } label: {
-                                PaperworkRow(symbol: "stop.circle", title: "Stop Composer sending things on", note: "Future answers come from Expadu alone; saved responses are removed", end: nil)
+                        if let paperwork, paperwork.enabled {
+                            Button { Task { await setPaperwork(false) } } label: {
+                                PaperworkRow(symbol: "doc.text", title: "Withdraw the Paperwork permission", note: "Composer stops reading your Paperwork record", end: nil)
                             }
                             .buttonStyle(.plain)
                             PaperworkDivider()

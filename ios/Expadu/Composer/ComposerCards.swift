@@ -17,7 +17,7 @@ struct ComposerCard: View {
         case let .trip(trip): TripCard(trip: trip, showText: showText)
         case let .choices(text): if showText { Words(text: text) }
         case let .events(events): EventsCard(events: events)
-        case let .places(places): PlacesCard(places: places)
+        case let .places(places): ComposerPlacesCard(places: places)
         case let .checklist(checklist): ChecklistCard(checklist: checklist, showText: showText)
         case let .note(text): Words(text: text)
         case let .facts(facts): FactsCard(facts: facts)
@@ -365,44 +365,6 @@ private struct EventsCard: View {
 }
 
 /// Places as small cards: name, what it is, how far, its hours, why it's suggested.
-private struct PlacesCard: View {
-    let places: [ComposerBlock.Place]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 10) {
-                    ForEach(places) { place in
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 8) {
-                                Image(systemName: PlaceSymbol.name(place.kind)).font(.system(size: 14, weight: .semibold)).foregroundStyle(TodayLink.ink)
-                                    .frame(width: 32, height: 32).background(Palette.selectBackground, in: .rect(cornerRadius: 9, style: .continuous))
-                                if let hours = place.hours {
-                                    Text(hours).font(.geist(12.5, .bold)).foregroundStyle(hours.hasPrefix("Open") ? Color(hex: 0x17603A) : Palette.textSoft)
-                                        .lineLimit(1)
-                                }
-                            }
-                            Text(place.name).font(.geist(16.5, .bold)).foregroundStyle(Palette.text).lineLimit(2)
-                            Text([place.kind.replacingOccurrences(of: "_", with: " ").capitalized, place.distance, place.part ?? place.area].compactMap { $0 }.joined(separator: " · "))
-                                .font(.geist(13)).foregroundStyle(Palette.textSoft).lineLimit(2)
-                            if let because = place.because {
-                                Text(because).font(.geist(13, .medium)).foregroundStyle(Palette.text).lineLimit(3)
-                            }
-                            if let street = place.street { Text(street).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1) }
-                        }
-                        .padding(14)
-                        .frame(width: 240, alignment: .topLeading)
-                        .card(radius: 22)
-                    }
-                }
-                .padding(.vertical, 2)
-            }
-            .scrollIndicators(.hidden)
-            Text("Maps © OpenStreetMap contributors").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
-        }
-    }
-}
-
 // MARK: - Paperwork
 
 private struct ChecklistCard: View {

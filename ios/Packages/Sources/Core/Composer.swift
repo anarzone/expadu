@@ -443,6 +443,82 @@ public enum ComposerBlock: Decodable, Equatable, Sendable {
         public let hours: String?
         public let because: String?
         public let part: String?
+        /// Around here's own row for it (where it is, saved, its features), when the answer had one.
+        public let row: Row?
+
+        public struct Row: Decodable, Equatable, Sendable {
+            public struct Photo: Decodable, Equatable, Sendable { public let url: String }
+            public struct Laptop: Decodable, Equatable, Sendable {
+                /// People's verdict, by count: "yes", "mixed" or "no".
+                public struct People: Decodable, Equatable, Sendable {
+                    public let value: String
+                    public let yes: Int
+                    public let total: Int
+                }
+
+                public let people: People?
+            }
+
+            public let lat: Double?
+            public let lng: Double?
+            public let saved: Bool?
+            public let icon: String?
+            public let label: String?
+            public let photo: Photo?
+            public let wheelchair: String?
+            public let outdoorSeating: String?
+            public let laptop: Laptop?
+
+            public init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                lat = try? c.decode(Double.self, forKey: .lat)
+                lng = try? c.decode(Double.self, forKey: .lng)
+                saved = try? c.decode(Bool.self, forKey: .saved)
+                icon = try? c.decode(String.self, forKey: .icon)
+                label = try? c.decode(String.self, forKey: .label)
+                photo = try? c.decode(Photo.self, forKey: .photo)
+                wheelchair = try? c.decode(String.self, forKey: .wheelchair)
+                outdoorSeating = try? c.decode(String.self, forKey: .outdoorSeating)
+                laptop = try? c.decode(Laptop.self, forKey: .laptop)
+            }
+
+            enum CodingKeys: String, CodingKey { case lat, lng, saved, icon, label, photo, wheelchair, outdoorSeating, laptop }
+        }
+
+        enum CodingKeys: String, CodingKey { case id, name, kind, distance, area, street, hours, because, part, row }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decode(Int.self, forKey: .id)
+            name = try c.decode(String.self, forKey: .name)
+            kind = (try? c.decode(String.self, forKey: .kind)) ?? ""
+            distance = try? c.decode(String.self, forKey: .distance)
+            area = try? c.decode(String.self, forKey: .area)
+            street = try? c.decode(String.self, forKey: .street)
+            hours = try? c.decode(String.self, forKey: .hours)
+            because = try? c.decode(String.self, forKey: .because)
+            part = try? c.decode(String.self, forKey: .part)
+            row = try? c.decode(Row.self, forKey: .row)
+        }
+
+        /// A card is its place and, for a large park, its part.
+        public var key: String { "\(id)#\(part ?? "")" }
+
+        /// What it is, with what it's known for: "Café · Outdoor seating · Step-free".
+        public var features: [String] {
+            guard let row else { return [] }
+            var list: [String] = []
+            if let seating = row.outdoorSeating, seating != "no" { list.append("Outdoor seating") }
+            if row.wheelchair == "yes" { list.append("Step-free") } else if row.wheelchair == "limited" { list.append("Limited step-free") }
+            return list
+        }
+
+        /// People's laptop verdict: "Good for laptop work · 9 of 11".
+        public var laptopWords: String? {
+            guard let people = row?.laptop?.people else { return nil }
+            let words = ["yes": "Good for laptop work", "no": "Not good for laptop work", "mixed": "Mixed reports"][people.value] ?? "Laptop reports"
+            return "\(words) · \(people.yes) of \(people.total)"
+        }
     }
 
     public struct Checklist: Decodable, Equatable, Sendable {
@@ -651,4 +727,91 @@ public struct ComposerProcessing: Sendable {
 public extension JSONDecoder {
     /// Composer's own: snake_case keys.
     static var composer: JSONDecoder { ComposerJSON.decoder }
+}
+
+// MARK: - Saved and Starting point
+
+/// A saved event (the web's own list): its title always; its details while it's still on.
+public struct ComposerSavedEvent: Decodable, Equatable, Sendable, Identifiable {
+    public struct Event: Decodable, Equatable, Sendable {
+        public struct Venue: Decodable, Equatable, Sendable {
+            public let name: String?
+            public let veedel: String?
+        }
+
+        public let categoryLabel: String?
+        public let venue: Venue?
+    }
+
+    public let eventId: Int
+    public let occurrenceStart: String
+    public let title: String
+    public let available: Bool?
+    public let event: Event?
+
+    public var id: String { "\(eventId):\(occurrenceStart)" }
+
+    enum CodingKeys: String, CodingKey { case eventId, occurrenceStart, title, available, event }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        eventId = try c.decode(Int.self, forKey: .eventId)
+        occurrenceStart = try c.decode(String.self, forKey: .occurrenceStart)
+        title = try c.decode(String.self, forKey: .title)
+        available = try? c.decode(Bool.self, forKey: .available)
+        event = try? c.decode(Event.self, forKey: .event)
+    }
+
+    public static func list(_ data: Data) throws -> [ComposerSavedEvent] {
+        struct List: Decodable { let data: [Lossy<ComposerSavedEvent>] }
+        return try ComposerJSON.decoder.decode(List.self, from: data).data.compactMap(\.value)
+    }
+}
+
+/// One of their own places, to plan from (Home, Work…).
+public struct ComposerOrigin: Decodable, Equatable, Sendable, Identifiable {
+    public let id: Int
+    public let name: String
+    public let category: String?
+    public let address: String?
+
+    public static func list(_ data: Data) throws -> [ComposerOrigin] {
+        struct List: Decodable { let places: [Lossy<ComposerOrigin>] }
+        return try ComposerJSON.decoder.decode(List.self, from: data).places.compactMap(\.value)
+    }
+}
+
+/// An address or place the search found.
+public struct ComposerGeoHit: Decodable, Equatable, Sendable, Hashable {
+    public let name: String
+    public let street: String?
+    public let city: String?
+    public let lat: Double
+    public let lng: Double
+
+    /// "Venloer Straße 40, Köln", without repeating the name.
+    public var address: String? {
+        let parts = [street == name ? nil : street, city].compactMap { $0 }.filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
+
+    public static func list(_ data: Data) throws -> [ComposerGeoHit] {
+        try ComposerJSON.decoder.decode([Lossy<ComposerGeoHit>].self, from: data).compactMap(\.value)
+    }
+}
+
+/// Where Composer plans new days from: a point, or one of their own places, with its name. None:
+/// where the app knows they are.
+public struct ComposerStart: Equatable, Sendable {
+    public let label: String
+    public let lat: Double?
+    public let lng: Double?
+    public let place: Int?
+
+    public init(label: String, lat: Double? = nil, lng: Double? = nil, place: Int? = nil) {
+        self.label = label
+        self.lat = lat
+        self.lng = lng
+        self.place = place
+    }
 }

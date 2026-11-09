@@ -39,6 +39,62 @@ final class ComposerModel {
     private(set) var showing = false
     var talking: Bool { (showing && !messages.isEmpty) || pending != nil }
 
+    /// What the menu opened in place of the conversation: My Plans or Saved.
+    enum Collection: Equatable { case plans, saved }
+    var collection: Collection?
+    /// The day My Plans and Saved are about.
+    var day = ComposerModel.today
+
+    /// Where new days are planned from, for as long as the app runs (the web keeps it for the
+    /// browser's session). None: where the app knows they are.
+    var start: ComposerStart? {
+        get { Self.kept }
+        set { Self.kept = newValue }
+    }
+    private static var kept: ComposerStart?
+
+    /// Today in Cologne, as the server's days are named ("2026-11-09").
+    static var today: String { day(Date()) }
+
+    static func day(_ date: Date) -> String {
+        let format = DateFormatter()
+        format.calendar = Calendar(identifier: .gregorian)
+        format.locale = Locale(identifier: "en_US_POSIX")
+        format.timeZone = TimeZone(identifier: "Europe/Berlin")
+        format.dateFormat = "yyyy-MM-dd"
+        return format.string(from: date)
+    }
+
+    static func date(_ day: String) -> Date? {
+        let format = DateFormatter()
+        format.calendar = Calendar(identifier: .gregorian)
+        format.locale = Locale(identifier: "en_US_POSIX")
+        format.timeZone = TimeZone(identifier: "Europe/Berlin")
+        format.dateFormat = "yyyy-MM-dd HH:mm"
+        return format.date(from: day + " 12:00")
+    }
+
+    /// "Saturday 14 November", as the web asks Composer to plan a day.
+    static func long(_ day: String) -> String {
+        guard let date = date(day) else { return day }
+        let format = DateFormatter()
+        format.locale = Locale(identifier: "en_GB")
+        format.timeZone = TimeZone(identifier: "Europe/Berlin")
+        format.dateFormat = "EEEE d MMMM"
+        return format.string(from: date)
+    }
+
+    /// "today", or "Sat 14 Nov".
+    static func short(_ day: String) -> String {
+        if day == today { return "today" }
+        guard let date = date(day) else { return day }
+        let format = DateFormatter()
+        format.locale = Locale(identifier: "en_GB")
+        format.timeZone = TimeZone(identifier: "Europe/Berlin")
+        format.dateFormat = "EEE d MMM"
+        return format.string(from: date)
+    }
+
     func start(_ api: AppAPI) async {
         guard workspace == nil else { return }
         await load(api)
@@ -64,6 +120,7 @@ final class ComposerModel {
         // From the wall, a question starts its own conversation; on the paper it continues this one.
         let fresh = fresh || !showing
         showing = true
+        collection = nil
         pending = Pending(text: text, words: "Reading your request…")
         do {
             var revision = workspace.revision
@@ -81,7 +138,12 @@ final class ComposerModel {
             // The go-ahead for this one request, when Composer's AI is on at all.
             let processing = disclosure?.available == true ? disclosure.map { ComposerProcessing(disclosure: $0) } : nil
             let watching = processing.map { watch($0.requestID, api: api) }
-            let answer = try await api.composerAsk(latitude: place?.latitude, longitude: place?.longitude, from: label, processing: processing)
+            // From their chosen starting point when there is one, else where the phone is.
+            let answer = if let start {
+                try await api.composerAsk(latitude: start.lat, longitude: start.lng, from: start.label, place: start.place, processing: processing)
+            } else {
+                try await api.composerAsk(latitude: place?.latitude, longitude: place?.longitude, from: label, processing: processing)
+            }
             watching?.cancel()
             if let answered = answer.workspace {
                 self.workspace = answered
@@ -126,6 +188,7 @@ final class ComposerModel {
     /// Back to the wall; the next question starts its own conversation.
     func newQuestion(_ api: AppAPI) async {
         showing = false
+        collection = nil
     }
 
     func open(_ id: String, api: AppAPI) async {
@@ -134,6 +197,7 @@ final class ComposerModel {
             await write("open-\(id)", api) { () async throws(APIFailure) in try await api.composerCommand("resume", revision: workspace.revision, ["id": id]) }
         }
         showing = true
+        collection = nil
     }
 
     func rename(_ id: String, to title: String, api: AppAPI) async {
@@ -161,12 +225,61 @@ final class ComposerModel {
         await write("undo-\(token)", api) { () async throws(APIFailure) in try await api.composerUndo(token) }
     }
 
-    /// An event or place into a day's plan, by its candidate id.
-    func add(_ candidate: String, date: String, api: AppAPI) async {
-        guard let workspace else { return }
-        await write("add-\(candidate)", api, done: "Added to your plan.") { () async throws(APIFailure) in
+    /// An event or place into a day's plan, by its candidate id. From My Plans or Saved, the
+    /// conversation shows it done, with its Undo.
+    @discardableResult
+    func add(_ candidate: String, date: String, api: AppAPI) async -> Bool {
+        guard let workspace else { return false }
+        let done = await write("add-\(candidate)", api, done: "Added to your plan.") { () async throws(APIFailure) in
             try await api.composerCommand("add", revision: workspace.revision, ["candidate": candidate, "date": date])
         }
+        if done, collection != nil { collection = nil; showing = true }
+        return done
+    }
+
+    /// Undo one change to a plan (24 hours); the conversation says so.
+    func undoChange(_ id: String, api: AppAPI) async {
+        guard let workspace else { return }
+        await write("undo-change-\(id)", api) { () async throws(APIFailure) in
+            try await api.composerCommand("undo", revision: workspace.revision, ["change": id])
+        }
+    }
+
+    // MARK: My Plans
+
+    /// A personal activity in a day's plan (not a booking, nor a reminder).
+    func appointment(name: String, location: String, date: String, start: String, end: String, api: AppAPI) async -> Bool {
+        guard let workspace else { return false }
+        var fields: [String: String] = ["name": name, "date": date, "start": start, "end": end]
+        if !location.isEmpty { fields["location"] = location }
+        let done = await write("appointment", api) { () async throws(APIFailure) in
+            try await api.composerCommand("appointment", revision: workspace.revision, fields)
+        }
+        if done { collection = nil; showing = true }
+        return done
+    }
+
+    /// The day's plan put aside; the conversation says so, with Undo.
+    func cancelDay(_ date: String, api: AppAPI) async {
+        guard let workspace else { return }
+        let done = await write("cancel-\(date)", api) { () async throws(APIFailure) in
+            try await api.composerCommand("cancel_day", revision: workspace.revision, ["date": date])
+        }
+        if done { collection = nil; showing = true }
+    }
+
+    /// Change it with Composer: the day's plan, in the conversation, to change by asking.
+    func openPlan(_ date: String, api: AppAPI) async {
+        guard let workspace else { return }
+        let done = await write("open-plan", api) { () async throws(APIFailure) in
+            try await api.composerCommand("open", revision: workspace.revision, ["date": date])
+        }
+        if done { collection = nil; showing = true }
+    }
+
+    /// The planned days, by date; today counts when Today has something on it.
+    func planned(_ day: String, todayHas: Bool) -> Bool {
+        !(workspace?.plans[day]?.slots.isEmpty ?? true) || (day == Self.today && todayHas)
     }
 
     /// Composer may read their Paperwork record: remembered until they turn it off, then the
@@ -196,16 +309,20 @@ final class ComposerModel {
         }
     }
 
-    private func write(_ key: String, _ api: AppAPI, done: String? = nil, _ work: () async throws(APIFailure) -> AppAPI.ComposerReply) async {
-        guard busy == nil else { return }
+    @discardableResult
+    private func write(_ key: String, _ api: AppAPI, done: String? = nil, _ work: () async throws(APIFailure) -> AppAPI.ComposerReply) async -> Bool {
+        guard busy == nil else { return false }
         busy = key
         defer { busy = nil }
         do {
             let reply = try await work()
             if let next = reply.workspace { workspace = next } else { await load(api) }
-            if let refusal = reply.refusal { say(refusal, problem: true) } else if let done { say(done) }
+            if let refusal = reply.refusal { say(refusal, problem: true); return false }
+            if let done { say(done) }
+            return true
         } catch {
             say(Self.words(error), problem: true)
+            return false
         }
     }
 

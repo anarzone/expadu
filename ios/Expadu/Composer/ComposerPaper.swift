@@ -66,10 +66,14 @@ struct ComposerPaper: View {
         var answers: [ComposerMessage]
     }
 
-    /// Each question with what came back for it.
+    /// Each question with what came back for it. A day's plan shows once, where it last changed.
     static func exchanges(_ messages: [ComposerMessage]) -> [Exchange] {
+        var anchors: [String: String] = [:]
+        for message in messages where message.kind == "plan" {
+            if let date = message.date { anchors[date] = message.id }
+        }
         var list: [Exchange] = []
-        for message in messages {
+        for message in messages where !(message.kind == "plan" && message.date.map { anchors[$0] != message.id } == true) {
             if message.mine {
                 list.append(Exchange(id: message.id, question: message.text, answers: []))
             } else if list.isEmpty {
@@ -133,7 +137,10 @@ private struct AnswerView: View {
             case "plan":
                 if let plan = message.plan { PlanCard(plan: plan) }
             case "change":
-                if let rows = message.rows, !rows.isEmpty { ChangeCard(rows: rows) }
+                ChangeCard(message: message)
+            case "undone":
+                Label(message.text, systemImage: "arrow.uturn.backward").labelStyle(Tight())
+                    .font(.geist(14.5, .semibold)).foregroundStyle(Palette.textSoft)
             default:
                 let words = (message.lead?.isEmpty == false ? message.lead : nil) ?? (message.blocks.isEmpty ? message.text : nil)
                 if let words, !words.isEmpty {
@@ -230,24 +237,44 @@ private struct PlanCard: View {
     }
 }
 
-/// What a change did, row by row.
+/// What a change did, with its rows, and Undo while it can still be undone.
 private struct ChangeCard: View {
-    let rows: [ComposerChangeRow]
+    let message: ComposerMessage
+    @Environment(ComposerModel.self) private var model
+    @Environment(Session.self) private var session
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(rows, id: \.self) { row in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(Self.word(row.kind)).font(.geist(12.5, .bold)).foregroundStyle(row.kind == "removed" ? Palette.conflictText : Color(hex: 0x17603A))
-                        .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(row.kind == "removed" ? Palette.conflictBackground : Color(light: 0xE4F4E8, dark: 0x1F3A28), in: .rect(cornerRadius: 6, style: .continuous))
-                    Text(row.title + (row.from != nil && row.to != nil ? ", \(row.from!) → \(row.to!)" : row.to.map { ", \($0)" } ?? ""))
-                        .font(.geist(14.5)).foregroundStyle(Palette.text)
+        let record = model.workspace?.changes.first { $0.id == message.changeId }
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: record?.undoneAt != nil ? "arrow.uturn.backward" : "checkmark").font(.system(size: 13, weight: .bold))
+                .foregroundStyle(record?.undoneAt != nil ? Palette.textSoft : Color(hex: 0x17603A))
+                .frame(width: 24, height: 24)
+                .background(record?.undoneAt != nil ? Palette.quiet : Color(light: 0xE4F4E8, dark: 0x1F3A28), in: .circle)
+            VStack(alignment: .leading, spacing: 6) {
+                if !message.text.isEmpty {
+                    Text(message.text).font(.geist(15.5, .bold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
                 }
+                ForEach(message.rows ?? [], id: \.self) { row in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(Self.word(row.kind)).font(.geist(12.5, .bold)).foregroundStyle(row.kind == "removed" ? Palette.conflictText : Color(hex: 0x17603A))
+                            .padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(row.kind == "removed" ? Palette.conflictBackground : Color(light: 0xE4F4E8, dark: 0x1F3A28), in: .rect(cornerRadius: 6, style: .continuous))
+                        Text(row.title + (row.from != nil && row.to != nil ? ", \(row.from!) → \(row.to!)" : row.to.map { ", \($0)" } ?? ""))
+                            .font(.geist(14.5)).foregroundStyle(Palette.text)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+            if let record, record.undoable, record.undoneAt == nil {
+                PaperworkButton(title: "Undo", quiet: true, small: true, working: model.busy == "undo-change-\(record.id)") {
+                    Task { await model.undoChange(record.id, api: session.api) }
+                }
+                .transition(.opacity)
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
         .card(radius: 18)
+        .animation(Motion.ios(0.3), value: record?.undoneAt)
     }
 
     static func word(_ kind: String) -> String {

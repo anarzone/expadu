@@ -554,10 +554,12 @@ public struct AppAPI: Sendable {
 
     /// Composer answers the last message: with the go-ahead to send it on (`processing`) when the
     /// notice was shown, and where they are, so the answer starts there.
-    public func composerAsk(latitude: Double?, longitude: Double?, from label: String?, processing: ComposerProcessing?) async throws(APIFailure) -> ComposerReply {
+    public func composerAsk(latitude: Double?, longitude: Double?, from label: String?, place: Int? = nil, processing: ComposerProcessing?) async throws(APIFailure) -> ComposerReply {
         var body: [String: Any] = ["page": "Composer"]
         if let latitude, let longitude { body["lat"] = latitude; body["lng"] = longitude }
         if let label { body["from_label"] = label }
+        // One of their own places: its point is read on the server.
+        if let place { body["from_place"] = place }
         if let processing { body["processing"] = processing.json }
         return Self.composerReply(try await composer("POST", "composer/ask", body, timeout: 75))
     }
@@ -598,6 +600,70 @@ public struct AppAPI: Sendable {
         struct Items: Decodable { let items: [ComposerSlot] }
         let data = try await composer("GET", query).data
         do { return try JSONDecoder.composer.decode(Items.self, from: data).items } catch { throw .unreachable }
+    }
+
+    /// Their saved events, still on or not (Composer's Saved).
+    public func savedEvents() async throws(APIFailure) -> [ComposerSavedEvent] {
+        let reply = try await composer("GET", "events/saved")
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try ComposerSavedEvent.list(reply.data) } catch { throw .unreachable }
+    }
+
+    /// A place saved, unsaved ("clear") or left out from now on ("not_interested"), as Around here keeps it.
+    public func placeFeedback(_ spot: Int, action: String) async throws(APIFailure) {
+        let reply = try await composer("POST", "places/\(spot)/feedback", ["action": action])
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+    }
+
+    /// Where they stand with a place: saved, been there.
+    public func placeStanding(_ spot: Int) async throws(APIFailure) -> (saved: Bool, been: Bool) {
+        let reply = try await composer("GET", "places/\(spot)/feedback")
+        guard reply.status == 200 else { throw .unreachable }
+        return Self.standing(reply.data)
+    }
+
+    /// Been there, or not after all.
+    public func placeBeen(_ spot: Int, _ been: Bool) async throws(APIFailure) -> (saved: Bool, been: Bool) {
+        let reply = try await composer(been ? "PUT" : "DELETE", "places/\(spot)/been", been ? [:] : nil)
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+        return Self.standing(reply.data)
+    }
+
+    private static func standing(_ data: Data) -> (saved: Bool, been: Bool) {
+        let json = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        return ((json["state"] as? String) == "saved", json["been"] as? Bool ?? false)
+    }
+
+    /// "Good for laptop work?": whether they may answer (Been there or Saved first), and their answer.
+    public func laptopAnswer(_ spot: Int) async throws(APIFailure) -> (canAnswer: Bool, answer: String?) {
+        let reply = try await composer("GET", "places/\(spot)/work-answer")
+        guard reply.status == 200 else { throw .unreachable }
+        let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
+        return (json["can_answer"] as? Bool ?? false, (json["answer"] as? [String: Any])?["laptop"] as? String)
+    }
+
+    public func answerLaptop(_ spot: Int, yes: Bool) async throws(APIFailure) {
+        let reply = try await composer("PUT", "places/\(spot)/work-answer", ["laptop": yes ? "yes" : "no"])
+        if reply.status == 403 || reply.status == 422 {
+            let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
+            throw .refused(json["message"] as? String ?? "Mark the place Been there or Saved first.")
+        }
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+    }
+
+    /// Addresses and places for a typed search (Starting point).
+    public func geocode(_ query: String) async throws(APIFailure) -> [ComposerGeoHit] {
+        let q = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&+=?"))) ?? ""
+        let reply = try await composer("GET", "geocode?q=\(q)")
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try ComposerGeoHit.list(reply.data) } catch { throw .unreachable }
+    }
+
+    /// Their own places to plan from.
+    public func composerPlaces() async throws(APIFailure) -> [ComposerOrigin] {
+        let reply = try await composer("GET", "composer/places")
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try ComposerOrigin.list(reply.data) } catch { throw .unreachable }
     }
 
     /// What a processing purpose sends, to whom, and whether it's on at all.

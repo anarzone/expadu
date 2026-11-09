@@ -18,12 +18,15 @@ struct ComposerScreen: View {
     @State private var text = ""
     @State private var drawer = false
     @State private var settings = false
+    @State private var searching = false
     @State private var asked = false
+    @State private var sheet: ComposerSheet?
+    @State private var dictation = Dictation()
     @FocusState private var typing: Bool
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            ComposerDrawer(open: $drawer, settings: $settings)
+            ComposerDrawer(open: $drawer, settings: $settings, searching: $searching)
                 .environment(model)
             page
                 .contentShape(.rect)
@@ -47,8 +50,29 @@ struct ComposerScreen: View {
                         }
                 )
         }
+        .fullScreenCover(isPresented: $searching) {
+            ComposerSearch(close: { searching = false },
+                           opened: { searching = false; withAnimation(Motion.ios(0.4)) { drawer = false } },
+                           ask: { words in
+                               searching = false
+                               withAnimation(Motion.ios(0.4)) { drawer = false }
+                               ask(words)
+                           })
+                .environment(model).environment(session)
+        }
         .background(Color(light: 0xEFE8DA, dark: 0x12141F).ignoresSafeArea())
         .environment(model)
+        .sheet(item: $sheet) { sheet in
+            Group {
+                switch sheet {
+                case let .appointment(day): AppointmentSheet(day: day)
+                case let .add(day): AddPlaceSheet(day: day)
+                case .start: StartSheet()
+                case let .place(place): PlaceSheet(place: place, saved: place.row?.saved ?? false) { _ in }
+                }
+            }
+            .environment(model).environment(session).environment(today)
+        }
         .task {
             await model.start(session.api)
             if let opening, !asked {
@@ -64,7 +88,12 @@ struct ComposerScreen: View {
     private var page: some View {
         ZStack(alignment: .top) {
             wall
-            if !model.talking {
+            if let collection = model.collection {
+                ComposerCollectionPaper(collection: collection, open: { sheet = $0 }, ask: ask)
+                    .id(collection)
+                    .padding(.top, 112)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if !model.talking {
                 greeting
                     .opacity(typing ? 0 : 1)
                     .offset(y: typing ? -20 : 0)
@@ -87,13 +116,14 @@ struct ComposerScreen: View {
                     ComposerNoteBar(note: note).transition(.offset(y: 20).combined(with: .opacity))
                 }
                 box
-                if !model.talking, !typing, let disclosure = model.disclosure, disclosure.available == true {
+                if !model.talking, model.collection == nil, !typing, let disclosure = model.disclosure, disclosure.available == true {
                     notice(disclosure).transition(.opacity)
                 }
             }
             .padding(.horizontal, 12).padding(.bottom, 8)
         }
         .animation(reduceMotion ? nil : Motion.ios(0.45), value: model.talking)
+        .animation(reduceMotion ? nil : Motion.ios(0.45), value: model.collection)
         .animation(reduceMotion ? nil : Motion.ios(0.38), value: typing)
         .animation(.spring(duration: 0.45, bounce: 0.25), value: model.note)
     }
@@ -121,13 +151,20 @@ struct ComposerScreen: View {
 
     private var head: some View {
         HStack {
-            Button { typing = false; withAnimation(Motion.ios(0.4)) { drawer.toggle() } } label: {
-                Image(systemName: "line.3.horizontal").font(.system(size: 18, weight: .semibold))
+            Button {
+                typing = false
+                withAnimation(Motion.ios(0.4)) {
+                    // A view's way back is the head's ‹; otherwise the menu.
+                    if model.collection != nil, !drawer { model.collection = nil } else { drawer.toggle() }
+                }
+            } label: {
+                Image(systemName: model.collection != nil && !drawer ? "chevron.left" : "line.3.horizontal").font(.system(size: 18, weight: .semibold))
+                    .contentTransition(.symbolEffect(.replace))
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
-            .accessibilityLabel("Your conversations and settings")
+            .accessibilityLabel(model.collection != nil && !drawer ? "Back" : "Your conversations and settings")
             Spacer()
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(.system(size: 17, weight: .semibold))
@@ -168,18 +205,61 @@ struct ComposerScreen: View {
                     .padding(.horizontal, 10)
             }
             HStack(alignment: .bottom, spacing: 4) {
-                TextField(model.talking ? "Ask or add a detail…" : "Ask, discover, or plan…", text: $text, axis: .vertical)
-                    .font(.geist(17)).lineLimit(1...5)
-                    .focused($typing)
-                    .submitLabel(.send)
-                    .onSubmit { ask(text) }
-                    .onChange(of: text) { if text.count > 500 { text = String(text.prefix(500)) } }
-                    .padding(.vertical, 11).padding(.leading, 14)
-                    .frame(minHeight: 44)
-                if text.trimmingCharacters(in: .whitespaces).isEmpty {
-                    Image(systemName: "mic").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.textSoft)
+                Menu {
+                    Button { sheet = .appointment(model.day) } label: { Label("Add appointment", systemImage: "plus") }
+                    Button { sheet = .add(model.day) } label: { Label("Add a place or event", systemImage: "mappin") }
+                    Button { sheet = .start } label: { Label("Starting point · \(model.start?.label ?? "Where you are")", systemImage: "location") }
+                } label: {
+                    Image(systemName: "plus").font(.system(size: 18, weight: .semibold)).foregroundStyle(Palette.text)
                         .frame(width: 44, height: 44)
-                        .accessibilityHidden(true)
+                        .contentShape(.rect)
+                }
+                .menuOrder(.fixed)
+                .accessibilityLabel("More")
+                if dictation.state == .listening {
+                    HStack(spacing: 10) {
+                        VoiceBars(level: dictation.level)
+                        Text(dictation.words.isEmpty ? "Listening…" : dictation.words.split(separator: " ").suffix(3).joined(separator: " "))
+                            .font(.geist(17, .medium)).foregroundStyle(Palette.text).lineLimit(1)
+                            .contentTransition(.opacity)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(minHeight: 44)
+                    .animation(.snappy, value: dictation.words)
+                    .transition(.opacity)
+                } else {
+                    TextField(model.talking ? "Ask or add a detail…" : "Ask, discover, or plan…", text: $text, axis: .vertical)
+                        .font(.geist(17)).lineLimit(1...5)
+                        .focused($typing)
+                        .submitLabel(.send)
+                        .onSubmit { ask(text) }
+                        .onChange(of: text) { if text.count > 500 { text = String(text.prefix(500)) } }
+                        .padding(.vertical, 11)
+                        .frame(minHeight: 44)
+                }
+                if dictation.state == .listening {
+                    Button { text = String(dictation.finish().prefix(500)) } label: {
+                        Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Palette.text, in: .rect(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(PressStyle())
+                    .accessibilityLabel("Done speaking")
+                    .transition(.scale.combined(with: .opacity))
+                } else if text.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Button {
+                        typing = false
+                        Task {
+                            await dictation.start()
+                            if dictation.state == .unavailable { model.say("Speaking isn’t available. Allow the microphone and speech recognition in Settings.", problem: true) }
+                        }
+                    } label: {
+                        Image(systemName: "mic").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
+                            .frame(width: 44, height: 44)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(PressStyle())
+                    .accessibilityLabel("Speak")
                 } else {
                     Button { ask(text) } label: {
                         Image(systemName: "arrow.up").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
@@ -196,14 +276,19 @@ struct ComposerScreen: View {
             .foregroundStyle(Palette.text)
             .glassEffect(.regular, in: .rect(cornerRadius: 28, style: .continuous))
             .animation(.spring(duration: 0.3, bounce: 0.3), value: text.isEmpty)
+            .animation(.spring(duration: 0.3, bounce: 0.2), value: dictation.state)
+            .onDisappear { dictation.cancel() }
         }
     }
 
     /// What Composer sends and to whom, under the box until they've asked once.
     private func notice(_ disclosure: ComposerDisclosure) -> some View {
-        Text("Composer sends what you type, with your nearest stop and neighbourhood, to \(disclosure.processorName ?? "its processor") to answer you. ")
-            .foregroundStyle(Color(hex: 0x3A3122))
-        + Text("Settings").underline().fontWeight(.semibold).foregroundStyle(Color(hex: 0x3A3122))
+        Button { settings = true } label: {
+            Text("Composer sends what you type, with your nearest stop and neighbourhood, to \(disclosure.processorName ?? "its processor") to answer you. \(Text("Settings").underline().fontWeight(.semibold))")
+                .foregroundStyle(Color(hex: 0x3A3122))
+                .multilineTextAlignment(.leading)
+        }
+        .buttonStyle(.plain)
     }
 
     private func ask(_ words: String) {

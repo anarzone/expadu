@@ -389,7 +389,7 @@ private struct TalkBubble: View {
 }
 
 /// Four bars, cyan to orange, rising and falling (.fab-bars), taller the louder the voice.
-private struct VoiceBars: View {
+struct VoiceBars: View {
     let level: Double
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
