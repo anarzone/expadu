@@ -71,15 +71,14 @@ struct LiveTrip: View {
                 bars(all, current: live.current)
                     .padding(.top, 12).padding(.bottom, 4)
                     .modifier(Rise(order: 1))
-                // Swipe sideways: the step before or after; tap: every step. It comes back to now by itself.
+                // Swipe sideways: the step before or after. It comes back to now by itself.
                 nowCard(live)
                     .id(live.index)
                     .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: swipedLeft ? 40 : -40)),
                                             removal: .opacity.combined(with: .offset(x: swipedLeft ? -40 : 40))))
                     .offset(x: drag)
                     .contentShape(.rect(cornerRadius: 16))
-                    .onTapGesture { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
-                    .simultaneousGesture(
+                    .gesture(
                         DragGesture(minimumDistance: 18)
                             .onChanged { value in
                                 guard abs(value.translation.width) > abs(value.translation.height) * 1.4 else { return }
@@ -95,7 +94,6 @@ struct LiveTrip: View {
                     .modifier(Rise(order: 2))
                     .accessibilityAction(named: "Next step") { look(by: 1, from: live.index, current: live.current, count: all.count) }
                     .accessibilityAction(named: "Previous step") { look(by: -1, from: live.index, current: live.current, count: all.count) }
-                    .accessibilityAction(named: steps ? "Hide steps" : "All steps") { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
                 // On foot: the next turn, by where the phone is on our router's way.
                 if picked == nil, !live.waiting, let here, let turn = here.turn, !here.offRoute {
                     TurnRow(turn: turn, metres: here.metresToTurn)
@@ -140,6 +138,11 @@ struct LiveTrip: View {
                         .disabled(ending)
                 }
                 .padding(.top, 10)
+                Text("Swipe for other steps · hold for more")
+                    .font(.geist(12)).foregroundStyle(Palette.textSoft)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+                    .accessibilityHidden(true)
             }
             .animation(Motion.ios(0.35), value: live.index)
         }
@@ -148,17 +151,14 @@ struct LiveTrip: View {
         .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green.opacity(0.6), lineWidth: 1.5) }
         .sensoryFeedback(.selection, trigger: picked)
         .contentShape(.contextMenuPreview, .rect(cornerRadius: 20))
+        // Map, Steps and End are on the card; holding it gives only the rarer ones, never the same twice.
         .contextMenu {
-            Button { mapOpen = true } label: { Label("Show the map", systemImage: "map") }
-            Button { withAnimation(Motion.ios(0.35)) { steps.toggle() } } label: { Label(steps ? "Hide steps" : "All steps", systemImage: "list.bullet") }
             Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
             Button { replan() } label: { Label("New way from here", systemImage: "arrow.triangle.turn.up.right.diamond") }
                 .disabled(follow.point == nil)
-            Divider()
-            Button(role: .destructive) { end(arrived: false) } label: { Label("End trip", systemImage: "stop.circle") }
         }
-        .accessibilityAction(named: "Show the map") { mapOpen = true }
-        .accessibilityAction(named: "End trip") { end(arrived: false) }
+        .accessibilityAction(named: speak ? "Stop speaking turns" : "Speak turns") { speak.toggle() }
+        .accessibilityAction(named: "New way from here") { replan() }
         .animation(Motion.spring, value: model.cardNote)
         .sheet(isPresented: $mapOpen) { WayMap(to: trip.to, legs: trip.legs, guiding: (trip, follow)) }
         .onAppear {
