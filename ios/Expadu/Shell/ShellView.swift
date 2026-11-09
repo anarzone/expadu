@@ -274,7 +274,7 @@ struct AskComposerLabel: View {
             .font(.geist(16, .semibold)).foregroundStyle(.white)
             .padding(.horizontal, 14)
             .frame(maxWidth: .infinity).frame(height: height)
-            .background(ComposerLook.ink, in: .capsule).raised(Capsule())
+            .background(ComposerLook.ink, in: .rect(cornerRadius: 12, style: .continuous))
             .overlay { Capsule().strokeBorder(ComposerLook.ring(turn: turn), lineWidth: 2.5) }
         }
     }
@@ -457,7 +457,7 @@ private struct ShellHeader: View {
                         }
                     }
             }
-            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+            .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel(today.alerts > 0 ? "Alerts, \(today.alerts)" : "Alerts")
             AccountButton()
         }

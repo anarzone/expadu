@@ -187,7 +187,7 @@ struct PaperworkMini: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
         }
-        .buttonStyle(RaisedStyle(fill: Palette.quiet, size: 40))
+        .buttonStyle(IconTileStyle(fill: Palette.quiet, size: 40))
         .frame(width: 44, height: 44)
         .accessibilityLabel(label)
     }
@@ -242,7 +242,7 @@ struct PaperworkRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 14, weight: .semibold)).foregroundStyle(tint)
-                .frame(width: 34, height: 34).background(back, in: .circle)
+                .frame(width: 34, height: 34).background(back, in: .rect(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.geist(15.5, .semibold)).foregroundStyle(Palette.text).multilineTextAlignment(.leading)
                 if let note { Text(note).font(.geist(13)).foregroundStyle(noteInk).multilineTextAlignment(.leading) }

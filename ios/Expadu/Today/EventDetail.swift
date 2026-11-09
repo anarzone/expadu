@@ -130,38 +130,31 @@ struct EventDetail: View {
         .allowsHitTesting(false)
     }
 
-    /// Back, share and save in the toolbar (the navigation bar is the top layer even when it shows
-    /// nothing, so buttons drawn under it never got the tap), as raised circles of their own.
+    /// Back, share and save in the toolbar, drawn by the system in Liquid Glass (iOS 26): back on
+    /// its own, share and save grouped.
     @ToolbarContentBuilder
     private var buttons: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button(action: back) {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
             }
-            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Back to What's on")
         }
-        .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .topBarTrailing) {
             ShareLink(item: listing.source ?? URL(string: "https://expadu.com")!, subject: Text(idea.title), message: Text(shareLine)) {
                 Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
             }
-            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Share")
         }
-        .sharedBackgroundVisibility(.hidden)
-        ToolbarSpacer(.fixed, placement: .topBarTrailing)
         ToolbarItem(placement: .topBarTrailing) {
             Button { save(listing) } label: {
                 FillingBookmark(filled: idea.saved, size: 18, weight: .semibold)
                     .foregroundStyle(WhatsOnLook.saveInk)
             }
-            .buttonStyle(RaisedStyle(fill: idea.saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, size: 44))
             .animation(.easeInOut(duration: 0.45), value: idea.saved)
             .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
             .sensoryFeedback(.selection, trigger: idea.saved)
         }
-        .sharedBackgroundVisibility(.hidden)
     }
 
     private var shareLine: String {
@@ -177,8 +170,8 @@ struct EventDetail: View {
                 Group {
                     Text(idea.category).font(.geist(12, .semibold)).foregroundStyle(ink)
                         .padding(.horizontal, 9).padding(.vertical, 3)
-                        .background(.white.opacity(0.2), in: .capsule)
-                        .overlay { Capsule().strokeBorder(.white.opacity(0.45)) }
+                        .background(.white.opacity(0.2), in: .rect(cornerRadius: 6, style: .continuous))
+                        .overlay { RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.white.opacity(0.45)) }
                     Text(WhatsOnLook.stamp(idea, day: day, now: now).uppercased()).font(.posterMarker(14))
                         .foregroundStyle(Color(hex: 0x211D15))
                         .padding(.horizontal, 8).padding(.vertical, 2)
@@ -382,7 +375,7 @@ struct EventDetail: View {
                         .foregroundStyle(added ? Color(hex: 0xA9320B) : .white)
                         .contentTransition(.interpolate)
                         .padding(.horizontal, 22).frame(height: 50)
-                        .background(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E), in: .capsule).raised(Capsule())
+                        .background(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E), in: .rect(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(PressStyle())
                 .disabled(added || idea.candidate.isEmpty)
@@ -390,7 +383,7 @@ struct EventDetail: View {
                 .sensoryFeedback(.success, trigger: added)
             }
             .padding(6)
-            .glassEffect(.regular, in: .capsule)
+            .glassEffect(.regular, in: .rect(cornerRadius: 28, style: .continuous))
             .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
         }
         .padding(.horizontal, 16).padding(.bottom, 6)
@@ -419,7 +412,7 @@ private struct DetailRow: View {
                 Label(go.text, systemImage: go.symbol).labelStyle(Tight())
                     .font(.geist(14, .semibold)).foregroundStyle(Color(hex: 0x2F6FD0))
                     .padding(.horizontal, 10).frame(height: 28)
-                    .background(Color(light: 0xEAF1F8, dark: 0x1E2C40), in: .capsule)
+                    .background(Color(light: 0xEAF1F8, dark: 0x1E2C40), in: .rect(cornerRadius: 8, style: .continuous))
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
             if chevron {

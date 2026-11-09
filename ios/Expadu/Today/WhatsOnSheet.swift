@@ -88,7 +88,7 @@ struct WhatsOnSheet: View {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                             .frame(width: 44, height: 44)
                     }
-                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+                    .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
                     .accessibilityLabel("Close")
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -123,8 +123,8 @@ struct WhatsOnSheet: View {
                 }
             }
             .padding(.leading, 13).padding(.trailing, 8).frame(height: 44)
-            .background(finding ? Palette.surface : Palette.quiet, in: .capsule)
-            .overlay { if finding { Capsule().strokeBorder(Palette.border) } }
+            .background(finding ? Palette.surface : Palette.quiet, in: .rect(cornerRadius: 14, style: .continuous))
+            .overlay { if finding { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Palette.border) } }
             .shadow(color: Color(hex: 0x211D15, opacity: finding ? 0.12 : 0), radius: 9, y: 6)
             .contentShape(.capsule)
             .onTapGesture { searching = true }
@@ -140,7 +140,7 @@ struct WhatsOnSheet: View {
                     withAnimation(Motion.ios(0.44)) { finding = false }
                 } label: {
                     Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                        .frame(width: 44, height: 44).background(Palette.quiet, in: .circle)
+                        .frame(width: 44, height: 44).background(Palette.quiet, in: .rect(cornerRadius: 13, style: .continuous))
                 }
                 .buttonStyle(PressStyle())
                 .accessibilityLabel("Close search")
@@ -187,7 +187,7 @@ struct WhatsOnSheet: View {
                 .foregroundStyle(on ? Color(light: 0x005F70, dark: 0x73D3E2) : Palette.text)
                 .contentTransition(.symbolEffect(.replace))
         }
-        .buttonStyle(RaisedStyle(fill: on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : Palette.surface, size: 44))
+        .buttonStyle(IconTileStyle(fill: on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : Palette.surface, size: 44))
         .accessibilityLabel(label)
         .accessibilityAddTraits(on ? [.isSelected] : [])
         .sensoryFeedback(.selection, trigger: on)
@@ -210,7 +210,7 @@ struct WhatsOnSheet: View {
                 showAs("square.grid.2x2", on: grid, label: "Grid") { grid = true }
             }
             .padding(2).frame(height: 36)
-            .background(Palette.quiet, in: .capsule)
+            .background(Palette.quiet, in: .rect(cornerRadius: 10, style: .continuous))
         }
         .padding(.leading, -16)
     }
@@ -223,7 +223,7 @@ struct WhatsOnSheet: View {
         } label: {
             Text(label).font(.geist(15, on ? .semibold : .medium)).foregroundStyle(Palette.text)
                 .padding(.horizontal, 14).frame(height: 36)
-                .background(on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : .clear, in: .capsule)
+                .background(on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : .clear, in: .rect(cornerRadius: 10, style: .continuous))
                 .contentShape(.capsule)
         }
         .buttonStyle(.plain)
@@ -238,7 +238,7 @@ struct WhatsOnSheet: View {
             Image(systemName: symbol).font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(on ? Palette.text : Palette.textSoft)
                 .frame(width: 44, height: 32)
-                .background(on ? Palette.surface : .clear, in: .capsule)
+                .background(on ? Palette.surface : .clear, in: .rect(cornerRadius: 8, style: .continuous))
                 .shadow(color: Color(hex: 0x211D15, opacity: on ? 0.16 : 0), radius: 2, y: 1)
                 .contentShape(.capsule)
         }
@@ -297,8 +297,8 @@ struct WhatsOnSheet: View {
                     Button("Undo") { undoHide() }
                         .font(.geist(14, .bold)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 14).frame(height: 32)
-                        .background(Palette.surface, in: .capsule).raised(Capsule())
-                        .overlay { Capsule().strokeBorder(Palette.border) }
+                        .background(Palette.surface, in: .rect(cornerRadius: 12, style: .continuous))
+                        .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Palette.border) }
                 }
                 .foregroundStyle(Palette.text)
                 .padding(.leading, 14).padding(.trailing, 10).padding(.vertical, 10)
@@ -361,8 +361,8 @@ struct WhatsOnSheet: View {
                     Button { query = word.lowercased() } label: {
                         Text(word).font(.geist(15, .medium)).foregroundStyle(Palette.text)
                             .padding(.horizontal, 14).frame(height: 36)
-                            .background(Palette.surface, in: .capsule).raised(Capsule())
-                            .overlay { Capsule().strokeBorder(Palette.border) }
+                            .background(Palette.surface, in: .rect(cornerRadius: 12, style: .continuous))
+                            .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Palette.border) }
                     }
                     .buttonStyle(PressStyle())
                 }
@@ -497,7 +497,7 @@ private struct EventChip: View {
         Text(text).font(.geist(12, .semibold)).lineLimit(1)
             .foregroundStyle(Color(light: 0x5A3887, dark: 0xCDB4F5))
             .padding(.horizontal, 8).frame(height: 22)
-            .background(Color(light: 0xEFE7FB, dark: 0x2E2440), in: .capsule)
+            .background(Color(light: 0xEFE7FB, dark: 0x2E2440), in: .rect(cornerRadius: 6, style: .continuous))
     }
 }
 
@@ -511,7 +511,7 @@ struct SaveButton: View {
             FillingBookmark(filled: saved, size: 17, weight: .medium)
                 .foregroundStyle(WhatsOnLook.saveInk)
         }
-        .buttonStyle(RaisedStyle(fill: saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, size: 44))
+        .buttonStyle(IconTileStyle(fill: saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, size: 44))
         .accessibilityLabel(saved ? "Saved: \(listing.idea.title)" : "Save \(listing.idea.title)")
         .sensoryFeedback(.selection, trigger: saved)
     }
@@ -628,8 +628,8 @@ private struct PickCard: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(idea.category).font(.geist(12, .semibold)).foregroundStyle(ink)
                         .padding(.horizontal, 9).padding(.vertical, 3)
-                        .background(.white.opacity(0.2), in: .capsule)
-                        .overlay { Capsule().strokeBorder(.white.opacity(0.45)) }
+                        .background(.white.opacity(0.2), in: .rect(cornerRadius: 6, style: .continuous))
+                        .overlay { RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.white.opacity(0.45)) }
                     Text(WhatsOnLook.stamp(idea, day: day, now: now).uppercased()).font(.posterMarker(14))
                         .foregroundStyle(Color(hex: 0x211D15))
                         .padding(.horizontal, 8).padding(.vertical, 2)

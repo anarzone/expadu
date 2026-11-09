@@ -68,7 +68,7 @@ struct WeatherSheet: View {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                     .frame(width: 44, height: 44)
             }
-            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+            .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Close")
         }
         .padding(.bottom, 6)

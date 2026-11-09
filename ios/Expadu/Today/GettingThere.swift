@@ -88,7 +88,7 @@ struct GettingThere: View {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
                     .frame(width: 44, height: 44)
             }
-            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+            .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Back")
             VStack(alignment: .leading, spacing: 2) {
                 Text("Getting there").font(.posterGrotesque(24)).tracking(-0.3).foregroundStyle(Palette.text)
@@ -155,7 +155,7 @@ struct GettingThere: View {
                     if idea.timed, idea.startsAt != nil {
                         Text(way.spareWords).font(.geist(13, .bold)).foregroundStyle(spareInk(way))
                             .padding(.horizontal, 10).frame(height: 26)
-                            .background(spareTint(way), in: .capsule)
+                            .background(spareTint(way), in: .rect(cornerRadius: 7, style: .continuous))
                     }
                     // On foot: our router's own turns.
                     if onFoot(way), let turns = way.legs.first?.turns, !turns.isEmpty {
@@ -251,13 +251,13 @@ struct GettingThere: View {
                         .font(.geist(17, .semibold)).foregroundStyle(.white)
                         .fixedSize()
                         .padding(.horizontal, 20).frame(height: 50)
-                        .background(Palette.action, in: .capsule).raised(Capsule())
+                        .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
                     }
                     .buttonStyle(PressStyle())
                     .disabled(starting)
                 }
                 .padding(6)
-                .glassEffect(.regular, in: .capsule)
+                .glassEffect(.regular, in: .rect(cornerRadius: 28, style: .continuous))
                 .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
                 .animation(.easeInOut(duration: 0.3), value: way.leaveTime)
             }

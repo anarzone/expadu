@@ -43,7 +43,7 @@ struct AlertsSheet: View {
                                     Text(title).font(.geist(14, .semibold))
                                         .foregroundStyle(filter == id ? Palette.canvas : Palette.text)
                                         .padding(.horizontal, 14).frame(height: 36)
-                                        .background(filter == id ? Palette.text : Palette.quiet, in: .capsule)
+                                        .background(filter == id ? Palette.text : Palette.quiet, in: .rect(cornerRadius: 10, style: .continuous))
                                 }
                                 .buttonStyle(PressStyle())
                                 .accessibilityAddTraits(filter == id ? .isSelected : [])
@@ -382,7 +382,7 @@ struct CloseButton: View {
             Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                 .frame(width: 44, height: 44)
         }
-        .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+        .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
         .accessibilityLabel("Close")
     }
 }

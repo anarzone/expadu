@@ -219,7 +219,7 @@ struct LiveTrip: View {
             Label(title, systemImage: symbol).labelStyle(Tight())
                 .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                 .padding(.horizontal, 14).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
-                .background(Palette.quiet, in: .capsule).raised(Capsule())
+                .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
                 .contentShape(.capsule)
         }
         .buttonStyle(PressStyle())
@@ -367,7 +367,7 @@ struct OtherWaysSheet: View {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                             .frame(width: 44, height: 44)
                     }
-                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+                    .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
                     .accessibilityLabel("Close")
                 }
                 ForEach(Array(leave.ways.enumerated()), id: \.element.id) { index, way in
@@ -397,7 +397,7 @@ struct OtherWaysSheet: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(way.spareWords).font(.geist(13, .bold)).foregroundStyle(spareTone.0)
                     .padding(.horizontal, 10).frame(height: 26)
-                    .background(spareTone.1, in: .capsule)
+                    .background(spareTone.1, in: .rect(cornerRadius: 7, style: .continuous))
                 WhyLines(way: way, start: leave.start)
                 if open.contains(way.id) {
                     StepList(steps: TodayPage.Step.of(way.legs, to: leave.to, start: leave.start))
@@ -409,7 +409,7 @@ struct OtherWaysSheet: View {
                         Label("Your way", systemImage: "checkmark").labelStyle(Tight())
                             .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
                             .frame(maxWidth: .infinity).frame(height: 44)
-                            .background(Palette.quiet, in: .capsule)
+                            .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
                     } else {
                         Button {
                             busy = way.id
@@ -427,7 +427,7 @@ struct OtherWaysSheet: View {
                             }
                             .font(.geist(15, .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 44)
-                            .background(Palette.action, in: .capsule).raised(Capsule())
+                            .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
                             .contentShape(.capsule)
                         }
                         .buttonStyle(PressStyle())
@@ -518,7 +518,7 @@ struct TicketTop: View {
         .overlay(alignment: .topTrailing) {
             Text("\(way.minutes) min").font(.geist(13, .bold)).foregroundStyle(ink)
                 .padding(.horizontal, 11).frame(height: 28)
-                .background(.black.opacity(0.28), in: .capsule)
+                .background(.black.opacity(0.28), in: .rect(cornerRadius: 8, style: .continuous))
                 .padding(16)
         }
         .background(fill)

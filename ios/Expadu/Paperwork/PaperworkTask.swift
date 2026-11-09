@@ -124,10 +124,8 @@ struct PaperworkTaskPage: View {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
             }
-            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Back to Paperwork")
         }
-        .sharedBackgroundVisibility(.hidden)
         if editable, let options = process.progressOptions?.filter({ $0.allowed != false }), !options.isEmpty {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -141,12 +139,9 @@ struct PaperworkTaskPage: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-                        .frame(width: 44, height: 44)
-                        .background(Palette.surface, in: .circle).raised(Circle())
                 }
                 .accessibilityLabel("Update progress")
             }
-            .sharedBackgroundVisibility(.hidden)
         }
     }
 
@@ -416,7 +411,7 @@ struct PaperworkTaskPage: View {
                 if let row, let day = row.day {
                     HStack(spacing: 12) {
                         Image(systemName: "clock").font(.system(size: 14, weight: .semibold)).foregroundStyle(PaperworkLook.apptInk)
-                            .frame(width: 34, height: 34).background(PaperworkLook.apptBack, in: .circle)
+                            .frame(width: 34, height: 34).background(PaperworkLook.apptBack, in: .rect(cornerRadius: 10, style: .continuous))
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(PaperworkDay.near(day))\(PaperworkDay.clock(row.startsAt).map { ", \($0)" } ?? "")").font(.geist(15.5, .semibold)).foregroundStyle(Palette.text)
                             Text([row.location?.label ?? "Place not recorded", row.durationMinutes.map { "\($0) min" }].compactMap { $0 }.joined(separator: " · "))
@@ -430,14 +425,14 @@ struct PaperworkTaskPage: View {
                         Button { sheet = .appointment(process.occurrenceKey) } label: {
                             Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.text)
                         }
-                        .buttonStyle(RaisedStyle(fill: Palette.quiet, size: 36))
+                        .buttonStyle(IconTileStyle(fill: Palette.quiet, size: 36))
                         .accessibilityLabel("Edit appointment")
                     }
                     .padding(.horizontal, 14).padding(.vertical, 11)
                 } else {
                     HStack(spacing: 12) {
                         Image(systemName: "calendar").font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.text)
-                            .frame(width: 34, height: 34).background(Palette.quiet, in: .circle)
+                            .frame(width: 34, height: 34).background(Palette.quiet, in: .rect(cornerRadius: 10, style: .continuous))
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Already have an appointment?").font(.geist(15.5, .semibold)).foregroundStyle(Palette.text)
                             Text("Keep its details here. Nothing is booked.").font(.geist(13)).foregroundStyle(Palette.textSoft)
@@ -459,7 +454,7 @@ struct PaperworkTaskPage: View {
                 HStack(spacing: 12) {
                     Image(systemName: row == nil ? "arrow.up.doc" : "checkmark").font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(row == nil ? Palette.text : PaperworkLook.greenInk)
-                        .frame(width: 34, height: 34).background(row == nil ? Palette.quiet : PaperworkLook.greenSoft, in: .circle)
+                        .frame(width: 34, height: 34).background(row == nil ? Palette.quiet : PaperworkLook.greenSoft, in: .rect(cornerRadius: 10, style: .continuous))
                         .contentTransition(.symbolEffect(.replace))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(row.map { "Submitted \(PaperworkWords.date($0.date))" } ?? "Not recorded").font(.geist(15.5, .semibold)).foregroundStyle(Palette.text)
@@ -503,7 +498,7 @@ struct PaperworkTaskPage: View {
                         }
                     }
                 }
-                .buttonStyle(RaisedStyle(fill: PaperworkLook.green, size: 48))
+                .buttonStyle(IconTileStyle(fill: PaperworkLook.green, size: 48))
                 .disabled(model.busy != nil)
                 .accessibilityLabel("Mark done: \(next.title)")
             }

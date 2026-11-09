@@ -119,7 +119,7 @@ struct EmptyDay: View {
                     Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text).lineLimit(1)
                         .fixedSize()
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .capsule).raised(Capsule())
+                        .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(PressStyle())
             }
@@ -457,7 +457,7 @@ struct CardSay: View {
                 Button("Undo") { Task { await model.undoCard(session.api) } }
                     .font(.geist(13.5, .bold))
                     .padding(.horizontal, 12).frame(height: 30)
-                    .background(Color(hex: 0x17603A, opacity: 0.12), in: .capsule)
+                    .background(Color(hex: 0x17603A, opacity: 0.12), in: .rect(cornerRadius: 8, style: .continuous))
                     .contentShape(.rect.inset(by: -7))
             }
         }
@@ -539,7 +539,7 @@ struct LeaveCard: View {
                     }
                     .font(.geist(15, .semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(Palette.action, in: .capsule).raised(Capsule())
+                    .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
                     .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -548,7 +548,7 @@ struct LeaveCard: View {
                     Label("Other ways", systemImage: "arrow.triangle.branch")
                         .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .capsule).raised(Capsule())
+                        .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
                         .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -687,7 +687,7 @@ struct FreeTime: View {
                 ForEach(free.places) { place in
                     HStack(spacing: 12) {
                         Image(systemName: PlaceSymbol.name(place.kind)).font(.system(size: 14, weight: .semibold))
-                            .frame(width: 32, height: 32).background(Palette.surface, in: .circle)
+                            .frame(width: 32, height: 32).background(Palette.surface, in: .rect(cornerRadius: 9, style: .continuous))
                         VStack(alignment: .leading, spacing: 1) {
                             Text(place.name).font(.geist(15.5, .semibold)).lineLimit(1)
                             Text(place.line).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
@@ -748,7 +748,7 @@ struct NearbyMap: View {
                 ForEach(free.places) { place in
                     HStack(spacing: 12) {
                         Image(systemName: PlaceSymbol.name(place.kind)).font(.system(size: 14, weight: .semibold))
-                            .frame(width: 32, height: 32).background(Palette.quiet, in: .circle)
+                            .frame(width: 32, height: 32).background(Palette.quiet, in: .rect(cornerRadius: 9, style: .continuous))
                         VStack(alignment: .leading, spacing: 1) {
                             Text(place.name).font(.geist(15.5, .semibold)).lineLimit(1)
                             Text(place.line).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
@@ -778,7 +778,7 @@ struct NearbyMap: View {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                     .frame(width: 44, height: 44)
             }
-            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+            .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
             .padding(16)
             .accessibilityLabel("Close")
         }
@@ -865,7 +865,7 @@ struct AddPlanSheet: View {
                     Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))
                         .frame(width: 44, height: 44)
                 }
-                .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+                .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
                 .accessibilityLabel("Close")
             }
             .foregroundStyle(Palette.text)
@@ -894,7 +894,7 @@ struct AddPlanSheet: View {
                 .font(.geist(16, .semibold))
                 .foregroundStyle(ready ? .white : Palette.textSoft)
                 .frame(maxWidth: .infinity).frame(height: 52)
-                .background(ready ? Palette.action : Palette.quiet, in: .capsule).raised(Capsule())
+                .background(ready ? Palette.action : Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
             }
             .buttonStyle(PressStyle())
             .disabled(!ready || saving)
@@ -977,7 +977,7 @@ struct AddButton: View {
                 .foregroundStyle(added ? Motion.green : Palette.action)
                 .contentTransition(.symbolEffect(.replace))
         }
-        .buttonStyle(RaisedStyle(fill: Palette.surface, tint: Motion.green.opacity(added ? 0.14 : 0), size: 38))
+        .buttonStyle(IconTileStyle(fill: Palette.surface, tint: Motion.green.opacity(added ? 0.14 : 0), size: 38))
         .animation(.easeInOut(duration: 0.35), value: added)
         .disabled(added || candidate.isEmpty)
         .accessibilityLabel(added ? "\(title) is in your plan" : "Add \(title) to your plan")

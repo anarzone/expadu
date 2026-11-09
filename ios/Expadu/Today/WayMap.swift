@@ -115,13 +115,13 @@ struct WayMap: View {
                         .foregroundStyle(speak ? Palette.action : Palette.text)
                         .contentTransition(.symbolEffect(.replace))
                 }
-                .buttonStyle(RaisedStyle(fill: Palette.surface, size: 48))
+                .buttonStyle(IconTileStyle(glassSize: 48))
                 .accessibilityLabel(speak ? "Stop speaking turns" : "Speak turns")
                 Button { following.toggle(); if !following { focus = nil; whole += 1 } } label: {
                     Image(systemName: following ? "location.north.line.fill" : "location").font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(following ? Color(hex: 0x2F6FD0) : Palette.text)
                 }
-                .buttonStyle(RaisedStyle(fill: Palette.surface, size: 48))
+                .buttonStyle(IconTileStyle(glassSize: 48))
                 .accessibilityLabel(following ? "Show the whole way" : "Follow me")
             }
         }
@@ -146,13 +146,13 @@ struct WayMap: View {
                     Button { close() } label: {
                         Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Palette.textSoft)
                     }
-                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 36))
+                    .buttonStyle(IconTileStyle(fill: Palette.surface, size: 36))
                     .accessibilityLabel("Close the map")
                 }
                 if let now = nowWords {
                     HStack(spacing: 8) {
                         Text("Now").font(.geist(12, .bold)).foregroundStyle(.white)
-                            .padding(.horizontal, 8).frame(height: 22).background(Motion.green, in: .capsule)
+                            .padding(.horizontal, 8).frame(height: 22).background(Motion.green, in: .rect(cornerRadius: 6, style: .continuous))
                         Text(now).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
                     }
                 }
@@ -164,7 +164,7 @@ struct WayMap: View {
                         }
                         .font(.geist(17, .semibold)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 50)
-                        .background(Palette.action, in: .capsule).raised(Capsule())
+                        .background(Palette.action, in: .rect(cornerRadius: 12, style: .continuous))
                     }
                     .buttonStyle(PressStyle())
                     .disabled(starting)
@@ -229,7 +229,7 @@ struct WayMap: View {
         }
         .frame(maxWidth: .infinity).frame(height: 62)
         .background(Palette.surface, in: .rect(cornerRadius: 16))
-        .raised(RoundedRectangle(cornerRadius: 16))
+        
     }
 
     private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {

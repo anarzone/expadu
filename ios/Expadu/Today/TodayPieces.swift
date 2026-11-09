@@ -40,7 +40,7 @@ struct ListRow: View {
                     .overlay { Circle().strokeBorder(ComposerLook.ring(), lineWidth: 2) }
             } else {
                 Image(systemName: symbol).font(.system(size: 15, weight: .semibold))
-                    .frame(width: 36, height: 36).background(Palette.quiet, in: .circle)
+                    .frame(width: 36, height: 36).background(Palette.quiet, in: .rect(cornerRadius: 10, style: .continuous))
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.geist(15.5, .semibold)).lineLimit(2).multilineTextAlignment(.leading)

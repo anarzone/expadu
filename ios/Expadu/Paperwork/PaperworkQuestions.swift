@@ -235,7 +235,7 @@ struct PaperworkQuestionsSheet: View {
     private func checkpoint(more: Bool) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Image(systemName: "checkmark").font(.system(size: 22, weight: .bold)).foregroundStyle(.white)
-                .frame(width: 56, height: 56).background(PaperworkLook.green, in: .circle)
+                .frame(width: 56, height: 56).background(PaperworkLook.green, in: .rect(cornerRadius: 16, style: .continuous))
             Text(more ? "That’s enough for now. You can answer the rest whenever you like." : "Paperwork has what it needs for now. Your tasks, documents and dates are laid out.")
                 .font(.geist(16)).foregroundStyle(Palette.text).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
             PaperworkButton(title: "Show my steps", grow: true) {

@@ -138,7 +138,7 @@ struct PaperworkView: View {
                     Button { sheet = .situation } label: {
                         Image(systemName: "person.text.rectangle").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
                     }
-                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
+                    .buttonStyle(IconTileStyle(fill: Palette.surface, size: 44))
                     .accessibilityLabel("Your situation")
                 }
             }
@@ -242,7 +242,7 @@ struct PaperworkView: View {
     private var stopped: some View {
         HStack(spacing: 12) {
             Image(systemName: "stop.circle.fill").font(.system(size: 16, weight: .semibold)).foregroundStyle(PaperworkLook.red)
-                .frame(width: 36, height: 36).background(PaperworkLook.blockBack, in: .circle)
+                .frame(width: 36, height: 36).background(PaperworkLook.blockBack, in: .rect(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text("Processing stopped.").font(.geist(16, .semibold)).foregroundStyle(Palette.text)
                 Text("Paperwork keeps your record but doesn’t use it until you resume.").font(.geist(13)).foregroundStyle(Palette.textSoft)
@@ -464,7 +464,7 @@ struct PaperworkOverview: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .top, spacing: 12) {
                         Image(systemName: "mappin").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
-                            .frame(width: 40, height: 40).background(Palette.posterYellow, in: .circle)
+                            .frame(width: 40, height: 40).background(Palette.posterYellow, in: .rect(cornerRadius: 12, style: .continuous))
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(PaperworkWords.label(question.factKey)) · 1 question").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
                             Text(question.question).font(.posterGrotesque(22)).tracking(-0.2).foregroundStyle(Palette.text)
