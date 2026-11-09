@@ -342,8 +342,9 @@ struct WayMap: View {
     }
 }
 
-/// The way as one bar, each part as long as it takes (Citymapper's): rides in their line's colour
-/// with the line on them, walking dotted. Tap a part and the map flies to it; tap again for all.
+/// The way as one bar, each part as long as it takes (Citymapper's): rides solid in their line's
+/// colour with the line on them, walking a soft fill of its ink. Rounded only at the bar's two ends;
+/// the part you're on is marked by a green line under it. Tap a part and the map flies to it.
 struct RouteBar: View {
     let legs: [TodayPage.Trip.Leg]
     @Binding var focus: Int?
@@ -364,7 +365,7 @@ struct RouteBar: View {
                             let on = focus == index
                             focus = on ? nil : index
                             tapped(!on)
-                        } label: { part(leg, index: index).frame(width: width) }
+                        } label: { part(leg, index: index, count: legs.count).frame(width: width) }
                         .buttonStyle(PressStyle())
                         .accessibilityLabel(WayMap.words(leg))
                         .accessibilityHint(focus == index ? "Shows the whole way" : "Shows this part on the map")
@@ -372,7 +373,7 @@ struct RouteBar: View {
                     }
                 }
             }
-            .frame(height: 30)
+            .frame(height: 36)
             // When each part starts, under it.
             HStack(spacing: 0) {
                 Text(legs.first?.departTime ?? "")
@@ -385,19 +386,24 @@ struct RouteBar: View {
     }
 
     @ViewBuilder
-    private func part(_ leg: TodayPage.Trip.Leg, index: Int) -> some View {
+    private func part(_ leg: TodayPage.Trip.Leg, index: Int, count: Int) -> some View {
         let dim = focus != nil && focus != index
         let colour = WayMap.colour(leg)
+        let outer: CGFloat = 10, inner: CGFloat = 3
+        let shape = UnevenRoundedRectangle(topLeadingRadius: index == 0 ? outer : inner, bottomLeadingRadius: index == 0 ? outer : inner,
+                                           bottomTrailingRadius: index == count - 1 ? outer : inner, topTrailingRadius: index == count - 1 ? outer : inner,
+                                           style: .continuous)
+        VStack(spacing: 3) {
         ZStack {
             if leg.rides {
-                Capsule().fill(colour)
+                shape.fill(colour)
                 HStack(spacing: 4) {
                     Image(systemName: WayMap.symbol(leg)).font(.system(size: 11, weight: .bold))
                     Text(leg.line.map { Board.badge($0) } ?? "").font(.geist(13, .bold)).lineLimit(1)
                 }
                 .foregroundStyle(.white).padding(.horizontal, 6)
             } else {
-                Capsule().strokeBorder(colour.opacity(0.55), style: StrokeStyle(lineWidth: 2, dash: [3, 3]))
+                shape.fill(colour.opacity(0.14))
                 HStack(spacing: 2) {
                     Image(systemName: WayMap.symbol(leg)).font(.system(size: 11, weight: .bold))
                     Text("\(leg.minutes)").font(.geist(12, .semibold)).monospacedDigit()
@@ -406,7 +412,9 @@ struct RouteBar: View {
             }
         }
         .frame(height: 30)
-        .overlay { if current == index { Capsule().strokeBorder(Motion.green, lineWidth: 2.5).padding(-3) } }
+            // Where you are: a short green line under that part.
+            RoundedRectangle(cornerRadius: 1.5).fill(current == index ? Motion.green : .clear).frame(height: 3)
+        }
         .opacity(dim ? 0.35 : 1)
     }
 }
