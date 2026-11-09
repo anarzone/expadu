@@ -77,7 +77,7 @@ struct IdeaRow: View {
         HStack(spacing: 12) {
             // The poster and the title open its details (e.open), as on the canvas.
             Button { onOpen?() } label: {
-                Poster(label: idea.posterLabel(at: now), night: night, tilt: tilt)
+                Poster(label: idea.posterLabel(at: now), night: night, tilt: tilt, symbol: Poster.symbol(idea.category))
             }
             .buttonStyle(PressStyle())
             .disabled(onOpen == nil)
@@ -88,7 +88,7 @@ struct IdeaRow: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(onOpen == nil)
-                Text(idea.whenLine(at: now)).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(2)
+                Text(idea.rowLine(at: now)).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(2)
                 if let why = idea.why, let onWhy {
                     Button(action: onWhy) {
                         Label(why, systemImage: "info.circle").labelStyle(Tight())
@@ -103,17 +103,12 @@ struct IdeaRow: View {
             Spacer(minLength: 0)
             HStack(spacing: 4) {
                 Button { Task { await model.toggleSave(session.api, idea: idea) } } label: {
-                    // Saved: a star in a quiet circle (.id-btn.on); not yet: the bookmark.
-                    Image(systemName: idea.saved ? "star.fill" : "bookmark")
-                        .font(.system(size: 16, weight: .semibold))
+                    // Saved: the bookmark fills, in a quiet circle (.id-btn.on).
+                    FillingBookmark(filled: idea.saved, size: 16, weight: .semibold)
                         .foregroundStyle(idea.saved ? Palette.text : Palette.textSoft)
-                        .contentTransition(.symbolEffect(.replace))
-                        .symbolEffect(.bounce, value: idea.saved)
-                        .frame(width: 36, height: 36)
-                        .background(Palette.quiet.opacity(idea.saved ? 1 : 0), in: .circle)
-                        .frame(width: 36, height: 36).contentShape(.circle)
                 }
-                .buttonStyle(PressStyle())
+                .buttonStyle(RaisedStyle(fill: idea.saved ? Palette.quiet : Palette.surface, size: 38))
+                .animation(.easeInOut(duration: 0.45), value: idea.saved)
                 .accessibilityLabel(idea.saved ? "Saved: \(idea.title)" : "Save \(idea.title)")
                 .sensoryFeedback(.selection, trigger: idea.saved)
                 AddButton(candidate: idea.candidate, date: idea.tomorrow ? (tomorrow ?? date) : date, title: idea.title)
@@ -134,19 +129,43 @@ struct Poster: View {
     let label: String
     let night: Bool
     let tilt: Double
+    /// What kind it is, on the poster's top: each idea looks like itself, not like the time.
+    var symbol: String?
 
     var body: some View {
         let ink = Color(hex: night ? 0xFFE363 : 0x3D2F9E)
-        Text(label)
-            .font(.posterGrotesque(label.count > 5 ? 13 : 15))
+        VStack(alignment: .leading, spacing: 0) {
+            if let symbol {
+                Image(systemName: symbol).font(.system(size: 18, weight: .semibold))
+            }
+            Spacer(minLength: 0)
+            Text(label)
+                .font(.posterGrotesque(label.count > 5 ? 13 : 15))
+                .lineLimit(2).minimumScaleFactor(0.8)
+        }
             .foregroundStyle(ink)
-            .lineLimit(2).minimumScaleFactor(0.8)
             .padding(6)
             .frame(width: 54, height: 68, alignment: .bottomLeading)
             .background(Color(hex: night ? 0x3D2F9E : 0xFFE363), in: .rect(cornerRadius: 7))
             .shadow(color: Color(hex: 0x211D15, opacity: 0.18), radius: 3, y: 2)
             .rotationEffect(.degrees(tilt))
             .accessibilityHidden(true)
+    }
+
+    /// The category as the server labels it (EventCategory::label).
+    static func symbol(_ category: String) -> String? {
+        switch category {
+        case "Music": "music.note"
+        case "Stage & comedy": "theatermasks.fill"
+        case "Tours": "figure.walk"
+        case "Festivals & markets": "tent.fill"
+        case "Kids & family": "balloon.fill"
+        case "Party": "party.popper.fill"
+        case "Sports": "soccerball"
+        case "Meet people": "person.2.fill"
+        case "": nil
+        default: "star.fill"
+        }
     }
 }
 
@@ -219,7 +238,7 @@ struct WhySheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
         }
-        .presentationDetents([.medium, .large])
+        .flexibleSheet()
     }
 }
 
@@ -262,7 +281,7 @@ struct HowWeRankSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
         }
-        .presentationDetents([.large])
+        .flexibleSheet()
     }
 }
 
@@ -306,6 +325,6 @@ struct AgreeSheet: View {
                 }
             }
         }
-        .presentationDetents([.large])
+        .flexibleSheet()
     }
 }

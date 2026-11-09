@@ -2516,6 +2516,8 @@ extension Components {
                 public var place: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/area`.
                 public var area: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/TodayResource/IdeasPayload/language`.
+                public var language: Swift.String?
                 /// Creates a new `IdeasPayloadPayload`.
                 ///
                 /// - Parameters:
@@ -2535,6 +2537,7 @@ extension Components {
                 ///   - price:
                 ///   - place:
                 ///   - area:
+                ///   - language:
                 public init(
                     id: Swift.Int,
                     candidate: Swift.String,
@@ -2551,7 +2554,8 @@ extension Components {
                     tomorrow: Swift.Bool,
                     price: Swift.String? = nil,
                     place: Swift.String? = nil,
-                    area: Swift.String? = nil
+                    area: Swift.String? = nil,
+                    language: Swift.String? = nil
                 ) {
                     self.id = id
                     self.candidate = candidate
@@ -2569,6 +2573,7 @@ extension Components {
                     self.price = price
                     self.place = place
                     self.area = area
+                    self.language = language
                 }
                 public enum CodingKeys: String, CodingKey {
                     case id
@@ -2587,6 +2592,7 @@ extension Components {
                     case price
                     case place
                     case area
+                    case language
                 }
             }
             /// - Remark: Generated from `#/components/schemas/TodayResource/ideas`.

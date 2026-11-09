@@ -57,7 +57,7 @@ struct LiveTrip: View {
                     HStack(spacing: 5) {
                         Circle().fill(Motion.green).frame(width: 7, height: 7)
                             .background { Circle().fill(Motion.green.opacity(0.25)).scaleEffect(pulse ? 2.4 : 1).opacity(pulse ? 0 : 1) }
-                        Text("On your way · live").font(.geist(13.5, .bold))
+                        Text(live.waiting ? "Trip set" : "On your way · live").font(.geist(13.5, .bold)).lineLimit(1)
                     }
                     .foregroundStyle(Motion.green)
                     Spacer(minLength: 0)
@@ -95,12 +95,14 @@ struct LiveTrip: View {
                     .accessibilityAction(named: "Previous step") { look(by: -1, from: live.index, current: live.current, count: all.count) }
                     .accessibilityAction(named: steps ? "Hide steps" : "All steps") { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
                 // On foot: the next turn, by where the phone is on our router's way.
-                if picked == nil, let here, let turn = here.turn, !here.offRoute {
+                if picked == nil, !live.waiting, let here, let turn = here.turn, !here.offRoute {
                     TurnRow(turn: turn, metres: here.metresToTurn)
                         .padding(.top, 12)
                         .transition(.opacity.combined(with: .offset(y: -6)))
                 }
-                if let here, let missed = here.missed {
+                if live.waiting {
+                    EmptyView()
+                } else if let here, let missed = here.missed {
                     TripTrouble(text: "\(missed.name) at \(missed.departTime) has left.", busy: replanning) { replan() }
                         .padding(.top, 12).transition(.opacity)
                 } else if let here, here.offRoute, let since = follow.offSince, timeline.date.timeIntervalSince(since) > 15 {
@@ -148,7 +150,7 @@ struct LiveTrip: View {
         .accessibilityAction(named: "Show the map") { mapOpen = true }
         .accessibilityAction(named: "End trip") { end(arrived: false) }
         .animation(Motion.spring, value: model.cardNote)
-        .sheet(isPresented: $mapOpen) { WayMap(title: "Your way to \(trip.to)", legs: trip.legs, guiding: (trip, follow)) }
+        .sheet(isPresented: $mapOpen) { WayMap(to: trip.to, legs: trip.legs, guiding: (trip, follow)) }
         .onAppear {
             follow.trip = trip
             follow.start()
@@ -199,6 +201,7 @@ struct LiveTrip: View {
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 4) {
                 Text(live.big).font(.posterGrotesque(28)).monospacedDigit().foregroundStyle(colour)
+                    .lineLimit(1).minimumScaleFactor(0.6)
                     .contentTransition(.numericText(countsDown: true))
                 Text(live.bigNote).font(.geist(12, .semibold)).foregroundStyle(Palette.textSoft)
             }
@@ -216,7 +219,7 @@ struct LiveTrip: View {
             Label(title, systemImage: symbol).labelStyle(Tight())
                 .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                 .padding(.horizontal, 14).frame(maxWidth: grow ? .infinity : nil).frame(height: 44)
-                .background(Palette.quiet, in: .capsule)
+                .background(Palette.quiet, in: .capsule).raised(Capsule())
                 .contentShape(.capsule)
         }
         .buttonStyle(PressStyle())
@@ -322,95 +325,6 @@ struct StepList: View {
     }
 }
 
-/// The way on a map, in place: each leg in its line's colour, walking dotted, start and end marked.
-struct WayMap: View {
-    let title: String
-    let legs: [TodayPage.Trip.Leg]
-    /// While the trip is live: our navigation on the map (the phone, the next turn, Speak turns).
-    var guiding: (trip: TodayPage.Trip, follow: PhoneFollow)?
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage("speakTurns") private var speak = false
-    @State private var following = true
-    @State private var pull: CGFloat = 0
-
-    var body: some View {
-        let here = guiding?.follow.here
-        ZStack(alignment: .top) {
-            CityMap(lines: WayDrawing.lines(legs, doneBefore: here?.leg), pins: WayDrawing.pins(legs, to: legs.last?.to ?? "", start: guiding == nil),
-                    fit: WayDrawing.all(legs), padding: UIEdgeInsets(top: 150, left: 50, bottom: 120, right: 50),
-                    follow: guiding != nil && following, showsUser: guiding != nil)
-                .ignoresSafeArea()
-            VStack(spacing: 10) {
-                HStack(alignment: .top, spacing: 10) {
-                    // Pull the title down: the map shrinks back to where it came from.
-                    VStack(alignment: .leading, spacing: 6) {
-                        Capsule().fill(Palette.textSoft.opacity(0.5)).frame(width: 36, height: 5).frame(maxWidth: .infinity)
-                        Text(title).font(.geist(17, .semibold)).foregroundStyle(Palette.text).lineLimit(2)
-                    }
-                        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 22))
-                        .contentShape(.rect)
-                        .gesture(
-                            DragGesture(minimumDistance: 8)
-                                .onChanged { value in pull = max(0, value.translation.height) }
-                                .onEnded { value in
-                                    if value.translation.height > 90 || value.predictedEndTranslation.height > 220 { dismiss() }
-                                    withAnimation(.spring(duration: 0.35, bounce: 0.25)) { pull = 0 }
-                                }
-                        )
-                        .accessibilityAction(named: "Close the map") { dismiss() }
-                    Button { dismiss() } label: {
-                        Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
-                            .frame(width: 48, height: 48).background(Palette.action, in: .circle)
-                    }
-                    .buttonStyle(PressStyle())
-                    .accessibilityLabel("Done")
-                }
-                if let here, let turn = here.turn, !here.offRoute {
-                    TurnRow(turn: turn, metres: here.metresToTurn)
-                        .padding(14)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 22))
-                        .transition(.opacity.combined(with: .offset(y: -8)))
-                } else if let here, here.offRoute {
-                    Label("You’re off the way. Go back to the line, or plan a new way on the card.", systemImage: "exclamationmark.triangle.fill")
-                        .font(.geist(14, .semibold)).foregroundStyle(Palette.warnText)
-                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Palette.warnBackground, in: .rect(cornerRadius: 18))
-                }
-            }
-            .padding(.horizontal, 14).padding(.top, 14)
-        }
-        .overlay(alignment: .bottomTrailing) {
-            if guiding != nil {
-                VStack(spacing: 10) {
-                    // Speak turns, with the phone's own voice.
-                    Button { speak.toggle() } label: {
-                        Image(systemName: speak ? "speaker.wave.2.fill" : "speaker.slash.fill").font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(speak ? Palette.action : Palette.text)
-                            .contentTransition(.symbolEffect(.replace))
-                            .frame(width: 48, height: 48).glassEffect(.regular.interactive(), in: .circle)
-                    }
-                    .accessibilityLabel(speak ? "Stop speaking turns" : "Speak turns")
-                    Button { following.toggle() } label: {
-                        Image(systemName: following ? "location.north.line.fill" : "location").font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(following ? Color(hex: 0x2F6FD0) : Palette.text)
-                            .frame(width: 48, height: 48).glassEffect(.regular.interactive(), in: .circle)
-                    }
-                    .accessibilityLabel(following ? "Show the whole way" : "Follow me")
-                }
-                .buttonStyle(PressStyle())
-                .padding(.trailing, 16).padding(.bottom, 40)
-            }
-        }
-        // Following the finger while pulled, as a sheet does.
-        .scaleEffect(1 - min(pull, 300) / 1500, anchor: .top)
-        .offset(y: pull * 0.6)
-        .animation(Motion.ios(0.3), value: here?.turn)
-        .presentationDetents([.large])
-    }
-}
-
 /// A ticket's half (.tk-top / .tk-bot): rounded outer corners and the two notches the perforation runs between.
 nonisolated struct TicketHalf: Shape {
     let top: Bool
@@ -452,9 +366,8 @@ struct OtherWaysSheet: View {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                             .frame(width: 44, height: 44)
-                            .glassEffect(.regular.interactive(), in: .circle)
                     }
-                    .buttonStyle(PressStyle())
+                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
                     .accessibilityLabel("Close")
                 }
                 ForEach(Array(leave.ways.enumerated()), id: \.element.id) { index, way in
@@ -465,8 +378,7 @@ struct OtherWaysSheet: View {
         }
         .scrollIndicators(.hidden)
         .background(Palette.canvas)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .flexibleSheet()
         .presentationBackground(Palette.canvas)
     }
 
@@ -515,7 +427,7 @@ struct OtherWaysSheet: View {
                             }
                             .font(.geist(15, .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 44)
-                            .background(Palette.action, in: .capsule)
+                            .background(Palette.action, in: .capsule).raised(Capsule())
                             .contentShape(.capsule)
                         }
                         .buttonStyle(PressStyle())

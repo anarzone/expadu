@@ -58,6 +58,9 @@ struct TodayPageTests {
         #expect(tonight.whenLine(at: now) == "Tonight 20:30 · Venloer Str.")
         #expect(allDay.posterLabel(at: now) == "All day")
         #expect(allDay.whenLine(at: now) == "Daily until Thu 5 Nov · Stadtgebiet")
+        // Beside the poster: no second start time, the language when known.
+        let tour = TodayPage.Idea(id: 4, title: "Brauhaustour", category: "Tours", emoji: nil, startsAt: at("2026-09-30T17:00:00Z"), endsAt: at("2026-09-30T19:00:00Z"), timed: true, untimed: nil, tomorrow: false, price: nil, place: "Kreuzblume", area: nil, language: "de")
+        #expect(tour.rowLine(at: now) == "Until 21:00 · Kreuzblume · In German")
     }
 
     @Test func theDeadlineSaysWhatExpiresAndWhen() {
@@ -155,6 +158,15 @@ struct GuideTests {
         // On foot, the phone wins: still walking after the clock says the tram has gone.
         let walking = trip.live(at: start.addingTimeInterval(240), guided: 0)
         #expect(walking.current == 0)
+    }
+
+    @Test func startedHoursEarlyTheCardWaitsForTheLeaveTime() {
+        let early = trip.live(at: start.addingTimeInterval(-2 * 3600 - 28 * 60))
+        #expect(early.waiting)
+        #expect(early.big == "2 h 28 min")
+        #expect(early.bigNote == "Tram 18 at 15:03")
+        // At the leave time it's the walk, now.
+        #expect(trip.live(at: start).waiting == false)
     }
 
     @Test func theIslandWaitsAtTheStopUntilTheRideLeaves() {

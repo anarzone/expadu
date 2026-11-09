@@ -15,7 +15,13 @@ struct CologneToday: View {
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
     @Environment(\.shell) private var shell
-    @State private var open = false
+    /// nil until they choose: open on a day with no plans left (the canvas's free day), folded otherwise.
+    @State private var chosen: Bool?
+    private var open: Bool { chosen ?? page.ahead.isEmpty }
+    @State private var lineOpen = false
+    /// The departure opened to its next times.
+    @State private var departure: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -28,14 +34,18 @@ struct CologneToday: View {
                 }
                 // One of their lines late or disrupted (.ct-line), one tap from what it means for them.
                 if let need = page.needs.first(where: \.isLine) {
-                    Button { sheet = .line(need, page) } label: { LineRow(need: need) }
+                    Button {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { lineOpen.toggle() }
+                    } label: { LineRow(need: need, open: lineOpen) }
                         .buttonStyle(PressStyle())
                         .transition(.opacity.combined(with: .move(edge: .top)))
+                    if lineOpen { LineTroubleDetail(need: need, page: page) }
                     Divider().overlay(Palette.border)
                 }
                 Button {
-                    withAnimation(.snappy) { open.toggle() }
-                    if open { Task { await model.loadBoard(session.api) } }
+                    let next = !open
+                    withAnimation(.snappy) { chosen = next }
+                    if next { Task { await model.loadBoard(session.api) } }
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: "tram.fill").font(.system(size: 16))
@@ -54,17 +64,32 @@ struct CologneToday: View {
                 if open {
                     VStack(spacing: 0) {
                         if let board = model.board {
-                            ForEach(board.departures.prefix(4)) { DepartureRow(departure: $0) }
-                            if board.departures.isEmpty {
+                            // Only what they can still reach on foot: a train leaving now 14 min away is no use.
+                            let reachable = board.departures.filter { row in
+                                let walk = board.stops.first { $0.name == row.stop }?.walkMinutes ?? 0
+                                return row.minutes.contains { $0 >= walk }
+                            }
+                            ForEach(Array(reachable.prefix(5).enumerated()), id: \.element.id) { index, row in
+                                if index > 0 { Rectangle().fill(Palette.border).frame(height: 0.5).padding(.leading, 62) }
+                                Button {
+                                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { departure = departure == row.id ? nil : row.id }
+                                } label: {
+                                    DepartureLine(departure: row, walk: board.stops.first { $0.name == row.stop }?.walkMinutes,
+                                                  open: departure == row.id)
+                                }
+                                .buttonStyle(PressStyle())
+                            }
+                            if reachable.isEmpty {
                                 Text("Nothing leaves nearby in the next hour.").font(.geist(14)).foregroundStyle(Palette.textSoft).padding(14)
                             }
                         } else {
                             ProgressView().padding(20)
                         }
+                        Rectangle().fill(Palette.border).frame(height: 0.5)
                         Button { shell.show(.travel) } label: {
-                            Label("Open in Travel", systemImage: "chevron.right").labelStyle(TrailingIcon())
+                            Label("All departures in Travel", systemImage: "chevron.right").labelStyle(TrailingIcon())
                                 .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
-                                .frame(maxWidth: .infinity).frame(height: 48)
+                                .frame(maxWidth: .infinity).frame(height: 46)
                         }
                         .buttonStyle(PressStyle())
                     }
@@ -74,6 +99,7 @@ struct CologneToday: View {
             .clipShape(.rect(cornerRadius: 22))
             .card(radius: 22)
         }
+        .task(id: open) { if open, model.board == nil { await model.loadBoard(session.api) } }
     }
 }
 
@@ -293,7 +319,7 @@ struct CityLinks: View {
                             Label(link.name, systemImage: link.symbol).labelStyle(Tight())
                                 .font(.geist(13.5, .semibold)).foregroundStyle(TodayLink.ink)
                                 .padding(.horizontal, 12).frame(height: 34)
-                                .background(Palette.quiet, in: .capsule)
+                                .background(Palette.quiet, in: .capsule).raised(Capsule())
                         }
                         .buttonStyle(PressStyle())
                     }
@@ -305,5 +331,68 @@ struct CityLinks: View {
             Text("Weather from Open-Meteo and the DWD. Departures from KVB.")
                 .font(.geist(12)).foregroundStyle(Palette.textSoft).padding(.horizontal, 4)
         }
+    }
+}
+
+/// A departure on Today, as a quiet row: the line on its colour, where it goes and from which stop,
+/// the minutes, and when to leave to catch it (the stop's walk). A tap shows the next times.
+struct DepartureLine: View {
+    let departure: Board.Departure
+    let walk: Int?
+    var open = false
+
+    var body: some View {
+        let look = LineLook(hex: departure.color)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Text(departure.badge).font(.geist(departure.badge.count > 2 ? 13 : 16, .bold)).foregroundStyle(look.ink)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                    .frame(width: 36, height: 30)
+                    .background(look.fill, in: .rect(cornerRadius: 8))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(departure.direction).font(.geist(15.5, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
+                    Text(catchWords).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                }
+                Spacer(minLength: 6)
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(Self.when(departure.minutes.first)).font(.posterGrotesque(20)).foregroundStyle(departure.cancelled ? Palette.textSoft : Palette.text)
+                        .strikethrough(departure.cancelled).monospacedDigit()
+                    if late {
+                        Text(departure.cancelled ? "cancelled" : "+\(departure.delay) late").font(.geist(11.5, .semibold)).foregroundStyle(Palette.conflictText)
+                    }
+                }
+            }
+            if open, departure.minutes.count > 1 {
+                Text("Then in \(Self.times(Array(departure.minutes.dropFirst())))\(departure.disrupted ? " · disruption on this line" : "")")
+                    .font(.geist(13)).foregroundStyle(Palette.textSoft).padding(.leading, 48)
+                    .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .contentShape(.rect)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Line \(departure.badge) to \(departure.direction), \(Self.when(departure.minutes.first)). \(catchWords)")
+    }
+
+    private var late: Bool { departure.cancelled || departure.delay > 0 }
+
+    /// "Neumarkt · leave in 2 min", "Rudolfplatz · catch the one in 6 min" (a stop too far for this one).
+    private var catchWords: String {
+        guard let walk, walk > 0, !departure.cancelled else { return departure.stop }
+        if let next = departure.minutes.first, next >= walk {
+            return "\(departure.stop) · " + (next - walk == 0 ? "leave now" : "leave in \(next - walk) min")
+        }
+        if let later = departure.minutes.first(where: { $0 >= walk }) { return "\(departure.stop) · catch the one in \(later) min" }
+        return "\(departure.stop) · \(walk) min walk"
+    }
+
+    static func when(_ minutes: Int?) -> String {
+        guard let minutes else { return "" }
+        return minutes == 0 ? "now" : "\(minutes) min"
+    }
+
+    /// "1, 11, 21 min".
+    static func times(_ minutes: [Int]) -> String {
+        minutes.isEmpty ? "" : minutes.prefix(3).map { "\($0)" }.joined(separator: ", ") + " min"
     }
 }

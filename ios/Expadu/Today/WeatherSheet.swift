@@ -53,8 +53,7 @@ struct WeatherSheet: View {
         }
         .scrollIndicators(.hidden)
         .background(Palette.canvas)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .flexibleSheet()
         .presentationBackground(Palette.canvas)
     }
 
@@ -68,9 +67,8 @@ struct WeatherSheet: View {
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                     .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
             }
-            .buttonStyle(PressStyle())
+            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel("Close")
         }
         .padding(.bottom, 6)

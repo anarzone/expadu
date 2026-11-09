@@ -268,11 +268,12 @@ struct AskComposerLabel: View {
             let turn = Angle.degrees((timeline.date.timeIntervalSinceReferenceDate / 12).truncatingRemainder(dividingBy: 1) * 360)
             HStack(spacing: 8) {
                 Image(.composerSpark).resizable().frame(width: 18, height: 18)
-                Text(title)
+                Text(title).lineLimit(1).minimumScaleFactor(0.85)
             }
             .font(.geist(16, .semibold)).foregroundStyle(.white)
+            .padding(.horizontal, 14)
             .frame(maxWidth: .infinity).frame(height: height)
-            .background(ComposerLook.ink, in: .capsule)
+            .background(ComposerLook.ink, in: .capsule).raised(Capsule())
             .overlay { Capsule().strokeBorder(ComposerLook.ring(turn: turn), lineWidth: 2.5) }
         }
     }
@@ -443,7 +444,6 @@ private struct ShellHeader: View {
             Button { alertsOpen = true } label: {
                 Image(systemName: "bell.fill").font(.system(size: 18, weight: .medium))
                     .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
                     .overlay(alignment: .topTrailing) {
                         if today.alerts > 0 {
                             Text("\(today.alerts)")
@@ -456,7 +456,7 @@ private struct ShellHeader: View {
                         }
                     }
             }
-            .buttonStyle(PressStyle())
+            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .accessibilityLabel(today.alerts > 0 ? "Alerts, \(today.alerts)" : "Alerts")
             AccountButton()
         }

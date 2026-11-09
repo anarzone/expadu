@@ -17,6 +17,8 @@ struct WhatsOnSheet: View {
     @State private var day: WhatsOn?
     @State private var date: String?
     @State private var path: [String] = []
+    /// The idea tapped on Today opens once; back from it stays on the list.
+    @State private var openedIdea = false
     /// Not interested: off the list at once; the signal goes when Undo has had its moment.
     @State private var hidden: Set<String> = []
     @State private var hiding: (listing: WhatsOn.Listing, send: Task<Void, Never>)?
@@ -41,13 +43,15 @@ struct WhatsOnSheet: View {
             list
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: String.self) { id in
-                    if let day, let listing = day.listings.first(where: { $0.id == id }) {
-                        EventDetail(listing: listing, day: day, page: today.page, save: save, notInterested: notInterested)
+                    if let loaded = day, let listing = loaded.listings.first(where: { $0.id == id }) {
+                        EventDetail(day: Binding(get: { day ?? loaded }, set: { day = $0 }), opened: listing, page: today.page,
+                                    save: save, notInterested: notInterested) {
+                            withAnimation(Motion.ios(0.4)) { if !path.isEmpty { path.removeLast() } }
+                        }
                     }
                 }
         }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .flexibleSheet()
         .presentationBackground(Palette.canvas)
         .task(id: date) { await load() }
         .onChange(of: searching) { _, on in if on { withAnimation(Motion.ios(0.44)) { finding = true } } }
@@ -83,9 +87,8 @@ struct WhatsOnSheet: View {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
                             .frame(width: 44, height: 44)
-                            .glassEffect(.regular.interactive(), in: .circle)
                     }
-                    .buttonStyle(PressStyle())
+                    .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
                     .accessibilityLabel("Close")
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -178,15 +181,13 @@ struct WhatsOnSheet: View {
 
     private func toggle(_ symbol: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
         Button {
-            withAnimation(.spring(duration: 0.35, bounce: 0.3)) { action() }
+            withAnimation(.easeInOut(duration: 0.3)) { action() }
         } label: {
             Image(systemName: symbol).font(.system(size: 17, weight: .medium))
                 .foregroundStyle(on ? Color(light: 0x005F70, dark: 0x73D3E2) : Palette.text)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 44, height: 44)
-                .background(on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : Palette.quiet, in: .circle)
         }
-        .buttonStyle(PressStyle())
+        .buttonStyle(RaisedStyle(fill: on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : Palette.surface, size: 44))
         .accessibilityLabel(label)
         .accessibilityAddTraits(on ? [.isSelected] : [])
         .sensoryFeedback(.selection, trigger: on)
@@ -296,7 +297,7 @@ struct WhatsOnSheet: View {
                     Button("Undo") { undoHide() }
                         .font(.geist(14, .bold)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 14).frame(height: 32)
-                        .background(Palette.surface, in: .capsule)
+                        .background(Palette.surface, in: .capsule).raised(Capsule())
                         .overlay { Capsule().strokeBorder(Palette.border) }
                 }
                 .foregroundStyle(Palette.text)
@@ -360,7 +361,7 @@ struct WhatsOnSheet: View {
                     Button { query = word.lowercased() } label: {
                         Text(word).font(.geist(15, .medium)).foregroundStyle(Palette.text)
                             .padding(.horizontal, 14).frame(height: 36)
-                            .background(Palette.surface, in: .capsule)
+                            .background(Palette.surface, in: .capsule).raised(Capsule())
                             .overlay { Capsule().strokeBorder(Palette.border) }
                     }
                     .buttonStyle(PressStyle())
@@ -389,7 +390,10 @@ struct WhatsOnSheet: View {
                 if let category, !next.categories.contains(where: { $0.id == category }) { self.category = nil }
             }
             round += 1
-            if let open, path.isEmpty, next.listings.contains(where: { $0.id == open }) { path = [open] }
+            if let open, !openedIdea, path.isEmpty, next.listings.contains(where: { $0.id == open }) {
+                openedIdea = true
+                path = [open]
+            }
         } catch {
             if day == nil { problem = Self.words(error) }
         }
@@ -399,7 +403,7 @@ struct WhatsOnSheet: View {
     private func save(_ listing: WhatsOn.Listing) {
         guard let index = day?.listings.firstIndex(where: { $0.id == listing.id }), let startsAt = listing.idea.startsAt else { return }
         let saving = !listing.idea.saved
-        withAnimation(.spring(duration: 0.45, bounce: 0.4)) { day?.listings[index].idea.saved = saving }
+        withAnimation(.easeInOut(duration: 0.45)) { day?.listings[index].idea.saved = saving }
         Task {
             do throws(APIFailure) {
                 _ = try await session.api.saveEvent(id: listing.idea.id, startsAt: startsAt, saved: saving)
@@ -504,15 +508,10 @@ struct SaveButton: View {
     var body: some View {
         let saved = listing.idea.saved
         Button { save(listing) } label: {
-            Image(systemName: saved ? "bookmark.fill" : "bookmark").font(.system(size: 17, weight: .medium))
+            FillingBookmark(filled: saved, size: 17, weight: .medium)
                 .foregroundStyle(WhatsOnLook.saveInk)
-                .contentTransition(.symbolEffect(.replace))
-                .symbolEffect(.bounce, value: saved)
-                .frame(width: 44, height: 44)
-                .background(saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, in: .circle)
-                .overlay { Circle().strokeBorder(saved ? Color(light: 0xD9C9EF, dark: 0x4A3A66) : Palette.border) }
         }
-        .buttonStyle(PressStyle())
+        .buttonStyle(RaisedStyle(fill: saved ? Color(light: 0xF0EAFA, dark: 0x2E2440) : Palette.surface, size: 44))
         .accessibilityLabel(saved ? "Saved: \(listing.idea.title)" : "Save \(listing.idea.title)")
         .sensoryFeedback(.selection, trigger: saved)
     }

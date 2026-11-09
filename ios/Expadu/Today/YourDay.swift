@@ -30,14 +30,19 @@ struct YourDay: View {
                 }
                 .frame(height: 22).padding(.bottom, 6)
                 // A trip to something that isn't a plan (an event's Getting there) goes at now, not under a plan.
-                if let trip = page.trip, !page.ahead.contains(where: { $0.title == trip.to }) {
+                let tripHere = page.trip.flatMap { trip in page.ahead.contains(where: { $0.title == trip.to }) ? nil : trip }
+                if let trip = tripHere {
                     LiveTrip(trip: trip).padding(.bottom, 14)
                         .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
                                                 removal: .opacity.combined(with: .offset(y: -10)).combined(with: .scale(scale: 0.97))))
                 }
                 if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
-                if page.free?.anchorTitle == nil, let free = page.free { FreeTime(page: page, free: free) }
-                if page.ahead.isEmpty {
+                // Free time is before they leave; once on the way it isn't theirs to fill.
+                if page.free?.anchorTitle == nil, let free = page.free, tripHere == nil || page.tripLeave != nil { FreeTime(page: page, free: free) }
+                if let trip = tripHere {
+                    // Where the day is going: the trip's own destination, as a stop on the line.
+                    TripEnd(trip: trip).padding(.bottom, 12)
+                } else if page.ahead.isEmpty {
                     EmptyDay(page: page).padding(.top, 4).padding(.bottom, 12)
                 }
                 ForEach(Array(page.ahead.enumerated()), id: \.element.id) { index, plan in
@@ -63,6 +68,24 @@ struct YourDay: View {
     static let line = Color(hex: 0xE6421F)
 }
 
+/// The destination of a trip that isn't a plan (an event's Getting there): its time and name.
+struct TripEnd: View {
+    let trip: TodayPage.Trip
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(trip.startTime ?? trip.arriveTime ?? "").font(.posterGrotesque(20)).foregroundStyle(Palette.text).monospacedDigit()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(trip.to).font(.geist(16, .semibold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+                if let there = trip.arriveTime {
+                    Text(trip.startTime == nil ? "You’re there" : "Starts · you’re there at \(there)").font(.geist(13)).foregroundStyle(Palette.textSoft)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// A day with nothing ahead (the canvas's .ln-empty): what that means now, and two ways on.
 struct EmptyDay: View {
     let page: TodayPage
@@ -71,8 +94,8 @@ struct EmptyDay: View {
     var body: some View {
         let evening = TodayPage.greeting(at: page.now, name: "").hasPrefix("Guten Abend")
         let words: (String, String, String) = page.plans.isEmpty
-            ? (page.welcome ? ("No plans yet", "Add one, or let Composer plan your day.", "Plan my day") : ("No plans added for today", "Your day is open.", "Plan the rest of today"))
-            : evening ? ("No more plans today", "Tomorrow is still open.", "Plan tomorrow") : ("No plans left today", "Everything is done.", "Plan the rest of today")
+            ? (page.welcome ? ("No plans yet", "Add one, or let Composer plan your day.", "Plan my day") : ("No plans added for today", "Your day is open.", "Plan the rest"))
+            : evening ? ("No more plans today", "Tomorrow is still open.", "Plan tomorrow") : ("No plans left today", "Everything is done.", "Plan the rest")
         VStack(alignment: .leading, spacing: 0) {
             Text(words.0).font(.geist(16, .semibold)).foregroundStyle(Palette.text)
             Text(words.1).font(.geist(13.5)).foregroundStyle(Palette.textSoft).padding(.top, 2)
@@ -82,9 +105,10 @@ struct EmptyDay: View {
                 }
                 .buttonStyle(PressStyle())
                 Button { shell.show(.travel) } label: {
-                    Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text)
+                    Text("Find a route").font(.geist(15, .medium)).foregroundStyle(Palette.text).lineLimit(1)
+                        .fixedSize()
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .capsule)
+                        .background(Palette.quiet, in: .capsule).raised(Capsule())
                 }
                 .buttonStyle(PressStyle())
             }
@@ -504,7 +528,7 @@ struct LeaveCard: View {
                     }
                     .font(.geist(15, .semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(Palette.action, in: .capsule)
+                    .background(Palette.action, in: .capsule).raised(Capsule())
                     .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -513,7 +537,7 @@ struct LeaveCard: View {
                     Label("Other ways", systemImage: "arrow.triangle.branch")
                         .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 16).frame(height: 44)
-                        .background(Palette.quiet, in: .capsule)
+                        .background(Palette.quiet, in: .capsule).raised(Capsule())
                         .contentShape(.capsule)
                 }
                 .buttonStyle(PressStyle())
@@ -739,9 +763,9 @@ struct NearbyMap: View {
         .overlay(alignment: .topTrailing) {
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.text)
-                    .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
+                    .frame(width: 44, height: 44)
             }
-            .buttonStyle(PressStyle())
+            .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
             .padding(16)
             .accessibilityLabel("Close")
         }
@@ -826,9 +850,9 @@ struct AddPlanSheet: View {
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))
-                        .frame(width: 44, height: 44).glassEffect(.regular.interactive(), in: .circle)
+                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(PressStyle())
+                .buttonStyle(RaisedStyle(fill: Palette.surface, size: 44))
                 .accessibilityLabel("Close")
             }
             .foregroundStyle(Palette.text)
@@ -857,7 +881,7 @@ struct AddPlanSheet: View {
                 .font(.geist(16, .semibold))
                 .foregroundStyle(ready ? .white : Palette.textSoft)
                 .frame(maxWidth: .infinity).frame(height: 52)
-                .background(ready ? Palette.action : Palette.quiet, in: .capsule)
+                .background(ready ? Palette.action : Palette.quiet, in: .capsule).raised(Capsule())
             }
             .buttonStyle(PressStyle())
             .disabled(!ready || saving)
@@ -939,11 +963,9 @@ struct AddButton: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(added ? Motion.green : Palette.action)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 36, height: 36)
-                .background(Motion.green.opacity(added ? 0.14 : 0), in: .circle)
-                .contentShape(.circle)
         }
-        .buttonStyle(PressStyle())
+        .buttonStyle(RaisedStyle(fill: Palette.surface, tint: Motion.green.opacity(added ? 0.14 : 0), size: 38))
+        .animation(.easeInOut(duration: 0.35), value: added)
         .disabled(added || candidate.isEmpty)
         .accessibilityLabel(added ? "\(title) is in your plan" : "Add \(title) to your plan")
         .sensoryFeedback(.success, trigger: added)
