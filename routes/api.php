@@ -3,6 +3,10 @@
 use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AlertsController;
+use App\Http\Controllers\Api\V1\Composer\AppComposerController;
+use App\Http\Controllers\Api\V1\Composer\AppEventBookmarkController;
+use App\Http\Controllers\Api\V1\Composer\AppGeocodeController;
+use App\Http\Controllers\Api\V1\Composer\AppPlaceFeedbackController;
 use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\JourneyController;
@@ -60,6 +64,12 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
             ->group(fn () => (require __DIR__.'/app/paperwork-v2.php')(app: true));
         // Composer: the web's own routes and rules, with the token (routes/app/composer-shared.php).
         Route::middleware('verified')->name('api.')->group(fn () => (require __DIR__.'/app/composer-shared.php')(app: true));
+        // Composer's Saved and Starting point: their saved events, a place saved or unsaved (or Not this),
+        // an address search, and their own places to start from.
+        Route::get('events/saved', [AppEventBookmarkController::class, 'index'])->middleware('verified');
+        Route::post('places/{spot}/feedback', AppPlaceFeedbackController::class)->middleware(['verified', 'throttle:60,1']);
+        Route::get('geocode', AppGeocodeController::class)->middleware(['verified', 'throttle:search']);
+        Route::get('composer/places', [AppComposerController::class, 'places'])->middleware('verified');
         // The bell's sheet: their alerts, and one read.
         Route::get('alerts', [AlertsController::class, 'index'])->middleware('verified');
         Route::post('alerts/{alert}/read', [AlertsController::class, 'read'])->whereNumber('alert')->middleware('verified');

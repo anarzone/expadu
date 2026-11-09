@@ -78,6 +78,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /composer/keep`.
     /// - Remark: Generated from `#/paths//composer/keep/post(composer.keep)`.
     func composer_keep(_ input: Operations.Composer_keep.Input) async throws -> Operations.Composer_keep.Output
+    /// Their own places to start from (Starting point): what the web page gets as `savedPlaces`
+    ///
+    /// - Remark: HTTP `GET /composer/places`.
+    /// - Remark: Generated from `#/paths//composer/places/get(appComposer.places)`.
+    func appComposer_places(_ input: Operations.AppComposer_places.Input) async throws -> Operations.AppComposer_places.Output
     /// - Remark: HTTP `GET /composer/paperwork-permission`.
     /// - Remark: Generated from `#/paths//composer/paperwork-permission/get(composer.paperwork-permission.show)`.
     func composer_paperworkPermission_show(_ input: Operations.Composer_paperworkPermission_show.Input) async throws -> Operations.Composer_paperworkPermission_show.Output
@@ -120,6 +125,23 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /composer/catalogue`.
     /// - Remark: Generated from `#/paths//composer/catalogue/get(composer.catalogue)`.
     func composer_catalogue(_ input: Operations.Composer_catalogue.Input) async throws -> Operations.Composer_catalogue.Output
+    /// - Remark: HTTP `GET /events/saved`.
+    /// - Remark: Generated from `#/paths//events/saved/get(appEventBookmark.index)`.
+    func appEventBookmark_index(_ input: Operations.AppEventBookmark_index.Input) async throws -> Operations.AppEventBookmark_index.Output
+    /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)
+    ///
+    /// - Remark: HTTP `POST /events/saved`.
+    /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
+    func events_save(_ input: Operations.Events_save.Input) async throws -> Operations.Events_save.Output
+    /// Places for a few typed words (Where? in Add a plan): Cologne's own places first, by name
+    /// ("Brauhaus Sion" finds "Sion Bräues Traditionsbrauhaus"), then the geocoder's addresses
+    ///
+    /// - Remark: HTTP `GET /geocode`.
+    /// - Remark: Generated from `#/paths//geocode/get(composer.appGeocode)`.
+    func composer_appGeocode(_ input: Operations.Composer_appGeocode.Input) async throws -> Operations.Composer_appGeocode.Output
+    /// - Remark: HTTP `POST /places/{spot}/feedback`.
+    /// - Remark: Generated from `#/paths//places/{spot}/feedback/post(composer.appPlaceFeedback)`.
+    func composer_appPlaceFeedback(_ input: Operations.Composer_appPlaceFeedback.Input) async throws -> Operations.Composer_appPlaceFeedback.Output
     /// - Remark: HTTP `GET /privacy/processing/{purpose}`.
     /// - Remark: Generated from `#/paths//privacy/processing/{purpose}/get(privacy.processing.show)`.
     func privacy_processing_show(_ input: Operations.Privacy_processing_show.Input) async throws -> Operations.Privacy_processing_show.Output
@@ -163,11 +185,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /events`.
     /// - Remark: Generated from `#/paths//events/get(events.day)`.
     func events_day(_ input: Operations.Events_day.Input) async throws -> Operations.Events_day.Output
-    /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)
-    ///
-    /// - Remark: HTTP `POST /events/saved`.
-    /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
-    func events_save(_ input: Operations.Events_save.Input) async throws -> Operations.Events_save.Output
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/paperwork`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)`.
     func paperwork_v2_paperwork_index(_ input: Operations.Paperwork_v2_paperwork_index.Input) async throws -> Operations.Paperwork_v2_paperwork_index.Output
@@ -529,6 +546,13 @@ extension APIProtocol {
     public func composer_keep(headers: Operations.Composer_keep.Input.Headers = .init()) async throws -> Operations.Composer_keep.Output {
         try await composer_keep(Operations.Composer_keep.Input(headers: headers))
     }
+    /// Their own places to start from (Starting point): what the web page gets as `savedPlaces`
+    ///
+    /// - Remark: HTTP `GET /composer/places`.
+    /// - Remark: Generated from `#/paths//composer/places/get(appComposer.places)`.
+    public func appComposer_places(headers: Operations.AppComposer_places.Input.Headers = .init()) async throws -> Operations.AppComposer_places.Output {
+        try await appComposer_places(Operations.AppComposer_places.Input(headers: headers))
+    }
     /// - Remark: HTTP `GET /composer/paperwork-permission`.
     /// - Remark: Generated from `#/paths//composer/paperwork-permission/get(composer.paperwork-permission.show)`.
     public func composer_paperworkPermission_show(headers: Operations.Composer_paperworkPermission_show.Input.Headers = .init()) async throws -> Operations.Composer_paperworkPermission_show.Output {
@@ -633,6 +657,51 @@ extension APIProtocol {
         try await composer_catalogue(Operations.Composer_catalogue.Input(
             query: query,
             headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /events/saved`.
+    /// - Remark: Generated from `#/paths//events/saved/get(appEventBookmark.index)`.
+    public func appEventBookmark_index(headers: Operations.AppEventBookmark_index.Input.Headers = .init()) async throws -> Operations.AppEventBookmark_index.Output {
+        try await appEventBookmark_index(Operations.AppEventBookmark_index.Input(headers: headers))
+    }
+    /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)
+    ///
+    /// - Remark: HTTP `POST /events/saved`.
+    /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
+    public func events_save(
+        headers: Operations.Events_save.Input.Headers = .init(),
+        body: Operations.Events_save.Input.Body
+    ) async throws -> Operations.Events_save.Output {
+        try await events_save(Operations.Events_save.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Places for a few typed words (Where? in Add a plan): Cologne's own places first, by name
+    /// ("Brauhaus Sion" finds "Sion Bräues Traditionsbrauhaus"), then the geocoder's addresses
+    ///
+    /// - Remark: HTTP `GET /geocode`.
+    /// - Remark: Generated from `#/paths//geocode/get(composer.appGeocode)`.
+    public func composer_appGeocode(
+        query: Operations.Composer_appGeocode.Input.Query,
+        headers: Operations.Composer_appGeocode.Input.Headers = .init()
+    ) async throws -> Operations.Composer_appGeocode.Output {
+        try await composer_appGeocode(Operations.Composer_appGeocode.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /places/{spot}/feedback`.
+    /// - Remark: Generated from `#/paths//places/{spot}/feedback/post(composer.appPlaceFeedback)`.
+    public func composer_appPlaceFeedback(
+        path: Operations.Composer_appPlaceFeedback.Input.Path,
+        headers: Operations.Composer_appPlaceFeedback.Input.Headers = .init(),
+        body: Operations.Composer_appPlaceFeedback.Input.Body
+    ) async throws -> Operations.Composer_appPlaceFeedback.Output {
+        try await composer_appPlaceFeedback(Operations.Composer_appPlaceFeedback.Input(
+            path: path,
+            headers: headers,
+            body: body
         ))
     }
     /// - Remark: HTTP `GET /privacy/processing/{purpose}`.
@@ -772,19 +841,6 @@ extension APIProtocol {
         try await events_day(Operations.Events_day.Input(
             query: query,
             headers: headers
-        ))
-    }
-    /// Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)
-    ///
-    /// - Remark: HTTP `POST /events/saved`.
-    /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
-    public func events_save(
-        headers: Operations.Events_save.Input.Headers = .init(),
-        body: Operations.Events_save.Input.Body
-    ) async throws -> Operations.Events_save.Output {
-        try await events_save(Operations.Events_save.Input(
-            headers: headers,
-            body: body
         ))
     }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/paperwork`.

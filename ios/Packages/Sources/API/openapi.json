@@ -783,6 +783,64 @@
                 }
             }
         },
+        "/composer/places": {
+            "get": {
+                "operationId": "appComposer.places",
+                "summary": "Their own places to start from (Starting point): what the web page gets as `savedPlaces`",
+                "tags": [
+                    "AppComposer"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "places": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "category": {
+                                                        "type": "string"
+                                                    },
+                                                    "address": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "name",
+                                                    "category",
+                                                    "address"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "places"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/composer/paperwork-permission": {
             "get": {
                 "operationId": "composer.paperwork-permission.show",
@@ -2162,6 +2220,256 @@
                 }
             }
         },
+        "/events/saved": {
+            "get": {
+                "operationId": "appEventBookmark.index",
+                "tags": [
+                    "AppEventBookmark"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "event_id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "occurrence_start": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "available": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "event": {
+                                                        "type": [
+                                                            "array",
+                                                            "null"
+                                                        ],
+                                                        "items": {}
+                                                    }
+                                                },
+                                                "required": [
+                                                    "event_id",
+                                                    "occurrence_start",
+                                                    "title",
+                                                    "available",
+                                                    "event"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "events.save",
+                "summary": "Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)",
+                "tags": [
+                    "Events"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveEventRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "saved": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "saved"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/geocode": {
+            "get": {
+                "operationId": "composer.appGeocode",
+                "summary": "Places for a few typed words (Where? in Add a plan): Cologne's own places first, by name\n(\"Brauhaus Sion\" finds \"Sion Br\u00e4ues Traditionsbrauhaus\"), then the geocoder's addresses",
+                "tags": [
+                    "AppGeocode"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/places/{spot}/feedback": {
+            "post": {
+                "operationId": "composer.appPlaceFeedback",
+                "tags": [
+                    "AppPlaceFeedback"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "action": {
+                                        "type": "string",
+                                        "enum": [
+                                            "more_like_this",
+                                            "saved",
+                                            "been",
+                                            "not_interested",
+                                            "clear"
+                                        ]
+                                    },
+                                    "rating": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "up",
+                                            "down",
+                                            null
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "action"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rating": {
+                                            "type": "null"
+                                        },
+                                        "been": {
+                                            "type": "boolean"
+                                        },
+                                        "been_rating": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "state",
+                                        "rating",
+                                        "been",
+                                        "been_rating"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/privacy/processing/{purpose}": {
             "get": {
                 "operationId": "privacy.processing.show",
@@ -2793,54 +3101,6 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/EventsDayResource"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    }
-                }
-            }
-        },
-        "/events/saved": {
-            "post": {
-                "operationId": "events.save",
-                "summary": "Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)",
-                "tags": [
-                    "Events"
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SaveEventRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "saved": {
-                                            "type": "boolean"
-                                        }
-                                    },
-                                    "required": [
-                                        "saved"
-                                    ]
                                 }
                             }
                         }
