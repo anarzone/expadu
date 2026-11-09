@@ -157,8 +157,8 @@ struct PaperworkView: View {
                         }
                     }
                     .padding(.leading, 14).padding(.trailing, 6).frame(height: 44)
-                    .background(Palette.surface, in: .capsule)
-                    .overlay { Capsule().strokeBorder(Palette.border) }
+                    .background(Palette.surface, in: .rect(cornerRadius: 14, style: .continuous))
+                    .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Palette.border) }
                     if searching {
                         Button("Done") { searching = false }
                             .font(.geist(16, .semibold)).foregroundStyle(TodayLink.ink).frame(height: 44)
@@ -221,11 +221,13 @@ struct PaperworkView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text("Answer a few questions and Paperwork lays out your steps, the documents to gather and the dates that matter.")
                 .font(.geist(15)).foregroundStyle(Palette.textSoft).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 8) {
-                ForEach([("checkmark", "Next steps"), ("doc.text", "Documents"), ("calendar", "Dates")], id: \.1) { symbol, word in
-                    Label(word, systemImage: symbol).labelStyle(Tight()).font(.geist(14, .semibold)).foregroundStyle(Palette.text)
-                        .lineLimit(1).fixedSize()
-                        .padding(.horizontal, 11).frame(height: 34).background(Palette.quiet, in: .capsule)
+            HStack(spacing: 18) {
+                ForEach([("checkmark", "Next steps", PaperworkLook.green), ("doc.text", "Documents", PaperworkLook.purple), ("calendar", "Dates", PaperworkLook.band)], id: \.1) { symbol, word, tint in
+                    HStack(spacing: 7) {
+                        Image(systemName: symbol).font(.system(size: 13, weight: .bold)).foregroundStyle(tint)
+                            .frame(width: 28, height: 28).background(tint.opacity(0.13), in: .rect(cornerRadius: 8, style: .continuous))
+                        Text(word).font(.geist(14, .semibold)).foregroundStyle(Palette.text).lineLimit(1).fixedSize()
+                    }
                 }
             }
             PaperworkButton(title: "Get started", grow: true) { sheet = .setup }.padding(.top, 4)
@@ -476,8 +478,7 @@ struct PaperworkOverview: View {
                         PaperworkButton(title: question.answerSchema.type == "date" ? "Enter date" : "Answer", symbol: question.answerSchema.type == "date" ? "calendar" : nil, small: true) {
                             sheet = .questions(single: true)
                         }
-                        Button("Skip for now") { withAnimation(Motion.ios(0.38)) { skipped = true } }
-                            .font(.geist(15, .medium)).foregroundStyle(Palette.textSoft).padding(.horizontal, 6).frame(height: 44)
+                        PaperworkButton(title: "Skip for now", plain: true, small: true) { withAnimation(Motion.ios(0.38)) { skipped = true } }
                     }
                     .padding(.top, 6)
                 }
@@ -504,7 +505,7 @@ struct PaperworkOverview: View {
                     PaperworkMini(symbol: "clock.arrow.circlepath", label: "Your history") { sheet = .history }
                 }
             }
-            PaperworkChips(items: [("all", "All"), ("todo", "To do"), ("waiting", "Waiting"), ("blocked", "Blocked")].map { ($0.0, $0.1, count($0.0)) }, chosen: $filter)
+            PaperworkSegments(items: [("all", "All"), ("todo", "To do"), ("waiting", "Waiting"), ("blocked", "Blocked")].map { ($0.0, $0.1, count($0.0)) }, chosen: $filter)
             if tasks.isEmpty, query.isEmpty {
                 // No open task: said plainly, with the way to more when Paperwork still has questions.
                 let more = (plan.questions?.remainingInformationCount ?? 0) > 0
@@ -579,7 +580,7 @@ struct PaperworkTaskRow: View {
                     if let next { Text(next.title).font(.geist(14.5)).foregroundStyle(Palette.text).lineSpacing(1).multilineTextAlignment(.leading) }
                     HStack(spacing: 4) {
                         ForEach(process.steps) { step in
-                            Capsule().fill(step.done ? look.color : look.color.opacity(0.18)).frame(width: 22, height: 6)
+                            RoundedRectangle(cornerRadius: 2, style: .continuous).fill(step.done ? look.color : look.color.opacity(0.18)).frame(width: 22, height: 6)
                         }
                         Text("\(process.done)/\(process.steps.count)").font(.geist(12.5, .bold)).foregroundStyle(Palette.textSoft).monospacedDigit()
                             .padding(.leading, 4).contentTransition(.numericText())
@@ -587,8 +588,7 @@ struct PaperworkTaskRow: View {
                     .padding(.top, 2)
                     if let chip = chip {
                         Label(chip.text, systemImage: chip.symbol).labelStyle(Tight())
-                            .font(.geist(12.5, .bold)).foregroundStyle(chip.ink)
-                            .padding(.horizontal, 10).frame(height: 26).background(chip.back, in: .capsule)
+                            .font(.geist(13, .semibold)).foregroundStyle(chip.ink)
                             .padding(.top, 2)
                     }
                 }

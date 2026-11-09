@@ -273,9 +273,13 @@ struct PaperworkStepsSheet: View {
             }
         }
         PaperworkSheetFrame(title: "All steps", subtitle: "\(all.count) steps across your tasks") {
-            PaperworkChips(items: [("all", "All"), ("todo", "To do"), ("blocked", "Blocked"), ("waiting", "Waiting"), ("done", "Done")].map { key, title in
-                (key, title, all.filter { key == "all" || group($0.1) == key }.count)
-            }, chosen: $filter)
+            HStack {
+                PaperworkFilterMenu(label: "Status", items: [("all", "All steps"), ("todo", "To do"), ("blocked", "Blocked"), ("waiting", "Waiting"), ("done", "Done")].map { key, title in
+                    (key, title, all.filter { key == "all" || group($0.1) == key }.count)
+                }, chosen: $filter)
+                Spacer()
+            }
+            .padding(.horizontal, 4)
             let shown = all.filter { filter == "all" || group($0.1) == filter }
             if shown.isEmpty {
                 Text("No steps with this status.").font(.geist(14)).foregroundStyle(Palette.textSoft).padding(.horizontal, 4)
@@ -370,7 +374,7 @@ struct PaperworkAppointmentSheet: View {
                 Task { await save(process, existing) }
             }
             if let existing, let process {
-                PaperworkButton(title: "Remove it", quiet: true, grow: true, working: model.busy == "appt-off") {
+                PaperworkButton(title: "Remove it", plain: true, grow: true, working: model.busy == "appt-off") {
                     Task {
                         let done = await model.run("appt-off", session.api, done: "Appointment record removed.") { () async throws(APIFailure) in
                             try await session.api.record("appointment_cancelled", on: process, payload: ["appointment_id": existing.appointmentId ?? ""], reviewed: false)
@@ -438,7 +442,7 @@ struct PaperworkSubmissionSheet: View {
                 }
             }
             if let existing, let process, let event = existing.eventId {
-                PaperworkButton(title: "Remove the submission record", quiet: true, grow: true, working: model.busy == "sub-off") {
+                PaperworkButton(title: "Remove the submission record", plain: true, grow: true, working: model.busy == "sub-off") {
                     Task {
                         let done = await model.run("sub-off", session.api, done: "Submission record removed. Its history is kept.") { () async throws(APIFailure) in
                             try await session.api.record("submission_retracted", on: process, payload: ["event_id": event], reviewed: false)

@@ -284,10 +284,8 @@ struct PaperworkTaskPage: View {
             if let due, let day = due.day {
                 let soon = PaperworkDay.days(day) <= 3 || due.overdue == true
                 Label("\(PaperworkWords.kind[due.kind] ?? "Date") · \(PaperworkDay.near(day))\(due.overdue == true ? " · overdue" : "")", systemImage: "calendar")
-                    .labelStyle(Tight()).font(.geist(13, .semibold))
-                    .foregroundStyle(soon ? PaperworkLook.warnInk : PaperworkLook.apptInk)
-                    .padding(.horizontal, 10).frame(height: 28)
-                    .background(soon ? PaperworkLook.warnBack : PaperworkLook.apptBack, in: .capsule)
+                    .labelStyle(Tight()).font(.geist(13.5, .semibold))
+                    .foregroundStyle(soon ? Color(light: 0xA25E00, dark: 0xF3C66C) : PaperworkLook.apptInk)
             }
             Text(lead).font(.geist(15)).foregroundStyle(Palette.text).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
@@ -296,9 +294,10 @@ struct PaperworkTaskPage: View {
                         sheet = .documents(process.occurrenceKey)
                     }
                 } else if let official {
-                    PaperworkButton(title: "Read official information", symbol: "arrow.up.right", small: true, grow: true) { sheet = .web(official) }
+                    PaperworkButton(title: "Official page", symbol: "arrow.up.right", small: true, grow: true) { sheet = .web(official) }
                 }
                 PaperworkButton(title: "Help", symbol: "sparkle", quiet: true, small: true) { shell.openComposer() }
+                    .accessibilityLabel("Help with this step")
             }
             if let open = item.firstOpenRequirement, !item.done {
                 HStack(alignment: .top, spacing: 10) {
@@ -347,8 +346,7 @@ struct PaperworkTaskPage: View {
                     }
                     .foregroundStyle(item.done ? Palette.text : PaperworkLook.greenInk)
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(item.done ? Palette.quiet : PaperworkLook.greenSoft, in: .capsule)
-                    .raised(Capsule())
+                    .background(item.done ? Palette.quiet : PaperworkLook.greenSoft, in: .rect(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(PressStyle())
                 .disabled(model.busy != nil)
@@ -477,12 +475,7 @@ struct PaperworkTaskPage: View {
     }
 
     private func recordButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title).font(.geist(14, .semibold)).foregroundStyle(Palette.text)
-                .padding(.horizontal, 14).frame(height: 34).background(Palette.quiet, in: .capsule).raised(Capsule())
-                .contentShape(.rect.inset(by: -5))
-        }
-        .buttonStyle(PressStyle())
+        PaperworkButton(title: title, plain: true, small: true, action: action)
     }
 
     // MARK: The pill
@@ -528,7 +521,7 @@ struct PaperworkTaskPage: View {
         }
         .padding(.leading, 20).padding(.trailing, 8).padding(.vertical, 8)
         .frame(minHeight: 64)
-        .glassEffect(.regular, in: .capsule)
+        .glassEffect(.regular, in: .rect(cornerRadius: 28, style: .continuous))
         .padding(.horizontal, 16).padding(.bottom, 62)
         .transition(.offset(y: 30).combined(with: .opacity))
     }

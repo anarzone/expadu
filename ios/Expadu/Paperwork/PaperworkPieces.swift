@@ -86,6 +86,7 @@ struct PaperworkStamp: View {
     var body: some View {
         Text(word.uppercased())
             .font(.posterMarker(size)).strikethrough(struck)
+            .lineLimit(1).fixedSize()
             .foregroundStyle(ink)
             .padding(.horizontal, size * 0.55).padding(.top, 4).padding(.bottom, 2)
             .background(ink.opacity(0.08), in: .rect(cornerRadius: 6))
@@ -102,36 +103,46 @@ struct PaperworkStamp: View {
     }
 }
 
-/// The canvas's .wo-cat chips: the word, its count, the chosen one in teal wash.
-struct PaperworkChips<Key: Hashable>: View {
+/// A filter, as iOS 26 draws one: the system's segmented control for a few short choices, each
+/// with its count. No pill chips.
+struct PaperworkSegments<Key: Hashable>: View {
     let items: [(key: Key, title: String, count: Int?)]
     @Binding var chosen: Key
 
     var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 6) {
+        Picker("Show", selection: $chosen.animation(Motion.ios(0.35))) {
+            ForEach(items, id: \.key) { item in
+                Text(item.count.map { "\(item.title) \($0)" } ?? item.title).tag(item.key)
+            }
+        }
+        .pickerStyle(.segmented)
+        .controlSize(.large)
+    }
+}
+
+/// A filter with many or long choices: a pull-down menu named by what it shows now, as Mail and
+/// Files do. The choice is plain text with a chevron, no pill.
+struct PaperworkFilterMenu<Key: Hashable>: View {
+    let label: String
+    let items: [(key: Key, title: String, count: Int?)]
+    @Binding var chosen: Key
+
+    var body: some View {
+        Menu {
+            Picker(label, selection: $chosen.animation(Motion.ios(0.35))) {
                 ForEach(items, id: \.key) { item in
-                    let on = chosen == item.key
-                    Button { withAnimation(.snappy) { chosen = item.key } } label: {
-                        HStack(spacing: 4) {
-                            Text(item.title).font(.geist(15, on ? .semibold : .medium)).foregroundStyle(Palette.text)
-                            if let count = item.count {
-                                Text("\(count)").font(.geist(15, .semibold)).foregroundStyle(on ? Color(light: 0x00768B, dark: 0x73D3E6) : Palette.textSoft)
-                                    .contentTransition(.numericText())
-                            }
-                        }
-                        .padding(.horizontal, 14).frame(height: 36)
-                        .background(on ? Color(light: 0xDEF5F8, dark: 0x1D3F47) : Palette.quiet.opacity(0.0001), in: .capsule)
-                        .contentShape(.capsule)
-                    }
-                    .buttonStyle(PressStyle())
-                    .accessibilityAddTraits(on ? [.isSelected] : [])
+                    Text(item.count.map { "\(item.title) (\($0))" } ?? item.title).tag(item.key)
                 }
             }
-            .padding(.horizontal, 16).padding(.vertical, 4)
+        } label: {
+            HStack(spacing: 4) {
+                Text(items.first { $0.key == chosen }?.title ?? label).lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 11, weight: .bold))
+            }
+            .font(.geist(15, .semibold)).foregroundStyle(TodayLink.ink)
+            .frame(minHeight: 44).contentShape(.rect)
         }
-        .scrollIndicators(.hidden)
-        .padding(.horizontal, -16)
+        .accessibilityLabel("\(label): \(items.first { $0.key == chosen }?.title ?? "")")
     }
 }
 
@@ -182,11 +193,14 @@ struct PaperworkMini: View {
     }
 }
 
-/// A button in the canvas's .btn: the action colour or the quiet one, with a little volume.
+/// A button as iOS 26 draws one in content: a rounded rectangle whose corners follow the card
+/// it sits in (Apple's concentric shapes), a flat face, the press sinking it. Prominent for the
+/// one action a view leads with; quiet for the rest; plain (tinted words) for small side actions.
 struct PaperworkButton: View {
     let title: String
     var symbol: String?
     var quiet = false
+    var plain = false
     var small = false
     var grow = false
     var working = false
@@ -195,18 +209,19 @@ struct PaperworkButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 7) {
-                if working { ProgressView().tint(quiet ? Palette.text : Palette.onAction).controlSize(.small) } else if let symbol {
+                if working { ProgressView().tint(quiet || plain ? Palette.text : Palette.onAction).controlSize(.small) } else if let symbol {
                     Image(systemName: symbol).font(.system(size: small ? 14 : 15, weight: .semibold))
                 }
                 Text(title).font(.geist(small ? 15 : 16, .semibold)).lineLimit(1)
             }
-            .foregroundStyle(quiet ? Palette.text : Palette.onAction)
-            .padding(.horizontal, small ? 14 : 20)
+            .foregroundStyle(plain ? AnyShapeStyle(TodayLink.ink) : quiet ? AnyShapeStyle(Palette.text) : AnyShapeStyle(Palette.onAction))
+            .padding(.horizontal, plain ? 2 : small ? 14 : 20)
             .frame(maxWidth: grow ? .infinity : nil)
-            .frame(height: small ? 40 : 50)
-            .background(quiet ? Palette.quiet : Palette.action, in: .capsule)
-            .raised(Capsule())
-            .contentShape(.capsule)
+            .frame(height: plain ? 44 : small ? 42 : 52)
+            .background {
+                if !plain { RoundedRectangle(cornerRadius: small ? 12 : 16, style: .continuous).fill(quiet ? Palette.quiet : Palette.action) }
+            }
+            .contentShape(.rect(cornerRadius: small ? 12 : 16))
         }
         .buttonStyle(PressStyle())
         .disabled(working)

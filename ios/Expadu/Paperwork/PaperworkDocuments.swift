@@ -20,14 +20,16 @@ struct PaperworkDocumentsView: View {
             .filter { query.isEmpty || PaperworkSearch.matches($0.1, query) }
         let byTask = shown.filter { task == "all" || $0.0.occurrenceKey == task }
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                PaperworkChips(items: [("all", "All tasks", shown.count)] + plan.tasks.filter { !plan.papers(for: $0).isEmpty }.map { process in
+            HStack(spacing: 16) {
+                PaperworkFilterMenu(label: "Task", items: [("all", "All tasks", shown.count)] + plan.tasks.filter { !plan.papers(for: $0).isEmpty }.map { process in
                     (process.occurrenceKey, process.title, shown.filter { $0.0.occurrenceKey == process.occurrenceKey }.count)
                 }, chosen: $task)
-                PaperworkChips(items: [("any", "Any status", byTask.count)] + [("missing", "Still to get"), ("have", "You have it"), ("ready", "Ready")].map { key, title in
+                PaperworkFilterMenu(label: "Status", items: [("any", "Any status", byTask.count)] + [("missing", "Still to get"), ("have", "You have it"), ("ready", "Ready")].map { key, title in
                     (key, title, byTask.filter { Self.status($0.1) == key }.count)
                 }, chosen: $status)
+                Spacer(minLength: 0)
             }
+            .padding(.horizontal, 4)
             let groups = plan.tasks.filter { task == "all" || $0.occurrenceKey == task }.compactMap { process -> (PaperworkProcess, [PaperworkRequirement])? in
                 let list = byTask.filter { $0.0.occurrenceKey == process.occurrenceKey && (status == "any" || Self.status($0.1) == status) }.map(\.1)
                 return list.isEmpty ? nil : (process, list)
@@ -161,7 +163,7 @@ struct PaperworkDocRow: View {
     private func actions(state: String, conditional: Bool) -> some View {
         let key = rowID
         if !process.tracked {
-            PaperworkButton(title: "Start tracking this task", symbol: "plus", quiet: true, small: true, working: model.busy == key) {
+            PaperworkButton(title: "Start tracking this task", symbol: "plus", small: true, working: model.busy == key) {
                 Task {
                     await model.run(key, session.api, done: "Tracking started. Nothing has been submitted.") { () async throws(APIFailure) in
                         try await session.api.track(process, person: plan.personId, jurisdiction: plan.jurisdiction)
@@ -192,7 +194,7 @@ struct PaperworkDocRow: View {
                         .font(.geist(14, .semibold)).foregroundStyle(PaperworkLook.purpleInk).frame(minHeight: 40)
                 }
                 if state != "missing" {
-                    PaperworkButton(title: "I don’t have it", quiet: true, small: true, working: model.busy == key + "-not") {
+                    PaperworkButton(title: "I don’t have it", plain: true, small: true, working: model.busy == key + "-not") {
                         Task {
                             await model.run(key + "-not", session.api, done: "Marked as not ready.") { () async throws(APIFailure) in
                                 if requirement.evidenceId != nil { try await session.api.unconfirm(requirement, on: process) }
