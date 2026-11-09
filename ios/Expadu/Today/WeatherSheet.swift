@@ -53,8 +53,7 @@ struct WeatherSheet: View {
         }
         .scrollIndicators(.hidden)
         .background(Palette.canvas)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .flexibleSheet()
         .presentationBackground(Palette.canvas)
     }
 

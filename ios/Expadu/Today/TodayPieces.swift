@@ -138,3 +138,19 @@ enum NeedTone {
         }
     }
 }
+
+/// A sheet opens tall, as the canvas draws them, and stops at half on the way down so Today shows
+/// above it; a further pull closes it.
+struct FlexibleSheet: ViewModifier {
+    @State private var detent: PresentationDetent = .large
+
+    func body(content: Content) -> some View {
+        content
+            .presentationDetents([.medium, .large], selection: $detent)
+            .presentationDragIndicator(.visible)
+    }
+}
+
+extension View {
+    func flexibleSheet() -> some View { modifier(FlexibleSheet()) }
+}

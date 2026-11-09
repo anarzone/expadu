@@ -108,8 +108,7 @@ struct AlertsSheet: View {
         }
         .task { await load() }
         .sheet(item: $link) { SafariView(url: $0.url).ignoresSafeArea() }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .flexibleSheet()
         .presentationBackground(Palette.canvas)
     }
 
@@ -353,8 +352,7 @@ struct LineTrouble: View {
         .toolbarVisibility(.hidden, for: .navigationBar)
         .task { await find() }
         .sheet(item: $link) { SafariView(url: $0.url).ignoresSafeArea() }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .flexibleSheet()
         .presentationBackground(Palette.canvas)
     }
 

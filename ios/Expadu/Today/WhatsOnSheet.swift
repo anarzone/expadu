@@ -46,8 +46,7 @@ struct WhatsOnSheet: View {
                     }
                 }
         }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .flexibleSheet()
         .presentationBackground(Palette.canvas)
         .task(id: date) { await load() }
         .onChange(of: searching) { _, on in if on { withAnimation(Motion.ios(0.44)) { finding = true } } }

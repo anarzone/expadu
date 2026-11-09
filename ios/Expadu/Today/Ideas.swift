@@ -219,7 +219,7 @@ struct WhySheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
         }
-        .presentationDetents([.medium, .large])
+        .flexibleSheet()
     }
 }
 
@@ -262,7 +262,7 @@ struct HowWeRankSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
         }
-        .presentationDetents([.large])
+        .flexibleSheet()
     }
 }
 
@@ -306,6 +306,6 @@ struct AgreeSheet: View {
                 }
             }
         }
-        .presentationDetents([.large])
+        .flexibleSheet()
     }
 }
