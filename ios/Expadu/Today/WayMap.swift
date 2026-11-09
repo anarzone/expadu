@@ -29,6 +29,11 @@ struct WayMap: View {
     @State private var focus: Int?
     @State private var whole = 0
     @State private var cardHeight: CGFloat = 260
+    /// The card folds down to its first line so the whole map is free to move and zoom.
+    @State private var folded = false
+    /// The other ways, shown on request so the map stays the map.
+    @State private var comparing = false
+    @State private var cardDrag: CGFloat = 0
 
     private var here: Guide.Position? { guiding?.follow.here }
     private var way: TodayPage.Way? { picked.flatMap { ways.indices.contains($0.wrappedValue) ? ways[$0.wrappedValue] : nil } }
@@ -145,6 +150,14 @@ struct WayMap: View {
 
     private var card: some View {
         VStack(alignment: .leading, spacing: 14) {
+            // Drag or tap: folds to the first line and the button, and back.
+            Capsule().fill(Palette.textSoft.opacity(0.45)).frame(width: 36, height: 5)
+                .frame(maxWidth: .infinity).frame(height: 14)
+                .padding(.top, -6)
+                .contentShape(.rect)
+                .onTapGesture { fold(!folded) }
+                .accessibilityLabel(folded ? "Show the way's details" : "Fold the card")
+                .accessibilityAddTraits(.isButton)
             HStack(spacing: 12) {
                 plates
                 VStack(alignment: .leading, spacing: 2) {
@@ -154,15 +167,42 @@ struct WayMap: View {
                 }
                 Spacer(minLength: 0)
             }
-            if let now = nowWords {
-                HStack(spacing: 8) {
-                    Text("Now").font(.geist(12, .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 8).frame(height: 22).background(Motion.green, in: .capsule)
-                    Text(now).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
+            if !folded {
+                if let now = nowWords {
+                    HStack(spacing: 8) {
+                        Text("Now").font(.geist(12, .bold)).foregroundStyle(.white)
+                            .padding(.horizontal, 8).frame(height: 22).background(Motion.green, in: .capsule)
+                        Text(now).font(.geist(15, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
+                    }
+                }
+                RouteBar(legs: legs, focus: $focus, current: here?.leg) { on in
+                    following = false
+                    if !on { whole += 1 }
+                }
+                if guiding == nil, ways.count > 1, picked != nil {
+                    Button {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { comparing.toggle() }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.triangle.branch").font(.system(size: 14, weight: .semibold))
+                            Text(comparing ? "Hide other ways" : "\(ways.count - 1) other \(ways.count == 2 ? "way" : "ways")")
+                                .font(.geist(15, .semibold))
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold))
+                                .rotationEffect(.degrees(comparing ? 180 : 0))
+                        }
+                        .foregroundStyle(Palette.text)
+                        .frame(minHeight: 36).contentShape(.rect)
+                    }
+                    .buttonStyle(PressStyle())
+                    if comparing {
+                        ScrollView { otherWays }
+                            .frame(maxHeight: 200)
+                            .scrollBounceBehavior(.basedOnSize)
+                            .transition(.opacity.combined(with: .offset(y: -6)))
+                    }
                 }
             }
-            steps
-            if guiding == nil, ways.count > 1, picked != nil { otherWays }
             if let start {
                 Button(action: start) {
                     HStack(spacing: 8) {
@@ -176,7 +216,7 @@ struct WayMap: View {
                 .buttonStyle(PressStyle())
                 .disabled(starting)
             }
-            if let travel {
+            if let travel, !folded {
                 Button(action: travel) {
                     Label("Plan a different trip in Travel", systemImage: "chevron.right").labelStyle(TrailingIcon())
                         .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink)
@@ -189,6 +229,23 @@ struct WayMap: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(.regular, in: .rect(cornerRadius: 28))
         .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
+        .offset(y: cardDrag)
+        .gesture(
+            DragGesture(minimumDistance: 10)
+                .onChanged { value in cardDrag = folded ? min(0, value.translation.height) / 3 : max(0, value.translation.height) }
+                .onEnded { value in
+                    let down = value.translation.height > 60 || value.predictedEndTranslation.height > 160
+                    let up = value.translation.height < -40 || value.predictedEndTranslation.height < -120
+                    fold(folded ? !up : down)
+                }
+        )
+    }
+
+    private func fold(_ on: Bool) {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.32)) {
+            folded = on
+            cardDrag = 0
+        }
     }
 
     /// The lines ridden, as plates; on foot or by bike, its sign.
@@ -222,72 +279,45 @@ struct WayMap: View {
         return Self.words(legs[here.leg])
     }
 
-    /// Each leg as a stop on a line: tap it and the map flies there, tap again for the whole way.
-    private var steps: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 6) {
-                ForEach(Array(legs.enumerated()), id: \.offset) { index, leg in
-                    if index > 0 { Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundStyle(Palette.textSoft) }
-                    let on = focus == index
-                    let current = here?.leg == index
-                    Button {
-                        following = false
-                        focus = on ? nil : index
-                        if on { whole += 1 }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: Self.symbol(leg)).font(.system(size: 13, weight: .semibold))
-                            Text(Self.chip(leg)).font(.geist(14, .semibold)).lineLimit(1)
-                        }
-                        .foregroundStyle(on ? .white : Palette.text)
-                        .padding(.horizontal, 12).frame(height: 36)
-                        .background(on ? Self.colour(leg) : (current ? Motion.green.opacity(0.16) : Palette.surface), in: .capsule)
-                        .raised(Capsule())
-                    }
-                    .buttonStyle(PressStyle())
-                    .accessibilityLabel(Self.words(leg))
-                    .accessibilityHint(on ? "Shows the whole way" : "Shows this step on the map")
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
-            .padding(.vertical, 4).padding(.horizontal, 2)
-        }
-        .scrollIndicators(.hidden)
-    }
-
-    /// The ways to choose between, on the map: pick one and it's drawn instead.
+    /// The ways to choose between, as a quiet list (Apple Maps' routes): pick one and it's drawn.
     private var otherWays: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                ForEach(Array(ways.enumerated()), id: \.offset) { index, other in
-                    let on = picked?.wrappedValue == index
-                    Button {
-                        focus = nil
-                        picked?.wrappedValue = index
-                    } label: {
-                        HStack(spacing: 6) {
+        VStack(spacing: 0) {
+            ForEach(Array(ways.enumerated()), id: \.offset) { index, other in
+                let on = picked?.wrappedValue == index
+                if index > 0 { Rectangle().fill(Palette.border).frame(height: 0.5).padding(.leading, 44) }
+                Button {
+                    focus = nil
+                    picked?.wrappedValue = index
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3).delay(0.15)) { comparing = false }
+                } label: {
+                    HStack(spacing: 10) {
+                        Group {
                             if let line = other.lines.first {
-                                LineBadge(line: line.line, color: line.color, height: 22)
+                                LineBadge(line: line.line, color: line.color, height: 24)
                             } else {
-                                Image(systemName: other.mode == "bike" ? "bicycle" : "figure.walk").font(.system(size: 13, weight: .semibold))
+                                Image(systemName: other.mode == "bike" ? "bicycle" : "figure.walk").font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(Palette.textSoft)
                             }
-                            Text("\(other.leaveTime) · \(other.minutes) min").font(.geist(14, .semibold)).monospacedDigit()
                         }
-                        .foregroundStyle(Palette.text)
-                        .padding(.leading, 6).padding(.trailing, 12).frame(height: 36)
-                        .background(on ? Palette.quiet : Palette.surface, in: .capsule)
-                        .overlay { if on { Capsule().strokeBorder(Palette.text, lineWidth: 1.5) } }
-                        .raised(Capsule())
+                        .frame(width: 34)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Leave \(other.leaveTime)").font(.geist(15, .semibold)).foregroundStyle(Palette.text).monospacedDigit()
+                            Text(other.spareWords).font(.geist(12.5)).foregroundStyle(other.spareMinutes < 0 ? Palette.conflictText : Palette.textSoft)
+                        }
+                        Spacer(minLength: 0)
+                        Text("\(other.minutes) min").font(.geist(15, .semibold)).foregroundStyle(Palette.text).monospacedDigit()
+                        Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Palette.action)
+                            .opacity(on ? 1 : 0).frame(width: 16)
                     }
-                    .buttonStyle(PressStyle())
-                    .accessibilityLabel("Leave \(other.leaveTime), \(other.minutes) minutes. \(other.note)")
-                    .accessibilityAddTraits(on ? .isSelected : [])
+                    .frame(minHeight: 48)
+                    .contentShape(.rect)
                 }
+                .buttonStyle(PressStyle())
+                .accessibilityLabel("Leave \(other.leaveTime), \(other.minutes) minutes. \(other.note)")
+                .accessibilityAddTraits(on ? .isSelected : [])
             }
-            .padding(.vertical, 4).padding(.horizontal, 2)
         }
-        .scrollIndicators(.hidden)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: picked?.wrappedValue)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: picked?.wrappedValue)
     }
 
     // MARK: Words
@@ -302,11 +332,6 @@ struct WayMap: View {
         }
     }
 
-    static func chip(_ leg: TodayPage.Trip.Leg) -> String {
-        if leg.rides { return "\(leg.line.map { Board.badge($0) } ?? leg.mode.capitalized)\(leg.stops.map { " · \($0) \($0 == 1 ? "stop" : "stops")" } ?? "")" }
-        return "\(leg.minutes) min"
-    }
-
     static func words(_ leg: TodayPage.Trip.Leg) -> String {
         if leg.rides { return "\(leg.line.map { "Line \(Board.badge($0))" } ?? leg.mode.capitalized) to \(leg.to)" }
         return "\(leg.mode == "bike" ? "Ride" : "Walk") to \(leg.to), \(leg.minutes) min"
@@ -315,5 +340,74 @@ struct WayMap: View {
     static func colour(_ leg: TodayPage.Trip.Leg) -> Color {
         if leg.rides { return LineLook(hex: leg.color ?? "#1A4CD4").deep }
         return Color(uiColor: leg.mode == "bike" ? WayDrawing.bikeColour : WayDrawing.walkColour)
+    }
+}
+
+/// The way as one bar, each part as long as it takes (Citymapper's): rides in their line's colour
+/// with the line on them, walking dotted. Tap a part and the map flies to it; tap again for all.
+struct RouteBar: View {
+    let legs: [TodayPage.Trip.Leg]
+    @Binding var focus: Int?
+    var current: Int?
+    let tapped: (Bool) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let total = max(1, legs.reduce(0) { $0 + max($1.minutes, 1) })
+        VStack(alignment: .leading, spacing: 6) {
+            GeometryReader { box in
+                let gaps = CGFloat(max(legs.count - 1, 0)) * 3
+                HStack(spacing: 3) {
+                    ForEach(Array(legs.enumerated()), id: \.offset) { index, leg in
+                        let share = CGFloat(max(leg.minutes, 1)) / CGFloat(total)
+                        let width = max(leg.rides ? 44 : 26, (box.size.width - gaps) * share)
+                        Button {
+                            let on = focus == index
+                            focus = on ? nil : index
+                            tapped(!on)
+                        } label: { part(leg, index: index).frame(width: width) }
+                        .buttonStyle(PressStyle())
+                        .accessibilityLabel(WayMap.words(leg))
+                        .accessibilityHint(focus == index ? "Shows the whole way" : "Shows this part on the map")
+                        .accessibilityAddTraits(focus == index ? .isSelected : [])
+                    }
+                }
+            }
+            .frame(height: 30)
+            // When each part starts, under it.
+            HStack(spacing: 0) {
+                Text(legs.first?.departTime ?? "")
+                Spacer()
+                Text(legs.last?.arriveTime ?? "")
+            }
+            .font(.geist(12, .medium)).foregroundStyle(Palette.textSoft).monospacedDigit()
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: focus)
+    }
+
+    @ViewBuilder
+    private func part(_ leg: TodayPage.Trip.Leg, index: Int) -> some View {
+        let dim = focus != nil && focus != index
+        let colour = WayMap.colour(leg)
+        ZStack {
+            if leg.rides {
+                Capsule().fill(colour)
+                HStack(spacing: 4) {
+                    Image(systemName: WayMap.symbol(leg)).font(.system(size: 11, weight: .bold))
+                    Text(leg.line.map { Board.badge($0) } ?? "").font(.geist(13, .bold)).lineLimit(1)
+                }
+                .foregroundStyle(.white).padding(.horizontal, 6)
+            } else {
+                Capsule().strokeBorder(colour.opacity(0.55), style: StrokeStyle(lineWidth: 2, dash: [3, 3]))
+                HStack(spacing: 2) {
+                    Image(systemName: WayMap.symbol(leg)).font(.system(size: 11, weight: .bold))
+                    Text("\(leg.minutes)").font(.geist(12, .semibold)).monospacedDigit()
+                }
+                .foregroundStyle(colour).lineLimit(1).minimumScaleFactor(0.7)
+            }
+        }
+        .frame(height: 30)
+        .overlay { if current == index { Capsule().strokeBorder(Motion.green, lineWidth: 2.5).padding(-3) } }
+        .opacity(dim ? 0.35 : 1)
     }
 }
