@@ -22,6 +22,11 @@ final class PersonAccess
         'paperwork.v2.people.destroy',
         'paperwork.v2.grants.revoke',
         'paperwork.v2.invitations.cancel',
+        // The same routes as the iPhone calls them (routes/api.php).
+        'api.paperwork.v2.people.processing-restriction',
+        'api.paperwork.v2.people.processing.withdraw',
+        'api.paperwork.v2.grants.revoke',
+        'api.paperwork.v2.invitations.cancel',
     ];
 
     public function allows(User $actor, BureaucracyPerson $person, AccessScope $scope): bool

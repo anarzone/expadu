@@ -54,6 +54,10 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         // Getting there (an event's details): the ways, and I'm on my way on one of them.
         Route::post('journey/plan', [JourneyController::class, 'plan'])->middleware(['verified', 'throttle:journey']);
         Route::post('journey/start', [JourneyController::class, 'start'])->middleware(['verified', 'throttle:journey']);
+
+        // Paperwork: the web's own v2 routes and rules, with the token (routes/app/paperwork-v2.php).
+        Route::prefix('paperwork/v2')->name('api.paperwork.v2.')->middleware(['verified', 'throttle:bureaucracy-v2'])
+            ->group(fn () => (require __DIR__.'/app/paperwork-v2.php')(app: true));
         // The bell's sheet: their alerts, and one read.
         Route::get('alerts', [AlertsController::class, 'index'])->middleware('verified');
         Route::post('alerts/{alert}/read', [AlertsController::class, 'read'])->whereNumber('alert')->middleware('verified');

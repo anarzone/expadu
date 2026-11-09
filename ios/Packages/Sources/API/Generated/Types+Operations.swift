@@ -708,6 +708,307 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /paperwork/v2/plan`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/plan/get(paperwork.v2.plan)`.
+    public enum Paperwork_v2_plan {
+        public static let id: Swift.String = "paperwork.v2.plan"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_plan.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_plan.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_plan.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.Paperwork_v2_plan.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value1`.
+                        public struct Value1Payload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value1/schema_version`.
+                            @frozen public enum SchemaVersionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                                case bureaucracy_accountEntry_1 = "bureaucracy.account-entry.1"
+                            }
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value1/schema_version`.
+                            public var schemaVersion: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value1Payload.SchemaVersionPayload
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value1/state`.
+                            @frozen public enum StatePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                                case ready = "ready"
+                                case recordUnavailable = "record_unavailable"
+                                case setupRequired = "setup_required"
+                            }
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value1/state`.
+                            public var state: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value1Payload.StatePayload
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value1/plan`.
+                            public var plan: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// Creates a new `Value1Payload`.
+                            ///
+                            /// - Parameters:
+                            ///   - schemaVersion:
+                            ///   - state:
+                            ///   - plan:
+                            public init(
+                                schemaVersion: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value1Payload.SchemaVersionPayload,
+                                state: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value1Payload.StatePayload,
+                                plan: [OpenAPIRuntime.OpenAPIValueContainer]? = nil
+                            ) {
+                                self.schemaVersion = schemaVersion
+                                self.state = state
+                                self.plan = plan
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case schemaVersion = "schema_version"
+                                case state
+                                case plan
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value1`.
+                        public var value1: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value1Payload?
+                        /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value2`.
+                        public struct Value2Payload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value2/schema_version`.
+                            @frozen public enum SchemaVersionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                                case bureaucracy_accountEntry_1 = "bureaucracy.account-entry.1"
+                            }
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value2/schema_version`.
+                            public var schemaVersion: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value2Payload.SchemaVersionPayload
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value2/state`.
+                            @frozen public enum StatePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                                case processingStopped = "processing_stopped"
+                            }
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value2/state`.
+                            public var state: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value2Payload.StatePayload
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value2/stopped_at`.
+                            public var stoppedAt: Swift.String
+                            /// Creates a new `Value2Payload`.
+                            ///
+                            /// - Parameters:
+                            ///   - schemaVersion:
+                            ///   - state:
+                            ///   - stoppedAt:
+                            public init(
+                                schemaVersion: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value2Payload.SchemaVersionPayload,
+                                state: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value2Payload.StatePayload,
+                                stoppedAt: Swift.String
+                            ) {
+                                self.schemaVersion = schemaVersion
+                                self.state = state
+                                self.stoppedAt = stoppedAt
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case schemaVersion = "schema_version"
+                                case state
+                                case stoppedAt = "stopped_at"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value2`.
+                        public var value2: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value2Payload?
+                        /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value3`.
+                        public struct Value3Payload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value3/schema_version`.
+                            @frozen public enum SchemaVersionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                                case bureaucracy_accountEntry_1 = "bureaucracy.account-entry.1"
+                            }
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value3/schema_version`.
+                            public var schemaVersion: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value3Payload.SchemaVersionPayload
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value3/state`.
+                            @frozen public enum StatePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                                case erased = "erased"
+                            }
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value3/state`.
+                            public var state: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value3Payload.StatePayload
+                            /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value3/erased_at`.
+                            public var erasedAt: Swift.String?
+                            /// Creates a new `Value3Payload`.
+                            ///
+                            /// - Parameters:
+                            ///   - schemaVersion:
+                            ///   - state:
+                            ///   - erasedAt:
+                            public init(
+                                schemaVersion: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value3Payload.SchemaVersionPayload,
+                                state: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value3Payload.StatePayload,
+                                erasedAt: Swift.String? = nil
+                            ) {
+                                self.schemaVersion = schemaVersion
+                                self.state = state
+                                self.erasedAt = erasedAt
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case schemaVersion = "schema_version"
+                                case state
+                                case erasedAt = "erased_at"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/json/value3`.
+                        public var value3: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value3Payload?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - value1:
+                        ///   - value2:
+                        ///   - value3:
+                        public init(
+                            value1: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value1Payload? = nil,
+                            value2: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value2Payload? = nil,
+                            value3: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload.Value3Payload? = nil
+                        ) {
+                            self.value1 = value1
+                            self.value2 = value2
+                            self.value3 = value3
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            var errors: [any Swift.Error] = []
+                            do {
+                                self.value1 = try .init(from: decoder)
+                            } catch {
+                                errors.append(error)
+                            }
+                            do {
+                                self.value2 = try .init(from: decoder)
+                            } catch {
+                                errors.append(error)
+                            }
+                            do {
+                                self.value3 = try .init(from: decoder)
+                            } catch {
+                                errors.append(error)
+                            }
+                            try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                                [
+                                    self.value1,
+                                    self.value2,
+                                    self.value3
+                                ],
+                                type: Self.self,
+                                codingPath: decoder.codingPath,
+                                errors: errors
+                            )
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            try self.value1?.encode(to: encoder)
+                            try self.value2?.encode(to: encoder)
+                            try self.value3?.encode(to: encoder)
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/plan/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_plan.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_plan.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_plan.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/plan/get(paperwork.v2.plan)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_plan.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_plan.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/plan/get(paperwork.v2.plan)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// The bell's sheet: the web's Alerts list (AlertController::index), shaped for the app
     ///
     /// - Remark: HTTP `GET /alerts`.
@@ -1251,6 +1552,1617 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/sharing`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/sharing/get(paperwork.v2.people.sharing)`.
+    public enum Paperwork_v2_people_sharing {
+        public static let id: Swift.String = "paperwork.v2.people.sharing"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_people_sharing.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_sharing.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_sharing.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_people_sharing.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_people_sharing.Input.Path,
+                headers: Operations.Paperwork_v2_people_sharing.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/GrantsPayload`.
+                        public struct GrantsPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/GrantsPayload/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/GrantsPayload/scopes`.
+                            public var scopes: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/GrantsPayload/name`.
+                            public var name: Swift.String?
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/GrantsPayload/is_my_access`.
+                            public var isMyAccess: Swift.Bool
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/GrantsPayload/accepted_at`.
+                            public var acceptedAt: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/GrantsPayload/expires_at`.
+                            public var expiresAt: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/GrantsPayload/revoked_at`.
+                            public var revokedAt: Swift.String?
+                            /// Creates a new `GrantsPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - scopes:
+                            ///   - name:
+                            ///   - isMyAccess:
+                            ///   - acceptedAt:
+                            ///   - expiresAt:
+                            ///   - revokedAt:
+                            public init(
+                                id: Swift.Int,
+                                scopes: [OpenAPIRuntime.OpenAPIValueContainer],
+                                name: Swift.String? = nil,
+                                isMyAccess: Swift.Bool,
+                                acceptedAt: Swift.String,
+                                expiresAt: Swift.String,
+                                revokedAt: Swift.String? = nil
+                            ) {
+                                self.id = id
+                                self.scopes = scopes
+                                self.name = name
+                                self.isMyAccess = isMyAccess
+                                self.acceptedAt = acceptedAt
+                                self.expiresAt = expiresAt
+                                self.revokedAt = revokedAt
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case scopes
+                                case name
+                                case isMyAccess = "is_my_access"
+                                case acceptedAt = "accepted_at"
+                                case expiresAt = "expires_at"
+                                case revokedAt = "revoked_at"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/grants`.
+                        public typealias GrantsPayload = [Operations.Paperwork_v2_people_sharing.Output.Ok.Body.JsonPayload.GrantsPayloadPayload]
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/json/grants`.
+                        public var grants: Operations.Paperwork_v2_people_sharing.Output.Ok.Body.JsonPayload.GrantsPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - grants:
+                        public init(grants: Operations.Paperwork_v2_people_sharing.Output.Ok.Body.JsonPayload.GrantsPayload) {
+                            self.grants = grants
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case grants
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/sharing/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_people_sharing.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_people_sharing.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_people_sharing.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_people_sharing.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/sharing/get(paperwork.v2.people.sharing)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_people_sharing.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_people_sharing.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/sharing/get(paperwork.v2.people.sharing)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/sharing/get(paperwork.v2.people.sharing)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/invitations`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/post(paperwork.v2.invitations.store)`.
+    public enum Paperwork_v2_invitations_store {
+        public static let id: Swift.String = "paperwork.v2.invitations.store"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_invitations_store.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_invitations_store.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_invitations_store.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.InviteFamilyMemberRequest)
+            }
+            public var body: Operations.Paperwork_v2_invitations_store.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Paperwork_v2_invitations_store.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_invitations_store.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/responses/201/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/responses/201/content/json/invitation_id`.
+                        public var invitationId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/responses/201/content/json/token`.
+                        public var token: Swift.String
+                        /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/responses/201/content/json/expires_at`.
+                        public var expiresAt: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - invitationId:
+                        ///   - token:
+                        ///   - expiresAt:
+                        public init(
+                            invitationId: Swift.Int,
+                            token: Swift.String,
+                            expiresAt: Swift.String
+                        ) {
+                            self.invitationId = invitationId
+                            self.token = token
+                            self.expiresAt = expiresAt
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case invitationId = "invitation_id"
+                            case token
+                            case expiresAt = "expires_at"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/invitations/POST/responses/201/content/application\/json`.
+                    case json(Operations.Paperwork_v2_invitations_store.Output.Created.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_invitations_store.Output.Created.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_invitations_store.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_invitations_store.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/post(paperwork.v2.invitations.store)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.Paperwork_v2_invitations_store.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.Paperwork_v2_invitations_store.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/post(paperwork.v2.invitations.store)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/post(paperwork.v2.invitations.store)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/post(paperwork.v2.invitations.store)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/invitations/inspect`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/inspect/post(paperwork.v2.invitations.inspect)`.
+    public enum Paperwork_v2_invitations_inspect {
+        public static let id: Swift.String = "paperwork.v2.invitations.inspect"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_invitations_inspect.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_invitations_inspect.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_invitations_inspect.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.InspectFamilyInvitationRequest)
+            }
+            public var body: Operations.Paperwork_v2_invitations_inspect.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Paperwork_v2_invitations_inspect.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_invitations_inspect.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/json/invitation`.
+                        public struct InvitationPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/json/invitation/requested_scopes`.
+                            public var requestedScopes: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/json/invitation/requested_by`.
+                            public var requestedBy: OpenAPIRuntime.OpenAPIValueContainer
+                            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/json/invitation/notice_version`.
+                            public var noticeVersion: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/json/invitation/expires_at`.
+                            public var expiresAt: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/json/invitation/maximum_grant_days`.
+                            public var maximumGrantDays: OpenAPIRuntime.OpenAPIValueContainer
+                            /// Creates a new `InvitationPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - requestedScopes:
+                            ///   - requestedBy:
+                            ///   - noticeVersion:
+                            ///   - expiresAt:
+                            ///   - maximumGrantDays:
+                            public init(
+                                requestedScopes: [OpenAPIRuntime.OpenAPIValueContainer],
+                                requestedBy: OpenAPIRuntime.OpenAPIValueContainer,
+                                noticeVersion: Swift.String,
+                                expiresAt: Swift.String,
+                                maximumGrantDays: OpenAPIRuntime.OpenAPIValueContainer
+                            ) {
+                                self.requestedScopes = requestedScopes
+                                self.requestedBy = requestedBy
+                                self.noticeVersion = noticeVersion
+                                self.expiresAt = expiresAt
+                                self.maximumGrantDays = maximumGrantDays
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case requestedScopes = "requested_scopes"
+                                case requestedBy = "requested_by"
+                                case noticeVersion = "notice_version"
+                                case expiresAt = "expires_at"
+                                case maximumGrantDays = "maximum_grant_days"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/json/invitation`.
+                        public var invitation: Operations.Paperwork_v2_invitations_inspect.Output.Ok.Body.JsonPayload.InvitationPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - invitation:
+                        public init(invitation: Operations.Paperwork_v2_invitations_inspect.Output.Ok.Body.JsonPayload.InvitationPayload) {
+                            self.invitation = invitation
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case invitation
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/invitations/inspect/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_invitations_inspect.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_invitations_inspect.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_invitations_inspect.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_invitations_inspect.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/inspect/post(paperwork.v2.invitations.inspect)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_invitations_inspect.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_invitations_inspect.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/inspect/post(paperwork.v2.invitations.inspect)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/inspect/post(paperwork.v2.invitations.inspect)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/inspect/post(paperwork.v2.invitations.inspect)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/invitations/accept`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/accept/post(paperwork.v2.invitations.accept)`.
+    public enum Paperwork_v2_invitations_accept {
+        public static let id: Swift.String = "paperwork.v2.invitations.accept"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/accept/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_invitations_accept.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_invitations_accept.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_invitations_accept.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/accept/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/invitations/accept/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.AcceptFamilyInvitationRequest)
+            }
+            public var body: Operations.Paperwork_v2_invitations_accept.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Paperwork_v2_invitations_accept.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_invitations_accept.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/invitations/accept/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/invitations/accept/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/invitations/accept/POST/responses/200/content/json/person_id`.
+                        public var personId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/invitations/accept/POST/responses/200/content/json/record_version`.
+                        public var recordVersion: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - personId:
+                        ///   - recordVersion:
+                        public init(
+                            personId: Swift.Int,
+                            recordVersion: Swift.Int
+                        ) {
+                            self.personId = personId
+                            self.recordVersion = recordVersion
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case personId = "person_id"
+                            case recordVersion = "record_version"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/invitations/accept/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_invitations_accept.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_invitations_accept.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_invitations_accept.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_invitations_accept.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/accept/post(paperwork.v2.invitations.accept)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_invitations_accept.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_invitations_accept.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/accept/post(paperwork.v2.invitations.accept)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/accept/post(paperwork.v2.invitations.accept)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/accept/post(paperwork.v2.invitations.accept)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/invitations/{invitation}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/invitations/{invitation}/delete(paperwork.v2.invitations.cancel)`.
+    public enum Paperwork_v2_invitations_cancel {
+        public static let id: Swift.String = "paperwork.v2.invitations.cancel"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/{invitation}/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// The invitation ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/invitations/{invitation}/DELETE/path/invitation`.
+                public var invitation: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - invitation: The invitation ID
+                public init(invitation: Swift.Int) {
+                    self.invitation = invitation
+                }
+            }
+            public var path: Operations.Paperwork_v2_invitations_cancel.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/invitations/{invitation}/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_invitations_cancel.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_invitations_cancel.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_invitations_cancel.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_invitations_cancel.Input.Path,
+                headers: Operations.Paperwork_v2_invitations_cancel.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/{invitation}/delete(paperwork.v2.invitations.cancel)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.Paperwork_v2_invitations_cancel.Output.NoContent)
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/{invitation}/delete(paperwork.v2.invitations.cancel)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.Paperwork_v2_invitations_cancel.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/{invitation}/delete(paperwork.v2.invitations.cancel)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/invitations/{invitation}/delete(paperwork.v2.invitations.cancel)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/grants/{grant}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/grants/{grant}/delete(paperwork.v2.grants.revoke)`.
+    public enum Paperwork_v2_grants_revoke {
+        public static let id: Swift.String = "paperwork.v2.grants.revoke"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/grants/{grant}/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// The grant ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/grants/{grant}/DELETE/path/grant`.
+                public var grant: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - grant: The grant ID
+                public init(grant: Swift.Int) {
+                    self.grant = grant
+                }
+            }
+            public var path: Operations.Paperwork_v2_grants_revoke.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/grants/{grant}/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_grants_revoke.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_grants_revoke.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_grants_revoke.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_grants_revoke.Input.Path,
+                headers: Operations.Paperwork_v2_grants_revoke.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/grants/{grant}/delete(paperwork.v2.grants.revoke)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.Paperwork_v2_grants_revoke.Output.NoContent)
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/grants/{grant}/delete(paperwork.v2.grants.revoke)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.Paperwork_v2_grants_revoke.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/grants/{grant}/delete(paperwork.v2.grants.revoke)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/grants/{grant}/delete(paperwork.v2.grants.revoke)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/dependents`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/dependents/post(paperwork.v2.dependents.store)`.
+    public enum Paperwork_v2_dependents_store {
+        public static let id: Swift.String = "paperwork.v2.dependents.store"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_dependents_store.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_dependents_store.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_dependents_store.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RequestDependentAuthorityRequest)
+            }
+            public var body: Operations.Paperwork_v2_dependents_store.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Paperwork_v2_dependents_store.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_dependents_store.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Accepted: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/responses/202/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/responses/202/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/responses/202/content/json/request_id`.
+                        public var requestId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/responses/202/content/json/status`.
+                        @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case pendingAuthorityReview = "pending_authority_review"
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/responses/202/content/json/status`.
+                        public var status: Operations.Paperwork_v2_dependents_store.Output.Accepted.Body.JsonPayload.StatusPayload
+                        /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/responses/202/content/json/access_granted`.
+                        public var accessGranted: Swift.Bool
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - requestId:
+                        ///   - status:
+                        ///   - accessGranted:
+                        public init(
+                            requestId: Swift.Int,
+                            status: Operations.Paperwork_v2_dependents_store.Output.Accepted.Body.JsonPayload.StatusPayload,
+                            accessGranted: Swift.Bool
+                        ) {
+                            self.requestId = requestId
+                            self.status = status
+                            self.accessGranted = accessGranted
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case requestId = "request_id"
+                            case status
+                            case accessGranted = "access_granted"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/dependents/POST/responses/202/content/application\/json`.
+                    case json(Operations.Paperwork_v2_dependents_store.Output.Accepted.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_dependents_store.Output.Accepted.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_dependents_store.Output.Accepted.Body
+                /// Creates a new `Accepted`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_dependents_store.Output.Accepted.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/dependents/post(paperwork.v2.dependents.store)/responses/202`.
+            ///
+            /// HTTP response code: `202 accepted`.
+            case accepted(Operations.Paperwork_v2_dependents_store.Output.Accepted)
+            /// The associated value of the enum case if `self` is `.accepted`.
+            ///
+            /// - Throws: An error if `self` is not `.accepted`.
+            /// - SeeAlso: `.accepted`.
+            public var accepted: Operations.Paperwork_v2_dependents_store.Output.Accepted {
+                get throws {
+                    switch self {
+                    case let .accepted(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "accepted",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/dependents/post(paperwork.v2.dependents.store)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/dependents/post(paperwork.v2.dependents.store)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/dependents/post(paperwork.v2.dependents.store)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/authorities/{authority}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/authorities/{authority}/delete(paperwork.v2.authorities.revoke)`.
+    public enum Paperwork_v2_authorities_revoke {
+        public static let id: Swift.String = "paperwork.v2.authorities.revoke"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/authorities/{authority}/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// The authority ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/authorities/{authority}/DELETE/path/authority`.
+                public var authority: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - authority: The authority ID
+                public init(authority: Swift.Int) {
+                    self.authority = authority
+                }
+            }
+            public var path: Operations.Paperwork_v2_authorities_revoke.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/authorities/{authority}/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_authorities_revoke.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_authorities_revoke.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_authorities_revoke.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_authorities_revoke.Input.Path,
+                headers: Operations.Paperwork_v2_authorities_revoke.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/authorities/{authority}/delete(paperwork.v2.authorities.revoke)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.Paperwork_v2_authorities_revoke.Output.NoContent)
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/authorities/{authority}/delete(paperwork.v2.authorities.revoke)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.Paperwork_v2_authorities_revoke.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/authorities/{authority}/delete(paperwork.v2.authorities.revoke)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/authorities/{authority}/delete(paperwork.v2.authorities.revoke)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// What's on for a day (All events on Today): the web panel's listings (App\Home\WhatsOn).
     /// Today drops what has already ended and says how many
     ///
@@ -1618,6 +3530,1884 @@ public enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/paperwork`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)`.
+    public enum Paperwork_v2_paperwork_index {
+        public static let id: Swift.String = "paperwork.v2.paperwork.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/paperwork/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/paperwork/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_paperwork_index.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/paperwork/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/paperwork/GET/query/jurisdiction`.
+                public var jurisdiction: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - jurisdiction:
+                public init(jurisdiction: Swift.String) {
+                    self.jurisdiction = jurisdiction
+                }
+            }
+            public var query: Operations.Paperwork_v2_paperwork_index.Input.Query
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/paperwork/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_paperwork_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_paperwork_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_paperwork_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_paperwork_index.Input.Path,
+                query: Operations.Paperwork_v2_paperwork_index.Input.Query,
+                headers: Operations.Paperwork_v2_paperwork_index.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/paperwork/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/paperwork/GET/responses/200/content/application\/json`.
+                    case json([OpenAPIRuntime.OpenAPIValueContainer])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [OpenAPIRuntime.OpenAPIValueContainer] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_paperwork_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_paperwork_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_paperwork_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_paperwork_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/paperwork/get(paperwork.v2.paperwork.index)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/evidence/{evidenceId}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/evidence/{evidenceId}/put(paperwork.v2.evidence.update)`.
+    public enum Paperwork_v2_evidence_update {
+        public static let id: Swift.String = "paperwork.v2.evidence.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/path/person`.
+                public var person: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/path/evidenceId`.
+                public var evidenceId: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                ///   - evidenceId:
+                public init(
+                    person: Swift.Int,
+                    evidenceId: Swift.String
+                ) {
+                    self.person = person
+                    self.evidenceId = evidenceId
+                }
+            }
+            public var path: Operations.Paperwork_v2_evidence_update.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_evidence_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_evidence_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_evidence_update.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/requestBody/content/application\/json`.
+                case json(Components.Schemas.RecordEvidenceRequest)
+            }
+            public var body: Operations.Paperwork_v2_evidence_update.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_evidence_update.Input.Path,
+                headers: Operations.Paperwork_v2_evidence_update.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_evidence_update.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/responses/200/content/json/id`.
+                        public var id: Swift.String
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/responses/200/content/json/version`.
+                        public var version: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/responses/200/content/json/status`.
+                        public var status: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - id:
+                        ///   - version:
+                        ///   - status:
+                        public init(
+                            id: Swift.String,
+                            version: Swift.Int,
+                            status: Swift.String
+                        ) {
+                            self.id = id
+                            self.version = version
+                            self.status = status
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case id
+                            case version
+                            case status
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/evidence/{evidenceId}/PUT/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_evidence_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_evidence_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_evidence_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_evidence_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/evidence/{evidenceId}/put(paperwork.v2.evidence.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_evidence_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_evidence_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/evidence/{evidenceId}/put(paperwork.v2.evidence.update)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/evidence/{evidenceId}/put(paperwork.v2.evidence.update)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/evidence/{evidenceId}/put(paperwork.v2.evidence.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/evidence/{evidenceId}/put(paperwork.v2.evidence.update)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/evidence/{evidence}/shares`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/get(paperwork.v2.evidence.shares.index)`.
+    public enum Paperwork_v2_evidence_shares_index {
+        public static let id: Swift.String = "paperwork.v2.evidence.shares.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The evidence ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/path/evidence`.
+                public var evidence: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - evidence: The evidence ID
+                public init(evidence: Swift.String) {
+                    self.evidence = evidence
+                }
+            }
+            public var path: Operations.Paperwork_v2_evidence_shares_index.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_evidence_shares_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_evidence_shares_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_evidence_shares_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_evidence_shares_index.Input.Path,
+                headers: Operations.Paperwork_v2_evidence_shares_index.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/responses/200/content/json/notice_version`.
+                        @frozen public enum NoticeVersionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case _20260908_singleRequirement_1 = "2026-09-08.single-requirement.1"
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/responses/200/content/json/notice_version`.
+                        public var noticeVersion: Operations.Paperwork_v2_evidence_shares_index.Output.Ok.Body.JsonPayload.NoticeVersionPayload
+                        /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/responses/200/content/json/notice`.
+                        @frozen public enum NoticePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case shareThisDocumentRecordOnlyForTheSelectedPerson_comma_ProcessAndRequirementUntilTheDateYouChoose_TheirAuthorisedHelpersMaySeeItForThatUse_NoFileIsUploadedOrSentToAI_YouCanWithdrawSharingHere_ = "Share this document record only for the selected person, process and requirement until the date you choose. Their authorised helpers may see it for that use. No file is uploaded or sent to AI. You can withdraw sharing here."
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/responses/200/content/json/notice`.
+                        public var notice: Operations.Paperwork_v2_evidence_shares_index.Output.Ok.Body.JsonPayload.NoticePayload
+                        /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/responses/200/content/json/shares`.
+                        public var shares: OpenAPIRuntime.OpenAPIValueContainer
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - noticeVersion:
+                        ///   - notice:
+                        ///   - shares:
+                        public init(
+                            noticeVersion: Operations.Paperwork_v2_evidence_shares_index.Output.Ok.Body.JsonPayload.NoticeVersionPayload,
+                            notice: Operations.Paperwork_v2_evidence_shares_index.Output.Ok.Body.JsonPayload.NoticePayload,
+                            shares: OpenAPIRuntime.OpenAPIValueContainer
+                        ) {
+                            self.noticeVersion = noticeVersion
+                            self.notice = notice
+                            self.shares = shares
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case noticeVersion = "notice_version"
+                            case notice
+                            case shares
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_evidence_shares_index.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_evidence_shares_index.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_evidence_shares_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_evidence_shares_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/get(paperwork.v2.evidence.shares.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_evidence_shares_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_evidence_shares_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/get(paperwork.v2.evidence.shares.index)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/get(paperwork.v2.evidence.shares.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/get(paperwork.v2.evidence.shares.index)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/get(paperwork.v2.evidence.shares.index)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/evidence/{evidence}/shares`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/post(paperwork.v2.evidence.shares.store)`.
+    public enum Paperwork_v2_evidence_shares_store {
+        public static let id: Swift.String = "paperwork.v2.evidence.shares.store"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The evidence ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/path/evidence`.
+                public var evidence: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - evidence: The evidence ID
+                public init(evidence: Swift.String) {
+                    self.evidence = evidence
+                }
+            }
+            public var path: Operations.Paperwork_v2_evidence_shares_store.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_evidence_shares_store.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_evidence_shares_store.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_evidence_shares_store.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.ShareEvidenceRequest)
+            }
+            public var body: Operations.Paperwork_v2_evidence_shares_store.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_evidence_shares_store.Input.Path,
+                headers: Operations.Paperwork_v2_evidence_shares_store.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_evidence_shares_store.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/responses/200/content/json/share_id`.
+                        public var shareId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/responses/200/content/json/expires_at`.
+                        public var expiresAt: Swift.String
+                        /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/responses/200/content/json/revoked_at`.
+                        public var revokedAt: Swift.String?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - shareId:
+                        ///   - expiresAt:
+                        ///   - revokedAt:
+                        public init(
+                            shareId: Swift.Int,
+                            expiresAt: Swift.String,
+                            revokedAt: Swift.String? = nil
+                        ) {
+                            self.shareId = shareId
+                            self.expiresAt = expiresAt
+                            self.revokedAt = revokedAt
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case shareId = "share_id"
+                            case expiresAt = "expires_at"
+                            case revokedAt = "revoked_at"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_evidence_shares_store.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_evidence_shares_store.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_evidence_shares_store.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_evidence_shares_store.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/post(paperwork.v2.evidence.shares.store)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_evidence_shares_store.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_evidence_shares_store.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/post(paperwork.v2.evidence.shares.store)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/post(paperwork.v2.evidence.shares.store)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/post(paperwork.v2.evidence.shares.store)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/post(paperwork.v2.evidence.shares.store)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/evidence/{evidence}/shares/{share}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)`.
+    public enum Paperwork_v2_evidence_shares_destroy {
+        public static let id: Swift.String = "paperwork.v2.evidence.shares.destroy"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/{share}/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// The evidence ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/{share}/DELETE/path/evidence`.
+                public var evidence: Swift.String
+                /// The share ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/{share}/DELETE/path/share`.
+                public var share: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - evidence: The evidence ID
+                ///   - share: The share ID
+                public init(
+                    evidence: Swift.String,
+                    share: Swift.Int
+                ) {
+                    self.evidence = evidence
+                    self.share = share
+                }
+            }
+            public var path: Operations.Paperwork_v2_evidence_shares_destroy.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/evidence/{evidence}/shares/{share}/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_evidence_shares_destroy.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_evidence_shares_destroy.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_evidence_shares_destroy.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_evidence_shares_destroy.Input.Path,
+                headers: Operations.Paperwork_v2_evidence_shares_destroy.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.Paperwork_v2_evidence_shares_destroy.Output.NoContent)
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.Paperwork_v2_evidence_shares_destroy.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/evidence/{evidence}/shares/{share}/delete(paperwork.v2.evidence.shares.destroy)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/fact-conflicts`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/get(paperwork.v2.fact-conflicts.index)`.
+    public enum Paperwork_v2_factConflicts_index {
+        public static let id: Swift.String = "paperwork.v2.fact-conflicts.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_factConflicts_index.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_factConflicts_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_factConflicts_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_factConflicts_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_factConflicts_index.Input.Path,
+                headers: Operations.Paperwork_v2_factConflicts_index.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/GET/responses/200/content/application\/json`.
+                    case json([OpenAPIRuntime.OpenAPIValueContainer])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [OpenAPIRuntime.OpenAPIValueContainer] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_factConflicts_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_factConflicts_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/get(paperwork.v2.fact-conflicts.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_factConflicts_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_factConflicts_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/get(paperwork.v2.fact-conflicts.index)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/get(paperwork.v2.fact-conflicts.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/fact-conflicts/{key}/resolve`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/post(paperwork.v2.fact-conflicts.resolve)`.
+    public enum Paperwork_v2_factConflicts_resolve {
+        public static let id: Swift.String = "paperwork.v2.fact-conflicts.resolve"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/POST/path/person`.
+                public var person: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/POST/path/key`.
+                public var key: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                ///   - key:
+                public init(
+                    person: Swift.Int,
+                    key: Swift.String
+                ) {
+                    self.person = person
+                    self.key = key
+                }
+            }
+            public var path: Operations.Paperwork_v2_factConflicts_resolve.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_factConflicts_resolve.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_factConflicts_resolve.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_factConflicts_resolve.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.ResolveFactConflictRequest)
+            }
+            public var body: Operations.Paperwork_v2_factConflicts_resolve.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_factConflicts_resolve.Input.Path,
+                headers: Operations.Paperwork_v2_factConflicts_resolve.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_factConflicts_resolve.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/POST/responses/200/content/application\/json`.
+                    case json([OpenAPIRuntime.OpenAPIValueContainer])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [OpenAPIRuntime.OpenAPIValueContainer] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_factConflicts_resolve.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_factConflicts_resolve.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/post(paperwork.v2.fact-conflicts.resolve)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_factConflicts_resolve.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_factConflicts_resolve.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/post(paperwork.v2.fact-conflicts.resolve)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/post(paperwork.v2.fact-conflicts.resolve)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/post(paperwork.v2.fact-conflicts.resolve)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/fact-conflicts/{key}/resolve/post(paperwork.v2.fact-conflicts.resolve)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Public reviewed registry wording and answer shapes only; no person, value or legacy mapping
+    ///
+    /// - Remark: HTTP `GET /paperwork/v2/facts/schema`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/facts/schema/get(paperwork.v2.facts.schema)`.
+    public enum Paperwork_v2_facts_schema {
+        public static let id: Swift.String = "paperwork.v2.facts.schema"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_schema.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_schema.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_facts_schema.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.Paperwork_v2_facts_schema.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/schema_version`.
+                        @frozen public enum SchemaVersionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case bureaucracy_factSchema_1 = "bureaucracy.fact-schema.1"
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/schema_version`.
+                        public var schemaVersion: Operations.Paperwork_v2_facts_schema.Output.Ok.Body.JsonPayload.SchemaVersionPayload
+                        /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/registry_version`.
+                        public var registryVersion: Swift.String
+                        /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload`.
+                        public struct FactsPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/key`.
+                            public var key: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/type`.
+                            public var _type: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/options`.
+                            public var options: [Swift.String]
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/question`.
+                            public var question: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/why`.
+                            public var why: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/date_semantics`.
+                            public var dateSemantics: Swift.String?
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/allows_not_applicable`.
+                            public var allowsNotApplicable: Swift.Bool
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/subject_scope`.
+                            public var subjectScope: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/sensitivity`.
+                            public var sensitivity: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/FactsPayload/reconfirm_after_days`.
+                            public var reconfirmAfterDays: Swift.Int
+                            /// Creates a new `FactsPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - key:
+                            ///   - _type:
+                            ///   - options:
+                            ///   - question:
+                            ///   - why:
+                            ///   - dateSemantics:
+                            ///   - allowsNotApplicable:
+                            ///   - subjectScope:
+                            ///   - sensitivity:
+                            ///   - reconfirmAfterDays:
+                            public init(
+                                key: Swift.String,
+                                _type: Swift.String,
+                                options: [Swift.String],
+                                question: Swift.String,
+                                why: Swift.String,
+                                dateSemantics: Swift.String? = nil,
+                                allowsNotApplicable: Swift.Bool,
+                                subjectScope: Swift.String,
+                                sensitivity: Swift.String,
+                                reconfirmAfterDays: Swift.Int
+                            ) {
+                                self.key = key
+                                self._type = _type
+                                self.options = options
+                                self.question = question
+                                self.why = why
+                                self.dateSemantics = dateSemantics
+                                self.allowsNotApplicable = allowsNotApplicable
+                                self.subjectScope = subjectScope
+                                self.sensitivity = sensitivity
+                                self.reconfirmAfterDays = reconfirmAfterDays
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case key
+                                case _type = "type"
+                                case options
+                                case question
+                                case why
+                                case dateSemantics = "date_semantics"
+                                case allowsNotApplicable = "allows_not_applicable"
+                                case subjectScope = "subject_scope"
+                                case sensitivity
+                                case reconfirmAfterDays = "reconfirm_after_days"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/facts`.
+                        public typealias FactsPayload = [Operations.Paperwork_v2_facts_schema.Output.Ok.Body.JsonPayload.FactsPayloadPayload]
+                        /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/json/facts`.
+                        public var facts: Operations.Paperwork_v2_facts_schema.Output.Ok.Body.JsonPayload.FactsPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - schemaVersion:
+                        ///   - registryVersion:
+                        ///   - facts:
+                        public init(
+                            schemaVersion: Operations.Paperwork_v2_facts_schema.Output.Ok.Body.JsonPayload.SchemaVersionPayload,
+                            registryVersion: Swift.String,
+                            facts: Operations.Paperwork_v2_facts_schema.Output.Ok.Body.JsonPayload.FactsPayload
+                        ) {
+                            self.schemaVersion = schemaVersion
+                            self.registryVersion = registryVersion
+                            self.facts = facts
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case schemaVersion = "schema_version"
+                            case registryVersion = "registry_version"
+                            case facts
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/facts/schema/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_facts_schema.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_facts_schema.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_facts_schema.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_facts_schema.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/facts/schema/get(paperwork.v2.facts.schema)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_facts_schema.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_facts_schema.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/facts/schema/get(paperwork.v2.facts.schema)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
                             response: self
                         )
                     }
@@ -2032,6 +5822,1355 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
+    public enum Paperwork_v2_onboarding_draft_show {
+        public static let id: Swift.String = "paperwork.v2.onboarding.draft.show"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_onboarding_draft_show.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_draft_show.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_draft_show.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_onboarding_draft_show.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_onboarding_draft_show.Input.Path,
+                headers: Operations.Paperwork_v2_onboarding_draft_show.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/GET/responses/200/content/json/draft`.
+                        public var draft: [OpenAPIRuntime.OpenAPIValueContainer]?
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/GET/responses/200/content/json/schema_version`.
+                        public var schemaVersion: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - draft:
+                        ///   - schemaVersion:
+                        public init(
+                            draft: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                            schemaVersion: Swift.String
+                        ) {
+                            self.draft = draft
+                            self.schemaVersion = schemaVersion
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case draft
+                            case schemaVersion = "schema_version"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_onboarding_draft_show.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_onboarding_draft_show.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_onboarding_draft_show.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_onboarding_draft_show.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_onboarding_draft_show.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_onboarding_draft_show.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/put(paperwork.v2.onboarding.draft.update)`.
+    public enum Paperwork_v2_onboarding_draft_update {
+        public static let id: Swift.String = "paperwork.v2.onboarding.draft.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_onboarding_draft_update.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_draft_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_draft_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_onboarding_draft_update.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/requestBody/content/application\/json`.
+                case json(Components.Schemas.SaveOnboardingDraftRequest)
+            }
+            public var body: Operations.Paperwork_v2_onboarding_draft_update.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_onboarding_draft_update.Input.Path,
+                headers: Operations.Paperwork_v2_onboarding_draft_update.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_onboarding_draft_update.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/responses/200/content/json/draft`.
+                        public var draft: [OpenAPIRuntime.OpenAPIValueContainer]?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - draft:
+                        public init(draft: [OpenAPIRuntime.OpenAPIValueContainer]? = nil) {
+                            self.draft = draft
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case draft
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/PUT/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_onboarding_draft_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_onboarding_draft_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_onboarding_draft_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_onboarding_draft_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/put(paperwork.v2.onboarding.draft.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_onboarding_draft_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_onboarding_draft_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/put(paperwork.v2.onboarding.draft.update)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/put(paperwork.v2.onboarding.draft.update)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/put(paperwork.v2.onboarding.draft.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/put(paperwork.v2.onboarding.draft.update)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/people/{person}/onboarding/draft`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)`.
+    public enum Paperwork_v2_onboarding_draft_destroy {
+        public static let id: Swift.String = "paperwork.v2.onboarding.draft.destroy"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/DELETE/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/DELETE/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/DELETE/query/draft_id`.
+                public var draftId: Swift.String
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/DELETE/query/expected_version`.
+                public var expectedVersion: Swift.Int
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - draftId:
+                ///   - expectedVersion:
+                public init(
+                    draftId: Swift.String,
+                    expectedVersion: Swift.Int
+                ) {
+                    self.draftId = draftId
+                    self.expectedVersion = expectedVersion
+                }
+            }
+            public var query: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Query
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/draft/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_draft_destroy.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_draft_destroy.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Path,
+                query: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Query,
+                headers: Operations.Paperwork_v2_onboarding_draft_destroy.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.Paperwork_v2_onboarding_draft_destroy.Output.NoContent)
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.Paperwork_v2_onboarding_draft_destroy.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/delete(paperwork.v2.onboarding.draft.destroy)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/review`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/review/get(paperwork.v2.onboarding.review)`.
+    public enum Paperwork_v2_onboarding_review {
+        public static let id: Swift.String = "paperwork.v2.onboarding.review"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_onboarding_review.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_review.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_review.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_onboarding_review.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_onboarding_review.Input.Path,
+                headers: Operations.Paperwork_v2_onboarding_review.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/draft_id`.
+                        public var draftId: OpenAPIRuntime.OpenAPIValueContainer
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/draft_version`.
+                        public var draftVersion: OpenAPIRuntime.OpenAPIValueContainer
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload`.
+                        public struct AnswersPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/fact_key`.
+                            public var factKey: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/question`.
+                            public var question: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/value`.
+                            public var value: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/answer_state`.
+                            public struct AnswerStatePayload: Codable, Hashable, Sendable {
+                                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/answer_state/value1`.
+                                public var value1: Swift.String?
+                                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/answer_state/value2`.
+                                @frozen public enum Value2Payload: String, Codable, Hashable, Sendable, CaseIterable {
+                                    case value = "value"
+                                }
+                                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/answer_state/value2`.
+                                public var value2: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload.AnswerStatePayload.Value2Payload?
+                                /// Creates a new `AnswerStatePayload`.
+                                ///
+                                /// - Parameters:
+                                ///   - value1:
+                                ///   - value2:
+                                public init(
+                                    value1: Swift.String? = nil,
+                                    value2: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload.AnswerStatePayload.Value2Payload? = nil
+                                ) {
+                                    self.value1 = value1
+                                    self.value2 = value2
+                                }
+                                public init(from decoder: any Swift.Decoder) throws {
+                                    var errors: [any Swift.Error] = []
+                                    do {
+                                        self.value1 = try decoder.decodeFromSingleValueContainer()
+                                    } catch {
+                                        errors.append(error)
+                                    }
+                                    do {
+                                        self.value2 = try decoder.decodeFromSingleValueContainer()
+                                    } catch {
+                                        errors.append(error)
+                                    }
+                                    try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                                        [
+                                            self.value1,
+                                            self.value2
+                                        ],
+                                        type: Self.self,
+                                        codingPath: decoder.codingPath,
+                                        errors: errors
+                                    )
+                                }
+                                public func encode(to encoder: any Swift.Encoder) throws {
+                                    try encoder.encodeFirstNonNilValueToSingleValueContainer([
+                                        self.value1,
+                                        self.value2
+                                    ])
+                                }
+                            }
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/answer_state`.
+                            public var answerState: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload.AnswerStatePayload
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/operation`.
+                            public struct OperationPayload: Codable, Hashable, Sendable {
+                                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/operation/value1`.
+                                public var value1: Swift.String?
+                                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/operation/value2`.
+                                @frozen public enum Value2Payload: String, Codable, Hashable, Sendable, CaseIterable {
+                                    case assert = "assert"
+                                }
+                                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/operation/value2`.
+                                public var value2: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload.OperationPayload.Value2Payload?
+                                /// Creates a new `OperationPayload`.
+                                ///
+                                /// - Parameters:
+                                ///   - value1:
+                                ///   - value2:
+                                public init(
+                                    value1: Swift.String? = nil,
+                                    value2: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload.OperationPayload.Value2Payload? = nil
+                                ) {
+                                    self.value1 = value1
+                                    self.value2 = value2
+                                }
+                                public init(from decoder: any Swift.Decoder) throws {
+                                    var errors: [any Swift.Error] = []
+                                    do {
+                                        self.value1 = try decoder.decodeFromSingleValueContainer()
+                                    } catch {
+                                        errors.append(error)
+                                    }
+                                    do {
+                                        self.value2 = try decoder.decodeFromSingleValueContainer()
+                                    } catch {
+                                        errors.append(error)
+                                    }
+                                    try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                                        [
+                                            self.value1,
+                                            self.value2
+                                        ],
+                                        type: Self.self,
+                                        codingPath: decoder.codingPath,
+                                        errors: errors
+                                    )
+                                }
+                                public func encode(to encoder: any Swift.Encoder) throws {
+                                    try encoder.encodeFirstNonNilValueToSingleValueContainer([
+                                        self.value1,
+                                        self.value2
+                                    ])
+                                }
+                            }
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/operation`.
+                            public var operation: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload.OperationPayload
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/AnswersPayload/effective_from`.
+                            public var effectiveFrom: Swift.String?
+                            /// Creates a new `AnswersPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - factKey:
+                            ///   - question:
+                            ///   - value:
+                            ///   - answerState:
+                            ///   - operation:
+                            ///   - effectiveFrom:
+                            public init(
+                                factKey: Swift.String,
+                                question: Swift.String,
+                                value: Swift.String,
+                                answerState: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload.AnswerStatePayload,
+                                operation: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload.OperationPayload,
+                                effectiveFrom: Swift.String? = nil
+                            ) {
+                                self.factKey = factKey
+                                self.question = question
+                                self.value = value
+                                self.answerState = answerState
+                                self.operation = operation
+                                self.effectiveFrom = effectiveFrom
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case factKey = "fact_key"
+                                case question
+                                case value
+                                case answerState = "answer_state"
+                                case operation
+                                case effectiveFrom = "effective_from"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/answers`.
+                        public typealias AnswersPayload = [Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayloadPayload]
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/answers`.
+                        public var answers: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayload
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/json/omitted_fact_keys`.
+                        public var omittedFactKeys: [OpenAPIRuntime.OpenAPIValueContainer]
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - draftId:
+                        ///   - draftVersion:
+                        ///   - answers:
+                        ///   - omittedFactKeys:
+                        public init(
+                            draftId: OpenAPIRuntime.OpenAPIValueContainer,
+                            draftVersion: OpenAPIRuntime.OpenAPIValueContainer,
+                            answers: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload.AnswersPayload,
+                            omittedFactKeys: [OpenAPIRuntime.OpenAPIValueContainer]
+                        ) {
+                            self.draftId = draftId
+                            self.draftVersion = draftVersion
+                            self.answers = answers
+                            self.omittedFactKeys = omittedFactKeys
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case draftId = "draft_id"
+                            case draftVersion = "draft_version"
+                            case answers
+                            case omittedFactKeys = "omitted_fact_keys"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/review/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_onboarding_review.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/review/get(paperwork.v2.onboarding.review)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_onboarding_review.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_onboarding_review.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/review/get(paperwork.v2.onboarding.review)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/review/get(paperwork.v2.onboarding.review)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/review/get(paperwork.v2.onboarding.review)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/review/get(paperwork.v2.onboarding.review)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/onboarding/complete`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/complete/post(paperwork.v2.onboarding.complete)`.
+    public enum Paperwork_v2_onboarding_complete {
+        public static let id: Swift.String = "paperwork.v2.onboarding.complete"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/complete/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/complete/POST/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_onboarding_complete.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/complete/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_complete.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_onboarding_complete.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_onboarding_complete.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/complete/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/complete/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.CompleteOnboardingDraftRequest)
+            }
+            public var body: Operations.Paperwork_v2_onboarding_complete.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_onboarding_complete.Input.Path,
+                headers: Operations.Paperwork_v2_onboarding_complete.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_onboarding_complete.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/complete/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/onboarding/complete/POST/responses/200/content/application\/json`.
+                    case json([OpenAPIRuntime.OpenAPIValueContainer])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [OpenAPIRuntime.OpenAPIValueContainer] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_onboarding_complete.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_onboarding_complete.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/complete/post(paperwork.v2.onboarding.complete)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_onboarding_complete.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_onboarding_complete.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/complete/post(paperwork.v2.onboarding.complete)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/complete/post(paperwork.v2.onboarding.complete)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/complete/post(paperwork.v2.onboarding.complete)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/complete/post(paperwork.v2.onboarding.complete)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// What to bring to a Paperwork appointment (Today's plans' `bring.process`): its documents, each ready or not
     ///
     /// - Remark: HTTP `GET /paperwork/{process}/documents`.
@@ -2345,6 +7484,6102 @@ public enum Operations {
             /// Authorization error
             ///
             /// - Remark: Generated from `#/paths//paperwork/{process}/documents/{document}/post(paperworkDocuments.update)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/get(paperwork.v2.people.index)`.
+    public enum Paperwork_v2_people_index {
+        public static let id: Swift.String = "paperwork.v2.people.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_people_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.Paperwork_v2_people_index.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload`.
+                        public struct PeoplePayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload/label`.
+                            public var label: Swift.String?
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload/kind`.
+                            public var kind: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload/is_self`.
+                            public var isSelf: Swift.Bool
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload/workspace_id`.
+                            public var workspaceId: Swift.Int?
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload/record_version`.
+                            public var recordVersion: Swift.Int
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload/scopes`.
+                            public var scopes: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/PeoplePayload/can_manage_sharing`.
+                            public var canManageSharing: Swift.Bool
+                            /// Creates a new `PeoplePayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - label:
+                            ///   - kind:
+                            ///   - isSelf:
+                            ///   - workspaceId:
+                            ///   - recordVersion:
+                            ///   - scopes:
+                            ///   - canManageSharing:
+                            public init(
+                                id: Swift.Int,
+                                label: Swift.String? = nil,
+                                kind: Swift.String,
+                                isSelf: Swift.Bool,
+                                workspaceId: Swift.Int? = nil,
+                                recordVersion: Swift.Int,
+                                scopes: [OpenAPIRuntime.OpenAPIValueContainer],
+                                canManageSharing: Swift.Bool
+                            ) {
+                                self.id = id
+                                self.label = label
+                                self.kind = kind
+                                self.isSelf = isSelf
+                                self.workspaceId = workspaceId
+                                self.recordVersion = recordVersion
+                                self.scopes = scopes
+                                self.canManageSharing = canManageSharing
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case label
+                                case kind
+                                case isSelf = "is_self"
+                                case workspaceId = "workspace_id"
+                                case recordVersion = "record_version"
+                                case scopes
+                                case canManageSharing = "can_manage_sharing"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/people`.
+                        public typealias PeoplePayload = [Operations.Paperwork_v2_people_index.Output.Ok.Body.JsonPayload.PeoplePayloadPayload]
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/people`.
+                        public var people: Operations.Paperwork_v2_people_index.Output.Ok.Body.JsonPayload.PeoplePayload
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/json/next_cursor`.
+                        public var nextCursor: Swift.String?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - people:
+                        ///   - nextCursor:
+                        public init(
+                            people: Operations.Paperwork_v2_people_index.Output.Ok.Body.JsonPayload.PeoplePayload,
+                            nextCursor: Swift.String? = nil
+                        ) {
+                            self.people = people
+                            self.nextCursor = nextCursor
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case people
+                            case nextCursor = "next_cursor"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_people_index.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_people_index.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_people_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_people_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/get(paperwork.v2.people.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_people_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_people_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/get(paperwork.v2.people.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/self`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/self/post(paperwork.v2.people.self)`.
+    public enum Paperwork_v2_people_self {
+        public static let id: Swift.String = "paperwork.v2.people.self"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_self.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_self.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_people_self.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.Paperwork_v2_people_self.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person`.
+                        public struct PersonPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person/label`.
+                            public var label: Swift.String?
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person/kind`.
+                            public var kind: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person/is_self`.
+                            public var isSelf: Swift.Bool
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person/workspace_id`.
+                            public var workspaceId: Swift.Int?
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person/record_version`.
+                            public var recordVersion: Swift.Int
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person/scopes`.
+                            public var scopes: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person/can_manage_sharing`.
+                            public var canManageSharing: Swift.Bool
+                            /// Creates a new `PersonPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - label:
+                            ///   - kind:
+                            ///   - isSelf:
+                            ///   - workspaceId:
+                            ///   - recordVersion:
+                            ///   - scopes:
+                            ///   - canManageSharing:
+                            public init(
+                                id: Swift.Int,
+                                label: Swift.String? = nil,
+                                kind: Swift.String,
+                                isSelf: Swift.Bool,
+                                workspaceId: Swift.Int? = nil,
+                                recordVersion: Swift.Int,
+                                scopes: [OpenAPIRuntime.OpenAPIValueContainer],
+                                canManageSharing: Swift.Bool
+                            ) {
+                                self.id = id
+                                self.label = label
+                                self.kind = kind
+                                self.isSelf = isSelf
+                                self.workspaceId = workspaceId
+                                self.recordVersion = recordVersion
+                                self.scopes = scopes
+                                self.canManageSharing = canManageSharing
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case label
+                                case kind
+                                case isSelf = "is_self"
+                                case workspaceId = "workspace_id"
+                                case recordVersion = "record_version"
+                                case scopes
+                                case canManageSharing = "can_manage_sharing"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/json/person`.
+                        public var person: Operations.Paperwork_v2_people_self.Output.Ok.Body.JsonPayload.PersonPayload?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - person:
+                        public init(person: Operations.Paperwork_v2_people_self.Output.Ok.Body.JsonPayload.PersonPayload? = nil) {
+                            self.person = person
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case person
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/self/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_people_self.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_people_self.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_people_self.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_people_self.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/self/post(paperwork.v2.people.self)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_people_self.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_people_self.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/self/post(paperwork.v2.people.self)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Where you live: Paperwork's first answer, since the city decides which
+    /// office's tasks apply (AccountHolderPlan::jurisdiction). It's the account's
+    /// own city, the one Settings shows too
+    ///
+    /// - Remark: HTTP `PUT /paperwork/v2/people/self/city`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/self/city/put(paperwork.v2.people.self.city)`.
+    public enum Paperwork_v2_people_self_city {
+        public static let id: Swift.String = "paperwork.v2.people.self.city"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_self_city.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_self_city.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_people_self_city.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/requestBody/json/city`.
+                    public var city: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - city:
+                    public init(city: Swift.String) {
+                        self.city = city
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case city
+                    }
+                }
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/requestBody/content/application\/json`.
+                case json(Operations.Paperwork_v2_people_self_city.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Paperwork_v2_people_self_city.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Paperwork_v2_people_self_city.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_people_self_city.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/responses/200/content/json/city`.
+                        public var city: Swift.String?
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/responses/200/content/json/jurisdiction`.
+                        public var jurisdiction: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - city:
+                        ///   - jurisdiction:
+                        public init(
+                            city: Swift.String? = nil,
+                            jurisdiction: Swift.String
+                        ) {
+                            self.city = city
+                            self.jurisdiction = jurisdiction
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case city
+                            case jurisdiction
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/self/city/PUT/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_people_self_city.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_people_self_city.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_people_self_city.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_people_self_city.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/self/city/put(paperwork.v2.people.self.city)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_people_self_city.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_people_self_city.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/self/city/put(paperwork.v2.people.self.city)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/self/city/put(paperwork.v2.people.self.city)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/get(paperwork.v2.people.show)`.
+    public enum Paperwork_v2_people_show {
+        public static let id: Swift.String = "paperwork.v2.people.show"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_people_show.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_show.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_show.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_people_show.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_people_show.Input.Path,
+                headers: Operations.Paperwork_v2_people_show.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person`.
+                        public struct PersonPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person/id`.
+                            public var id: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person/label`.
+                            public var label: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person/kind`.
+                            public var kind: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person/is_self`.
+                            public var isSelf: Swift.Bool
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person/workspace_id`.
+                            public var workspaceId: Swift.String?
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person/record_version`.
+                            public var recordVersion: Swift.String
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person/scopes`.
+                            public var scopes: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person/can_manage_sharing`.
+                            public var canManageSharing: Swift.Bool
+                            /// Creates a new `PersonPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - label:
+                            ///   - kind:
+                            ///   - isSelf:
+                            ///   - workspaceId:
+                            ///   - recordVersion:
+                            ///   - scopes:
+                            ///   - canManageSharing:
+                            public init(
+                                id: Swift.String,
+                                label: Swift.String,
+                                kind: Swift.String,
+                                isSelf: Swift.Bool,
+                                workspaceId: Swift.String? = nil,
+                                recordVersion: Swift.String,
+                                scopes: [OpenAPIRuntime.OpenAPIValueContainer],
+                                canManageSharing: Swift.Bool
+                            ) {
+                                self.id = id
+                                self.label = label
+                                self.kind = kind
+                                self.isSelf = isSelf
+                                self.workspaceId = workspaceId
+                                self.recordVersion = recordVersion
+                                self.scopes = scopes
+                                self.canManageSharing = canManageSharing
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case label
+                                case kind
+                                case isSelf = "is_self"
+                                case workspaceId = "workspace_id"
+                                case recordVersion = "record_version"
+                                case scopes
+                                case canManageSharing = "can_manage_sharing"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/json/person`.
+                        public var person: Operations.Paperwork_v2_people_show.Output.Ok.Body.JsonPayload.PersonPayload?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - person:
+                        public init(person: Operations.Paperwork_v2_people_show.Output.Ok.Body.JsonPayload.PersonPayload? = nil) {
+                            self.person = person
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case person
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_people_show.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_people_show.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_people_show.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_people_show.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/get(paperwork.v2.people.show)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_people_show.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_people_show.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/get(paperwork.v2.people.show)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/get(paperwork.v2.people.show)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/facts`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/get(paperwork.v2.facts.index)`.
+    public enum Paperwork_v2_facts_index {
+        public static let id: Swift.String = "paperwork.v2.facts.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_facts_index.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_facts_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_facts_index.Input.Path,
+                headers: Operations.Paperwork_v2_facts_index.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/GET/responses/200/content/application\/json`.
+                    case json(Swift.String)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Swift.String {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_facts_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_facts_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/get(paperwork.v2.facts.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_facts_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_facts_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/get(paperwork.v2.facts.index)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/get(paperwork.v2.facts.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/facts/{key}/history`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/history/get(paperwork.v2.facts.history)`.
+    public enum Paperwork_v2_facts_history {
+        public static let id: Swift.String = "paperwork.v2.facts.history"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/path/person`.
+                public var person: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/path/key`.
+                public var key: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                ///   - key:
+                public init(
+                    person: Swift.Int,
+                    key: Swift.String
+                ) {
+                    self.person = person
+                    self.key = key
+                }
+            }
+            public var path: Operations.Paperwork_v2_facts_history.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_history.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_history.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_facts_history.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_facts_history.Input.Path,
+                headers: Operations.Paperwork_v2_facts_history.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content/json/schema_version`.
+                        @frozen public enum SchemaVersionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case bureaucracy_factHistory_1 = "bureaucracy.fact-history.1"
+                        }
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content/json/schema_version`.
+                        public var schemaVersion: Operations.Paperwork_v2_facts_history.Output.Ok.Body.JsonPayload.SchemaVersionPayload
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content/json/person_id`.
+                        public var personId: Swift.Int?
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content/json/key`.
+                        public var key: Swift.String
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content/json/revision`.
+                        public var revision: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content/json/entries`.
+                        public var entries: [OpenAPIRuntime.OpenAPIValueContainer]
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - schemaVersion:
+                        ///   - personId:
+                        ///   - key:
+                        ///   - revision:
+                        ///   - entries:
+                        public init(
+                            schemaVersion: Operations.Paperwork_v2_facts_history.Output.Ok.Body.JsonPayload.SchemaVersionPayload,
+                            personId: Swift.Int? = nil,
+                            key: Swift.String,
+                            revision: Swift.Int,
+                            entries: [OpenAPIRuntime.OpenAPIValueContainer]
+                        ) {
+                            self.schemaVersion = schemaVersion
+                            self.personId = personId
+                            self.key = key
+                            self.revision = revision
+                            self.entries = entries
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case schemaVersion = "schema_version"
+                            case personId = "person_id"
+                            case key
+                            case revision
+                            case entries
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/history/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_facts_history.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_facts_history.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_facts_history.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_facts_history.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/history/get(paperwork.v2.facts.history)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_facts_history.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_facts_history.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/history/get(paperwork.v2.facts.history)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/history/get(paperwork.v2.facts.history)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/facts/{key}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/put(paperwork.v2.facts.change)`.
+    public enum Paperwork_v2_facts_change {
+        public static let id: Swift.String = "paperwork.v2.facts.change"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/path/person`.
+                public var person: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/path/key`.
+                public var key: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                ///   - key:
+                public init(
+                    person: Swift.Int,
+                    key: Swift.String
+                ) {
+                    self.person = person
+                    self.key = key
+                }
+            }
+            public var path: Operations.Paperwork_v2_facts_change.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_change.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_change.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_facts_change.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/requestBody/content/application\/json`.
+                case json(Components.Schemas.RecordFactChangeRequest)
+            }
+            public var body: Operations.Paperwork_v2_facts_change.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_facts_change.Input.Path,
+                headers: Operations.Paperwork_v2_facts_change.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_facts_change.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/responses/200/content/json/fact_id`.
+                        public var factId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/responses/200/content/json/revision`.
+                        public var revision: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - factId:
+                        ///   - revision:
+                        public init(
+                            factId: Swift.Int,
+                            revision: Swift.Int
+                        ) {
+                            self.factId = factId
+                            self.revision = revision
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case factId = "fact_id"
+                            case revision
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{key}/PUT/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_facts_change.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_facts_change.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_facts_change.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_facts_change.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/put(paperwork.v2.facts.change)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_facts_change.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_facts_change.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/put(paperwork.v2.facts.change)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/put(paperwork.v2.facts.change)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/put(paperwork.v2.facts.change)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{key}/put(paperwork.v2.facts.change)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/facts/{fact}/corrections`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{fact}/corrections/post(paperwork.v2.facts.correct)`.
+    public enum Paperwork_v2_facts_correct {
+        public static let id: Swift.String = "paperwork.v2.facts.correct"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/path/person`.
+                public var person: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/path/fact`.
+                public var fact: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                ///   - fact:
+                public init(
+                    person: Swift.Int,
+                    fact: Swift.Int
+                ) {
+                    self.person = person
+                    self.fact = fact
+                }
+            }
+            public var path: Operations.Paperwork_v2_facts_correct.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_correct.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_facts_correct.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_facts_correct.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.CorrectFactRequest)
+            }
+            public var body: Operations.Paperwork_v2_facts_correct.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_facts_correct.Input.Path,
+                headers: Operations.Paperwork_v2_facts_correct.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_facts_correct.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/responses/200/content/json/fact_id`.
+                        public var factId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/responses/200/content/json/revision`.
+                        public var revision: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - factId:
+                        ///   - revision:
+                        public init(
+                            factId: Swift.Int,
+                            revision: Swift.Int
+                        ) {
+                            self.factId = factId
+                            self.revision = revision
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case factId = "fact_id"
+                            case revision
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/facts/{fact}/corrections/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_facts_correct.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_facts_correct.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_facts_correct.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_facts_correct.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{fact}/corrections/post(paperwork.v2.facts.correct)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_facts_correct.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_facts_correct.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{fact}/corrections/post(paperwork.v2.facts.correct)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{fact}/corrections/post(paperwork.v2.facts.correct)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{fact}/corrections/post(paperwork.v2.facts.correct)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/facts/{fact}/corrections/post(paperwork.v2.facts.correct)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/plan`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/plan/get(paperwork.v2.people.plan)`.
+    public enum Paperwork_v2_people_plan {
+        public static let id: Swift.String = "paperwork.v2.people.plan"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/plan/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/plan/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_people_plan.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/plan/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/plan/GET/query/jurisdiction`.
+                @frozen public enum JurisdictionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case deNrwCologne = "de-nrw-cologne"
+                    case outsideCoverage = "outside_coverage"
+                }
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/plan/GET/query/jurisdiction`.
+                public var jurisdiction: Operations.Paperwork_v2_people_plan.Input.Query.JurisdictionPayload
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - jurisdiction:
+                public init(jurisdiction: Operations.Paperwork_v2_people_plan.Input.Query.JurisdictionPayload) {
+                    self.jurisdiction = jurisdiction
+                }
+            }
+            public var query: Operations.Paperwork_v2_people_plan.Input.Query
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/plan/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_plan.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_plan.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_people_plan.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_people_plan.Input.Path,
+                query: Operations.Paperwork_v2_people_plan.Input.Query,
+                headers: Operations.Paperwork_v2_people_plan.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/plan/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/plan/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.PersonPlanResource)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.PersonPlanResource {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_people_plan.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_people_plan.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// `PersonPlanResource`
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/plan/get(paperwork.v2.people.plan)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_people_plan.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_people_plan.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/plan/get(paperwork.v2.people.plan)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/plan/get(paperwork.v2.people.plan)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/plan/get(paperwork.v2.people.plan)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/plan/get(paperwork.v2.people.plan)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/processing-restriction`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)`.
+    public enum Paperwork_v2_people_processingRestriction {
+        public static let id: Swift.String = "paperwork.v2.people.processing-restriction"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_people_processingRestriction.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_processingRestriction.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_people_processingRestriction.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_people_processingRestriction.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/requestBody/json/stopped`.
+                    public var stopped: Swift.Bool
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - stopped:
+                    public init(stopped: Swift.Bool) {
+                        self.stopped = stopped
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case stopped
+                    }
+                }
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/requestBody/content/application\/json`.
+                case json(Operations.Paperwork_v2_people_processingRestriction.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Paperwork_v2_people_processingRestriction.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_people_processingRestriction.Input.Path,
+                headers: Operations.Paperwork_v2_people_processingRestriction.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_people_processingRestriction.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/responses/200/content/json/processing_stopped_at`.
+                        public var processingStoppedAt: Swift.String?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - processingStoppedAt:
+                        public init(processingStoppedAt: Swift.String? = nil) {
+                            self.processingStoppedAt = processingStoppedAt
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case processingStoppedAt = "processing_stopped_at"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processing-restriction/PUT/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_people_processingRestriction.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_people_processingRestriction.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_people_processingRestriction.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_people_processingRestriction.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_people_processingRestriction.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_people_processingRestriction.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/processes/{process}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/get(paperwork.v2.processes.show)`.
+    public enum Paperwork_v2_processes_show {
+        public static let id: Swift.String = "paperwork.v2.processes.show"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The process ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/path/process`.
+                public var process: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - process: The process ID
+                public init(process: Swift.Int) {
+                    self.process = process
+                }
+            }
+            public var path: Operations.Paperwork_v2_processes_show.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_show.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_show.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_processes_show.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_processes_show.Input.Path,
+                headers: Operations.Paperwork_v2_processes_show.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/responses/200/content/json/assessment_revision`.
+                        public var assessmentRevision: OpenAPIRuntime.OpenAPIValueContainer
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/responses/200/content/json/evaluated_at`.
+                        public var evaluatedAt: OpenAPIRuntime.OpenAPIValueContainer
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/responses/200/content/json/next_reassessment_at`.
+                        public var nextReassessmentAt: OpenAPIRuntime.OpenAPIValueContainer
+                        /// A container of undocumented properties.
+                        public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - assessmentRevision:
+                        ///   - evaluatedAt:
+                        ///   - nextReassessmentAt:
+                        ///   - additionalProperties: A container of undocumented properties.
+                        public init(
+                            assessmentRevision: OpenAPIRuntime.OpenAPIValueContainer,
+                            evaluatedAt: OpenAPIRuntime.OpenAPIValueContainer,
+                            nextReassessmentAt: OpenAPIRuntime.OpenAPIValueContainer,
+                            additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()
+                        ) {
+                            self.assessmentRevision = assessmentRevision
+                            self.evaluatedAt = evaluatedAt
+                            self.nextReassessmentAt = nextReassessmentAt
+                            self.additionalProperties = additionalProperties
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case assessmentRevision = "assessment_revision"
+                            case evaluatedAt = "evaluated_at"
+                            case nextReassessmentAt = "next_reassessment_at"
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            let container = try decoder.container(keyedBy: CodingKeys.self)
+                            self.assessmentRevision = try container.decode(
+                                OpenAPIRuntime.OpenAPIValueContainer.self,
+                                forKey: .assessmentRevision
+                            )
+                            self.evaluatedAt = try container.decode(
+                                OpenAPIRuntime.OpenAPIValueContainer.self,
+                                forKey: .evaluatedAt
+                            )
+                            self.nextReassessmentAt = try container.decode(
+                                OpenAPIRuntime.OpenAPIValueContainer.self,
+                                forKey: .nextReassessmentAt
+                            )
+                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                                "assessment_revision",
+                                "evaluated_at",
+                                "next_reassessment_at"
+                            ])
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            var container = encoder.container(keyedBy: CodingKeys.self)
+                            try container.encode(
+                                self.assessmentRevision,
+                                forKey: .assessmentRevision
+                            )
+                            try container.encode(
+                                self.evaluatedAt,
+                                forKey: .evaluatedAt
+                            )
+                            try container.encode(
+                                self.nextReassessmentAt,
+                                forKey: .nextReassessmentAt
+                            )
+                            try encoder.encodeAdditionalProperties(additionalProperties)
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_processes_show.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_processes_show.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_processes_show.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_processes_show.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/get(paperwork.v2.processes.show)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_processes_show.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_processes_show.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/get(paperwork.v2.processes.show)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/get(paperwork.v2.processes.show)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/events`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/post(paperwork.v2.processes.events)`.
+    public enum Paperwork_v2_processes_events {
+        public static let id: Swift.String = "paperwork.v2.processes.events"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The process ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/path/process`.
+                public var process: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - process: The process ID
+                public init(process: Swift.Int) {
+                    self.process = process
+                }
+            }
+            public var path: Operations.Paperwork_v2_processes_events.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_events.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_events.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_processes_events.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RecordProcessEventRequest)
+            }
+            public var body: Operations.Paperwork_v2_processes_events.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_processes_events.Input.Path,
+                headers: Operations.Paperwork_v2_processes_events.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_processes_events.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/responses/200/content/json/event_id`.
+                        public var eventId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/responses/200/content/json/process_id`.
+                        public var processId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/responses/200/content/json/version`.
+                        public var version: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - eventId:
+                        ///   - processId:
+                        ///   - version:
+                        public init(
+                            eventId: Swift.Int,
+                            processId: Swift.Int,
+                            version: Swift.Int
+                        ) {
+                            self.eventId = eventId
+                            self.processId = processId
+                            self.version = version
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case eventId = "event_id"
+                            case processId = "process_id"
+                            case version
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_processes_events.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_processes_events.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_processes_events.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_processes_events.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/post(paperwork.v2.processes.events)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_processes_events.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_processes_events.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/post(paperwork.v2.processes.events)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/post(paperwork.v2.processes.events)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/post(paperwork.v2.processes.events)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/post(paperwork.v2.processes.events)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/review`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/review/post(paperwork.v2.processes.review)`.
+    public enum Paperwork_v2_processes_review {
+        public static let id: Swift.String = "paperwork.v2.processes.review"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The process ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/path/process`.
+                public var process: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - process: The process ID
+                public init(process: Swift.Int) {
+                    self.process = process
+                }
+            }
+            public var path: Operations.Paperwork_v2_processes_review.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_review.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_review.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_processes_review.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.ReviewProcessChangesRequest)
+            }
+            public var body: Operations.Paperwork_v2_processes_review.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_processes_review.Input.Path,
+                headers: Operations.Paperwork_v2_processes_review.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_processes_review.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/responses/200/content/json/event_id`.
+                        public var eventId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/responses/200/content/json/process_id`.
+                        public var processId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/responses/200/content/json/version`.
+                        public var version: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - eventId:
+                        ///   - processId:
+                        ///   - version:
+                        public init(
+                            eventId: Swift.Int,
+                            processId: Swift.Int,
+                            version: Swift.Int
+                        ) {
+                            self.eventId = eventId
+                            self.processId = processId
+                            self.version = version
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case eventId = "event_id"
+                            case processId = "process_id"
+                            case version
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/review/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_processes_review.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_processes_review.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_processes_review.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_processes_review.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/review/post(paperwork.v2.processes.review)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_processes_review.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_processes_review.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/review/post(paperwork.v2.processes.review)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/review/post(paperwork.v2.processes.review)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/review/post(paperwork.v2.processes.review)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/review/post(paperwork.v2.processes.review)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/events/{event}/corrections`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/{event}/corrections/post(paperwork.v2.processes.correct)`.
+    public enum Paperwork_v2_processes_correct {
+        public static let id: Swift.String = "paperwork.v2.processes.correct"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The process ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/path/process`.
+                public var process: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/path/event`.
+                public var event: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - process: The process ID
+                ///   - event:
+                public init(
+                    process: Swift.Int,
+                    event: Swift.Int
+                ) {
+                    self.process = process
+                    self.event = event
+                }
+            }
+            public var path: Operations.Paperwork_v2_processes_correct.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_correct.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_correct.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_processes_correct.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.CorrectProcessEventRequest)
+            }
+            public var body: Operations.Paperwork_v2_processes_correct.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_processes_correct.Input.Path,
+                headers: Operations.Paperwork_v2_processes_correct.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_processes_correct.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/responses/200/content/json/event_id`.
+                        public var eventId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/responses/200/content/json/process_id`.
+                        public var processId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/responses/200/content/json/version`.
+                        public var version: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - eventId:
+                        ///   - processId:
+                        ///   - version:
+                        public init(
+                            eventId: Swift.Int,
+                            processId: Swift.Int,
+                            version: Swift.Int
+                        ) {
+                            self.eventId = eventId
+                            self.processId = processId
+                            self.version = version
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case eventId = "event_id"
+                            case processId = "process_id"
+                            case version
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/events/{event}/corrections/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_processes_correct.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_processes_correct.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_processes_correct.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_processes_correct.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/{event}/corrections/post(paperwork.v2.processes.correct)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_processes_correct.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_processes_correct.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/{event}/corrections/post(paperwork.v2.processes.correct)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/{event}/corrections/post(paperwork.v2.processes.correct)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/{event}/corrections/post(paperwork.v2.processes.correct)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/events/{event}/corrections/post(paperwork.v2.processes.correct)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/processes`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)`.
+    public enum Paperwork_v2_processes_start {
+        public static let id: Swift.String = "paperwork.v2.processes.start"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processes/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processes/POST/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_processes_start.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processes/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_start.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_processes_start.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_processes_start.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processes/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processes/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.StartProcessRequest)
+            }
+            public var body: Operations.Paperwork_v2_processes_start.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_processes_start.Input.Path,
+                headers: Operations.Paperwork_v2_processes_start.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_processes_start.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processes/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/processes/POST/responses/200/content/application\/json`.
+                    case json([OpenAPIRuntime.OpenAPIValueContainer])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [OpenAPIRuntime.OpenAPIValueContainer] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_processes_start.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_processes_start.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_processes_start.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_processes_start.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/question-preview`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)`.
+    public enum Paperwork_v2_questions_preview {
+        public static let id: Swift.String = "paperwork.v2.questions.preview"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_questions_preview.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/query/jurisdiction`.
+                @frozen public enum JurisdictionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case deNrwCologne = "de-nrw-cologne"
+                    case outsideCoverage = "outside_coverage"
+                }
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/query/jurisdiction`.
+                public var jurisdiction: Operations.Paperwork_v2_questions_preview.Input.Query.JurisdictionPayload
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - jurisdiction:
+                public init(jurisdiction: Operations.Paperwork_v2_questions_preview.Input.Query.JurisdictionPayload) {
+                    self.jurisdiction = jurisdiction
+                }
+            }
+            public var query: Operations.Paperwork_v2_questions_preview.Input.Query
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questions_preview.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questions_preview.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_questions_preview.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_questions_preview.Input.Path,
+                query: Operations.Paperwork_v2_questions_preview.Input.Query,
+                headers: Operations.Paperwork_v2_questions_preview.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/responses/200/content/json/assessment_revision`.
+                        public var assessmentRevision: OpenAPIRuntime.OpenAPIValueContainer
+                        /// A container of undocumented properties.
+                        public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - assessmentRevision:
+                        ///   - additionalProperties: A container of undocumented properties.
+                        public init(
+                            assessmentRevision: OpenAPIRuntime.OpenAPIValueContainer,
+                            additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()
+                        ) {
+                            self.assessmentRevision = assessmentRevision
+                            self.additionalProperties = additionalProperties
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case assessmentRevision = "assessment_revision"
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            let container = try decoder.container(keyedBy: CodingKeys.self)
+                            self.assessmentRevision = try container.decode(
+                                OpenAPIRuntime.OpenAPIValueContainer.self,
+                                forKey: .assessmentRevision
+                            )
+                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                                "assessment_revision"
+                            ])
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            var container = encoder.container(keyedBy: CodingKeys.self)
+                            try container.encode(
+                                self.assessmentRevision,
+                                forKey: .assessmentRevision
+                            )
+                            try encoder.encodeAdditionalProperties(additionalProperties)
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-preview/GET/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_questions_preview.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_questions_preview.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_questions_preview.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_questions_preview.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_questions_preview.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_questions_preview.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/question-sessions`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-sessions/post(paperwork.v2.question-sessions.store)`.
+    public enum Paperwork_v2_questionSessions_store {
+        public static let id: Swift.String = "paperwork.v2.question-sessions.store"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_questionSessions_store.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_store.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_store.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_questionSessions_store.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.StartQuestionSessionRequest)
+            }
+            public var body: Operations.Paperwork_v2_questionSessions_store.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_questionSessions_store.Input.Path,
+                headers: Operations.Paperwork_v2_questionSessions_store.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_questionSessions_store.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/responses/201/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/responses/201/content/json/session_id`.
+                        public var sessionId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/responses/201/content/json/status`.
+                        public var status: Swift.String
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/responses/201/content/json/expires_at`.
+                        public var expiresAt: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - sessionId:
+                        ///   - status:
+                        ///   - expiresAt:
+                        public init(
+                            sessionId: Swift.Int,
+                            status: Swift.String,
+                            expiresAt: Swift.String
+                        ) {
+                            self.sessionId = sessionId
+                            self.status = status
+                            self.expiresAt = expiresAt
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case sessionId = "session_id"
+                            case status
+                            case expiresAt = "expires_at"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/question-sessions/POST/responses/201/content/application\/json`.
+                    case json(Operations.Paperwork_v2_questionSessions_store.Output.Created.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_questionSessions_store.Output.Created.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_questionSessions_store.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_questionSessions_store.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-sessions/post(paperwork.v2.question-sessions.store)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.Paperwork_v2_questionSessions_store.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.Paperwork_v2_questionSessions_store.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-sessions/post(paperwork.v2.question-sessions.store)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-sessions/post(paperwork.v2.question-sessions.store)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-sessions/post(paperwork.v2.question-sessions.store)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-sessions/post(paperwork.v2.question-sessions.store)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/next`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/next/post(paperwork.v2.question-sessions.next)`.
+    public enum Paperwork_v2_questionSessions_next {
+        public static let id: Swift.String = "paperwork.v2.question-sessions.next"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/next/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The session ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/next/POST/path/session`.
+                public var session: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - session: The session ID
+                public init(session: Swift.Int) {
+                    self.session = session
+                }
+            }
+            public var path: Operations.Paperwork_v2_questionSessions_next.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/next/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_next.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_next.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_questionSessions_next.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/next/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/next/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.NextQuestionRequest)
+            }
+            public var body: Operations.Paperwork_v2_questionSessions_next.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_questionSessions_next.Input.Path,
+                headers: Operations.Paperwork_v2_questionSessions_next.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_questionSessions_next.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/next/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/next/POST/responses/200/content/application\/json`.
+                    case json([OpenAPIRuntime.OpenAPIValueContainer])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [OpenAPIRuntime.OpenAPIValueContainer] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_questionSessions_next.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_questionSessions_next.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/next/post(paperwork.v2.question-sessions.next)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_questionSessions_next.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_questionSessions_next.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/next/post(paperwork.v2.question-sessions.next)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/next/post(paperwork.v2.question-sessions.next)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/next/post(paperwork.v2.question-sessions.next)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/next/post(paperwork.v2.question-sessions.next)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/answers/{question}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/answers/{question}/post(paperwork.v2.question-sessions.answer)`.
+    public enum Paperwork_v2_questionSessions_answer {
+        public static let id: Swift.String = "paperwork.v2.question-sessions.answer"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/answers/{question}/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The session ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/answers/{question}/POST/path/session`.
+                public var session: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/answers/{question}/POST/path/question`.
+                public var question: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - session: The session ID
+                ///   - question:
+                public init(
+                    session: Swift.Int,
+                    question: Swift.Int
+                ) {
+                    self.session = session
+                    self.question = question
+                }
+            }
+            public var path: Operations.Paperwork_v2_questionSessions_answer.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/answers/{question}/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_answer.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_answer.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_questionSessions_answer.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/answers/{question}/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/answers/{question}/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.SubmitQuestionAnswerRequest)
+            }
+            public var body: Operations.Paperwork_v2_questionSessions_answer.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_questionSessions_answer.Input.Path,
+                headers: Operations.Paperwork_v2_questionSessions_answer.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_questionSessions_answer.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/answers/{question}/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/answers/{question}/POST/responses/200/content/application\/json`.
+                    case json([OpenAPIRuntime.OpenAPIValueContainer])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [OpenAPIRuntime.OpenAPIValueContainer] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_questionSessions_answer.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_questionSessions_answer.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/answers/{question}/post(paperwork.v2.question-sessions.answer)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_questionSessions_answer.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_questionSessions_answer.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/answers/{question}/post(paperwork.v2.question-sessions.answer)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/answers/{question}/post(paperwork.v2.question-sessions.answer)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/answers/{question}/post(paperwork.v2.question-sessions.answer)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/answers/{question}/post(paperwork.v2.question-sessions.answer)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/defer/{question}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)`.
+    public enum Paperwork_v2_questionSessions_defer {
+        public static let id: Swift.String = "paperwork.v2.question-sessions.defer"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/defer/{question}/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The session ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/defer/{question}/POST/path/session`.
+                public var session: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/defer/{question}/POST/path/question`.
+                public var question: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - session: The session ID
+                ///   - question:
+                public init(
+                    session: Swift.Int,
+                    question: Swift.Int
+                ) {
+                    self.session = session
+                    self.question = question
+                }
+            }
+            public var path: Operations.Paperwork_v2_questionSessions_defer.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/defer/{question}/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_defer.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_defer.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_questionSessions_defer.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/defer/{question}/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/defer/{question}/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.QuestionTokenRequest)
+            }
+            public var body: Operations.Paperwork_v2_questionSessions_defer.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_questionSessions_defer.Input.Path,
+                headers: Operations.Paperwork_v2_questionSessions_defer.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_questionSessions_defer.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.Paperwork_v2_questionSessions_defer.Output.NoContent)
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.Paperwork_v2_questionSessions_defer.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/defer/{question}/post(paperwork.v2.question-sessions.defer)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/question-sessions/{session}/resume`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)`.
+    public enum Paperwork_v2_questionSessions_resume {
+        public static let id: Swift.String = "paperwork.v2.question-sessions.resume"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/resume/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The session ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/resume/POST/path/session`.
+                public var session: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - session: The session ID
+                public init(session: Swift.Int) {
+                    self.session = session
+                }
+            }
+            public var path: Operations.Paperwork_v2_questionSessions_resume.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/resume/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_resume.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_questionSessions_resume.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_questionSessions_resume.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/resume/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/question-sessions/{session}/resume/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.ResumeQuestionSessionRequest)
+            }
+            public var body: Operations.Paperwork_v2_questionSessions_resume.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_questionSessions_resume.Input.Path,
+                headers: Operations.Paperwork_v2_questionSessions_resume.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_questionSessions_resume.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.Paperwork_v2_questionSessions_resume.Output.NoContent)
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.Paperwork_v2_questionSessions_resume.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/question-sessions/{session}/resume/post(paperwork.v2.question-sessions.resume)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /paperwork/v2/people/{person}/relationships`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/get(paperwork.v2.relationships.index)`.
+    public enum Paperwork_v2_relationships_index {
+        public static let id: Swift.String = "paperwork.v2.relationships.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/GET/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_relationships_index.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_relationships_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_relationships_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_relationships_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_relationships_index.Input.Path,
+                headers: Operations.Paperwork_v2_relationships_index.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/GET/responses/200/content/application\/json`.
+                    case json([OpenAPIRuntime.OpenAPIValueContainer])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [OpenAPIRuntime.OpenAPIValueContainer] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_relationships_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_relationships_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/get(paperwork.v2.relationships.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_relationships_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_relationships_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/get(paperwork.v2.relationships.index)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/get(paperwork.v2.relationships.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/people/{person}/relationships`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/post(paperwork.v2.relationships.store)`.
+    public enum Paperwork_v2_relationships_store {
+        public static let id: Swift.String = "paperwork.v2.relationships.store"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/path/person`.
+                public var person: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                public init(person: Swift.Int) {
+                    self.person = person
+                }
+            }
+            public var path: Operations.Paperwork_v2_relationships_store.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_relationships_store.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_relationships_store.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_relationships_store.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RecordRelationshipRequest)
+            }
+            public var body: Operations.Paperwork_v2_relationships_store.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_relationships_store.Input.Path,
+                headers: Operations.Paperwork_v2_relationships_store.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_relationships_store.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/responses/201/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/responses/201/content/json/relationship_id`.
+                        public var relationshipId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/responses/201/content/json/record_version`.
+                        public var recordVersion: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - relationshipId:
+                        ///   - recordVersion:
+                        public init(
+                            relationshipId: Swift.Int,
+                            recordVersion: Swift.Int
+                        ) {
+                            self.relationshipId = relationshipId
+                            self.recordVersion = recordVersion
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case relationshipId = "relationship_id"
+                            case recordVersion = "record_version"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/POST/responses/201/content/application\/json`.
+                    case json(Operations.Paperwork_v2_relationships_store.Output.Created.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_relationships_store.Output.Created.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_relationships_store.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_relationships_store.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/post(paperwork.v2.relationships.store)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.Paperwork_v2_relationships_store.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.Paperwork_v2_relationships_store.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/post(paperwork.v2.relationships.store)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/post(paperwork.v2.relationships.store)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/post(paperwork.v2.relationships.store)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/post(paperwork.v2.relationships.store)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/people/{person}/relationships/{relationship}`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/{relationship}/delete(paperwork.v2.relationships.destroy)`.
+    public enum Paperwork_v2_relationships_destroy {
+        public static let id: Swift.String = "paperwork.v2.relationships.destroy"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/{relationship}/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// The person ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/{relationship}/DELETE/path/person`.
+                public var person: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/{relationship}/DELETE/path/relationship`.
+                public var relationship: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - person: The person ID
+                ///   - relationship:
+                public init(
+                    person: Swift.Int,
+                    relationship: Swift.Int
+                ) {
+                    self.person = person
+                    self.relationship = relationship
+                }
+            }
+            public var path: Operations.Paperwork_v2_relationships_destroy.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/people/{person}/relationships/{relationship}/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_relationships_destroy.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_relationships_destroy.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_relationships_destroy.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_relationships_destroy.Input.Path,
+                headers: Operations.Paperwork_v2_relationships_destroy.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/{relationship}/delete(paperwork.v2.relationships.destroy)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.Paperwork_v2_relationships_destroy.Output.NoContent)
+            /// No content
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/{relationship}/delete(paperwork.v2.relationships.destroy)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.Paperwork_v2_relationships_destroy.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/{relationship}/delete(paperwork.v2.relationships.destroy)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/relationships/{relationship}/delete(paperwork.v2.relationships.destroy)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /paperwork/v2/processes/{process}/requirements/{requirement}/confirm`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirm/post(paperwork.v2.requirements.confirm)`.
+    public enum Paperwork_v2_requirements_confirm {
+        public static let id: Swift.String = "paperwork.v2.requirements.confirm"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// The process ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/path/process`.
+                public var process: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/path/requirement`.
+                public var requirement: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - process: The process ID
+                ///   - requirement:
+                public init(
+                    process: Swift.Int,
+                    requirement: Swift.String
+                ) {
+                    self.process = process
+                    self.requirement = requirement
+                }
+            }
+            public var path: Operations.Paperwork_v2_requirements_confirm.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_requirements_confirm.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_requirements_confirm.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_requirements_confirm.Input.Headers
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.ConfirmRequirementUseRequest)
+            }
+            public var body: Operations.Paperwork_v2_requirements_confirm.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Paperwork_v2_requirements_confirm.Input.Path,
+                headers: Operations.Paperwork_v2_requirements_confirm.Input.Headers = .init(),
+                body: Operations.Paperwork_v2_requirements_confirm.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/responses/200/content/json/use_id`.
+                        public var useId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/responses/200/content/json/process_id`.
+                        public var processId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/responses/200/content/json/version`.
+                        public var version: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - useId:
+                        ///   - processId:
+                        ///   - version:
+                        public init(
+                            useId: Swift.Int,
+                            processId: Swift.Int,
+                            version: Swift.Int
+                        ) {
+                            self.useId = useId
+                            self.processId = processId
+                            self.version = version
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case useId = "use_id"
+                            case processId = "process_id"
+                            case version
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirm/POST/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_requirements_confirm.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_requirements_confirm.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_requirements_confirm.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_requirements_confirm.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirm/post(paperwork.v2.requirements.confirm)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_requirements_confirm.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_requirements_confirm.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirm/post(paperwork.v2.requirements.confirm)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirm/post(paperwork.v2.requirements.confirm)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirm/post(paperwork.v2.requirements.confirm)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirm/post(paperwork.v2.requirements.confirm)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /paperwork/v2/processes/{process}/requirements/{requirement}/confirmation`.
+    /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)`.
+    public enum Paperwork_v2_requirements_withdraw {
+        public static let id: Swift.String = "paperwork.v2.requirements.withdraw"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// The process ID
+                ///
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/path/process`.
+                public var process: Swift.Int
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/path/requirement`.
+                public var requirement: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - process: The process ID
+                ///   - requirement:
+                public init(
+                    process: Swift.Int,
+                    requirement: Swift.String
+                ) {
+                    self.process = process
+                    self.requirement = requirement
+                }
+            }
+            public var path: Operations.Paperwork_v2_requirements_withdraw.Input.Path
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/query/request_id`.
+                public var requestId: Swift.String
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/query/expected_version`.
+                public var expectedVersion: Swift.Int
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - requestId:
+                ///   - expectedVersion:
+                public init(
+                    requestId: Swift.String,
+                    expectedVersion: Swift.Int
+                ) {
+                    self.requestId = requestId
+                    self.expectedVersion = expectedVersion
+                }
+            }
+            public var query: Operations.Paperwork_v2_requirements_withdraw.Input.Query
+            /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_requirements_withdraw.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Paperwork_v2_requirements_withdraw.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Paperwork_v2_requirements_withdraw.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.Paperwork_v2_requirements_withdraw.Input.Path,
+                query: Operations.Paperwork_v2_requirements_withdraw.Input.Query,
+                headers: Operations.Paperwork_v2_requirements_withdraw.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/responses/200/content/json/use_id`.
+                        public var useId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/responses/200/content/json/process_id`.
+                        public var processId: Swift.Int
+                        /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/responses/200/content/json/version`.
+                        public var version: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - useId:
+                        ///   - processId:
+                        ///   - version:
+                        public init(
+                            useId: Swift.Int,
+                            processId: Swift.Int,
+                            version: Swift.Int
+                        ) {
+                            self.useId = useId
+                            self.processId = processId
+                            self.version = version
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case useId = "use_id"
+                            case processId = "process_id"
+                            case version
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/DELETE/responses/200/content/application\/json`.
+                    case json(Operations.Paperwork_v2_requirements_withdraw.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Paperwork_v2_requirements_withdraw.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Paperwork_v2_requirements_withdraw.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Paperwork_v2_requirements_withdraw.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Paperwork_v2_requirements_withdraw.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Paperwork_v2_requirements_withdraw.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)/responses/403`.
             ///
             /// HTTP response code: `403 forbidden`.
             case forbidden(Components.Responses.AuthorizationException)
