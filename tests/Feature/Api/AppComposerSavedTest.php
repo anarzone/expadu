@@ -13,6 +13,9 @@ test('🔒 Saved and Starting point need a token', function () {
     $this->postJson('/api/v1/places/1/feedback', ['action' => 'saved'])->assertUnauthorized();
     $this->getJson('/api/v1/geocode?q=Neumarkt')->assertUnauthorized();
     $this->getJson('/api/v1/composer/places')->assertUnauthorized();
+    $this->getJson('/api/v1/places/1/feedback')->assertUnauthorized();
+    $this->putJson('/api/v1/places/1/been')->assertUnauthorized();
+    $this->putJson('/api/v1/places/1/work-answer', ['laptop' => 'yes'])->assertUnauthorized();
 });
 
 test('🔒 a place saved from the app is saved for that person only, and unsaving clears it', function () {
@@ -47,4 +50,16 @@ test('🔒 the saved events list is the person\'s own', function () {
     $token = $person->createToken('iPhone')->plainTextToken;
 
     expect($this->withToken($token)->getJson('/api/v1/events/saved')->assertOk()->json('data'))->toBe([]);
+});
+
+test('🔒 Been there from the app is the person\'s own, and the sheet reads it back', function () {
+    $person = User::factory()->onboarded()->create();
+    $other = User::factory()->onboarded()->create();
+    $spot = Spot::factory()->create(['name' => 'Café Fuchs', 'category' => 'cafe', 'lat' => 50.94, 'lng' => 6.95]);
+    $token = $person->createToken('iPhone')->plainTextToken;
+
+    $this->withToken($token)->putJson("/api/v1/places/{$spot->id}/been")->assertOk()->assertJsonPath('been', true);
+    $this->withToken($token)->getJson("/api/v1/places/{$spot->id}/feedback")->assertOk()->assertJsonPath('been', true);
+    app('auth')->forgetGuards();
+    $this->withToken($other->createToken('iPhone')->plainTextToken)->getJson("/api/v1/places/{$spot->id}/feedback")->assertOk()->assertJsonPath('been', false);
 });

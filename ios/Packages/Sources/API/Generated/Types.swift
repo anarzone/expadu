@@ -139,9 +139,30 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /geocode`.
     /// - Remark: Generated from `#/paths//geocode/get(composer.appGeocode)`.
     func composer_appGeocode(_ input: Operations.Composer_appGeocode.Input) async throws -> Operations.Composer_appGeocode.Output
+    /// Where the person stands with the place now, for Composer's place sheet
+    ///
+    /// - Remark: HTTP `GET /places/{spot}/feedback`.
+    /// - Remark: Generated from `#/paths//places/{spot}/feedback/get(appPlaceFeedback.standing)`.
+    func appPlaceFeedback_standing(_ input: Operations.AppPlaceFeedback_standing.Input) async throws -> Operations.AppPlaceFeedback_standing.Output
     /// - Remark: HTTP `POST /places/{spot}/feedback`.
     /// - Remark: Generated from `#/paths//places/{spot}/feedback/post(composer.appPlaceFeedback)`.
     func composer_appPlaceFeedback(_ input: Operations.Composer_appPlaceFeedback.Input) async throws -> Operations.Composer_appPlaceFeedback.Output
+    /// PUT /api/places/{spot}/been {rating?: up|down}
+    ///
+    /// - Remark: HTTP `PUT /places/{spot}/been`.
+    /// - Remark: Generated from `#/paths//places/{spot}/been/put(appPlaceFeedback.been)`.
+    func appPlaceFeedback_been(_ input: Operations.AppPlaceFeedback_been.Input) async throws -> Operations.AppPlaceFeedback_been.Output
+    /// DELETE /api/places/{spot}/been
+    ///
+    /// - Remark: HTTP `DELETE /places/{spot}/been`.
+    /// - Remark: Generated from `#/paths//places/{spot}/been/delete(appPlaceFeedback.forgetBeen)`.
+    func appPlaceFeedback_forgetBeen(_ input: Operations.AppPlaceFeedback_forgetBeen.Input) async throws -> Operations.AppPlaceFeedback_forgetBeen.Output
+    /// - Remark: HTTP `GET /places/{spot}/work-answer`.
+    /// - Remark: Generated from `#/paths//places/{spot}/work-answer/get(appPlaceWorkAnswer.show)`.
+    func appPlaceWorkAnswer_show(_ input: Operations.AppPlaceWorkAnswer_show.Input) async throws -> Operations.AppPlaceWorkAnswer_show.Output
+    /// - Remark: HTTP `PUT /places/{spot}/work-answer`.
+    /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)`.
+    func appPlaceWorkAnswer_update(_ input: Operations.AppPlaceWorkAnswer_update.Input) async throws -> Operations.AppPlaceWorkAnswer_update.Output
     /// - Remark: HTTP `GET /privacy/processing/{purpose}`.
     /// - Remark: Generated from `#/paths//privacy/processing/{purpose}/get(privacy.processing.show)`.
     func privacy_processing_show(_ input: Operations.Privacy_processing_show.Input) async throws -> Operations.Privacy_processing_show.Output
@@ -691,6 +712,19 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Where the person stands with the place now, for Composer's place sheet
+    ///
+    /// - Remark: HTTP `GET /places/{spot}/feedback`.
+    /// - Remark: Generated from `#/paths//places/{spot}/feedback/get(appPlaceFeedback.standing)`.
+    public func appPlaceFeedback_standing(
+        path: Operations.AppPlaceFeedback_standing.Input.Path,
+        headers: Operations.AppPlaceFeedback_standing.Input.Headers = .init()
+    ) async throws -> Operations.AppPlaceFeedback_standing.Output {
+        try await appPlaceFeedback_standing(Operations.AppPlaceFeedback_standing.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// - Remark: HTTP `POST /places/{spot}/feedback`.
     /// - Remark: Generated from `#/paths//places/{spot}/feedback/post(composer.appPlaceFeedback)`.
     public func composer_appPlaceFeedback(
@@ -699,6 +733,58 @@ extension APIProtocol {
         body: Operations.Composer_appPlaceFeedback.Input.Body
     ) async throws -> Operations.Composer_appPlaceFeedback.Output {
         try await composer_appPlaceFeedback(Operations.Composer_appPlaceFeedback.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// PUT /api/places/{spot}/been {rating?: up|down}
+    ///
+    /// - Remark: HTTP `PUT /places/{spot}/been`.
+    /// - Remark: Generated from `#/paths//places/{spot}/been/put(appPlaceFeedback.been)`.
+    public func appPlaceFeedback_been(
+        path: Operations.AppPlaceFeedback_been.Input.Path,
+        headers: Operations.AppPlaceFeedback_been.Input.Headers = .init(),
+        body: Operations.AppPlaceFeedback_been.Input.Body? = nil
+    ) async throws -> Operations.AppPlaceFeedback_been.Output {
+        try await appPlaceFeedback_been(Operations.AppPlaceFeedback_been.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// DELETE /api/places/{spot}/been
+    ///
+    /// - Remark: HTTP `DELETE /places/{spot}/been`.
+    /// - Remark: Generated from `#/paths//places/{spot}/been/delete(appPlaceFeedback.forgetBeen)`.
+    public func appPlaceFeedback_forgetBeen(
+        path: Operations.AppPlaceFeedback_forgetBeen.Input.Path,
+        headers: Operations.AppPlaceFeedback_forgetBeen.Input.Headers = .init()
+    ) async throws -> Operations.AppPlaceFeedback_forgetBeen.Output {
+        try await appPlaceFeedback_forgetBeen(Operations.AppPlaceFeedback_forgetBeen.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /places/{spot}/work-answer`.
+    /// - Remark: Generated from `#/paths//places/{spot}/work-answer/get(appPlaceWorkAnswer.show)`.
+    public func appPlaceWorkAnswer_show(
+        path: Operations.AppPlaceWorkAnswer_show.Input.Path,
+        headers: Operations.AppPlaceWorkAnswer_show.Input.Headers = .init()
+    ) async throws -> Operations.AppPlaceWorkAnswer_show.Output {
+        try await appPlaceWorkAnswer_show(Operations.AppPlaceWorkAnswer_show.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PUT /places/{spot}/work-answer`.
+    /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)`.
+    public func appPlaceWorkAnswer_update(
+        path: Operations.AppPlaceWorkAnswer_update.Input.Path,
+        headers: Operations.AppPlaceWorkAnswer_update.Input.Headers = .init(),
+        body: Operations.AppPlaceWorkAnswer_update.Input.Body
+    ) async throws -> Operations.AppPlaceWorkAnswer_update.Output {
+        try await appPlaceWorkAnswer_update(Operations.AppPlaceWorkAnswer_update.Input(
             path: path,
             headers: headers,
             body: body

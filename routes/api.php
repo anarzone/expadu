@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Composer\AppComposerController;
 use App\Http\Controllers\Api\V1\Composer\AppEventBookmarkController;
 use App\Http\Controllers\Api\V1\Composer\AppGeocodeController;
 use App\Http\Controllers\Api\V1\Composer\AppPlaceFeedbackController;
+use App\Http\Controllers\Api\V1\Composer\AppPlaceWorkAnswerController;
 use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\JourneyController;
@@ -68,6 +69,12 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         // an address search, and their own places to start from.
         Route::get('events/saved', [AppEventBookmarkController::class, 'index'])->middleware('verified');
         Route::post('places/{spot}/feedback', AppPlaceFeedbackController::class)->middleware(['verified', 'throttle:60,1']);
+        // A place's sheet: where they stand with it, Been there, and "Good for laptop work?".
+        Route::get('places/{spot}/feedback', [AppPlaceFeedbackController::class, 'standing'])->middleware('verified');
+        Route::put('places/{spot}/been', [AppPlaceFeedbackController::class, 'been'])->middleware(['verified', 'throttle:60,1']);
+        Route::delete('places/{spot}/been', [AppPlaceFeedbackController::class, 'forgetBeen'])->middleware(['verified', 'throttle:60,1']);
+        Route::get('places/{spot}/work-answer', [AppPlaceWorkAnswerController::class, 'show'])->middleware('verified');
+        Route::put('places/{spot}/work-answer', [AppPlaceWorkAnswerController::class, 'update'])->middleware(['verified', 'throttle:60,1']);
         Route::get('geocode', AppGeocodeController::class)->middleware(['verified', 'throttle:search']);
         Route::get('composer/places', [AppComposerController::class, 'places'])->middleware('verified');
         // The bell's sheet: their alerts, and one read.

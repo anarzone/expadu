@@ -6810,6 +6810,211 @@ public enum Operations {
             }
         }
     }
+    /// Where the person stands with the place now, for Composer's place sheet
+    ///
+    /// - Remark: HTTP `GET /places/{spot}/feedback`.
+    /// - Remark: Generated from `#/paths//places/{spot}/feedback/get(appPlaceFeedback.standing)`.
+    public enum AppPlaceFeedback_standing {
+        public static let id: Swift.String = "appPlaceFeedback.standing"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The spot ID
+                ///
+                /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/path/spot`.
+                public var spot: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - spot: The spot ID
+                public init(spot: Swift.Int) {
+                    self.spot = spot
+                }
+            }
+            public var path: Operations.AppPlaceFeedback_standing.Input.Path
+            /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceFeedback_standing.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceFeedback_standing.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppPlaceFeedback_standing.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.AppPlaceFeedback_standing.Input.Path,
+                headers: Operations.AppPlaceFeedback_standing.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/responses/200/content/json/state`.
+                        public var state: Swift.String?
+                        /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/responses/200/content/json/been`.
+                        public var been: Swift.Bool
+                        /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/responses/200/content/json/been_rating`.
+                        public var beenRating: Swift.String?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - state:
+                        ///   - been:
+                        ///   - beenRating:
+                        public init(
+                            state: Swift.String? = nil,
+                            been: Swift.Bool,
+                            beenRating: Swift.String? = nil
+                        ) {
+                            self.state = state
+                            self.been = been
+                            self.beenRating = beenRating
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case state
+                            case been
+                            case beenRating = "been_rating"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/feedback/GET/responses/200/content/application\/json`.
+                    case json(Operations.AppPlaceFeedback_standing.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppPlaceFeedback_standing.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppPlaceFeedback_standing.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppPlaceFeedback_standing.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/feedback/get(appPlaceFeedback.standing)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppPlaceFeedback_standing.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppPlaceFeedback_standing.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/feedback/get(appPlaceFeedback.standing)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/feedback/get(appPlaceFeedback.standing)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `POST /places/{spot}/feedback`.
     /// - Remark: Generated from `#/paths//places/{spot}/feedback/post(composer.appPlaceFeedback)`.
     public enum Composer_appPlaceFeedback {
@@ -7031,6 +7236,1119 @@ public enum Operations {
             /// Unauthenticated
             ///
             /// - Remark: Generated from `#/paths//places/{spot}/feedback/post(composer.appPlaceFeedback)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// PUT /api/places/{spot}/been {rating?: up|down}
+    ///
+    /// - Remark: HTTP `PUT /places/{spot}/been`.
+    /// - Remark: Generated from `#/paths//places/{spot}/been/put(appPlaceFeedback.been)`.
+    public enum AppPlaceFeedback_been {
+        public static let id: Swift.String = "appPlaceFeedback.been"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/path`.
+            public struct Path: Sendable, Hashable {
+                /// The spot ID
+                ///
+                /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/path/spot`.
+                public var spot: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - spot: The spot ID
+                public init(spot: Swift.Int) {
+                    self.spot = spot
+                }
+            }
+            public var path: Operations.AppPlaceFeedback_been.Input.Path
+            /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceFeedback_been.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceFeedback_been.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppPlaceFeedback_been.Input.Headers
+            /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/requestBody/json/rating`.
+                    @frozen public enum RatingPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case up = "up"
+                        case down = "down"
+                        case _empty_ = ""
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/requestBody/json/rating`.
+                    public var rating: Operations.AppPlaceFeedback_been.Input.Body.JsonPayload.RatingPayload?
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - rating:
+                    public init(rating: Operations.AppPlaceFeedback_been.Input.Body.JsonPayload.RatingPayload? = nil) {
+                        self.rating = rating
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case rating
+                    }
+                }
+                /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/requestBody/content/application\/json`.
+                case json(Operations.AppPlaceFeedback_been.Input.Body.JsonPayload)
+            }
+            public var body: Operations.AppPlaceFeedback_been.Input.Body?
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.AppPlaceFeedback_been.Input.Path,
+                headers: Operations.AppPlaceFeedback_been.Input.Headers = .init(),
+                body: Operations.AppPlaceFeedback_been.Input.Body? = nil
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/responses/200/content/json/state`.
+                        public var state: Swift.String?
+                        /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/responses/200/content/json/been`.
+                        public var been: Swift.Bool
+                        /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/responses/200/content/json/been_rating`.
+                        public var beenRating: Swift.String?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - state:
+                        ///   - been:
+                        ///   - beenRating:
+                        public init(
+                            state: Swift.String? = nil,
+                            been: Swift.Bool,
+                            beenRating: Swift.String? = nil
+                        ) {
+                            self.state = state
+                            self.been = been
+                            self.beenRating = beenRating
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case state
+                            case been
+                            case beenRating = "been_rating"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/been/PUT/responses/200/content/application\/json`.
+                    case json(Operations.AppPlaceFeedback_been.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppPlaceFeedback_been.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppPlaceFeedback_been.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppPlaceFeedback_been.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/been/put(appPlaceFeedback.been)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppPlaceFeedback_been.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppPlaceFeedback_been.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/been/put(appPlaceFeedback.been)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/been/put(appPlaceFeedback.been)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/been/put(appPlaceFeedback.been)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// DELETE /api/places/{spot}/been
+    ///
+    /// - Remark: HTTP `DELETE /places/{spot}/been`.
+    /// - Remark: Generated from `#/paths//places/{spot}/been/delete(appPlaceFeedback.forgetBeen)`.
+    public enum AppPlaceFeedback_forgetBeen {
+        public static let id: Swift.String = "appPlaceFeedback.forgetBeen"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// The spot ID
+                ///
+                /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/path/spot`.
+                public var spot: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - spot: The spot ID
+                public init(spot: Swift.Int) {
+                    self.spot = spot
+                }
+            }
+            public var path: Operations.AppPlaceFeedback_forgetBeen.Input.Path
+            /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceFeedback_forgetBeen.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceFeedback_forgetBeen.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppPlaceFeedback_forgetBeen.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.AppPlaceFeedback_forgetBeen.Input.Path,
+                headers: Operations.AppPlaceFeedback_forgetBeen.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/responses/200/content/json/state`.
+                        public var state: Swift.String?
+                        /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/responses/200/content/json/been`.
+                        public var been: Swift.Bool
+                        /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/responses/200/content/json/been_rating`.
+                        public var beenRating: Swift.String?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - state:
+                        ///   - been:
+                        ///   - beenRating:
+                        public init(
+                            state: Swift.String? = nil,
+                            been: Swift.Bool,
+                            beenRating: Swift.String? = nil
+                        ) {
+                            self.state = state
+                            self.been = been
+                            self.beenRating = beenRating
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case state
+                            case been
+                            case beenRating = "been_rating"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/been/DELETE/responses/200/content/application\/json`.
+                    case json(Operations.AppPlaceFeedback_forgetBeen.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppPlaceFeedback_forgetBeen.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppPlaceFeedback_forgetBeen.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppPlaceFeedback_forgetBeen.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/been/delete(appPlaceFeedback.forgetBeen)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppPlaceFeedback_forgetBeen.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppPlaceFeedback_forgetBeen.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/been/delete(appPlaceFeedback.forgetBeen)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/been/delete(appPlaceFeedback.forgetBeen)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /places/{spot}/work-answer`.
+    /// - Remark: Generated from `#/paths//places/{spot}/work-answer/get(appPlaceWorkAnswer.show)`.
+    public enum AppPlaceWorkAnswer_show {
+        public static let id: Swift.String = "appPlaceWorkAnswer.show"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The spot ID
+                ///
+                /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/path/spot`.
+                public var spot: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - spot: The spot ID
+                public init(spot: Swift.Int) {
+                    self.spot = spot
+                }
+            }
+            public var path: Operations.AppPlaceWorkAnswer_show.Input.Path
+            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceWorkAnswer_show.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceWorkAnswer_show.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppPlaceWorkAnswer_show.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.AppPlaceWorkAnswer_show.Input.Path,
+                headers: Operations.AppPlaceWorkAnswer_show.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/can_answer`.
+                        public var canAnswer: Swift.Bool
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/answer`.
+                        public struct AnswerPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/answer/laptop`.
+                            public var laptop: Swift.String
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/answer/wifi`.
+                            public var wifi: Swift.String?
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/answer/sockets`.
+                            public var sockets: Swift.String?
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/answer/quiet`.
+                            public var quiet: Swift.String?
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/answer/answered_at`.
+                            public var answeredAt: Swift.String
+                            /// Creates a new `AnswerPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - laptop:
+                            ///   - wifi:
+                            ///   - sockets:
+                            ///   - quiet:
+                            ///   - answeredAt:
+                            public init(
+                                laptop: Swift.String,
+                                wifi: Swift.String? = nil,
+                                sockets: Swift.String? = nil,
+                                quiet: Swift.String? = nil,
+                                answeredAt: Swift.String
+                            ) {
+                                self.laptop = laptop
+                                self.wifi = wifi
+                                self.sockets = sockets
+                                self.quiet = quiet
+                                self.answeredAt = answeredAt
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case laptop
+                                case wifi
+                                case sockets
+                                case quiet
+                                case answeredAt = "answered_at"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/answer`.
+                        public var answer: Operations.AppPlaceWorkAnswer_show.Output.Ok.Body.JsonPayload.AnswerPayload?
+                        /// Shown only from 3 people: below that, null ("Not listed yet").
+                        ///
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/json/totals`.
+                        public var totals: [OpenAPIRuntime.OpenAPIValueContainer]
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - canAnswer:
+                        ///   - answer:
+                        ///   - totals: Shown only from 3 people: below that, null ("Not listed yet").
+                        public init(
+                            canAnswer: Swift.Bool,
+                            answer: Operations.AppPlaceWorkAnswer_show.Output.Ok.Body.JsonPayload.AnswerPayload? = nil,
+                            totals: [OpenAPIRuntime.OpenAPIValueContainer]
+                        ) {
+                            self.canAnswer = canAnswer
+                            self.answer = answer
+                            self.totals = totals
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case canAnswer = "can_answer"
+                            case answer
+                            case totals
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/GET/responses/200/content/application\/json`.
+                    case json(Operations.AppPlaceWorkAnswer_show.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppPlaceWorkAnswer_show.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppPlaceWorkAnswer_show.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppPlaceWorkAnswer_show.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/work-answer/get(appPlaceWorkAnswer.show)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppPlaceWorkAnswer_show.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppPlaceWorkAnswer_show.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/work-answer/get(appPlaceWorkAnswer.show)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/work-answer/get(appPlaceWorkAnswer.show)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `PUT /places/{spot}/work-answer`.
+    /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)`.
+    public enum AppPlaceWorkAnswer_update {
+        public static let id: Swift.String = "appPlaceWorkAnswer.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/path`.
+            public struct Path: Sendable, Hashable {
+                /// The spot ID
+                ///
+                /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/path/spot`.
+                public var spot: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - spot: The spot ID
+                public init(spot: Swift.Int) {
+                    self.spot = spot
+                }
+            }
+            public var path: Operations.AppPlaceWorkAnswer_update.Input.Path
+            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceWorkAnswer_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppPlaceWorkAnswer_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppPlaceWorkAnswer_update.Input.Headers
+            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json/laptop`.
+                    @frozen public enum LaptopPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case yes = "yes"
+                        case no = "no"
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json/laptop`.
+                    public var laptop: Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload.LaptopPayload
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json/wifi`.
+                    @frozen public enum WifiPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case yes = "yes"
+                        case no = "no"
+                        case _empty_ = ""
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json/wifi`.
+                    public var wifi: Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload.WifiPayload?
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json/sockets`.
+                    @frozen public enum SocketsPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case yes = "yes"
+                        case no = "no"
+                        case _empty_ = ""
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json/sockets`.
+                    public var sockets: Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload.SocketsPayload?
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json/quiet`.
+                    @frozen public enum QuietPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case yes = "yes"
+                        case no = "no"
+                        case _empty_ = ""
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/json/quiet`.
+                    public var quiet: Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload.QuietPayload?
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - laptop:
+                    ///   - wifi:
+                    ///   - sockets:
+                    ///   - quiet:
+                    public init(
+                        laptop: Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload.LaptopPayload,
+                        wifi: Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload.WifiPayload? = nil,
+                        sockets: Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload.SocketsPayload? = nil,
+                        quiet: Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload.QuietPayload? = nil
+                    ) {
+                        self.laptop = laptop
+                        self.wifi = wifi
+                        self.sockets = sockets
+                        self.quiet = quiet
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case laptop
+                        case wifi
+                        case sockets
+                        case quiet
+                    }
+                }
+                /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/requestBody/content/application\/json`.
+                case json(Operations.AppPlaceWorkAnswer_update.Input.Body.JsonPayload)
+            }
+            public var body: Operations.AppPlaceWorkAnswer_update.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.AppPlaceWorkAnswer_update.Input.Path,
+                headers: Operations.AppPlaceWorkAnswer_update.Input.Headers = .init(),
+                body: Operations.AppPlaceWorkAnswer_update.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/can_answer`.
+                        public var canAnswer: Swift.Bool
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/answer`.
+                        public struct AnswerPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/answer/laptop`.
+                            public var laptop: Swift.String
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/answer/wifi`.
+                            public var wifi: Swift.String?
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/answer/sockets`.
+                            public var sockets: Swift.String?
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/answer/quiet`.
+                            public var quiet: Swift.String?
+                            /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/answer/answered_at`.
+                            public var answeredAt: Swift.String
+                            /// Creates a new `AnswerPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - laptop:
+                            ///   - wifi:
+                            ///   - sockets:
+                            ///   - quiet:
+                            ///   - answeredAt:
+                            public init(
+                                laptop: Swift.String,
+                                wifi: Swift.String? = nil,
+                                sockets: Swift.String? = nil,
+                                quiet: Swift.String? = nil,
+                                answeredAt: Swift.String
+                            ) {
+                                self.laptop = laptop
+                                self.wifi = wifi
+                                self.sockets = sockets
+                                self.quiet = quiet
+                                self.answeredAt = answeredAt
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case laptop
+                                case wifi
+                                case sockets
+                                case quiet
+                                case answeredAt = "answered_at"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/answer`.
+                        public var answer: Operations.AppPlaceWorkAnswer_update.Output.Ok.Body.JsonPayload.AnswerPayload?
+                        /// Shown only from 3 people: below that, null ("Not listed yet").
+                        ///
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/json/totals`.
+                        public var totals: [OpenAPIRuntime.OpenAPIValueContainer]
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - canAnswer:
+                        ///   - answer:
+                        ///   - totals: Shown only from 3 people: below that, null ("Not listed yet").
+                        public init(
+                            canAnswer: Swift.Bool,
+                            answer: Operations.AppPlaceWorkAnswer_update.Output.Ok.Body.JsonPayload.AnswerPayload? = nil,
+                            totals: [OpenAPIRuntime.OpenAPIValueContainer]
+                        ) {
+                            self.canAnswer = canAnswer
+                            self.answer = answer
+                            self.totals = totals
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case canAnswer = "can_answer"
+                            case answer
+                            case totals
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/200/content/application\/json`.
+                    case json(Operations.AppPlaceWorkAnswer_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppPlaceWorkAnswer_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppPlaceWorkAnswer_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppPlaceWorkAnswer_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppPlaceWorkAnswer_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppPlaceWorkAnswer_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Forbidden: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/403/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/403/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// Error overview.
+                        ///
+                        /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/403/content/json/message`.
+                        public var message: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - message: Error overview.
+                        public init(message: Swift.String) {
+                            self.message = message
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case message
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/places/{spot}/work-answer/PUT/responses/403/content/application\/json`.
+                    case json(Operations.AppPlaceWorkAnswer_update.Output.Forbidden.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppPlaceWorkAnswer_update.Output.Forbidden.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppPlaceWorkAnswer_update.Output.Forbidden.Body
+                /// Creates a new `Forbidden`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppPlaceWorkAnswer_update.Output.Forbidden.Body) {
+                    self.body = body
+                }
+            }
+            /// An error
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Operations.AppPlaceWorkAnswer_update.Output.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Operations.AppPlaceWorkAnswer_update.Output.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Components.Responses.AuthenticationException)

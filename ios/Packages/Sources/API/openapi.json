@@ -2468,6 +2468,479 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
+            },
+            "get": {
+                "operationId": "appPlaceFeedback.standing",
+                "summary": "Where the person stands with the place now, for Composer's place sheet",
+                "tags": [
+                    "AppPlaceFeedback"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rating": {
+                                            "type": "null"
+                                        },
+                                        "been": {
+                                            "type": "boolean"
+                                        },
+                                        "been_rating": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "state",
+                                        "rating",
+                                        "been",
+                                        "been_rating"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/places/{spot}/been": {
+            "put": {
+                "operationId": "appPlaceFeedback.been",
+                "summary": "PUT /api/places/{spot}/been {rating?: up|down}",
+                "tags": [
+                    "AppPlaceFeedback"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "rating": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "up",
+                                            "down",
+                                            null
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rating": {
+                                            "type": "null"
+                                        },
+                                        "been": {
+                                            "type": "boolean"
+                                        },
+                                        "been_rating": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "state",
+                                        "rating",
+                                        "been",
+                                        "been_rating"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "appPlaceFeedback.forgetBeen",
+                "summary": "DELETE /api/places/{spot}/been",
+                "tags": [
+                    "AppPlaceFeedback"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rating": {
+                                            "type": "null"
+                                        },
+                                        "been": {
+                                            "type": "boolean"
+                                        },
+                                        "been_rating": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "state",
+                                        "rating",
+                                        "been",
+                                        "been_rating"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/places/{spot}/work-answer": {
+            "get": {
+                "operationId": "appPlaceWorkAnswer.show",
+                "tags": [
+                    "AppPlaceWorkAnswer"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "can_answer": {
+                                            "type": "boolean"
+                                        },
+                                        "answer": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "laptop": {
+                                                    "type": "string"
+                                                },
+                                                "wifi": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "sockets": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "quiet": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "answered_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "laptop",
+                                                "wifi",
+                                                "sockets",
+                                                "quiet",
+                                                "answered_at"
+                                            ]
+                                        },
+                                        "totals": {
+                                            "type": "array",
+                                            "description": "Shown only from 3 people: below that, null (\"Not listed yet\").",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "can_answer",
+                                        "answer",
+                                        "totals"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "appPlaceWorkAnswer.update",
+                "tags": [
+                    "AppPlaceWorkAnswer"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "laptop": {
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no"
+                                        ]
+                                    },
+                                    "wifi": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            null
+                                        ]
+                                    },
+                                    "sockets": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            null
+                                        ]
+                                    },
+                                    "quiet": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            null
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "laptop"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "can_answer": {
+                                            "type": "boolean"
+                                        },
+                                        "answer": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "laptop": {
+                                                    "type": "string"
+                                                },
+                                                "wifi": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "sockets": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "quiet": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "answered_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "laptop",
+                                                "wifi",
+                                                "sockets",
+                                                "quiet",
+                                                "answered_at"
+                                            ]
+                                        },
+                                        "totals": {
+                                            "type": "array",
+                                            "description": "Shown only from 3 people: below that, null (\"Not listed yet\").",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "can_answer",
+                                        "answer",
+                                        "totals"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Mark the place Been there or Saved first."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
             }
         },
         "/privacy/processing/{purpose}": {

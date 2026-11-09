@@ -136,6 +136,16 @@ final class RecordPlaceFeedback
         $this->family($userId, $spot)->whereNull('state')->whereNull('been_at')->delete();
     }
 
+    /**
+     * Where the person stands with a place now (saved, been there), without changing it.
+     *
+     * @return array{state: ?string, rating: null, been: bool, been_rating: ?string}
+     */
+    public function standing(User $user, Spot $spot): array
+    {
+        return $this->payload($user->id, $spot);
+    }
+
     /** @return array{state: ?string, rating: null, been: bool, been_rating: ?string} */
     private function payload(int $userId, Spot $spot): array
     {
