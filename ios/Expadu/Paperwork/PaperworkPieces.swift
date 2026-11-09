@@ -177,8 +177,8 @@ struct PaperworkHead<Trailing: View>: View {
     }
 }
 
-/// A small side action in a header: a plain icon in the link's ink, like the words beside it;
-/// no tile. The full 44pt is still the hit area.
+/// A small side action in a header: a plain icon in the page's ink, apart from the teal link
+/// beside it; no tile. The full 44pt is still the hit area.
 struct PaperworkMini: View {
     let symbol: String
     let label: String
@@ -186,7 +186,7 @@ struct PaperworkMini: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 19, weight: .semibold)).foregroundStyle(TodayLink.ink)
+            Image(systemName: symbol).font(.system(size: 19, weight: .semibold)).foregroundStyle(Palette.text)
                 .frame(width: 44, height: 44).contentShape(.rect)
         }
         .buttonStyle(PressStyle())
