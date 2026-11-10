@@ -550,9 +550,15 @@ struct NoticePopup: View {
                     Spacer(minLength: 0)
                     CircleButton(symbol: "xmark", label: "Close", tap: close)
                 }
-                Text(german ? (notice.details ?? notice.title) : (notice.brief?.text ?? notice.title))
-                    .font(.geist(15)).fixedSize(horizontal: false, vertical: true)
-                    .contentTransition(.opacity)
+                // KVB's German can run long (every date of a works plan): it scrolls; the links stay in reach.
+                ScrollView {
+                    Text(german ? (notice.details ?? notice.title) : (notice.brief?.text ?? notice.title))
+                        .font(.geist(15)).fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentTransition(.opacity)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .frame(maxHeight: 300)
                 HStack(spacing: 18) {
                     Button(german ? "Show it in English" : "KVB’s words, in German") { withAnimation(.smooth(duration: 0.25)) { german.toggle() } }
                     if let url = notice.url.flatMap(URL.init(string:)) {
@@ -565,7 +571,7 @@ struct NoticePopup: View {
             .foregroundStyle(Palette.text)
             .padding(18)
             .glassEffect(.regular, in: .rect(cornerRadius: 26))
-            .padding(.horizontal, 14).padding(.top, 150)
+            .padding(.horizontal, 14).padding(.top, 120)
         }
     }
 }

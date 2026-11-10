@@ -87,7 +87,9 @@ struct TravelTrip: View {
             }
             Spacer(minLength: 0)
             Menu {
-                Button { Task { await missed() } } label: { Label("I missed the tram", systemImage: "clock") }
+                if let ride = trip.legs.first(where: \.rides) {
+                    Button { Task { await missed() } } label: { Label(ride.mode == "bus" ? "I missed the bus" : "I missed the tram", systemImage: "clock") }
+                }
                 Button { somewhereElse() } label: { Label("I’m somewhere else", systemImage: "location") }
                 Button(role: .destructive) { asking = true } label: { Label("Stop the trip", systemImage: "xmark") }
             } label: {
@@ -121,8 +123,10 @@ struct TravelTrip: View {
     }
 
     private func moment(_ step: TodayPage.Step, index: Int, count: Int, now: Date, look: LineLook) -> some View {
+        // Before a step starts, the minutes until it does (leave in…); once on it, until the next one.
         let next = trip.steps.indices.contains(index + 1) ? trip.steps[index + 1].at : nil
-        let minutes = max(0, Int(((next ?? step.at).timeIntervalSince(now) / 60).rounded(.up)))
+        let until = step.at > now ? step.at : (next ?? step.at)
+        let minutes = max(0, Int((until.timeIntervalSince(now) / 60).rounded(.up)))
         return VStack(alignment: .leading, spacing: 10) {
             Text(index == count - 1 ? "Arrived" : "\(index + 1) of \(count)").font(.geist(13, .semibold)).opacity(0.9)
             Text(step.title).font(.posterGrotesque(36)).tracking(-0.4).fixedSize(horizontal: false, vertical: true)
@@ -174,7 +178,9 @@ struct TravelTrip: View {
             Text("Your way").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
             ScrollView {
                 StepList(steps: steps, current: current)
-                Text("We’ll tell you one stop before. Your phone buzzes here, even with the screen off (with notifications on). The trip ends by itself.")
+                Text(trip.legs.contains(where: \.rides)
+                     ? "We’ll tell you one stop before. Your phone buzzes here, even with the screen off (with notifications on). The trip ends by itself."
+                     : "It moves on by itself as you go. The trip ends by itself.")
                     .font(.geist(12.5)).foregroundStyle(Palette.textSoft).padding(.top, 8)
             }
             .frame(maxHeight: mapOn ? 160 : 300)

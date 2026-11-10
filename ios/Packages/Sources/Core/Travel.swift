@@ -578,9 +578,8 @@ public struct PlannedTrip: Decodable, Equatable, Sendable {
     public let departTime: String?
     public let arriveTime: String?
     public let remind: Bool
+    /// When the reminder goes, "HH:mm".
     public let remindAt: String?
-
-    public var remindDate: Date? { TravelJSON.date(remindAt) }
 
     public static func decode(_ data: Data) throws -> PlannedTrip {
         struct Reply: Decodable { let planned: PlannedTrip }

@@ -38,6 +38,8 @@ final class TravelModel {
     private(set) var place: CLLocationCoordinate2D?
     /// A stop they picked; nil follows where they are.
     private(set) var picked: String?
+    /// The stop shown while its board loads: the picked one.
+    var loadingName: String? { reply == nil ? picked : nil }
     private(set) var linesMap: LinesMap?
     private(set) var routes: [String: LineRoute] = [:]
     private(set) var stopBoards: [String: LineStop] = [:]

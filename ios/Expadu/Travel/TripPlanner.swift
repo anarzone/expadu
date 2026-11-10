@@ -84,6 +84,8 @@ final class TripPlanner {
     var ask: Option?
     var deutschlandticket = false
     var startingProblem: String?
+    /// The way being added or started right now, so its ticket can say so.
+    private(set) var busy: Int?
 
     var routesShown: Bool { destination != nil }
     @ObservationIgnored let follower = PhoneFollow()
@@ -104,27 +106,31 @@ final class TripPlanner {
         shown = true
     }
 
-    /// Other ways for the next trip on their day: its routes, Add to plan kept for it.
-    func openPlan(_ leave: TodayPage.Leave, places: TravelPlaces?) {
+    /// Other ways for the next trip on their day: its routes, Add to plan kept for it. The plan's point
+    /// comes with Travel's places, so it's found once they're read.
+    private var pendingPlan: (id: String?, title: String)?
+
+    func openPlan(_ leave: TodayPage.Leave) {
+        fromStation = nil
+        field = .to
+        query = ""
+        listening = false
+        answer = nil
+        destination = nil
+        target = nil
+        pendingPlan = (leave.planId, leave.to)
         shown = true
-        Task { @MainActor in
-            if let places { self.places = places }
-            // The plan's place is on the day; Travel's places carry its point.
-            if let plan = self.places.today.first(where: { $0.id == leave.planId }) ?? self.places.today.first(where: { $0.title == leave.to }) {
-                destination = TripPoint(name: plan.place ?? plan.title, lat: plan.lat, lng: plan.lng)
-                target = plan
-            }
-        }
     }
 
     func loadPlaces(_ api: AppAPI) async {
-        do throws(APIFailure) {
-            places = try await api.travelPlaces()
-            if let leaveTarget = target, destination == nil {
-                destination = TripPoint(name: leaveTarget.place ?? leaveTarget.title, lat: leaveTarget.lat, lng: leaveTarget.lng)
-            }
-        } catch {}
+        do throws(APIFailure) { places = try await api.travelPlaces() } catch {}
         here = await locator.coordinate()
+        if let pending = pendingPlan {
+            pendingPlan = nil
+            if let plan = places.today.first(where: { $0.id == pending.id }) ?? places.today.first(where: { $0.title == pending.title }) {
+                await go(to: TripPoint(name: plan.place ?? plan.title, lat: plan.lat, lng: plan.lng), target: plan, api)
+            }
+        }
     }
 
     func suggest(_ api: AppAPI) async {
@@ -283,7 +289,9 @@ final class TripPlanner {
     // MARK: Keeping and going
 
     func addToPlan(_ option: Option, _ api: AppAPI) async {
-        guard let target, let journey = raw.flatMap({ TripPlan.raw($0, index: option.index) }) else { return }
+        guard busy == nil, let target, let journey = raw.flatMap({ TripPlan.raw($0, index: option.index) }) else { return }
+        busy = option.index
+        defer { busy = nil }
         if let kept = added[option.index] {
             withAnimation(.snappy) { added[option.index] = nil }
             do throws(APIFailure) { try await api.removePlannedTrip(kept.id) } catch { withAnimation(.snappy) { added[option.index] = kept } }
@@ -294,7 +302,7 @@ final class TripPlanner {
             withAnimation(.snappy) { added[option.index] = planned }
             savedSheet = planned
         } catch {
-            if case let .refused(text) = error { startingProblem = text } else { startingProblem = "Couldn’t add it. Try again in a moment." }
+            if case let .refused(text) = error { startingProblem = text } else { startingProblem = "Couldn’t add it (\(error)). Try again in a moment." }
         }
     }
 
@@ -314,7 +322,9 @@ final class TripPlanner {
 
     /// I'm on my way on this way. Another trip running asks first.
     func start(_ option: Option, replace: Bool, _ api: AppAPI, today: TodayModel) async -> Bool {
-        guard let destination, let journey = raw.flatMap({ TripPlan.raw($0, index: option.index) }) else { return false }
+        guard busy == nil, let destination, let journey = raw.flatMap({ TripPlan.raw($0, index: option.index) }) else { return false }
+        busy = option.index
+        defer { busy = nil }
         let start = from ?? here.map { TripPoint(name: "Your location", lat: $0.latitude, lng: $0.longitude) }
         do throws(APIFailure) {
             let result = try await api.startTravelTrip(journey: journey, to: destination, from: start,

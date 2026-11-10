@@ -63,6 +63,9 @@ struct TripRoutesView: View {
             .presentationBackground(Palette.surface)
             .presentationCornerRadius(32)
         }
+        .alert("That didn’t work", isPresented: Binding(get: { planner.startingProblem != nil }, set: { if !$0 { planner.startingProblem = nil } })) {
+            Button("OK", role: .cancel) { planner.startingProblem = nil }
+        } message: { Text(planner.startingProblem ?? "") }
         .alert("Replace the trip you’re on?", isPresented: Binding(get: { planner.ask != nil }, set: { if !$0 { planner.ask = nil } })) {
             Button("Keep", role: .cancel) { planner.ask = nil }
             Button("Replace") {
@@ -318,15 +321,15 @@ private struct TicketView: View {
                 if open { JourneySteps(journey: journey, to: planner.destination?.name ?? "") .transition(.opacity.combined(with: .move(edge: .top))) }
                 HStack(spacing: 8) {
                     Button(action: show) {
-                        Label("Show the way", systemImage: "arrow.right").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
+                        Label(planner.busy == option.index && !kept ? "Starting…" : "Show the way", systemImage: "arrow.right").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
                     }
                     .buttonStyle(PressStyle())
                     .buttonFace(Palette.action, radius: 12)
                     .foregroundStyle(Palette.onAction)
-                    .disabled(journey.cancelled)
+                    .disabled(journey.cancelled || planner.busy != nil)
                     if let add {
                         Button(action: add) {
-                            Text(kept ? "✓ In your plan" : "Add to plan").font(.geist(15, .semibold)).padding(.horizontal, 12).frame(height: 44)
+                            Text(kept ? "✓ In your plan" : planner.busy == option.index ? "Adding…" : "Add to plan").font(.geist(15, .semibold)).padding(.horizontal, 12).frame(height: 44)
                                 .contentTransition(.opacity)
                         }
                         .buttonStyle(PressStyle())
@@ -616,7 +619,7 @@ private struct AddedSheet: View {
                 Image(systemName: "bell").font(.system(size: 18)).frame(width: 24)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Remind me when to leave").font(.geist(15.5, .semibold))
-                    Text(current.remind ? (current.remindDate.map { "At \(TripPlanner.clock($0)), five minutes before you need to go." } ?? "Five minutes before you need to go.") : "Off. It stays on your day.")
+                    Text(current.remind ? (current.remindAt.map { "At \($0), five minutes before you need to go." } ?? "Five minutes before you need to go.") : "Off. It stays on your day.")
                         .font(.geist(13)).foregroundStyle(Palette.textSoft)
                 }
                 Spacer(minLength: 0)

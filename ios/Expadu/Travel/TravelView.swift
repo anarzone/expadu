@@ -14,6 +14,7 @@ struct TravelView: View {
     @State private var model = TravelModel()
     @State private var planner = TripPlanner()
     @State private var leaveOpen = false
+    @State private var otherWaysFor: TodayPage.Leave?
 
     var body: some View {
         let lead = model.lead
@@ -55,9 +56,12 @@ struct TravelView: View {
                 .presentationBackground(Palette.surface)
                 .presentationCornerRadius(32)
         }
-        .sheet(isPresented: $leaveOpen) {
+        // Other ways opens Plan a trip once the sheet has gone: one presentation at a time.
+        .sheet(isPresented: $leaveOpen, onDismiss: {
+            if let leave = otherWaysFor { otherWaysFor = nil; planner.openPlan(leave) }
+        }) {
             if let leave = today.page?.leave {
-                LeaveSheet(leave: leave, otherWays: { leaveOpen = false; planner.openPlan(leave, places: nil) })
+                LeaveSheet(leave: leave, otherWays: { otherWaysFor = leave; leaveOpen = false })
                     .presentationDetents([.height(300)])
                     .presentationBackground(Palette.surface)
                     .presentationCornerRadius(32)
@@ -96,7 +100,7 @@ struct TravelView: View {
             HStack(alignment: .center, spacing: 8) {
                 Button { model.picker = true } label: {
                     HStack(spacing: 8) {
-                        Text(model.station?.name ?? "Nearby")
+                        Text(model.station?.name ?? model.loadingName ?? "Nearby")
                             .font(.posterGrotesque((model.station?.name.count ?? 0) > 10 ? 38 : 44))
                             .textCase(.uppercase).tracking(-0.8)
                             .lineLimit(1).minimumScaleFactor(0.55)
@@ -153,7 +157,7 @@ struct TravelView: View {
     private var content: some View {
         switch model.phase {
         case .finding:
-            BoardState(title: "Finding the closest station…") {
+            BoardState(title: model.loadingName == nil ? "Finding the closest station…" : "Reading the board…") {
                 FlapWord(text: "------------", small: true)
             }
         case .noLocation:
