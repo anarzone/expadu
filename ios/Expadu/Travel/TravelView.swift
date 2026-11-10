@@ -11,6 +11,7 @@ struct TravelView: View {
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.sectionBarCompact) private var barCompact
     @State private var model = TravelModel()
     @State private var planner = TripPlanner()
     @State private var leaveOpen = false
@@ -43,9 +44,16 @@ struct TravelView: View {
         }
         .foregroundStyle(model.map ? Palette.text : lead.ink)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.55), value: model.leadLine?.line)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // Where to? sits in the bottom row, between the folded section bar and Composer's button.
+        .overlay(alignment: .bottom) {
             WhereTo(open: { planner.open(from: model.station) }, speak: { planner.open(from: model.station, listening: true) })
-                .padding(.horizontal, 16).padding(.bottom, 12)
+                .padding(.leading, 16 + 56 + 10).padding(.trailing, 16 + 62 + 10)
+                .padding(.bottom, 28)
+                .opacity(barCompact ? 1 : 0)
+                .offset(y: barCompact ? 0 : 20)
+                .allowsHitTesting(barCompact)
+                .animation(.spring(duration: 0.4, bounce: 0.2), value: barCompact)
+                .ignoresSafeArea(edges: .bottom)
         }
         .task { await model.start(session.api) }
         .onDisappear { model.stop() }

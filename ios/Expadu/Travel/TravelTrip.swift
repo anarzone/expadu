@@ -21,6 +21,9 @@ struct TravelTrip: View {
     @State private var asking = false
     @State private var problem: String?
     @State private var working = false
+    @State private var sheetOpen = true
+    @State private var sheetDrag: CGFloat = 0
+    @State private var openStops: Set<Int> = []
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
@@ -159,37 +162,80 @@ struct TravelTrip: View {
 
     private func sheet(steps: [TodayPage.Step], current: Int, look: LineLook) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Capsule().fill(Palette.border).frame(width: 36, height: 5).frame(maxWidth: .infinity)
-            HStack(spacing: 8) {
-                Button { withAnimation(.smooth) { mapOn.toggle() } } label: {
-                    Label("On the map", systemImage: "map").font(.geist(15, .semibold)).padding(.horizontal, 14).frame(height: 46)
+            // The handle: tap or drag to fold the sheet away and bring it back.
+            VStack(spacing: 10) {
+                Capsule().fill(Palette.border).frame(width: 36, height: 5)
+                if !sheetOpen {
+                    HStack {
+                        Text("Your way").font(.geist(15, .semibold))
+                        Text("· \(steps.count) steps").font(.geist(15)).foregroundStyle(Palette.textSoft)
+                        Spacer()
+                        Image(systemName: "chevron.up").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.textSoft)
+                    }
                 }
-                .buttonStyle(PressStyle())
-                .background(mapOn ? Palette.selectBackground : Palette.quiet, in: .rect(cornerRadius: 14))
-                Spacer(minLength: 0)
             }
-            if mapOn {
-                CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
-                        padding: UIEdgeInsets(top: 24, left: 24, bottom: 24, right: 24), showsUser: true)
-                    .frame(height: 180)
-                    .clipShape(.rect(cornerRadius: 18))
-                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+            .frame(maxWidth: .infinity).frame(minHeight: 28)
+            .contentShape(.rect)
+            .onTapGesture { withAnimation(.smooth(duration: 0.35)) { sheetOpen.toggle() } }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(sheetOpen ? "Fold away your way" : "Show your way")
+            .accessibilityAddTraits(.isButton)
+            if sheetOpen {
+                HStack(spacing: 8) {
+                    Button { withAnimation(.smooth) { mapOn.toggle() } } label: {
+                        Label("On the map", systemImage: "map").font(.geist(15, .semibold)).padding(.horizontal, 14).frame(height: 46)
+                    }
+                    .buttonStyle(PressStyle())
+                    .background(mapOn ? Palette.selectBackground : Palette.quiet, in: .rect(cornerRadius: 14))
+                    Spacer(minLength: 0)
+                }
+                if mapOn {
+                    CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
+                            padding: UIEdgeInsets(top: 24, left: 24, bottom: 24, right: 24), showsUser: true)
+                        .frame(height: 180)
+                        .clipShape(.rect(cornerRadius: 18))
+                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+                }
+                Text("Your way").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
+                ScrollView {
+                    StepList(steps: steps, current: current)
+                    // Every stop on each ride, with when the tram is there.
+                    ForEach(Array(trip.legs.enumerated()), id: \.offset) { i, leg in
+                        if leg.rides, !leg.stopsOnTheWay.isEmpty {
+                            RideStops(leg: leg, open: openStops.contains(i)) {
+                                withAnimation(.smooth(duration: 0.3)) {
+                                    if openStops.contains(i) { openStops.remove(i) } else { openStops.insert(i) }
+                                }
+                            }
+                            .padding(.top, 12)
+                        }
+                    }
+                    Text(trip.legs.contains(where: \.rides)
+                         ? "We’ll tell you one stop before. Your phone buzzes here, even with the screen off (with notifications on). The trip ends by itself."
+                         : "It moves on by itself as you go. The trip ends by itself.")
+                        .font(.geist(12.5)).foregroundStyle(Palette.textSoft).padding(.top, 8)
+                }
+                .frame(maxHeight: mapOn ? 200 : 360)
+                .scrollIndicators(.hidden)
+                .transition(.opacity)
             }
-            Text("Your way").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
-            ScrollView {
-                StepList(steps: steps, current: current)
-                Text(trip.legs.contains(where: \.rides)
-                     ? "We’ll tell you one stop before. Your phone buzzes here, even with the screen off (with notifications on). The trip ends by itself."
-                     : "It moves on by itself as you go. The trip ends by itself.")
-                    .font(.geist(12.5)).foregroundStyle(Palette.textSoft).padding(.top, 8)
-            }
-            .frame(maxHeight: mapOn ? 160 : 300)
-            .scrollIndicators(.hidden)
         }
         .foregroundStyle(Palette.text)
         .padding(16).padding(.bottom, 24)
         .background(Palette.surface, in: .rect(topLeadingRadius: 30, topTrailingRadius: 30))
         .shadow(color: .black.opacity(0.25), radius: 20, y: -6)
+        .offset(y: max(0, sheetDrag))
+        .gesture(
+            DragGesture(minimumDistance: 12)
+                .onChanged { sheetDrag = sheetOpen ? $0.translation.height : min(0, $0.translation.height) + 0 }
+                .onEnded { value in
+                    withAnimation(.smooth(duration: 0.35)) {
+                        if value.translation.height > 60 || value.predictedEndTranslation.height > 160 { sheetOpen = false }
+                        else if value.translation.height < -40 { sheetOpen = true }
+                        sheetDrag = 0
+                    }
+                }
+        )
     }
 
     /// The next way from where they are now: the trip goes on with it.
@@ -218,5 +264,50 @@ extension TripPlanner {
 
     func stopFollowing() {
         if following { follower.stop(); following = false }
+    }
+}
+
+/// A ride's stops, folded to one row ("Tram 12 · 15 stops"); opened, each stop with its time on the line.
+private struct RideStops: View {
+    let leg: TodayPage.Trip.Leg
+    let open: Bool
+    let toggle: () -> Void
+
+    var body: some View {
+        let colour = LineLook(hex: leg.color ?? "#1A4CD4").base
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: toggle) {
+                HStack(spacing: 8) {
+                    Text(leg.line ?? "").font(.geist(12.5, .bold)).foregroundStyle(LineLook(hex: leg.color ?? "#1A4CD4").ink)
+                        .padding(.horizontal, 6).frame(minWidth: 26).frame(height: 20)
+                        .background(colour, in: .rect(cornerRadius: 5))
+                    Text("\(leg.from) → \(leg.to)").font(.geist(14, .semibold)).lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text("\(leg.stopsOnTheWay.count) stop\(leg.stopsOnTheWay.count == 1 ? "" : "s")").font(.geist(13)).foregroundStyle(Palette.textSoft)
+                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft)
+                        .rotationEffect(.degrees(open ? 180 : 0))
+                }
+                .frame(minHeight: 40).contentShape(.rect)
+            }
+            .buttonStyle(PressStyle())
+            .accessibilityLabel("Stops on line \(leg.line ?? ""), \(leg.stopsOnTheWay.count)")
+            if open {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(leg.stopsOnTheWay.enumerated()), id: \.offset) { _, stop in
+                        HStack(spacing: 12) {
+                            Circle().fill(Palette.surface).overlay { Circle().strokeBorder(colour, lineWidth: 2.5) }.frame(width: 11, height: 11)
+                                .frame(width: 17)
+                                .background { Rectangle().fill(colour).frame(width: 3).padding(.vertical, -10) }
+                            Text(stop.name).font(.geist(13.5))
+                            Spacer(minLength: 4)
+                            Text(stop.time).font(.geist(13)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                        }
+                        .frame(minHeight: 30)
+                    }
+                }
+                .clipped()
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
     }
 }

@@ -159,9 +159,9 @@ struct ComposerDrawer: View {
                 }
             } label: {
                 Label("New question", systemImage: "plus").labelStyle(Tight())
-                    .font(.geist(16.5, .semibold)).foregroundStyle(Palette.onAction)
+                    .font(.geist(16.5, .semibold)).foregroundStyle(Color(light: 0xFFF8E6, dark: 0x15130E))
                     .padding(.leading, 16).padding(.trailing, 20).frame(height: 48)
-                    .buttonFace(Palette.action, radius: 16)
+                    .buttonFace(Color(light: 0x211D15, dark: 0xFFFDF8), radius: 16)
             }
             .buttonStyle(PressStyle())
         }

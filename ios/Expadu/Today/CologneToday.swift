@@ -146,6 +146,7 @@ struct WeatherRow: View {
 
 struct PaperworkCard: View {
     let paperwork: TodayPage.Paperwork?
+    var status = "none"
     @Environment(\.shell) private var shell
 
     var body: some View {
@@ -172,9 +173,16 @@ struct PaperworkCard: View {
                             Text("Next: \(paperwork.title.prefix(1).lowercased() + paperwork.title.dropFirst())").font(.geist(16, .semibold)).multilineTextAlignment(.leading)
                             Text("Your situation · Review details").font(.geist(13)).foregroundStyle(Palette.textSoft)
                         } else {
-                            Text("SETTLING IN?").font(.geist(12.5, .semibold)).tracking(0.4).foregroundStyle(Palette.textSoft)
-                            Text("Get started when you’re ready").font(.geist(16, .semibold))
-                            Text("A few questions, then your steps for Cologne.").font(.geist(13)).foregroundStyle(Palette.textSoft)
+                            // What the record really says: "Get started" only with no record at all.
+                            let words: (String, String, String) = switch status {
+                            case "clear": ("YOUR PAPERWORK", "Nothing to do right now", "Your tasks and documents are in Paperwork.")
+                            case "paused": ("YOUR PAPERWORK", "Paperwork is paused", "You stopped it using your record. Open Paperwork to turn it back on.")
+                            case "unconfirmed": ("YOUR PAPERWORK", "Confirm your email first", "Paperwork opens your record once your address is confirmed.")
+                            default: ("SETTLING IN?", "Get started when you’re ready", "A few questions, then your steps for Cologne.")
+                            }
+                            Text(words.0).font(.geist(12.5, .semibold)).tracking(0.4).foregroundStyle(Palette.textSoft)
+                            Text(words.1).font(.geist(16, .semibold))
+                            Text(words.2).font(.geist(13)).foregroundStyle(Palette.textSoft)
                         }
                     }
                     Spacer(minLength: 0)

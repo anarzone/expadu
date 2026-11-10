@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\BureaucracyPerson;
 use App\Services\KvbLineColors;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -74,9 +75,9 @@ class TodayResource extends JsonResource
                 'travel_min' => isset($link['travel_min']) ? (int) $link['travel_min'] : null,
                 'gap_min' => isset($link['gap_min']) ? (int) $link['gap_min'] : null,
             ], $day['links'] ?? []),
-            /** @var array{plan_id: string|null, to: string, start_time: string|null, status: string, leave_time: string|null, leave_in_min: int|null, arrive_time: string|null, spare_min: int|null, line: string|null, color: string|null, departs: string|null, from: string|null, walk_min: int|null, transfers: int|null, live: bool, ways: array<int, array{leave_time: string, arrive_time: string, spare_min: int, status: string, mode: string, lines: array<int, array{line: string, color: string}>, departs: string|null, from: string|null, walk_min: int, transfers: int, minutes: int, in_plan: bool, live: bool, legs: array<int, array{mode: string, line: string|null, color: string|null, headsign: string|null, from: string, to: string, depart_at: string, arrive_at: string, depart_time: string, arrive_time: string, minutes: int, stops: int|null, polyline: string|null, turns: array<int, array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>}>}>}|null */
+            /** @var array{plan_id: string|null, to: string, start_time: string|null, status: string, leave_time: string|null, leave_in_min: int|null, arrive_time: string|null, spare_min: int|null, line: string|null, color: string|null, departs: string|null, from: string|null, walk_min: int|null, transfers: int|null, live: bool, ways: array<int, array{leave_time: string, arrive_time: string, spare_min: int, status: string, mode: string, lines: array<int, array{line: string, color: string}>, departs: string|null, from: string|null, walk_min: int, transfers: int, minutes: int, in_plan: bool, live: bool, legs: array<int, array{mode: string, line: string|null, color: string|null, headsign: string|null, from: string, to: string, depart_at: string, arrive_at: string, depart_time: string, arrive_time: string, minutes: int, stops: int|null, stops_on_the_way: array<int, array{name: string, time: string, lat: float|null, lng: float|null}>, polyline: string|null, turns: array<int, array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>}>}>}|null */
             'leave' => $this->leave($day['next_trip'] ?? null),
-            /** @var array{to: string, arrive_time: string|null, start_time: string|null, legs: array<int, array{mode: string, line: string|null, color: string|null, headsign: string|null, from: string, to: string, depart_at: string, arrive_at: string, depart_time: string, arrive_time: string, minutes: int, stops: int|null, polyline: string|null, turns: array<int, array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>}>}|null */
+            /** @var array{to: string, arrive_time: string|null, start_time: string|null, legs: array<int, array{mode: string, line: string|null, color: string|null, headsign: string|null, from: string, to: string, depart_at: string, arrive_at: string, depart_time: string, arrive_time: string, minutes: int, stops: int|null, stops_on_the_way: array<int, array{name: string, time: string, lat: float|null, lng: float|null}>, polyline: string|null, turns: array<int, array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>}>}|null */
             'trip' => $this->trip($day['active_trip'] ?? null),
             /** @var array{kind: string, document: string|null, title: string, date: string, days_remaining: int, next: string|null, ready: int|null, total: int|null, process: string|null}|null */
             'deadline' => $this->deadline($paperwork['strip'] ?? null),
@@ -105,6 +106,8 @@ class TodayResource extends JsonResource
                 'total' => $paperwork['focus']['documents']['total'] ?? null,
                 'process' => $paperwork['focus']['link']['process'] ?? null,
             ] : null,
+            /** Why the Paperwork card says what it says: next (a step to do), clear (a record, nothing to do now), paused (processing stopped), unconfirmed (email still to confirm), none (no record yet). */
+            'paperwork_status' => $this->paperworkStatus($request, $paperwork),
             /** @var array{kind: string, title: string, last_at: string|null}|null */
             'continuation' => $this->resource['continuation'] ?? null,
             /** @var array{count: int, items: array<int, array{type: string, id: int, candidate: string, title: string, date: string|null, place: string|null, label: string|null, area: string|null}>}|null */
@@ -376,5 +379,31 @@ class TodayResource extends JsonResource
     private function legs(array $journey): array
     {
         return AppJourney::legs($journey);
+    }
+
+    /**
+     * The card's state, from the record itself: "Get started" only for someone with no record.
+     *
+     * @param  array<string, mixed>|null  $paperwork
+     */
+    private function paperworkStatus(Request $request, ?array $paperwork): string
+    {
+        if (is_array($paperwork['focus'] ?? null)) {
+            return 'next';
+        }
+        if ($paperwork !== null) {
+            return 'clear';
+        }
+        $user = $request->user();
+        $person = $user === null ? null : BureaucracyPerson::query()->where('account_user_id', $user->id)
+            ->where('record_status', 'active')->whereHas('dossier', fn ($query) => $query->where('status', 'active'))->first();
+        if ($person === null) {
+            return 'none';
+        }
+        if ($person->processing_stopped_at !== null) {
+            return 'paused';
+        }
+
+        return $user->email_verified_at === null ? 'unconfirmed' : 'clear';
     }
 }

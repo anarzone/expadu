@@ -65,9 +65,9 @@ struct ComposerSearch: View {
                                 Text("Nothing in your conversations for “\(words)”.").font(.geist(16)).foregroundStyle(soft)
                                 Button { remember(words); ask(words) } label: {
                                     Label("Ask Composer", systemImage: "sparkle").labelStyle(Tight())
-                                        .font(.geist(16.5, .semibold)).foregroundStyle(Palette.onAction)
+                                        .font(.geist(16.5, .semibold)).foregroundStyle(Color(light: 0xFFF8E6, dark: 0x15130E))
                                         .padding(.horizontal, 18).frame(height: 48)
-                                        .buttonFace(Palette.action, radius: 16)
+                                        .buttonFace(Color(light: 0x211D15, dark: 0xFFFDF8), radius: 16)
                                 }
                                 .buttonStyle(PressStyle())
                             }
