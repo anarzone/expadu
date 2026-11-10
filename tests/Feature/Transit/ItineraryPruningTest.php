@@ -1,5 +1,6 @@
 <?php
 
+use App\Transit\CircuitBreaker;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use Carbon\CarbonImmutable;
@@ -9,6 +10,20 @@ use Illuminate\Support\Facades\Http;
 beforeEach(function () {
     Cache::flush();
     config(['services.motis.url' => 'http://motis.test']);
+    // Pruning is under test, not failover. The real breaker keeps its state in
+    // Redis, shared by parallel test workers: FailoverTest opening the motis
+    // circuit in another worker sent these plans to a different provider.
+    app()->instance(CircuitBreaker::class, new class extends CircuitBreaker
+    {
+        public function isOpen(string $adapter): bool
+        {
+            return false;
+        }
+
+        public function recordFailure(string $adapter, int $threshold = 2): void {}
+
+        public function recordSuccess(string $adapter): void {}
+    });
 });
 
 /**
