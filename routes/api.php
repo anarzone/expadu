@@ -15,6 +15,18 @@ use App\Http\Controllers\Api\V1\PaperworkDocumentsController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
 use App\Http\Controllers\Api\V1\TodayTripController;
+use App\Http\Controllers\Api\V1\Travel\AppDeutschlandticketController;
+use App\Http\Controllers\Api\V1\Travel\AppFavouriteStopController;
+use App\Http\Controllers\Api\V1\Travel\AppJourneyChecksController;
+use App\Http\Controllers\Api\V1\Travel\AppJourneyPlanController;
+use App\Http\Controllers\Api\V1\Travel\AppJourneySuggestSearchController;
+use App\Http\Controllers\Api\V1\Travel\AppLineRouteController;
+use App\Http\Controllers\Api\V1\Travel\AppLineStopController;
+use App\Http\Controllers\Api\V1\Travel\AppPlannedTripController;
+use App\Http\Controllers\Api\V1\Travel\AppStationLinesMapController;
+use App\Http\Controllers\Api\V1\Travel\AppStationSearchController;
+use App\Http\Controllers\Api\V1\Travel\AppTravelController;
+use App\Http\Controllers\Api\V1\Travel\AppTripController;
 use App\Http\Controllers\Api\V1\TravelController;
 use App\Http\Controllers\TodayRankController;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +68,33 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::put('today-rank', [TodayRankController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
         Route::post('today-rank/later', [TodayRankController::class, 'later'])->middleware('verified');
         Route::get('travel/nearby', [TravelController::class, 'nearby'])->middleware('verified');
+        // Travel, as the web's Travel page has it (routes/app/travel.php), with the token: the station board
+        // by name or by where they are, the stop picker and ★ stops, a line's route and map, and the places
+        // a trip can go to (Home or Work set from Plan a trip).
+        Route::middleware('verified')->prefix('travel')->group(function () {
+            Route::get('station', [AppTravelController::class, 'station']);
+            Route::get('places', [AppTravelController::class, 'places'])->middleware('throttle:journey');
+            Route::put('places/{category}', [AppTravelController::class, 'setPlace'])->whereIn('category', ['home', 'work']);
+            Route::get('stations', AppStationSearchController::class)->middleware('throttle:search');
+            Route::get('favourite-stops', [AppFavouriteStopController::class, 'index']);
+            Route::post('favourite-stops', [AppFavouriteStopController::class, 'store']);
+            Route::delete('favourite-stops', [AppFavouriteStopController::class, 'destroy']);
+            Route::get('lines-map', AppStationLinesMapController::class);
+            Route::get('line-route', AppLineRouteController::class);
+            Route::get('line-stop', AppLineStopController::class)->middleware('throttle:search');
+            Route::put('deutschlandticket', AppDeutschlandticketController::class);
+            // Plan a trip: suggestions as they type (in the body, never the URL), the ways, and their boarding stops checked again.
+            Route::post('suggest', AppJourneySuggestSearchController::class)->middleware('throttle:search');
+            Route::post('plan', AppJourneyPlanController::class)->middleware('throttle:journey');
+            Route::post('checks', AppJourneyChecksController::class)->middleware('throttle:search');
+            // Add to plan, its reminder, and taking it out again.
+            Route::post('planned-trips', [AppPlannedTripController::class, 'store']);
+            Route::patch('planned-trips/{plannedTrip}', [AppPlannedTripController::class, 'update'])->whereNumber('plannedTrip');
+            Route::delete('planned-trips/{plannedTrip}', [AppPlannedTripController::class, 'destroy'])->whereNumber('plannedTrip');
+            // I'm on my way on a way from Plan a trip, and stopping it.
+            Route::post('trip', [AppTripController::class, 'start'])->middleware('throttle:journey');
+            Route::delete('trip', [AppTripController::class, 'end']);
+        });
         // Getting there (an event's details): the ways, and I'm on my way on one of them.
         Route::post('journey/plan', [JourneyController::class, 'plan'])->middleware(['verified', 'throttle:journey']);
         Route::post('journey/start', [JourneyController::class, 'start'])->middleware(['verified', 'throttle:journey']);

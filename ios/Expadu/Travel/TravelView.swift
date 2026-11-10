@@ -1,326 +1,581 @@
 import API
 import Core
-import CoreLocation
 import DesignSystem
 import SwiftUI
 
-/// Travel, as the canvas has it (Main.dc.html, simplified 6 Nov): the closest stop's name, its lines as chips,
-/// and one list of departures in each line's own colour, the minutes on split flaps.
+/// Travel, as the canvas has it (Main.dc.html): the board in its line's colour to the top. The
+/// station's name (tap: Find a stop), the map, a rail of its lines; your next trip and KVB's big
+/// notice; then every departure as a band in its own colour with the minutes on split flaps. A band
+/// opens its departure in a sheet; "Where to?" plans a trip.
 struct TravelView: View {
     @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var today
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var model = TravelModel()
+    @State private var planner = TripPlanner()
+    @State private var leaveOpen = false
+    @State private var otherWaysFor: TodayPage.Leave?
 
     var body: some View {
-        let lead = model.leadColor
-        ScrollView {
+        let lead = model.lead
+        ZStack(alignment: .top) {
+            lead.deep.ignoresSafeArea()
+            // The open line's number, huge and faint behind the board.
+            if let line = model.open?.line ?? model.line, !model.map {
+                Text(line)
+                    .font(.posterGrotesque(400)).tracking(-20)
+                    .foregroundStyle(lead.ink.opacity(0.1))
+                    .lineLimit(1).fixedSize()
+                    .offset(x: -26, y: 70)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+            if model.map {
+                TravelMap(model: model)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+            }
             VStack(alignment: .leading, spacing: 0) {
-                header.padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
+                header
                 content
             }
         }
-        .scrollIndicators(.hidden)
-        .refreshable { await model.load(session.api) }
-        .background(lead.ignoresSafeArea())
-        .foregroundStyle(lead.onColor)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.55), value: model.leadLine)
+        .foregroundStyle(model.map ? Palette.text : lead.ink)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.55), value: model.leadLine?.line)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            WhereTo(open: { planner.open(from: model.station) }, speak: { planner.open(from: model.station, listening: true) })
+                .padding(.horizontal, 16).padding(.bottom, 12)
+        }
         .task { await model.start(session.api) }
+        .onDisappear { model.stop() }
+        .sheet(isPresented: Binding(get: { model.open != nil }, set: { if !$0 { withAnimation(.smooth) { model.open = nil } } })) {
+            DepartureSheet(model: model)
+                .presentationDetents([.medium, .large])
+                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                .presentationBackground(Palette.surface)
+                .presentationCornerRadius(32)
+        }
+        // Other ways opens Plan a trip once the sheet has gone: one presentation at a time.
+        .sheet(isPresented: $leaveOpen, onDismiss: {
+            if let leave = otherWaysFor { otherWaysFor = nil; planner.openPlan(leave) }
+        }) {
+            if let leave = today.page?.leave {
+                LeaveSheet(leave: leave, otherWays: { otherWaysFor = leave; leaveOpen = false })
+                    .presentationDetents([.height(300)])
+                    .presentationBackground(Palette.surface)
+                    .presentationCornerRadius(32)
+            }
+        }
+        .sheet(isPresented: $model.picker) {
+            StopPicker(model: model)
+                .presentationDetents([.large])
+                .presentationBackground(Palette.surface)
+                .presentationCornerRadius(32)
+        }
+        .overlay {
+            if let notice = model.notice {
+                NoticePopup(notice: notice, close: { withAnimation(.smooth(duration: 0.3)) { model.notice = nil } })
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+        }
+        .fullScreenCover(isPresented: $planner.shown) {
+            TripPlanView(planner: planner, station: model.station, stationFavourite: model.favourite)
+                .environment(planner)
+        }
+        .fullScreenCover(isPresented: Binding(get: { planner.showTrip && today.page?.trip != nil }, set: { planner.showTrip = $0 })) {
+            if let trip = today.page?.trip {
+                TravelTrip(trip: trip).environment(planner)
+            }
+        }
+        // A trip ended elsewhere (arrived, stopped on Today): stop following it here too.
+        .onChange(of: today.page?.trip == nil) { _, gone in if gone { planner.stopFollowing() } }
+        .environment(planner)
     }
 
+    // MARK: Header
+
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text(model.board?.name ?? "Nearby")
-                    .font(.posterGrotesque(model.board?.name.count ?? 0 > 10 ? 38 : 44))
-                    .textCase(.uppercase)
-                    .tracking(-0.8)
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                    .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 8) {
+                Button { model.picker = true } label: {
+                    HStack(spacing: 8) {
+                        Text(model.station?.name ?? model.loadingName ?? "Nearby")
+                            .font(.posterGrotesque((model.station?.name.count ?? 0) > 10 ? 38 : 44))
+                            .textCase(.uppercase).tracking(-0.8)
+                            .lineLimit(1).minimumScaleFactor(0.55)
+                        if model.station != nil { Image(systemName: "chevron.down").font(.system(size: 16, weight: .bold)) }
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(PressStyle())
+                .accessibilityLabel("\(model.station?.name ?? "Nearby"). Find a stop")
+                .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 0)
+                if model.station != nil {
+                    Button { Task { await model.toggleMap(session.api) } } label: {
+                        Image(systemName: model.map ? "list.bullet" : "map")
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(width: 38, height: 38)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(PressStyle())
+                    .glassEffect(.clear.interactive(), in: .circle)
+                    .accessibilityLabel(model.map ? "Show the board" : "Show lines and stops")
+                }
                 AccountButton()
             }
-            HStack(spacing: 6) {
-                Circle().frame(width: 8, height: 8)
-                Text(model.status).font(.geist(13, .medium))
+            if !model.subLine.isEmpty {
+                HStack(spacing: 6) {
+                    if model.live { PulseRing(colour: .white, animated: !reduceMotion).frame(width: 8, height: 8).overlay(Circle().fill(.white)) }
+                    Text(model.subLine).font(.geist(13, .medium)).lineLimit(1)
+                    if model.line == nil, model.station?.lifts?.out.isEmpty == false {
+                        Label("Lift out of order", systemImage: "arrow.up.arrow.down.square")
+                            .font(.geist(11.5, .bold)).labelStyle(.titleAndIcon)
+                            .padding(.horizontal, 7).frame(height: 19)
+                            .background(.white, in: .rect(cornerRadius: 10))
+                            .foregroundStyle(Palette.conflictText)
+                    }
+                }
+                .opacity(0.95)
+                .frame(height: 30)
             }
-            .opacity(0.95)
-            if let board = model.board, board.lines.count > 1 {
-                LineChips(lines: board.lines, colors: model.colors, selected: $model.line)
+            if let station = model.station, station.lines.count > 1 {
+                LineRail(model: model)
                     .padding(.horizontal, -16)
                     .padding(.top, 4)
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
     }
+
+    // MARK: Content
 
     @ViewBuilder
     private var content: some View {
         switch model.phase {
-        case .loading:
-            ProgressView().tint(.white).frame(maxWidth: .infinity).padding(.top, 80)
+        case .finding:
+            BoardState(title: model.loadingName == nil ? "Finding the closest station…" : "Reading the board…") {
+                FlapWord(text: "------------", small: true)
+            }
+        case .noLocation:
+            BoardState(title: "Where are you?") {
+                Text("We need a starting point to show the stop closest to you.").font(.geist(16))
+                HStack(spacing: 10) {
+                    Button { Task { await model.useLocation(session.api) } } label: {
+                        Label("Use my location", systemImage: "location").font(.geist(15, .semibold)).padding(.horizontal, 14).frame(height: 44)
+                    }
+                    .buttonStyle(PressStyle())
+                    .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 14))
+                    Button { model.picker = true } label: {
+                        Label("Find a stop", systemImage: "magnifyingglass").font(.geist(15, .semibold)).padding(.horizontal, 14).frame(height: 44)
+                    }
+                    .buttonStyle(PressStyle())
+                    .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 14))
+                }
+            }
         case let .problem(text):
-            VStack(spacing: 14) {
-                Text(text).font(.geist(16, .medium)).multilineTextAlignment(.center)
-                Button("Try again") { Task { await model.load(session.api) } }
-                    .font(.geist(16, .semibold))
-                    .padding(.horizontal, 18).frame(height: 44)
-                    .background(.white.opacity(0.22), in: .rect(cornerRadius: 12, style: .continuous))
+            BoardState(title: text) {
+                Text("Try a stop nearby, or plan the whole way below.").font(.geist(16))
+                Button { Task { await model.load(session.api) } } label: {
+                    Text("Try again").font(.geist(15, .semibold)).padding(.horizontal, 16).frame(height: 44)
+                }
+                .buttonStyle(PressStyle())
+                .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 14))
             }
-            .frame(maxWidth: .infinity).padding(.horizontal, 32).padding(.top, 60)
         case .ready:
-            let rows = model.board?.showing(model.line) ?? []
-            if rows.isEmpty {
-                Text(model.line.map { "Nothing on line \($0) right now." } ?? "Nothing leaves nearby right now.")
-                    .font(.geist(16, .medium)).frame(maxWidth: .infinity).padding(.top, 60)
-            }
+            if !model.map { board }
+        }
+    }
+
+    private var board: some View {
+        ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(rows) { row in
-                    DepartureRow(departure: row).transition(.opacity)
+                if model.line == nil, let leave = today.page?.leave, leave.leaveTime != nil, today.page?.trip == nil {
+                    NextTripRow(leave: leave, dim: model.open != nil) { leaveOpen = true }
+                } else if model.line == nil, let trip = today.page?.trip {
+                    OnYourWayRow(trip: trip, dim: model.open != nil) { planner.showTrip = true }
+                }
+                if let notice = model.station?.majorNotice, model.line == nil || notice.lines.contains(model.line ?? "") {
+                    NoticeBanner(notice: notice, dim: model.open != nil) { withAnimation(.smooth(duration: 0.3)) { model.notice = notice } }
+                }
+                let rows = model.departures
+                ForEach(rows) { departure in
+                    Band(departure: departure, now: model.now, look: model.look(departure.line.line),
+                         notice: departure.dir.disrupted ? model.station?.notice(for: departure.line.line) : nil,
+                         grey: !departure.run.timeBasis.isLive || model.station?.isStale == true,
+                         selected: model.open?.line == departure.line.line && model.open?.direction == (departure.dir.direction ?? 0),
+                         dim: model.open != nil && model.open?.line != departure.line.line) {
+                        model.openDeparture(departure, session.api)
+                    }
+                    .transition(.opacity)
+                }
+                if rows.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(model.line.map { "Nothing on line \($0) right now" } ?? "Nothing leaves here right now")
+                            .font(.posterGrotesque(26))
+                        if model.line != nil {
+                            Button { withAnimation(.snappy) { model.line = nil } } label: {
+                                Text("Show all lines").font(.geist(15, .semibold)).padding(.horizontal, 14).frame(height: 44)
+                            }
+                            .buttonStyle(PressStyle())
+                            .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 14))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
                 }
             }
             .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: model.line)
-            .padding(.bottom, 120)
+            .padding(.bottom, 40)
         }
+        .scrollIndicators(.hidden)
+        .refreshable { await model.load(session.api) }
+        // Swipe the board sideways: the next line, as the canvas's pages.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 30)
+                .onEnded { value in
+                    guard abs(value.translation.width) > 60, abs(value.translation.width) > abs(value.translation.height) * 1.5,
+                          let lines = model.station?.lineNames, lines.count > 1 else { return }
+                    let pages: [String?] = [nil] + lines
+                    let i = pages.firstIndex(of: model.line) ?? 0
+                    let next = pages[(i + (value.translation.width < 0 ? 1 : -1) + pages.count) % pages.count]
+                    withAnimation(.snappy) { model.line = next }
+                }
+        )
     }
 }
 
-/// The lines here as small badges; one tap filters the list, a second shows all again.
-private struct LineChips: View {
-    let lines: [String]
-    let colors: [String: Color]
-    @Binding var selected: String?
+// MARK: - Rail
+
+/// Every line here as its badge, "All" first; one tap shows only that line, a second all again.
+private struct LineRail: View {
+    let model: TravelModel
 
     var body: some View {
         ScrollView(.horizontal) {
-            HStack(spacing: 4) {
-                chip("All", color: .clear, on: selected == nil) { selected = nil }
-                ForEach(lines, id: \.self) { line in
-                    let color = colors[line] ?? .gray
-                    chip(Board.badge(line), color: color, on: selected == line) { selected = selected == line ? nil : line }
+            HStack(spacing: 3) {
+                chip(title: "All", fill: .clear, ink: nil, on: model.line == nil, mark: false, dim: false) { model.line = nil }
+                ForEach(model.station?.lineNames ?? [], id: \.self) { line in
+                    let look = model.look(line)
+                    chip(title: line, fill: look.base, ink: look.ink, on: model.line == line,
+                         mark: model.station?.majorNotice?.lines.contains(line) == true,
+                         dim: model.nextMinutes(line) == nil) {
+                        model.line = model.line == line ? nil : line
+                    }
                 }
             }
             .padding(.horizontal, 16)
         }
         .scrollIndicators(.hidden)
+        .sensoryFeedback(.selection, trigger: model.line)
     }
 
-    private func chip(_ title: String, color: Color, on: Bool, tap: @escaping () -> Void) -> some View {
-        Button(action: tap) {
+    private func chip(title: String, fill: Color, ink: Color?, on: Bool, mark: Bool, dim: Bool, tap: @escaping () -> Void) -> some View {
+        Button { withAnimation(.snappy) { tap() } } label: {
             Text(title)
                 .font(.geist(13.5, .bold)).monospacedDigit()
-                .foregroundStyle(on ? Palette.text : color == .clear ? .white : color.onColor)
-                .frame(minWidth: 34).frame(height: 28).padding(.horizontal, 4)
-                .background(on ? Palette.posterPaper : color, in: .rect(cornerRadius: 8))
-                .overlay { RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(on ? 0 : 0.85), lineWidth: 1.5) }
+                .foregroundStyle(ink ?? (on ? Palette.text : Color.white))
+                .frame(minWidth: 30).frame(height: 28).padding(.horizontal, 4)
+                .background(fill == .clear ? Color.clear : fill, in: .rect(cornerRadius: 8))
+                .padding(3)
+                .background(on ? Palette.posterPaper : .clear, in: .rect(cornerRadius: 12))
+                .shadow(color: .black.opacity(on ? 0.35 : 0), radius: 9, y: 6)
+                .overlay(alignment: .topTrailing) {
+                    if mark {
+                        Circle().fill(Palette.posterPaper).frame(width: 10, height: 10)
+                            .overlay { Circle().strokeBorder(Palette.conflictText, lineWidth: 3) }
+                            .offset(x: 1, y: -2)
+                    }
+                }
+                .opacity(dim ? 0.4 : 1)
                 .frame(minHeight: 44)
                 .contentShape(.rect)
         }
         .buttonStyle(PressStyle())
-        .accessibilityLabel(title == "All" ? "All lines" : "Line \(title)")
+        .accessibilityLabel(title == "All" ? "All departures" : "Line \(title)")
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 
-/// A line in its own colour: number, where it goes, and the next departure on two flaps.
-struct DepartureRow: View {
-    let departure: Board.Departure
+// MARK: - Rows
+
+/// One line one way in its own colour: the number, where it goes and by way of, the minutes on flaps.
+struct Band: View {
+    let departure: Departure
+    let now: Date
+    let look: LineLook
+    let notice: Station.Notice?
+    let grey: Bool
+    let selected: Bool
+    let dim: Bool
+    let tap: () -> Void
 
     var body: some View {
-        // KVB's colour as a gradient (LineLook), its type picked to read on it.
-        let look = LineLook(hex: departure.color)
-        HStack(spacing: 10) {
-            Text(departure.badge)
-                .font(.posterGrotesque(departure.badge.count > 2 ? 22 : 29)).tracking(-0.6)
-                .lineLimit(1).minimumScaleFactor(0.7)
-                .frame(width: 56, alignment: .leading)
-            VStack(alignment: .leading, spacing: 1) {
-                Label(departure.direction, systemImage: "arrow.right")
-                    .labelStyle(Arrowed())
+        let run = departure.run
+        Button(action: tap) {
+            HStack(spacing: 10) {
+                Text(departure.line.line)
+                    .font(.posterGrotesque(departure.line.line.count > 2 ? 22 : 29)).tracking(-0.6)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .frame(width: 56, alignment: .leading)
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.right").font(.system(size: 12, weight: .bold))
+                        Text(departure.dir.dest).lineLimit(1)
+                    }
                     .font(.geist(17, .bold)).tracking(-0.2)
-                    .lineLimit(1)
-                Text(subline).font(.geist(12, .medium)).opacity(0.92).lineLimit(1)
-            }
-            Spacer(minLength: 4)
-            HStack(spacing: 2) {
-                ForEach(Array(departure.flaps.enumerated()), id: \.offset) { _, digit in
-                    Flap(character: digit)
+                    HStack(spacing: 6) {
+                        Text(via).lineLimit(1)
+                        status
+                    }
+                    .font(.geist(12, .medium)).opacity(0.92)
+                }
+                Spacer(minLength: 4)
+                HStack(spacing: 2) {
+                    ForEach(Array(String(format: "%02d", min(run.minutes(from: now), 99)).enumerated()), id: \.offset) { _, digit in
+                        FlapDigit(character: digit, grey: grey || run.cancelled)
+                    }
                 }
             }
-            .opacity(departure.cancelled ? 0.45 : 1)
+            .foregroundStyle(look.ink)
+            .padding(.leading, 14).padding(.trailing, 16)
+            .frame(height: 56)
+            .background(look.fill)
+            .overlay(alignment: .leading) { if selected { Rectangle().fill(Palette.posterPaper).frame(width: 5) } }
+            .opacity(dim ? 0.4 : 1)
+            .contentShape(.rect)
         }
-        .foregroundStyle(look.ink)
-        .padding(.leading, 14).padding(.trailing, 16)
-        .frame(height: 56)
-        .background(look.fill)
+        .buttonStyle(PressStyle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
+        .accessibilityHint("Shows its stops and next times")
     }
 
-    private var subline: String {
-        var parts = ["from \(departure.stop)"]
-        if departure.cancelled { parts.append("cancelled") } else if departure.delay > 0 { parts.append("\(departure.delay) min late") }
-        if departure.minutes.count > 1 { parts.append("then " + departure.minutes.dropFirst().map { "\($0)" }.joined(separator: ", ") + " min") }
-        return parts.joined(separator: " · ")
+    private var via: String {
+        let stops = departure.dir.via.filter { !$0.isEmpty }
+        if run.cancelled || late != nil || notice != nil { return stops.first.map { "via \($0)" } ?? "" }
+        return stops.isEmpty ? "" : "via " + stops.prefix(2).joined(separator: " · ")
+    }
+
+    private var run: Station.Run { departure.run }
+    private var late: Int? { (run.delay ?? 0) >= 2 ? run.delay : nil }
+
+    @ViewBuilder
+    private var status: some View {
+        if run.cancelled {
+            HStack(spacing: 4) { Text(run.time).strikethrough(); Text("Cancelled") }.font(.geist(12, .semibold))
+        } else if let late {
+            Text("\(late) min late").font(.geist(11.5, .bold)).padding(.horizontal, 7).frame(height: 19)
+                .background(Palette.warnBackground, in: .rect(cornerRadius: 10)).foregroundStyle(Palette.warnText)
+        } else if let notice, notice.isMajor {
+            Text(notice.headline.count > 22 ? "Line trouble" : notice.headline).font(.geist(11.5, .bold)).padding(.horizontal, 7).frame(height: 19)
+                .background(.white, in: .rect(cornerRadius: 10)).foregroundStyle(Palette.conflictText)
+        }
     }
 
     private var spoken: String {
-        let next = departure.minutes.first.map { $0 == 0 ? "now" : "in \($0) minutes" } ?? ""
-        return "Line \(departure.badge) to \(departure.direction), \(next), \(subline)"
+        let minutes = run.minutes(from: now)
+        var text = "Line \(departure.line.line) to \(departure.dir.dest), " + (minutes == 0 ? "now" : "in \(minutes) minutes")
+        if run.cancelled { text += ", cancelled" } else if let late { text += ", \(late) minutes late" }
+        if grey { text += ", timetable time" }
+        return text
     }
 }
 
-private struct Arrowed: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 5) {
-            configuration.icon.font(.system(size: 12, weight: .bold))
-            configuration.title
-        }
-    }
-}
-
-/// One split-flap digit: a dark card with the hinge line across its middle.
-private struct Flap: View {
+/// One split-flap digit: a dark card with the hinge line across its middle; the digit drops in.
+struct FlapDigit: View {
     let character: Character
+    var grey = false
+    var width: CGFloat = 26
+    var height: CGFloat = 40
+    var size: CGFloat = 29
 
     var body: some View {
         Text(String(character))
-            .font(.geist(29, .bold)).monospacedDigit()
-            .foregroundStyle(Color(hex: 0xFFF6E3))
-            .frame(width: 26, height: 40)
-            .background(
-                LinearGradient(colors: [Color(hex: 0x2A2620), Color(hex: 0x1B1812)], startPoint: .top, endPoint: .bottom),
-                in: .rect(cornerRadius: 5)
-            )
+            .font(.geist(size, .bold)).monospacedDigit()
+            .foregroundStyle(grey ? Color(hex: 0xBDB39F) : Color(hex: 0xFFF6E3))
+            .frame(width: width, height: height)
+            .background(LinearGradient(colors: [Color(hex: 0x2A2620), Color(hex: 0x1B1812)], startPoint: .top, endPoint: .bottom), in: .rect(cornerRadius: 5))
             .overlay { Rectangle().fill(.black.opacity(0.75)).frame(height: 1) }
             .contentTransition(.numericText(countsDown: true))
+            .animation(.snappy(duration: 0.35), value: character)
     }
 }
 
-@Observable
-@MainActor
-final class TravelModel {
-    enum Phase: Equatable { case loading, ready, problem(String) }
+/// A word on small flaps (Finding the closest station…).
+struct FlapWord: View {
+    let text: String
+    var small = false
+    @State private var shown: [Character] = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private(set) var board: Board?
-    private(set) var phase = Phase.loading
-    var line: String?
-    private let locator = OneLocation()
-    private var refreshing: Task<Void, Never>?
-
-    /// The line the board takes its colour from: the chosen one, else the soonest.
-    var leadLine: String? { line ?? board?.departures.first?.line }
-    var leadColor: Color { colors[leadLine ?? ""] ?? Color(hex: 0xA01E5A) }
-    var colors: [String: Color] {
-        // The deep shade: light official colours (3, 4, 17) still carry the page's white type.
-        Dictionary(board?.departures.map { ($0.line, LineLook(hex: $0.color).deep) } ?? [], uniquingKeysWith: { first, _ in first })
-    }
-
-    var status: String {
-        switch phase {
-        case .loading: return "Finding the closest stop…"
-        case .problem: return "Times unavailable right now"
-        case .ready:
-            guard let stop = board?.stops.first else { return "Live times" }
-            return "\(stop.walkMinutes) min walk · Live times"
-        }
-    }
-
-    func start(_ api: AppAPI) async {
-        await load(api)
-        refreshing?.cancel()
-        // The board keeps itself current, as a station's does.
-        refreshing = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(30))
-                guard let self, !Task.isCancelled else { return }
-                await self.load(api, quietly: true)
+    var body: some View {
+        HStack(spacing: 1.8) {
+            ForEach(Array(shown.enumerated()), id: \.offset) { _, ch in
+                FlapDigit(character: ch, width: small ? 19 : 26, height: small ? 30 : 40, size: small ? 20 : 29)
             }
         }
-    }
-
-    func load(_ api: AppAPI, quietly: Bool = false) async {
-        if board == nil && !quietly { phase = .loading }
-        let place = await locator.coordinate() ?? OneLocation.neumarkt
-        do throws(APIFailure) {
-            let next = try await api.nearby(latitude: place.latitude, longitude: place.longitude)
-            withAnimation(.snappy) { board = next }
-            if let line, !next.lines.contains(line) { self.line = nil }
-            phase = .ready
-        } catch {
-            if board == nil {
-                phase = .problem(error == .signedOut ? "You’ve been signed out." : "Couldn’t reach Expadu. Check your connection.")
+        .task(id: text) {
+            let target = Array(text)
+            shown = Array(repeating: " ", count: target.count)
+            let letters = Array("ABCDEFGHKLMNOPRSTUVWZ0123456789")
+            for step in 0..<(reduceMotion ? 1 : 6) {
+                try? await Task.sleep(for: .milliseconds(80))
+                shown = target.enumerated().map { i, ch in step >= 5 || i < step * 2 ? ch : letters.randomElement() ?? ch }
             }
+            shown = target
         }
+        .accessibilityHidden(true)
     }
 }
 
-/// Where the person is, asked once; nil when the answer is no or doesn't come.
-@MainActor
-final class OneLocation: NSObject, CLLocationManagerDelegate {
-    /// Travel's board when the phone won't say where it is. Today never guesses: a leave time from a guessed place would be wrong.
-    nonisolated static let neumarkt = CLLocationCoordinate2D(latitude: 50.9356, longitude: 6.9480)
-    private let manager = CLLocationManager()
-    private var waiting: CheckedContinuation<CLLocationCoordinate2D?, Never>?
+/// Your next trip, from your day: a ring counting down to leaving, and where it's to.
+private struct NextTripRow: View {
+    let leave: TodayPage.Leave
+    let dim: Bool
+    let tap: () -> Void
 
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-    }
-
-    func coordinate() async -> CLLocationCoordinate2D? {
-        switch manager.authorizationStatus {
-        case .denied, .restricted: return nil
-        case .notDetermined: manager.requestWhenInUseAuthorization()
-        default: break
-        }
-        if let recent = manager.location, recent.timestamp.timeIntervalSinceNow > -120 { return recent.coordinate }
-        return await withCheckedContinuation { continuation in
-            waiting?.resume(returning: nil)
-            waiting = continuation
-            manager.requestLocation()
-            Task { [weak self] in
-                try? await Task.sleep(for: .seconds(6))
-                self?.answer(nil)
+    var body: some View {
+        Button(action: tap) {
+            HStack(spacing: 12) {
+                let minutes = max(0, leave.leaveInMinutes ?? 0)
+                ZStack {
+                    Circle().stroke(.white.opacity(0.2), lineWidth: 4)
+                    Circle().trim(from: 0, to: max(0.04, min(1, Double(minutes) / 10)))
+                        .stroke(minutes <= 2 ? Color(hex: 0xFF8A5C) : Color(hex: 0xFFE9A6), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                    Text("\(minutes)").font(.geist(15, .bold)).monospacedDigit().contentTransition(.numericText(countsDown: true))
+                }
+                .frame(width: 38, height: 38)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Leave at \(leave.leaveTime ?? "")").font(.posterGrotesque(19))
+                    Text(sub).font(.geist(12.5)).opacity(0.82).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
             }
+            .foregroundStyle(Color(hex: 0xFFF6E3))
+            .padding(.horizontal, 14).frame(height: 60)
+            .background(Color(hex: 0x211D15))
+            .opacity(dim ? 0.4 : 1)
+            .contentShape(.rect)
         }
+        .buttonStyle(PressStyle())
+        .accessibilityLabel("Leave at \(leave.leaveTime ?? ""), \(sub)")
     }
 
-    private func answer(_ coordinate: CLLocationCoordinate2D?) {
-        waiting?.resume(returning: coordinate)
-        waiting = nil
-    }
-
-    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        let coordinate = locations.last?.coordinate
-        Task { @MainActor in self.answer(coordinate) }
-    }
-
-    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
-        Task { @MainActor in self.answer(nil) }
-    }
-
-    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        switch manager.authorizationStatus {
-        case .denied, .restricted: Task { @MainActor in self.answer(nil) }
-        // The first answer to the prompt: ask for the place now rather than waiting out the timer.
-        case .authorizedWhenInUse, .authorizedAlways: manager.requestLocation()
-        default: break
-        }
+    private var sub: String {
+        var parts = ["To \(leave.to)"]
+        if let start = leave.start { parts.append(start) }
+        if let line = leave.line { parts.append("tram \(line)") }
+        return parts.joined(separator: " · ")
     }
 }
 
-extension Color {
-    /// KVB's colours come from the server as `#RRGGBB`.
-    init(hexString: String) {
-        self.init(hex: UInt32(hexString.trimmingCharacters(in: CharacterSet(charactersIn: "#")), radix: 16) ?? 0x1A4CD4)
-    }
+/// A trip being followed: back to it.
+private struct OnYourWayRow: View {
+    let trip: TodayPage.Trip
+    let dim: Bool
+    let tap: () -> Void
 
-    /// Ink that reads on this colour: dark on light lines (12, 15), white on the rest.
-    var onColor: Color {
-        let ui = UIColor(self)
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        ui.getRed(&r, green: &g, blue: &b, alpha: &a)
-        let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-        return luminance > 0.55 ? Color(hex: 0x1D2A05) : .white
+    var body: some View {
+        Button(action: tap) {
+            HStack(spacing: 12) {
+                Image(systemName: "figure.walk").font(.system(size: 17, weight: .bold)).frame(width: 38, height: 38)
+                    .background(.white.opacity(0.14), in: .circle)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("On your way").font(.posterGrotesque(19))
+                    Text("To \(trip.to)" + (trip.arriveTime.map { " · there \($0)" } ?? "") + " · Back to your trip").font(.geist(12.5)).opacity(0.82).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(Color(hex: 0xFFF6E3))
+            .padding(.horizontal, 14).frame(height: 60)
+            .background(Color(hex: 0x211D15))
+            .opacity(dim ? 0.4 : 1)
+            .contentShape(.rect)
+        }
+        .buttonStyle(PressStyle())
+    }
+}
+
+/// KVB's big notice for a line here, in English; a tap opens it.
+private struct NoticeBanner: View {
+    let notice: Station.Notice
+    let dim: Bool
+    let tap: () -> Void
+
+    var body: some View {
+        Button(action: tap) {
+            HStack(spacing: 10) {
+                Image(systemName: "exclamationmark").font(.system(size: 13, weight: .heavy))
+                    .foregroundStyle(.white).frame(width: 26, height: 26).background(Palette.conflictText, in: .circle)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(notice.headline).font(.geist(15.5, .bold)).lineLimit(1)
+                    Text(notice.lines.count == 1 ? "Line \(notice.lines[0]) · from KVB" : "Lines \(notice.lines.joined(separator: ", ")) · from KVB")
+                        .font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(Palette.text)
+            .padding(.horizontal, 14).frame(height: 56)
+            .background(Palette.posterPaper)
+            .shadow(color: .black.opacity(0.3), radius: 9, y: 8)
+            .opacity(dim ? 0.4 : 1)
+            .contentShape(.rect)
+        }
+        .buttonStyle(PressStyle())
+        .zIndex(1)
+    }
+}
+
+/// A board with nothing to show yet: what's happening, and what to do.
+private struct BoardState<Extra: View>: View {
+    let title: String
+    @ViewBuilder let extra: Extra
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title).font(.posterGrotesque(34)).tracking(-0.4)
+            extra
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16).padding(.top, 30)
+    }
+}
+
+/// "Where to?": Plan a trip, typed or said.
+private struct WhereTo: View {
+    let open: () -> Void
+    let speak: () -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button(action: open) {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass").font(.system(size: 17, weight: .semibold))
+                    Text("Where to?").font(.geist(17))
+                    Spacer(minLength: 0)
+                }
+                .frame(maxHeight: .infinity)
+                .contentShape(.rect)
+            }
+            .buttonStyle(PressStyle())
+            .accessibilityLabel("Where to? Plan a trip")
+            Button(action: speak) {
+                Image(systemName: "mic.fill").font(.system(size: 17)).frame(width: 36, height: 36).contentShape(.circle)
+            }
+            .buttonStyle(PressStyle())
+            .accessibilityLabel("Say where to")
+        }
+        .foregroundStyle(Palette.text.opacity(0.8))
+        .padding(.leading, 16).padding(.trailing, 6)
+        .frame(height: 48)
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 24))
     }
 }

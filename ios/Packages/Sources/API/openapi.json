@@ -2220,6 +2220,58 @@
                 }
             }
         },
+        "/travel/deutschlandticket": {
+            "put": {
+                "operationId": "travel.appDeutschlandticket",
+                "tags": [
+                    "AppDeutschlandticket"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "held": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "held"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "held": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "held"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/events/saved": {
             "get": {
                 "operationId": "appEventBookmark.index",
@@ -2328,6 +2380,71 @@
                 }
             }
         },
+        "/travel/favourite-stops": {
+            "get": {
+                "operationId": "appFavouriteStop.index",
+                "tags": [
+                    "AppFavouriteStop"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "appFavouriteStop.store",
+                "tags": [
+                    "AppFavouriteStop"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "appFavouriteStop.destroy",
+                "tags": [
+                    "AppFavouriteStop"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/geocode": {
             "get": {
                 "operationId": "composer.appGeocode",
@@ -2355,6 +2472,1048 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/checks": {
+            "post": {
+                "operationId": "travel.appJourneyChecks",
+                "tags": [
+                    "AppJourneyChecks"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "checks": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "checks"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "trouble": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "gone": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "trouble",
+                                        "gone"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "These ways are no longer kept. Plan again."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/plan": {
+            "post": {
+                "operationId": "travel.appJourneyPlan",
+                "tags": [
+                    "AppJourneyPlan"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "to_lat": {
+                                        "type": "number",
+                                        "minimum": -90,
+                                        "maximum": 90
+                                    },
+                                    "to_lng": {
+                                        "type": "number",
+                                        "minimum": -180,
+                                        "maximum": 180
+                                    },
+                                    "to_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 200
+                                    },
+                                    "from_lat": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ],
+                                        "minimum": -90,
+                                        "maximum": 90
+                                    },
+                                    "from_lng": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ],
+                                        "minimum": -180,
+                                        "maximum": 180
+                                    },
+                                    "from_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "depart_at": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date-time"
+                                    },
+                                    "arrive_by": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    },
+                                    "more": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    },
+                                    "checks_later": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "to_lat",
+                                    "to_lng"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "source": {
+                                            "type": "string"
+                                        },
+                                        "journeys": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "degraded": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "departures": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "deep_links": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "departures",
+                                                "deep_links"
+                                            ]
+                                        },
+                                        "from": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "Your location"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "lat": {
+                                                    "type": "number"
+                                                },
+                                                "lng": {
+                                                    "type": "number"
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "lat",
+                                                "lng"
+                                            ]
+                                        },
+                                        "to": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                ""
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "lat": {
+                                                    "type": "number"
+                                                },
+                                                "lng": {
+                                                    "type": "number"
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "lat",
+                                                "lng"
+                                            ]
+                                        },
+                                        "ticket": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "covered_by_deutschlandticket": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "preisstufe": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "3",
+                                                                "2",
+                                                                "1b",
+                                                                "1a",
+                                                                "K"
+                                                            ]
+                                                        },
+                                                        "price_eur": {
+                                                            "type": "number"
+                                                        },
+                                                        "estimated": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "eezy_cap_eur": {
+                                                            "type": "number"
+                                                        },
+                                                        "deutschlandticket_eur": {
+                                                            "type": "number"
+                                                        },
+                                                        "label": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "Kurzstrecke (short hop)"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        "reason": {
+                                                            "type": "string"
+                                                        },
+                                                        "how_to_buy": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "covered_by_deutschlandticket",
+                                                        "preisstufe",
+                                                        "price_eur",
+                                                        "estimated",
+                                                        "eezy_cap_eur",
+                                                        "deutschlandticket_eur",
+                                                        "label",
+                                                        "reason",
+                                                        "how_to_buy"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "covered_by_deutschlandticket": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "preisstufe": {
+                                                            "type": "null"
+                                                        },
+                                                        "price_eur": {
+                                                            "type": "null"
+                                                        },
+                                                        "estimated": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "eezy_cap_eur": {
+                                                            "type": "null"
+                                                        },
+                                                        "deutschlandticket_eur": {
+                                                            "type": "number"
+                                                        },
+                                                        "label": {
+                                                            "type": "string",
+                                                            "const": "Covered by your Deutschlandticket"
+                                                        },
+                                                        "reason": {
+                                                            "type": "string",
+                                                            "const": "Your Deutschlandticket covers all local and regional transit on this trip \u2014 no extra ticket needed."
+                                                        },
+                                                        "how_to_buy": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "minItems": 0,
+                                                            "maxItems": 0
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "covered_by_deutschlandticket",
+                                                        "preisstufe",
+                                                        "price_eur",
+                                                        "estimated",
+                                                        "eezy_cap_eur",
+                                                        "deutschlandticket_eur",
+                                                        "label",
+                                                        "reason",
+                                                        "how_to_buy"
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        "disruptions": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": [
+                                                    "object",
+                                                    "null"
+                                                ],
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "severity": {
+                                                        "type": "string"
+                                                    },
+                                                    "scale": {
+                                                        "type": "string",
+                                                        "description": "A major line problem (the headline) or an everyday one.",
+                                                        "enum": [
+                                                            "major",
+                                                            "minor"
+                                                        ]
+                                                    },
+                                                    "on": {
+                                                        "type": "string",
+                                                        "description": "On a line the ways ride, or only on one serving From or To.",
+                                                        "enum": [
+                                                            "ways",
+                                                            "ends"
+                                                        ]
+                                                    },
+                                                    "lines": {
+                                                        "type": "array",
+                                                        "items": {}
+                                                    },
+                                                    "source": {
+                                                        "type": "string"
+                                                    },
+                                                    "since": {
+                                                        "type": "string",
+                                                        "description": "A live KVB notice's published_at is when it was last seen\n(every scrape); it started when it was first seen."
+                                                    },
+                                                    "brief": {
+                                                        "type": [
+                                                            "object",
+                                                            "null"
+                                                        ],
+                                                        "description": "KVB's notice in plain English, when one is written; else its\nown words (German), and its page either way.",
+                                                        "properties": {
+                                                            "headline": {
+                                                                "type": "string"
+                                                            },
+                                                            "text": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "impact": {
+                                                                "type": "string"
+                                                            },
+                                                            "kind": {
+                                                                "anyOf": [
+                                                                    {
+                                                                        "type": "string"
+                                                                    },
+                                                                    {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "brief"
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "headline",
+                                                            "text",
+                                                            "impact",
+                                                            "kind"
+                                                        ]
+                                                    },
+                                                    "details": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "url": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "title",
+                                                    "severity",
+                                                    "scale",
+                                                    "on",
+                                                    "lines",
+                                                    "source",
+                                                    "since",
+                                                    "brief",
+                                                    "details",
+                                                    "url"
+                                                ]
+                                            }
+                                        },
+                                        "trouble": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "gone": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "checks": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "description": "The id the boarding stops' live runs are asked by; null when they're in."
+                                        },
+                                        "conditions": {
+                                            "type": "object",
+                                            "description": "Plan a trip's \"We checked\": the weather on the way, lifts out.",
+                                            "properties": {
+                                                "weather": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "available": {
+                                                                    "type": "boolean"
+                                                                },
+                                                                "hours": {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "at": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "condition": {
+                                                                                "type": [
+                                                                                    "string",
+                                                                                    "null"
+                                                                                ]
+                                                                            },
+                                                                            "temperature": {
+                                                                                "type": [
+                                                                                    "string",
+                                                                                    "null"
+                                                                                ]
+                                                                            },
+                                                                            "precip": {
+                                                                                "type": [
+                                                                                    "string",
+                                                                                    "null"
+                                                                                ]
+                                                                            },
+                                                                            "precip_probability": {
+                                                                                "type": [
+                                                                                    "string",
+                                                                                    "null"
+                                                                                ]
+                                                                            }
+                                                                        },
+                                                                        "required": [
+                                                                            "at",
+                                                                            "condition",
+                                                                            "temperature",
+                                                                            "precip",
+                                                                            "precip_probability"
+                                                                        ]
+                                                                    }
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "available",
+                                                                "hours"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "available": {
+                                                                    "type": "boolean"
+                                                                },
+                                                                "hours": {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "minItems": 0,
+                                                                    "maxItems": 0
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "available",
+                                                                "hours"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "lifts": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "known": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "by_journey": {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "known",
+                                                        "by_journey"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "weather",
+                                                "lifts"
+                                            ]
+                                        },
+                                        "city": {
+                                            "type": "string",
+                                            "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); Plan a trip shows\nthem as the stop signs do."
+                                        }
+                                    },
+                                    "required": [
+                                        "source",
+                                        "journeys",
+                                        "degraded",
+                                        "from",
+                                        "to",
+                                        "ticket",
+                                        "disruptions",
+                                        "trouble",
+                                        "gone",
+                                        "checks",
+                                        "conditions",
+                                        "city"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/suggest": {
+            "post": {
+                "operationId": "travel.appJourneySuggestSearch",
+                "tags": [
+                    "AppJourneySuggestSearch"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "q": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "role": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "origin",
+                                            "destination",
+                                            null
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "array",
+                                            "items": {
+                                                "anyOf": [
+                                                    {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "kind": {
+                                                                "type": "string",
+                                                                "const": "saved"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "area": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "lat": {
+                                                                "type": "number"
+                                                            },
+                                                            "lng": {
+                                                                "type": "number"
+                                                            },
+                                                            "emoji": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "kind",
+                                                            "name",
+                                                            "area",
+                                                            "lat",
+                                                            "lng",
+                                                            "emoji"
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "string"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "type": "array",
+                                            "items": {
+                                                "anyOf": [
+                                                    {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "kind": {
+                                                                "type": "string",
+                                                                "const": "recent"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "area": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "lat": {
+                                                                "type": "number"
+                                                            },
+                                                            "lng": {
+                                                                "type": "number"
+                                                            },
+                                                            "emoji": {
+                                                                "type": "null"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "kind",
+                                                            "name",
+                                                            "area",
+                                                            "lat",
+                                                            "lng",
+                                                            "emoji"
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "string"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/line-route": {
+            "get": {
+                "operationId": "travel.appLineRoute",
+                "tags": [
+                    "AppLineRoute"
+                ],
+                "parameters": [
+                    {
+                        "name": "stop",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "lat",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                        }
+                    },
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                        }
+                    },
+                    {
+                        "name": "line",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "route": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "line": {
+                                                    "type": "string"
+                                                },
+                                                "mode": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "tram",
+                                                        "rail"
+                                                    ]
+                                                },
+                                                "ways": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "towards": {
+                                                                "type": "string"
+                                                            },
+                                                            "minutes": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "stops": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "name": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "city": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
+                                                                        },
+                                                                        "board": {
+                                                                            "type": "boolean"
+                                                                        },
+                                                                        "here": {
+                                                                            "type": "boolean"
+                                                                        },
+                                                                        "changes": {
+                                                                            "type": "array",
+                                                                            "items": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "name",
+                                                                        "city",
+                                                                        "board",
+                                                                        "here",
+                                                                        "changes"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "towards",
+                                                            "minutes",
+                                                            "stops"
+                                                        ]
+                                                    }
+                                                },
+                                                "elsewhere": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "from": {
+                                                                "type": "string"
+                                                            },
+                                                            "to": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "from",
+                                                            "to"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "line",
+                                                "mode",
+                                                "ways",
+                                                "elsewhere"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "route"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/line-stop": {
+            "get": {
+                "operationId": "travel.appLineStop",
+                "tags": [
+                    "AppLineStop"
+                ],
+                "parameters": [
+                    {
+                        "name": "stop",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "line",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "stop": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {},
+                                                        "time_basis": {},
+                                                        "is_stale": {},
+                                                        "dirs": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "time_basis",
+                                                        "is_stale",
+                                                        "dirs"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "stop"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "stop": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "stop"
+                                            ]
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -2943,6 +4102,249 @@
                 }
             }
         },
+        "/travel/planned-trips": {
+            "post": {
+                "operationId": "appPlannedTrip.store",
+                "tags": [
+                    "AppPlannedTrip"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanTripRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "planned": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "target_id": {
+                                                    "type": "string"
+                                                },
+                                                "depart_at": {
+                                                    "type": "string"
+                                                },
+                                                "depart_time": {
+                                                    "type": "string"
+                                                },
+                                                "arrive_time": {
+                                                    "type": "string"
+                                                },
+                                                "ride": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "line": {
+                                                            "type": "string"
+                                                        },
+                                                        "mode": {
+                                                            "type": "string"
+                                                        },
+                                                        "time": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "line",
+                                                        "mode",
+                                                        "time"
+                                                    ]
+                                                },
+                                                "remind": {
+                                                    "type": "boolean"
+                                                },
+                                                "remind_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "target_id",
+                                                "depart_at",
+                                                "depart_time",
+                                                "arrive_time",
+                                                "ride",
+                                                "remind",
+                                                "remind_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "planned"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/travel/planned-trips/{plannedTrip}": {
+            "patch": {
+                "operationId": "appPlannedTrip.update",
+                "tags": [
+                    "AppPlannedTrip"
+                ],
+                "parameters": [
+                    {
+                        "name": "plannedTrip",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "remind": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "remind"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "planned": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "target_id": {
+                                                    "type": "string"
+                                                },
+                                                "depart_at": {
+                                                    "type": "string"
+                                                },
+                                                "depart_time": {
+                                                    "type": "string"
+                                                },
+                                                "arrive_time": {
+                                                    "type": "string"
+                                                },
+                                                "ride": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "line": {
+                                                            "type": "string"
+                                                        },
+                                                        "mode": {
+                                                            "type": "string"
+                                                        },
+                                                        "time": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "line",
+                                                        "mode",
+                                                        "time"
+                                                    ]
+                                                },
+                                                "remind": {
+                                                    "type": "boolean"
+                                                },
+                                                "remind_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "target_id",
+                                                "depart_at",
+                                                "depart_time",
+                                                "arrive_time",
+                                                "ride",
+                                                "remind",
+                                                "remind_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "planned"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "appPlannedTrip.destroy",
+                "tags": [
+                    "AppPlannedTrip"
+                ],
+                "parameters": [
+                    {
+                        "name": "plannedTrip",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/privacy/processing/{purpose}": {
             "get": {
                 "operationId": "privacy.processing.show",
@@ -3062,6 +4464,766 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/lines-map": {
+            "get": {
+                "operationId": "travel.appStationLinesMap",
+                "tags": [
+                    "AppStationLinesMap"
+                ],
+                "parameters": [
+                    {
+                        "name": "stop",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "lat",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                        }
+                    },
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "map": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "station": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "lat": {
+                                                            "type": "number"
+                                                        },
+                                                        "lng": {
+                                                            "type": "number"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "lat",
+                                                        "lng"
+                                                    ]
+                                                },
+                                                "lines": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "line": {
+                                                                "type": "string"
+                                                            },
+                                                            "mode": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "tram",
+                                                                    "rail"
+                                                                ]
+                                                            },
+                                                            "ways": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "towards": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "stops": {
+                                                                            "type": "array",
+                                                                            "items": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "name": {
+                                                                                        "type": "string"
+                                                                                    },
+                                                                                    "lat": {
+                                                                                        "type": "number"
+                                                                                    },
+                                                                                    "lng": {
+                                                                                        "type": "number"
+                                                                                    }
+                                                                                },
+                                                                                "required": [
+                                                                                    "name",
+                                                                                    "lat",
+                                                                                    "lng"
+                                                                                ]
+                                                                            }
+                                                                        },
+                                                                        "end": {
+                                                                            "type": [
+                                                                                "object",
+                                                                                "null"
+                                                                            ],
+                                                                            "properties": {
+                                                                                "name": {
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "lat": {
+                                                                                    "type": "number"
+                                                                                },
+                                                                                "lng": {
+                                                                                    "type": "number"
+                                                                                }
+                                                                            },
+                                                                            "required": [
+                                                                                "name",
+                                                                                "lat",
+                                                                                "lng"
+                                                                            ]
+                                                                        },
+                                                                        "between": {
+                                                                            "type": "integer"
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "towards",
+                                                                        "stops",
+                                                                        "end",
+                                                                        "between"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "line",
+                                                            "mode",
+                                                            "ways"
+                                                        ]
+                                                    }
+                                                },
+                                                "buses": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "station",
+                                                "lines",
+                                                "buses"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "map"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/stations": {
+            "get": {
+                "operationId": "travel.appStationSearch",
+                "tags": [
+                    "AppStationSearch"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/station": {
+            "get": {
+                "operationId": "appTravel.station",
+                "summary": "Nearby: a station by its KVB name (the stop picker, a favourite), else the closest to the point\nthe phone sent. An unknown name keeps the closest and says so. Null when neither is known",
+                "tags": [
+                    "AppTravel"
+                ],
+                "parameters": [
+                    {
+                        "name": "stop",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 120
+                        }
+                    },
+                    {
+                        "name": "lat",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "minimum": -90,
+                            "maximum": 90
+                        }
+                    },
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "minimum": -180,
+                            "maximum": 180
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "station": {
+                                            "type": "string"
+                                        },
+                                        "favourite": {
+                                            "type": "boolean"
+                                        },
+                                        "step_free_need": {
+                                            "type": "boolean"
+                                        },
+                                        "deutschlandticket": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "station",
+                                        "favourite",
+                                        "step_free_need",
+                                        "deutschlandticket"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/places": {
+            "get": {
+                "operationId": "appTravel.places",
+                "summary": "Where a trip can go: their \u2605 stops, saved places with their points (Home and Work first),\nrecent destinations, and today's plans that have a place to route to",
+                "tags": [
+                    "AppTravel"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "favourite_stops": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "lat": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "lng": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "lines": {
+                                                        "type": "array",
+                                                        "items": {}
+                                                    }
+                                                },
+                                                "required": [
+                                                    "name",
+                                                    "lat",
+                                                    "lng",
+                                                    "lines"
+                                                ]
+                                            }
+                                        },
+                                        "saved_places": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "category": {
+                                                        "type": "string"
+                                                    },
+                                                    "emoji": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "address": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "lat": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "lng": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "name",
+                                                    "category",
+                                                    "emoji",
+                                                    "address",
+                                                    "lat",
+                                                    "lng"
+                                                ]
+                                            }
+                                        },
+                                        "recent_destinations": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "area": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "lat": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "lng": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "name",
+                                                    "area",
+                                                    "lat",
+                                                    "lng"
+                                                ]
+                                            }
+                                        },
+                                        "today": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "start_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "start_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "place": {
+                                                        "type": "string"
+                                                    },
+                                                    "lat": {
+                                                        "type": "number"
+                                                    },
+                                                    "lng": {
+                                                        "type": "number"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "title",
+                                                    "start_time",
+                                                    "start_at",
+                                                    "place",
+                                                    "lat",
+                                                    "lng"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "favourite_stops",
+                                        "saved_places",
+                                        "recent_destinations",
+                                        "today"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/places/{category}": {
+            "put": {
+                "operationId": "appTravel.setPlace",
+                "summary": "Plan a trip's \"Add an address\" for Home or Work: the place picked, with its point",
+                "tags": [
+                    "AppTravel"
+                ],
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "address": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 500
+                                    },
+                                    "lat": {
+                                        "type": "number",
+                                        "minimum": -90,
+                                        "maximum": 90
+                                    },
+                                    "lng": {
+                                        "type": "number",
+                                        "minimum": -180,
+                                        "maximum": 180
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "lat",
+                                    "lng"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "place": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "category": {
+                                                    "type": "string"
+                                                },
+                                                "emoji": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "address": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "lat": {
+                                                    "type": "number"
+                                                },
+                                                "lng": {
+                                                    "type": "number"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "category",
+                                                "emoji",
+                                                "address",
+                                                "lat",
+                                                "lng"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "place"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/trip": {
+            "post": {
+                "operationId": "appTrip.start",
+                "summary": "Begin (or replace) the active trip with the chosen journey",
+                "tags": [
+                    "AppTrip"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartTripRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "trip": {
+                                            "type": "object",
+                                            "properties": {
+                                                "journey": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "origin": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                },
+                                                "destination": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "target": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
+                                                    "items": {}
+                                                },
+                                                "started_at": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string",
+                                                    "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                }
+                                            },
+                                            "required": [
+                                                "journey",
+                                                "origin",
+                                                "destination",
+                                                "target",
+                                                "started_at",
+                                                "city"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "trip"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "const": "trip_in_progress"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "trip": {
+                                            "type": "object",
+                                            "properties": {
+                                                "destination": {},
+                                                "arrive_time": {}
+                                            },
+                                            "required": [
+                                                "destination",
+                                                "arrive_time"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "trip"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "appTrip.end",
+                "summary": "End the active trip (arrived, or abandoned)",
+                "tags": [
+                    "AppTrip"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ended": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "ended"
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -8229,6 +10391,111 @@
                 "items": {},
                 "title": "PersonPlanResource"
             },
+            "PlanTripRequest": {
+                "type": "object",
+                "description": "\"Add to plan\": the way picked for one of the person's own plans on a day.\nThe plan must be theirs and on that day; the way stays a journey, bounded\nlike a started trip.",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "target_id": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "remind": {
+                        "type": "boolean"
+                    },
+                    "journey": {
+                        "type": "object",
+                        "properties": {
+                            "depart_at": {
+                                "type": "string",
+                                "maxLength": 40
+                            },
+                            "arrive_at": {
+                                "type": "string",
+                                "maxLength": 40
+                            },
+                            "legs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "mode": {
+                                            "type": "string",
+                                            "enum": [
+                                                "walk",
+                                                "bike",
+                                                "bus",
+                                                "tram",
+                                                "subway",
+                                                "rail",
+                                                "ferry"
+                                            ]
+                                        },
+                                        "intermediate_stops": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "maxItems": 200
+                                        },
+                                        "polyline": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "maxLength": 100000
+                                        },
+                                        "depart_at": {
+                                            "type": "string",
+                                            "maxLength": 40
+                                        },
+                                        "arrive_at": {
+                                            "type": "string",
+                                            "maxLength": 40
+                                        },
+                                        "to": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "maxLength": 300
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "mode",
+                                        "depart_at",
+                                        "arrive_at"
+                                    ]
+                                },
+                                "minItems": 1,
+                                "maxItems": 40
+                            }
+                        },
+                        "required": [
+                            "depart_at",
+                            "arrive_at",
+                            "legs"
+                        ]
+                    }
+                },
+                "required": [
+                    "date",
+                    "target_id",
+                    "journey"
+                ],
+                "title": "PlanTripRequest"
+            },
             "ProcessingPurpose": {
                 "type": "string",
                 "description": "| |\n|---|\n| `composer_rank` <br/>  |\n| `composer_assist` <br/> Composer's assistant: every message, answered from what it looks up (where you are, trips, what's on, places, plans). |\n| `composer_paperwork` <br/> Composer's assistant with the person's own Paperwork record, for one message (owner, 23 Oct 2026: \"make sure its accurate\"): Composer's own call, so its own notice. Bound to their case; withdrawing Composer's AI withdraws it too. |\n| `notification_brief_ai` <br/> The day's briefs written by the AI (owner, 26 Oct 2026): opt-in in Settings, off by default, on until they turn it off (ProcessingOptIns); each brief is still its own request. |\n| `today_rank` <br/> Today put in order by the AI from what personalisation learned (owner, 26 Oct 2026: \"AI should      * be used for personalization\"): on with personalisation under its second wording (PersonalisationWording, ProcessingOptIns), each ordering its own request (TodayRanker). |",
@@ -8910,6 +11177,181 @@
                     "request_id"
                 ],
                 "title": "StartQuestionSessionRequest"
+            },
+            "StartTripRequest": {
+                "type": "object",
+                "properties": {
+                    "journey": {
+                        "type": "object",
+                        "properties": {
+                            "depart_at": {
+                                "type": "string",
+                                "maxLength": 40
+                            },
+                            "arrive_at": {
+                                "type": "string",
+                                "maxLength": 40
+                            },
+                            "legs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "mode": {
+                                            "type": "string",
+                                            "enum": [
+                                                "walk",
+                                                "bike",
+                                                "bus",
+                                                "tram",
+                                                "subway",
+                                                "rail",
+                                                "ferry"
+                                            ]
+                                        },
+                                        "intermediate_stops": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "maxItems": 200
+                                        },
+                                        "polyline": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "maxLength": 100000
+                                        },
+                                        "depart_at": {
+                                            "type": "string",
+                                            "maxLength": 40
+                                        },
+                                        "arrive_at": {
+                                            "type": "string",
+                                            "maxLength": 40
+                                        },
+                                        "to": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "maxLength": 300
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "mode",
+                                        "depart_at",
+                                        "arrive_at"
+                                    ]
+                                },
+                                "minItems": 1,
+                                "maxItems": 40
+                            }
+                        },
+                        "required": [
+                            "depart_at",
+                            "arrive_at",
+                            "legs"
+                        ]
+                    },
+                    "destination": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "maxLength": 200
+                            },
+                            "lat": {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                            },
+                            "lng": {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                            },
+                            "emoji": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 16
+                            }
+                        },
+                        "required": [
+                            "name",
+                            "lat",
+                            "lng"
+                        ]
+                    },
+                    "origin": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 200
+                            },
+                            "lat": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ],
+                                "minimum": -90,
+                                "maximum": 90
+                            },
+                            "lng": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ],
+                                "minimum": -180,
+                                "maximum": 180
+                            }
+                        }
+                    },
+                    "replace": {
+                        "type": "boolean",
+                        "description": "Starting this trip while another runs replaces it only when the\nperson said so (\"Replace the trip you're on?\")."
+                    },
+                    "plan": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "The plan on the person's own day this trip is for (Leave now,\nPlan a trip): checked against their day, never taken as sent.",
+                        "properties": {
+                            "date": {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            "target_id": {
+                                "type": "string",
+                                "maxLength": 120
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "journey",
+                    "destination"
+                ],
+                "title": "StartTripRequest"
             },
             "SubmitQuestionAnswerRequest": {
                 "type": "object",
