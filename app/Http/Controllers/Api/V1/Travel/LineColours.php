@@ -19,6 +19,6 @@ final class LineColours
             'colors' => collect($station['lines'] ?? [])->mapWithKeys(fn ($line) => [(string) $line => KvbLineColors::for((string) $line)])->all(),
         ], $data[$key]);
 
-        return $response->setData($data);
+        return response()->json($data, $response->getStatusCode());
     }
 }

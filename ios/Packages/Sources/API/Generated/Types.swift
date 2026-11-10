@@ -125,6 +125,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /composer/catalogue`.
     /// - Remark: Generated from `#/paths//composer/catalogue/get(composer.catalogue)`.
     func composer_catalogue(_ input: Operations.Composer_catalogue.Input) async throws -> Operations.Composer_catalogue.Output
+    /// - Remark: HTTP `PUT /travel/deutschlandticket`.
+    /// - Remark: Generated from `#/paths//travel/deutschlandticket/put(travel.appDeutschlandticket)`.
+    func travel_appDeutschlandticket(_ input: Operations.Travel_appDeutschlandticket.Input) async throws -> Operations.Travel_appDeutschlandticket.Output
     /// - Remark: HTTP `GET /events/saved`.
     /// - Remark: Generated from `#/paths//events/saved/get(appEventBookmark.index)`.
     func appEventBookmark_index(_ input: Operations.AppEventBookmark_index.Input) async throws -> Operations.AppEventBookmark_index.Output
@@ -133,12 +136,36 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /events/saved`.
     /// - Remark: Generated from `#/paths//events/saved/post(events.save)`.
     func events_save(_ input: Operations.Events_save.Input) async throws -> Operations.Events_save.Output
+    /// - Remark: HTTP `GET /travel/favourite-stops`.
+    /// - Remark: Generated from `#/paths//travel/favourite-stops/get(appFavouriteStop.index)`.
+    func appFavouriteStop_index(_ input: Operations.AppFavouriteStop_index.Input) async throws -> Operations.AppFavouriteStop_index.Output
+    /// - Remark: HTTP `POST /travel/favourite-stops`.
+    /// - Remark: Generated from `#/paths//travel/favourite-stops/post(appFavouriteStop.store)`.
+    func appFavouriteStop_store(_ input: Operations.AppFavouriteStop_store.Input) async throws -> Operations.AppFavouriteStop_store.Output
+    /// - Remark: HTTP `DELETE /travel/favourite-stops`.
+    /// - Remark: Generated from `#/paths//travel/favourite-stops/delete(appFavouriteStop.destroy)`.
+    func appFavouriteStop_destroy(_ input: Operations.AppFavouriteStop_destroy.Input) async throws -> Operations.AppFavouriteStop_destroy.Output
     /// Places for a few typed words (Where? in Add a plan): Cologne's own places first, by name
     /// ("Brauhaus Sion" finds "Sion Bräues Traditionsbrauhaus"), then the geocoder's addresses
     ///
     /// - Remark: HTTP `GET /geocode`.
     /// - Remark: Generated from `#/paths//geocode/get(composer.appGeocode)`.
     func composer_appGeocode(_ input: Operations.Composer_appGeocode.Input) async throws -> Operations.Composer_appGeocode.Output
+    /// - Remark: HTTP `POST /travel/checks`.
+    /// - Remark: Generated from `#/paths//travel/checks/post(travel.appJourneyChecks)`.
+    func travel_appJourneyChecks(_ input: Operations.Travel_appJourneyChecks.Input) async throws -> Operations.Travel_appJourneyChecks.Output
+    /// - Remark: HTTP `POST /travel/plan`.
+    /// - Remark: Generated from `#/paths//travel/plan/post(travel.appJourneyPlan)`.
+    func travel_appJourneyPlan(_ input: Operations.Travel_appJourneyPlan.Input) async throws -> Operations.Travel_appJourneyPlan.Output
+    /// - Remark: HTTP `POST /travel/suggest`.
+    /// - Remark: Generated from `#/paths//travel/suggest/post(travel.appJourneySuggestSearch)`.
+    func travel_appJourneySuggestSearch(_ input: Operations.Travel_appJourneySuggestSearch.Input) async throws -> Operations.Travel_appJourneySuggestSearch.Output
+    /// - Remark: HTTP `GET /travel/line-route`.
+    /// - Remark: Generated from `#/paths//travel/line-route/get(travel.appLineRoute)`.
+    func travel_appLineRoute(_ input: Operations.Travel_appLineRoute.Input) async throws -> Operations.Travel_appLineRoute.Output
+    /// - Remark: HTTP `GET /travel/line-stop`.
+    /// - Remark: Generated from `#/paths//travel/line-stop/get(travel.appLineStop)`.
+    func travel_appLineStop(_ input: Operations.Travel_appLineStop.Input) async throws -> Operations.Travel_appLineStop.Output
     /// Where the person stands with the place now, for Composer's place sheet
     ///
     /// - Remark: HTTP `GET /places/{spot}/feedback`.
@@ -163,12 +190,54 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `PUT /places/{spot}/work-answer`.
     /// - Remark: Generated from `#/paths//places/{spot}/work-answer/put(appPlaceWorkAnswer.update)`.
     func appPlaceWorkAnswer_update(_ input: Operations.AppPlaceWorkAnswer_update.Input) async throws -> Operations.AppPlaceWorkAnswer_update.Output
+    /// - Remark: HTTP `POST /travel/planned-trips`.
+    /// - Remark: Generated from `#/paths//travel/planned-trips/post(appPlannedTrip.store)`.
+    func appPlannedTrip_store(_ input: Operations.AppPlannedTrip_store.Input) async throws -> Operations.AppPlannedTrip_store.Output
+    /// - Remark: HTTP `PATCH /travel/planned-trips/{plannedTrip}`.
+    /// - Remark: Generated from `#/paths//travel/planned-trips/{plannedTrip}/patch(appPlannedTrip.update)`.
+    func appPlannedTrip_update(_ input: Operations.AppPlannedTrip_update.Input) async throws -> Operations.AppPlannedTrip_update.Output
+    /// - Remark: HTTP `DELETE /travel/planned-trips/{plannedTrip}`.
+    /// - Remark: Generated from `#/paths//travel/planned-trips/{plannedTrip}/delete(appPlannedTrip.destroy)`.
+    func appPlannedTrip_destroy(_ input: Operations.AppPlannedTrip_destroy.Input) async throws -> Operations.AppPlannedTrip_destroy.Output
     /// - Remark: HTTP `GET /privacy/processing/{purpose}`.
     /// - Remark: Generated from `#/paths//privacy/processing/{purpose}/get(privacy.processing.show)`.
     func privacy_processing_show(_ input: Operations.Privacy_processing_show.Input) async throws -> Operations.Privacy_processing_show.Output
     /// - Remark: HTTP `DELETE /privacy/processing/{purpose}`.
     /// - Remark: Generated from `#/paths//privacy/processing/{purpose}/delete(privacy.processing.withdraw)`.
     func privacy_processing_withdraw(_ input: Operations.Privacy_processing_withdraw.Input) async throws -> Operations.Privacy_processing_withdraw.Output
+    /// - Remark: HTTP `GET /travel/lines-map`.
+    /// - Remark: Generated from `#/paths//travel/lines-map/get(travel.appStationLinesMap)`.
+    func travel_appStationLinesMap(_ input: Operations.Travel_appStationLinesMap.Input) async throws -> Operations.Travel_appStationLinesMap.Output
+    /// - Remark: HTTP `GET /travel/stations`.
+    /// - Remark: Generated from `#/paths//travel/stations/get(travel.appStationSearch)`.
+    func travel_appStationSearch(_ input: Operations.Travel_appStationSearch.Input) async throws -> Operations.Travel_appStationSearch.Output
+    /// Nearby: a station by its KVB name (the stop picker, a favourite), else the closest to the point
+    /// the phone sent. An unknown name keeps the closest and says so. Null when neither is known
+    ///
+    /// - Remark: HTTP `GET /travel/station`.
+    /// - Remark: Generated from `#/paths//travel/station/get(appTravel.station)`.
+    func appTravel_station(_ input: Operations.AppTravel_station.Input) async throws -> Operations.AppTravel_station.Output
+    /// Where a trip can go: their ★ stops, saved places with their points (Home and Work first),
+    /// recent destinations, and today's plans that have a place to route to
+    ///
+    /// - Remark: HTTP `GET /travel/places`.
+    /// - Remark: Generated from `#/paths//travel/places/get(appTravel.places)`.
+    func appTravel_places(_ input: Operations.AppTravel_places.Input) async throws -> Operations.AppTravel_places.Output
+    /// Plan a trip's "Add an address" for Home or Work: the place picked, with its point
+    ///
+    /// - Remark: HTTP `PUT /travel/places/{category}`.
+    /// - Remark: Generated from `#/paths//travel/places/{category}/put(appTravel.setPlace)`.
+    func appTravel_setPlace(_ input: Operations.AppTravel_setPlace.Input) async throws -> Operations.AppTravel_setPlace.Output
+    /// Begin (or replace) the active trip with the chosen journey
+    ///
+    /// - Remark: HTTP `POST /travel/trip`.
+    /// - Remark: Generated from `#/paths//travel/trip/post(appTrip.start)`.
+    func appTrip_start(_ input: Operations.AppTrip_start.Input) async throws -> Operations.AppTrip_start.Output
+    /// End the active trip (arrived, or abandoned)
+    ///
+    /// - Remark: HTTP `DELETE /travel/trip`.
+    /// - Remark: Generated from `#/paths//travel/trip/delete(appTrip.end)`.
+    func appTrip_end(_ input: Operations.AppTrip_end.Input) async throws -> Operations.AppTrip_end.Output
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
     /// go in comes back 422 with why, and nothing changes
@@ -680,6 +749,17 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// - Remark: HTTP `PUT /travel/deutschlandticket`.
+    /// - Remark: Generated from `#/paths//travel/deutschlandticket/put(travel.appDeutschlandticket)`.
+    public func travel_appDeutschlandticket(
+        headers: Operations.Travel_appDeutschlandticket.Input.Headers = .init(),
+        body: Operations.Travel_appDeutschlandticket.Input.Body
+    ) async throws -> Operations.Travel_appDeutschlandticket.Output {
+        try await travel_appDeutschlandticket(Operations.Travel_appDeutschlandticket.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// - Remark: HTTP `GET /events/saved`.
     /// - Remark: Generated from `#/paths//events/saved/get(appEventBookmark.index)`.
     public func appEventBookmark_index(headers: Operations.AppEventBookmark_index.Input.Headers = .init()) async throws -> Operations.AppEventBookmark_index.Output {
@@ -698,6 +778,21 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// - Remark: HTTP `GET /travel/favourite-stops`.
+    /// - Remark: Generated from `#/paths//travel/favourite-stops/get(appFavouriteStop.index)`.
+    public func appFavouriteStop_index(headers: Operations.AppFavouriteStop_index.Input.Headers = .init()) async throws -> Operations.AppFavouriteStop_index.Output {
+        try await appFavouriteStop_index(Operations.AppFavouriteStop_index.Input(headers: headers))
+    }
+    /// - Remark: HTTP `POST /travel/favourite-stops`.
+    /// - Remark: Generated from `#/paths//travel/favourite-stops/post(appFavouriteStop.store)`.
+    public func appFavouriteStop_store(headers: Operations.AppFavouriteStop_store.Input.Headers = .init()) async throws -> Operations.AppFavouriteStop_store.Output {
+        try await appFavouriteStop_store(Operations.AppFavouriteStop_store.Input(headers: headers))
+    }
+    /// - Remark: HTTP `DELETE /travel/favourite-stops`.
+    /// - Remark: Generated from `#/paths//travel/favourite-stops/delete(appFavouriteStop.destroy)`.
+    public func appFavouriteStop_destroy(headers: Operations.AppFavouriteStop_destroy.Input.Headers = .init()) async throws -> Operations.AppFavouriteStop_destroy.Output {
+        try await appFavouriteStop_destroy(Operations.AppFavouriteStop_destroy.Input(headers: headers))
+    }
     /// Places for a few typed words (Where? in Add a plan): Cologne's own places first, by name
     /// ("Brauhaus Sion" finds "Sion Bräues Traditionsbrauhaus"), then the geocoder's addresses
     ///
@@ -708,6 +803,61 @@ extension APIProtocol {
         headers: Operations.Composer_appGeocode.Input.Headers = .init()
     ) async throws -> Operations.Composer_appGeocode.Output {
         try await composer_appGeocode(Operations.Composer_appGeocode.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /travel/checks`.
+    /// - Remark: Generated from `#/paths//travel/checks/post(travel.appJourneyChecks)`.
+    public func travel_appJourneyChecks(
+        headers: Operations.Travel_appJourneyChecks.Input.Headers = .init(),
+        body: Operations.Travel_appJourneyChecks.Input.Body
+    ) async throws -> Operations.Travel_appJourneyChecks.Output {
+        try await travel_appJourneyChecks(Operations.Travel_appJourneyChecks.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /travel/plan`.
+    /// - Remark: Generated from `#/paths//travel/plan/post(travel.appJourneyPlan)`.
+    public func travel_appJourneyPlan(
+        headers: Operations.Travel_appJourneyPlan.Input.Headers = .init(),
+        body: Operations.Travel_appJourneyPlan.Input.Body
+    ) async throws -> Operations.Travel_appJourneyPlan.Output {
+        try await travel_appJourneyPlan(Operations.Travel_appJourneyPlan.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /travel/suggest`.
+    /// - Remark: Generated from `#/paths//travel/suggest/post(travel.appJourneySuggestSearch)`.
+    public func travel_appJourneySuggestSearch(
+        headers: Operations.Travel_appJourneySuggestSearch.Input.Headers = .init(),
+        body: Operations.Travel_appJourneySuggestSearch.Input.Body? = nil
+    ) async throws -> Operations.Travel_appJourneySuggestSearch.Output {
+        try await travel_appJourneySuggestSearch(Operations.Travel_appJourneySuggestSearch.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /travel/line-route`.
+    /// - Remark: Generated from `#/paths//travel/line-route/get(travel.appLineRoute)`.
+    public func travel_appLineRoute(
+        query: Operations.Travel_appLineRoute.Input.Query,
+        headers: Operations.Travel_appLineRoute.Input.Headers = .init()
+    ) async throws -> Operations.Travel_appLineRoute.Output {
+        try await travel_appLineRoute(Operations.Travel_appLineRoute.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /travel/line-stop`.
+    /// - Remark: Generated from `#/paths//travel/line-stop/get(travel.appLineStop)`.
+    public func travel_appLineStop(
+        query: Operations.Travel_appLineStop.Input.Query,
+        headers: Operations.Travel_appLineStop.Input.Headers = .init()
+    ) async throws -> Operations.Travel_appLineStop.Output {
+        try await travel_appLineStop(Operations.Travel_appLineStop.Input(
             query: query,
             headers: headers
         ))
@@ -790,6 +940,41 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// - Remark: HTTP `POST /travel/planned-trips`.
+    /// - Remark: Generated from `#/paths//travel/planned-trips/post(appPlannedTrip.store)`.
+    public func appPlannedTrip_store(
+        headers: Operations.AppPlannedTrip_store.Input.Headers = .init(),
+        body: Operations.AppPlannedTrip_store.Input.Body
+    ) async throws -> Operations.AppPlannedTrip_store.Output {
+        try await appPlannedTrip_store(Operations.AppPlannedTrip_store.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `PATCH /travel/planned-trips/{plannedTrip}`.
+    /// - Remark: Generated from `#/paths//travel/planned-trips/{plannedTrip}/patch(appPlannedTrip.update)`.
+    public func appPlannedTrip_update(
+        path: Operations.AppPlannedTrip_update.Input.Path,
+        headers: Operations.AppPlannedTrip_update.Input.Headers = .init(),
+        body: Operations.AppPlannedTrip_update.Input.Body
+    ) async throws -> Operations.AppPlannedTrip_update.Output {
+        try await appPlannedTrip_update(Operations.AppPlannedTrip_update.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /travel/planned-trips/{plannedTrip}`.
+    /// - Remark: Generated from `#/paths//travel/planned-trips/{plannedTrip}/delete(appPlannedTrip.destroy)`.
+    public func appPlannedTrip_destroy(
+        path: Operations.AppPlannedTrip_destroy.Input.Path,
+        headers: Operations.AppPlannedTrip_destroy.Input.Headers = .init()
+    ) async throws -> Operations.AppPlannedTrip_destroy.Output {
+        try await appPlannedTrip_destroy(Operations.AppPlannedTrip_destroy.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// - Remark: HTTP `GET /privacy/processing/{purpose}`.
     /// - Remark: Generated from `#/paths//privacy/processing/{purpose}/get(privacy.processing.show)`.
     public func privacy_processing_show(
@@ -811,6 +996,79 @@ extension APIProtocol {
             path: path,
             headers: headers
         ))
+    }
+    /// - Remark: HTTP `GET /travel/lines-map`.
+    /// - Remark: Generated from `#/paths//travel/lines-map/get(travel.appStationLinesMap)`.
+    public func travel_appStationLinesMap(
+        query: Operations.Travel_appStationLinesMap.Input.Query,
+        headers: Operations.Travel_appStationLinesMap.Input.Headers = .init()
+    ) async throws -> Operations.Travel_appStationLinesMap.Output {
+        try await travel_appStationLinesMap(Operations.Travel_appStationLinesMap.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /travel/stations`.
+    /// - Remark: Generated from `#/paths//travel/stations/get(travel.appStationSearch)`.
+    public func travel_appStationSearch(headers: Operations.Travel_appStationSearch.Input.Headers = .init()) async throws -> Operations.Travel_appStationSearch.Output {
+        try await travel_appStationSearch(Operations.Travel_appStationSearch.Input(headers: headers))
+    }
+    /// Nearby: a station by its KVB name (the stop picker, a favourite), else the closest to the point
+    /// the phone sent. An unknown name keeps the closest and says so. Null when neither is known
+    ///
+    /// - Remark: HTTP `GET /travel/station`.
+    /// - Remark: Generated from `#/paths//travel/station/get(appTravel.station)`.
+    public func appTravel_station(
+        query: Operations.AppTravel_station.Input.Query = .init(),
+        headers: Operations.AppTravel_station.Input.Headers = .init()
+    ) async throws -> Operations.AppTravel_station.Output {
+        try await appTravel_station(Operations.AppTravel_station.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Where a trip can go: their ★ stops, saved places with their points (Home and Work first),
+    /// recent destinations, and today's plans that have a place to route to
+    ///
+    /// - Remark: HTTP `GET /travel/places`.
+    /// - Remark: Generated from `#/paths//travel/places/get(appTravel.places)`.
+    public func appTravel_places(headers: Operations.AppTravel_places.Input.Headers = .init()) async throws -> Operations.AppTravel_places.Output {
+        try await appTravel_places(Operations.AppTravel_places.Input(headers: headers))
+    }
+    /// Plan a trip's "Add an address" for Home or Work: the place picked, with its point
+    ///
+    /// - Remark: HTTP `PUT /travel/places/{category}`.
+    /// - Remark: Generated from `#/paths//travel/places/{category}/put(appTravel.setPlace)`.
+    public func appTravel_setPlace(
+        path: Operations.AppTravel_setPlace.Input.Path,
+        headers: Operations.AppTravel_setPlace.Input.Headers = .init(),
+        body: Operations.AppTravel_setPlace.Input.Body
+    ) async throws -> Operations.AppTravel_setPlace.Output {
+        try await appTravel_setPlace(Operations.AppTravel_setPlace.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Begin (or replace) the active trip with the chosen journey
+    ///
+    /// - Remark: HTTP `POST /travel/trip`.
+    /// - Remark: Generated from `#/paths//travel/trip/post(appTrip.start)`.
+    public func appTrip_start(
+        headers: Operations.AppTrip_start.Input.Headers = .init(),
+        body: Operations.AppTrip_start.Input.Body
+    ) async throws -> Operations.AppTrip_start.Output {
+        try await appTrip_start(Operations.AppTrip_start.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// End the active trip (arrived, or abandoned)
+    ///
+    /// - Remark: HTTP `DELETE /travel/trip`.
+    /// - Remark: Generated from `#/paths//travel/trip/delete(appTrip.end)`.
+    public func appTrip_end(headers: Operations.AppTrip_end.Input.Headers = .init()) async throws -> Operations.AppTrip_end.Output {
+        try await appTrip_end(Operations.AppTrip_end.Input(headers: headers))
     }
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
