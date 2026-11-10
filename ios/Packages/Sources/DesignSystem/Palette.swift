@@ -25,6 +25,15 @@ public enum Palette {
     /// The canvas's --warn pair: tight, not wrong.
     public static let warnBackground = Color(light: 0xFFF1D6, dark: 0x3A2A0C)
     public static let warnText = Color(light: 0x694207, dark: 0xF2C46B)
+    /// Good news: plenty of time, a step done, a way kept (the canvas's --good pair).
+    public static let goodBackground = Color(light: 0xE4F4E8, dark: 0x1F3A28)
+    public static let goodText = Color(light: 0x17603A, dark: 0x86E2AA)
+    /// Something now on your day (✓ In your plan), in the action's colour.
+    public static let addedBackground = Color(light: 0xFBE2D4, dark: 0x3D211A)
+    public static let addedText = Color(light: 0xA9320B, dark: 0xFF8D72)
+    /// A notice pinned over a coloured board (Travel's KVB banner): cream by day, deep amber at night.
+    public static let noticeBackground = Color(light: 0xFFF8E6, dark: 0x33281A)
+    public static let noticeText = Color(light: 0x211D15, dark: 0xFFE6B8)
     /// The canvas's What to bring (--bring, --bring-k).
     public static let bringBackground = Color(light: 0xEFEAFC, dark: 0x2A2338)
     public static let bringText = Color(light: 0x4E3774, dark: 0xCDB3F4)

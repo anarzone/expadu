@@ -415,7 +415,7 @@ struct OtherWaysSheet: View {
         let mine = way.id == 0
         let spareTone: (Color, Color) = way.spareMinutes < 0 ? (Palette.conflictText, Palette.conflictBackground)
             : way.spareMinutes <= 2 ? (Palette.warnText, Palette.warnBackground)
-            : way.spareMinutes >= 10 ? (Color(hex: 0x17603A), Color(hex: 0xE4F4E8)) : (Palette.text, Palette.quiet)
+            : way.spareMinutes >= 10 ? (Palette.goodText, Palette.goodBackground) : (Palette.text, Palette.quiet)
         return VStack(spacing: 0) {
             TicketTop(way: way, mine: mine)
 

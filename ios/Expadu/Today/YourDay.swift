@@ -450,13 +450,13 @@ struct CardSay: View {
                 Button("Undo") { Task { await model.undoCard(session.api) } }
                     .font(.geist(13.5, .bold))
                     .padding(.horizontal, 12).frame(height: 30)
-                    .background(Color(hex: 0x17603A, opacity: 0.12), in: .rect(cornerRadius: 8, style: .continuous))
+                    .background(Palette.goodText.opacity(0.12), in: .rect(cornerRadius: 8, style: .continuous))
                     .contentShape(.rect.inset(by: -7))
             }
         }
-        .foregroundStyle(Color(hex: 0x17603A))
+        .foregroundStyle(Palette.goodText)
         .padding(.vertical, 8).padding(.leading, 12).padding(.trailing, 8)
-        .background(Color(hex: 0xE4F4E8), in: .rect(cornerRadius: 14))
+        .background(Palette.goodBackground, in: .rect(cornerRadius: 14))
         .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: -8)).combined(with: .scale(scale: 0.97, anchor: .top)), removal: .opacity))
     }
 }

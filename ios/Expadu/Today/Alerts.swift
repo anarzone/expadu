@@ -41,9 +41,9 @@ struct AlertsSheet: View {
                             ForEach(Self.chips, id: \.0) { id, title in
                                 Button { withAnimation(reduceMotion ? nil : .snappy) { filter = id } } label: {
                                     Text(title).font(.geist(14, .semibold))
-                                        .foregroundStyle(filter == id ? Palette.canvas : Palette.text)
+                                        .foregroundStyle(filter == id ? Palette.navTeal : Palette.text)
                                         .padding(.horizontal, 14).frame(height: 36)
-                                        .background(filter == id ? Palette.text : Palette.quiet, in: .rect(cornerRadius: 10, style: .continuous))
+                                        .background(filter == id ? Palette.selectBackground : Palette.quiet, in: .rect(cornerRadius: 10, style: .continuous))
                                 }
                                 .buttonStyle(PressStyle())
                                 .accessibilityAddTraits(filter == id ? .isSelected : [])

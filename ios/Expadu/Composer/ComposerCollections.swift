@@ -120,13 +120,13 @@ private struct WeekStrip: View {
                     withAnimation(Motion.ios(0.3)) { model.day = day }
                 } label: {
                     VStack(spacing: 2) {
-                        Text(Self.weekday(day)).font(.geist(11.5)).foregroundStyle(on ? Color(light: 0xD7CFC0, dark: 0x15130E).opacity(on ? 1 : 0.7) : Palette.textSoft).lineLimit(1)
-                        Text(String(Int(day.suffix(2)) ?? 0)).font(.geist(16, .bold)).monospacedDigit().foregroundStyle(on ? Color(light: 0xFFFFFF, dark: 0x15130E) : Palette.text)
+                        Text(Self.weekday(day)).font(.geist(11.5)).foregroundStyle(on ? Palette.navTeal.opacity(0.8) : Palette.textSoft).lineLimit(1)
+                        Text(String(Int(day.suffix(2)) ?? 0)).font(.geist(16, .bold)).monospacedDigit().foregroundStyle(on ? Palette.navTeal : Palette.text)
                         Circle().fill(model.planned(day, todayHas: !(today.page?.plans.isEmpty ?? true)) ? Palette.action : .clear)
                             .frame(width: 5, height: 5)
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, 8)
-                    .background(on ? Palette.text : Palette.surface, in: .rect(cornerRadius: 14, style: .continuous))
+                    .background(on ? Palette.selectBackground : Palette.surface, in: .rect(cornerRadius: 14, style: .continuous))
                     .overlay { if !on { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Palette.border, lineWidth: 1) } }
                     .contentShape(.rect)
                 }
