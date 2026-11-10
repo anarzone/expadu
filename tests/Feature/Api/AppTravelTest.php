@@ -1,37 +1,55 @@
 <?php
 
+use App\Models\FavouriteStop;
 use App\Models\User;
-use App\Services\NearbyStopService;
+use App\Models\UserPlace;
+use App\Transit\NearbyStation;
 
-/* Travel's board for the iPhone: only a confirmed account reads it, in one list, soonest first. */
+/* Travel on the iPhone: the web's Travel routes and props, with the app's token. */
 
-test('🔒 the board needs a token and a confirmed address', function () {
-    $this->getJson('/api/v1/travel/nearby?lat=50.9356&lng=6.948')->assertUnauthorized();
-
-    $unconfirmed = User::factory()->unverified()->create();
-    $this->withToken($unconfirmed->createToken('iPhone')->plainTextToken)
-        ->getJson('/api/v1/travel/nearby?lat=50.9356&lng=6.948')->assertForbidden();
+test('🔒 Travel needs a token', function () {
+    $this->getJson('/api/v1/travel/station?stop=Neumarkt')->assertUnauthorized();
+    $this->getJson('/api/v1/travel/places')->assertUnauthorized();
+    $this->putJson('/api/v1/travel/places/home', ['name' => 'Flat', 'lat' => 50.9, 'lng' => 6.9])->assertUnauthorized();
+    $this->getJson('/api/v1/travel/favourite-stops')->assertUnauthorized();
+    $this->postJson('/api/v1/travel/plan', ['to_lat' => 50.9, 'to_lng' => 6.9])->assertUnauthorized();
+    $this->postJson('/api/v1/travel/planned-trips', [])->assertUnauthorized();
+    $this->postJson('/api/v1/travel/trip', [])->assertUnauthorized();
 });
 
-test('departures come soonest first, in KVB colours, without lines that have none left', function () {
-    $this->mock(NearbyStopService::class)->shouldReceive('getDeparturesByType')->andReturn([
-        'kvb' => [
-            ['line' => '4', 'direction' => 'Schlebusch', 'type' => 'tram', 'departures' => [6, 16, 26, 36], 'delay' => 0, 'cancelled' => false, 'stop_name' => 'Neumarkt', 'walk_min' => 1, 'disrupted' => false],
-            ['line' => '1', 'direction' => 'Brück', 'type' => 'tram', 'departures' => [2], 'delay' => 3, 'cancelled' => false, 'stop_name' => 'Neumarkt', 'walk_min' => 1, 'disrupted' => true],
-            ['line' => '9', 'direction' => 'Sülz', 'type' => 'tram', 'departures' => [], 'stop_name' => 'Neumarkt', 'walk_min' => 1],
-        ],
-        'db' => [],
-        'stops_used' => [['name' => 'Neumarkt', 'walk_min' => 1, 'distance_m' => 19]],
-    ]);
+test('🔒 Plan a trip\'s places are the person\'s own', function () {
+    $person = User::factory()->onboarded()->create();
+    UserPlace::factory()->for($person)->create(['name' => 'Office', 'category' => 'work', 'lat' => 50.94, 'lng' => 6.95]);
+    UserPlace::factory()->for($person)->create(['name' => 'Flat', 'category' => 'home', 'lat' => 50.93, 'lng' => 6.94]);
+    UserPlace::factory()->create(['name' => 'Someone else\'s home', 'category' => 'home', 'lat' => 50.92, 'lng' => 6.93]);
+    FavouriteStop::query()->create(['user_id' => User::factory()->create()->id, 'name' => 'Rudolfplatz']);
 
-    $this->withToken(User::factory()->create()->createToken('iPhone')->plainTextToken)
-        ->getJson('/api/v1/travel/nearby?lat=50.9356&lng=6.948')->assertOk()
-        ->assertJsonPath('stops.0.name', 'Neumarkt')
-        ->assertJsonCount(2, 'departures')
-        ->assertJsonPath('departures.0.line', '1')
-        ->assertJsonPath('departures.0.color', '#E0071C')
-        ->assertJsonPath('departures.0.delay', 3)
-        ->assertJsonPath('departures.0.disrupted', true)
-        ->assertJsonPath('departures.1.minutes', [6, 16, 26])
-        ->assertJsonPath('departures.1.color', '#EA71A5');
+    $places = $this->withToken($person->createToken('iPhone')->plainTextToken)->getJson('/api/v1/travel/places')->assertOk();
+
+    // Home first, then Work; nobody else's place or ★ stop.
+    expect(collect($places->json('saved_places'))->pluck('name')->all())->toBe(['Flat', 'Office'])
+        ->and($places->json('favourite_stops'))->toBe([]);
+});
+
+test('🔒 Home set from Plan a trip is the person\'s own, and only Home or Work', function () {
+    $person = User::factory()->onboarded()->create();
+    $other = User::factory()->onboarded()->create();
+    $token = $person->createToken('iPhone')->plainTextToken;
+
+    $this->withToken($token)->putJson('/api/v1/travel/places/home', ['name' => 'Flat', 'address' => 'Venloer Str. 1', 'lat' => 50.95, 'lng' => 6.92])
+        ->assertOk()->assertJsonPath('place.name', 'Flat');
+    $this->withToken($token)->putJson('/api/v1/travel/places/gym', ['name' => 'Gym', 'lat' => 50.95, 'lng' => 6.92])->assertNotFound();
+    $this->withToken($token)->putJson('/api/v1/travel/places/work', ['name' => 'Office'])->assertUnprocessable();
+
+    expect($person->places()->where('category', 'home')->value('name'))->toBe('Flat')
+        ->and($other->places()->count())->toBe(0);
+});
+
+test('🔒 a station picked by name says whether it is the person\'s ★ stop', function () {
+    $person = User::factory()->onboarded()->create();
+    FavouriteStop::query()->create(['user_id' => User::factory()->create()->id, 'name' => 'Neumarkt']);
+    $this->mock(NearbyStation::class)->shouldReceive('named')->with('Neumarkt')->andReturn(['name' => 'Neumarkt', 'lines' => []]);
+
+    $this->withToken($person->createToken('iPhone')->plainTextToken)->getJson('/api/v1/travel/station?stop=Neumarkt')
+        ->assertOk()->assertJsonPath('station.name', 'Neumarkt')->assertJsonPath('favourite', false);
 });
