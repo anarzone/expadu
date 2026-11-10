@@ -296,15 +296,18 @@ struct ComposerScreen: View {
         GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 LinearGradient(colors: [Color(hex: 0x7C7162), Color(hex: 0x5F5548)], startPoint: .top, endPoint: .bottom)
+                // The canvas draws the street 790pt high at -651pt on a 402pt-wide phone; on any
+                // other width the same picture is scaled with the screen, as the column is.
+                let k = proxy.size.width / 402
                 if let image = UIImage(named: "street.webp") {
-                    let height: CGFloat = 790
+                    let height: CGFloat = 790 * k
                     Image(uiImage: image).resizable()
                         .frame(width: height * 2400 / 1252, height: height)
-                        .offset(x: -651 * proxy.size.width / 402)
+                        .offset(x: -651 * k)
                 }
                 LinearGradient(stops: [.init(color: Color(hex: 0x28325A, opacity: 0.34), location: 0), .init(color: Color(hex: 0x28325A, opacity: 0.1), location: 0.75),
                                        .init(color: Color(hex: 0x28325A, opacity: 0), location: 1)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 200)
+                    .frame(height: 200 * k)
             }
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
             .clipped()
@@ -361,7 +364,7 @@ struct ComposerScreen: View {
                 .background(Palette.posterYellow)
                 .rotationEffect(.degrees(-2))
                 .shadow(color: Color(hex: 0x211D15, opacity: 0.22), radius: 3, y: 2)
-            Text("What’s on your mind?").font(.custom("PosterGrotesque-ExtraBold", fixedSize: 37)).tracking(-0.4)
+            Text("What’s on your mind?").font(.custom("PosterGrotesque-ExtraBold", fixedSize: 35 * screenWidth / 402)).tracking(-0.4)
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .foregroundStyle(Color(hex: 0xFFF8E6))
                 .shadow(color: Color(hex: 0x1E2442, opacity: 0.35), radius: 10, y: 1)
@@ -416,9 +419,9 @@ struct ComposerScreen: View {
                 }
                 if dictation.state == .listening {
                     Button { text = String(dictation.finish().prefix(500)) } label: {
-                        Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
+                        Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)).foregroundStyle(Palette.onInk)
                             .frame(width: 44, height: 44)
-                            .background(Palette.action, in: .rect(cornerRadius: 14, style: .continuous))
+                            .background(Palette.text, in: .rect(cornerRadius: 14, style: .continuous))
                     }
                     .buttonStyle(PressStyle())
                     .accessibilityLabel("Done speaking")
@@ -439,9 +442,9 @@ struct ComposerScreen: View {
                     .accessibilityLabel("Speak")
                 } else {
                     Button { ask(text) } label: {
-                        Image(systemName: "arrow.up").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
+                        Image(systemName: "arrow.up").font(.system(size: 17, weight: .bold)).foregroundStyle(Palette.onInk)
                             .frame(width: 44, height: 44)
-                            .background(Palette.action, in: .rect(cornerRadius: 14, style: .continuous))
+                            .background(Palette.text, in: .rect(cornerRadius: 14, style: .continuous))
                     }
                     .buttonStyle(PressStyle())
                     .disabled(model.pending != nil)
@@ -451,7 +454,11 @@ struct ComposerScreen: View {
             }
             .padding(6)
             .foregroundStyle(Palette.text)
-            .glassEffect(.regular, in: .rect(cornerRadius: 28, style: .continuous))
+            // The canvas's frosted box (.gl.frost): cream glass by day, night-blue glass at night.
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 28, style: .continuous))
+            .background(Color(light: 0xFFFDF8, dark: 0x262938).opacity(0.74), in: .rect(cornerRadius: 28, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Color(light: 0xFFFFFF, dark: 0xFFFFFF).opacity(colorScheme == .dark ? 0.14 : 0.9), lineWidth: 0.5) }
+            .shadow(color: Color(light: 0x211D15, dark: 0x000000).opacity(colorScheme == .dark ? 0.4 : 0.16), radius: 15, y: 10)
             .animation(.spring(duration: 0.3, bounce: 0.3), value: text.isEmpty)
             .animation(.spring(duration: 0.3, bounce: 0.2), value: dictation.state)
             .onDisappear { dictation.cancel() }

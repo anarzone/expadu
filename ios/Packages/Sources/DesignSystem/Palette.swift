@@ -25,6 +25,8 @@ public enum Palette {
     /// The canvas's --warn pair: tight, not wrong.
     public static let warnBackground = Color(light: 0xFFF1D6, dark: 0x3A2A0C)
     public static let warnText = Color(light: 0x694207, dark: 0xF2C46B)
+    /// Type on an ink fill (the canvas's --on-ink): white by day, near-black on the cream ink at night.
+    public static let onInk = Color(light: 0xFFFFFF, dark: 0x15130E)
     /// Good news: plenty of time, a step done, a way kept (the canvas's --good pair).
     public static let goodBackground = Color(light: 0xE4F4E8, dark: 0x1F3A28)
     public static let goodText = Color(light: 0x17603A, dark: 0x86E2AA)
