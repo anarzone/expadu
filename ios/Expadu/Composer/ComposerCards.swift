@@ -162,6 +162,7 @@ private struct TripCard: View {
     @Environment(ComposerModel.self) private var model
     @State private var open = false
     @State private var map = false
+    @Namespace private var mapSpace
     @State private var starting = false
     @State private var problem: String?
 
@@ -240,6 +241,7 @@ private struct TripCard: View {
                             .padding(.horizontal, 16).frame(height: 42).buttonFace(Palette.quiet)
                     }
                     .buttonStyle(PressStyle())
+                    .matchedTransitionSource(id: "map", in: mapSpace)
                     Button { withAnimation(Motion.ios(0.3)) { open.toggle() } } label: {
                         Label(open ? "Hide steps" : "Steps", systemImage: "list.bullet").labelStyle(Tight())
                             .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
@@ -256,7 +258,10 @@ private struct TripCard: View {
             Text(trip.trip.basis == "live" ? "Times from KVB, live where the feed has them." : "Timetable times; live times show on the day.")
                 .font(.geist(12.5)).foregroundStyle(Palette.textSoft)
         }
-        .fullScreenCover(isPresented: $map) { WayMap(to: trip.trip.for.place, legs: legs) }
+        .fullScreenCover(isPresented: $map) {
+            // The map grows out of the button that opened it.
+            WayMap(to: trip.trip.for.place, legs: legs).navigationTransition(.zoom(sourceID: "map", in: mapSpace))
+        }
     }
 
     /// I'm on my way: the way there again from where the phone is, and the first one starts. Today
@@ -309,6 +314,7 @@ private struct EventsCard: View {
                 .padding(.vertical, 8).padding(.horizontal, 2)
             }
             .scrollIndicators(.hidden)
+            .scrollClipDisabled()
             Text("From Stadt Köln listings. Adding one isn’t a booking.").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
         }
     }
@@ -390,7 +396,7 @@ private struct ChecklistCard: View {
                         .font(.geist(14.5)).foregroundStyle(document.ready ? PaperworkLook.purpleInk : Palette.text)
                 }
                 if let facts = checklist.facts, !facts.isEmpty { FactsCard(facts: facts) }
-                Button { dismiss(); shell.show(.paperwork) } label: {
+                Button { shell.closeComposer(); shell.show(.paperwork) } label: {
                     Label("Open Paperwork", systemImage: "arrow.right").labelStyle(TrailingIcon())
                         .font(.geist(15, .semibold)).foregroundStyle(TodayLink.ink).frame(minHeight: 40)
                 }
@@ -515,7 +521,7 @@ private struct RecordCard: View {
                 .padding(.horizontal, 14).padding(.vertical, 10)
             }
             PaperworkDivider()
-            Button { dismiss(); shell.show(.paperwork) } label: {
+            Button { shell.closeComposer(); shell.show(.paperwork) } label: {
                 Label(record.link?.label ?? "Open Paperwork", systemImage: "arrow.right").labelStyle(TrailingIcon())
                     .font(.geist(15, .semibold)).foregroundStyle(TodayLink.ink).frame(minHeight: 44)
             }
@@ -541,7 +547,7 @@ private struct PlanChangesCard: View {
                     Text(change.title ?? "A task").font(.geist(14.5)).foregroundStyle(Palette.text)
                 }
             }
-            Button { dismiss(); shell.show(.paperwork) } label: {
+            Button { shell.closeComposer(); shell.show(.paperwork) } label: {
                 Label(changes.link?.label ?? "Open your record", systemImage: "arrow.right").labelStyle(TrailingIcon())
                     .font(.geist(15, .semibold)).foregroundStyle(TodayLink.ink).frame(minHeight: 40)
             }
@@ -574,7 +580,7 @@ private struct HandoffCard: View {
             Text(handoff.place.crumb).font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
             if let description = handoff.place.description { Text(description).font(.geist(14)).foregroundStyle(Palette.text) }
             if let tab = ComposerLinks.tab(handoff.place.href) {
-                Button { dismiss(); shell.show(tab) } label: {
+                Button { shell.closeComposer(); shell.show(tab) } label: {
                     Label(handoff.place.label, systemImage: "arrow.right").labelStyle(TrailingIcon())
                         .font(.geist(15, .semibold)).foregroundStyle(TodayLink.ink).frame(minHeight: 40)
                 }

@@ -29,6 +29,8 @@ struct ShellActions {
     var openComposer: () -> Void = {}
     var show: (AppTab) -> Void = { _ in }
     var scrolled: (CGFloat) -> Void = { _ in }
+    /// Inside Composer: closes it, back to the page under it.
+    var closeComposer: () -> Void = {}
 }
 
 extension EnvironmentValues {
@@ -129,15 +131,23 @@ struct ShellView: View {
             }
         }
         .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.3), value: talk)
-        .fullScreenCover(item: $composer) { opening in
-            ComposerScreen(opening: opening.words)
-                .environment(today)
-                .environment(\.shell, ShellActions(
-                    openComposer: {},
-                    show: { section in withAnimation(.snappy) { tab = section; compact = false } },
-                    scrolled: { _ in }
-                ))
+        // Composer opens out of its button and closes back into it (the canvas's bloom).
+        .overlay {
+            if let opening = composer {
+                ComposerScreen(opening: opening.words)
+                    .id(opening.id)
+                    .environment(today)
+                    .environment(\.shell, ShellActions(
+                        openComposer: {},
+                        show: { section in withAnimation(.snappy) { tab = section; compact = false } },
+                        scrolled: { _ in },
+                        closeComposer: { composer = nil }
+                    ))
+                    .transition(reduceMotion ? .opacity : .bloom(from: 31, x: -47, y: -52))
+                    .zIndex(20)
+            }
         }
+        .animation(reduceMotion ? nil : composer != nil ? ComposerMotion.glide(0.62) : ComposerMotion.ios(0.4), value: composer?.id)
     }
 
     /// Down hides the bar's words to a circle; up, or the top of the page, brings them back.

@@ -6,6 +6,8 @@ import SwiftUI
 /// Search: conversation titles and what was said in them, newest first, the match marked; the
 /// last few searches to tap again. Nothing found offers to ask Composer instead.
 struct ComposerSearch: View {
+    /// Where the title sits, as the drawer's does.
+    let top: CGFloat
     let close: () -> Void
     let opened: () -> Void
     let ask: (String) -> Void
@@ -24,12 +26,16 @@ struct ComposerSearch: View {
                 Text("Search").font(.posterGrotesque(30)).tracking(-0.4).foregroundStyle(ink).accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button(action: close) {
-                    Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(ink).frame(width: 44, height: 44)
+                    Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(ink)
+                        .frame(width: 44, height: 44)
+                        .glassEffect(.regular.interactive(), in: .circle)
+                        .contentShape(.circle)
                 }
-                .buttonStyle(.glass).buttonBorderShape(.circle)
+                .buttonStyle(PressStyle())
                 .accessibilityLabel("Close search")
             }
-            .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 8)
+            .frame(height: 44)
+            .padding(.leading, 20).padding(.trailing, 16).padding(.top, top).padding(.bottom, 10)
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
                     let words = query.trimmingCharacters(in: .whitespaces)
@@ -96,7 +102,7 @@ struct ComposerSearch: View {
         }
         .background(Color(light: 0xEFE8DA, dark: 0x12141F).ignoresSafeArea())
         // The keyboard once the cover has slid in: focus asked for mid-slide is dropped.
-        .task { try? await Task.sleep(for: .milliseconds(450)); typing = true }
+        .task { try? await Task.sleep(for: .milliseconds(120)); typing = true }
     }
 
     private var recent: [String] { stored.split(separator: "\n").map(String.init) }
@@ -121,7 +127,7 @@ struct ComposerSearch: View {
             }
         } label: {
             HStack(alignment: .top, spacing: 14) {
-                RoundedRectangle(cornerRadius: 2).fill(ink.opacity(0.3)).frame(width: 4, height: 20).padding(.top, 2)
+                RoundedRectangle(cornerRadius: 2).fill(ComposerKind.colour(hit.conversation) ?? ink.opacity(0.3)).frame(width: 4, height: 20).padding(.top, 2)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Self.marked(hit.conversation.title.isEmpty ? "A conversation" : hit.conversation.title, words, ink: ink))
                         .font(.geist(17)).lineLimit(1)

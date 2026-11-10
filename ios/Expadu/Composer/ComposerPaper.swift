@@ -22,6 +22,7 @@ struct ComposerPaper: View {
                     }
                     ExchangeView(exchange: exchange, last: index == exchanges.count - 1 && model.pending == nil, ask: ask)
                         .id(exchange.id)
+                        .modifier(ArriveIn(y: -6, animation: ComposerMotion.glide(0.45)))
                 }
                 if let pending = model.pending {
                     if !exchanges.isEmpty, exchanges.last?.question != pending.text {
@@ -33,7 +34,7 @@ struct ComposerPaper: View {
                             Text(pending.text).font(.posterGrotesque(25)).tracking(-0.3).foregroundStyle(Palette.text)
                         }
                         HStack(spacing: 12) {
-                            ProgressView()
+                            ThinkMark()
                             Text(pending.words).font(.geist(15.5, .medium)).foregroundStyle(Palette.textSoft)
                                 .contentTransition(.opacity)
                                 .id(pending.words)
@@ -150,6 +151,7 @@ private struct AnswerView: View {
                 }
                 ForEach(Array(message.blocks.enumerated()), id: \.offset) { _, block in
                     ComposerCard(block: block, showText: message.lead?.isEmpty != false, question: question)
+                        .modifier(ArriveIn(y: 30, animation: .spring(duration: 0.6, bounce: 0.3)))
                 }
                 if !message.suggestions.isEmpty, last {
                     FlowChips(suggestions: message.suggestions, ask: ask)
@@ -175,7 +177,7 @@ private struct FlowChips: View {
             HStack(spacing: 7) {
                 ForEach(suggestions, id: \.self) { suggestion in
                     Button {
-                        if let prompt = suggestion.prompt { ask(prompt) } else if let tab = ComposerLinks.tab(suggestion.href) { dismiss(); shell.show(tab) }
+                        if let prompt = suggestion.prompt { ask(prompt) } else if let tab = ComposerLinks.tab(suggestion.href) { shell.closeComposer(); shell.show(tab) }
                     } label: {
                         Text(suggestion.label).font(.geist(15, .semibold)).foregroundStyle(Palette.text)
                             .padding(.horizontal, 14).frame(height: 40)
@@ -187,6 +189,7 @@ private struct FlowChips: View {
             .padding(.vertical, 2)
         }
         .scrollIndicators(.hidden)
+        .scrollClipDisabled()
     }
 }
 
@@ -285,5 +288,50 @@ private struct ChangeCard: View {
         case "replaced": "Swapped"
         default: kind.capitalized
         }
+    }
+}
+
+/// How a part of an answer arrives: from a little off its place, out of nothing.
+struct ArriveIn: ViewModifier {
+    let y: CGFloat
+    let animation: Animation
+    @State private var here = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(here ? 1 : 0)
+            .offset(y: here ? 0 : y)
+            .onAppear {
+                guard !here else { return }
+                if reduceMotion { here = true } else { withAnimation(animation) { here = true } }
+            }
+    }
+}
+
+/// Composer working: Expadu's mark, its dot hopping and its three arms reaching out in turn
+/// (the canvas's .tmark).
+struct ThinkMark: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            Canvas { g, size in
+                let k = size.width / 74
+                func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> Path {
+                    Path(roundedRect: CGRect(x: (x - 10.55) * k, y: (y - 19.95) * k, width: w * k, height: h * k), cornerRadius: 6 * k)
+                }
+                func wave(_ delay: Double) -> CGFloat { reduceMotion ? 1 : CGFloat((1 - cos(2 * .pi * (t - delay) / 1.1)) / 2) }
+                let hop = 9 * wave(0)
+                g.fill(Path(ellipseIn: CGRect(x: (20.5 - 6 - 10.55) * k, y: (50 - 6 - 19.95 - hop) * k, width: 12 * k, height: 12 * k)), with: .color(Color(hex: 0x05BADD)))
+                g.fill(rect(30, 24, 13, 52), with: .color(Palette.text))
+                for (y, width, delay) in [(CGFloat(24), CGFloat(34), 0.0), (43.5, 25, 0.15), (63, 34, 0.3)] {
+                    g.fill(rect(46, y, width * (0.45 + 0.55 * wave(delay)), 13), with: .color(Color(hex: 0xFF3902)))
+                }
+            }
+        }
+        .frame(width: 34, height: 28)
+        .accessibilityLabel("Working")
     }
 }

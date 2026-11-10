@@ -18,7 +18,7 @@ struct ComposerCollectionPaper: View {
                 case .saved: SavedView(open: open)
                 }
             }
-            .padding(.horizontal, 18).padding(.top, 24).padding(.bottom, 140)
+            .padding(.horizontal, 18).padding(.top, 20).padding(.bottom, 44)
         }
         .scrollIndicators(.hidden)
         .background(Palette.canvas, in: UnevenRoundedRectangle(topLeadingRadius: 32, topTrailingRadius: 32, style: .continuous))
@@ -92,7 +92,7 @@ private struct PlansView: View {
                     }
                     FlowButtons {
                         PaperworkButton(title: "Choose from saved ideas", quiet: true, small: true) {
-                            withAnimation(Motion.ios(0.4)) { model.collection = .saved }
+                            model.push(.saved)
                         }
                         PaperworkButton(title: "Add appointment", symbol: "plus", quiet: true, small: true) { open(.appointment(day)) }
                     }
@@ -113,22 +113,21 @@ private struct WeekStrip: View {
 
     var body: some View {
         let days = Self.week(of: model.day)
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             ForEach(days, id: \.self) { day in
                 let on = day == model.day
                 Button {
                     withAnimation(Motion.ios(0.3)) { model.day = day }
                 } label: {
-                    VStack(spacing: 3) {
-                        Text(day == ComposerModel.today ? "Today" : Self.weekday(day)).font(.geist(12, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
-                        Text(String(Int(day.suffix(2)) ?? 0)).font(.geist(19, .bold)).monospacedDigit()
-                        Circle().fill(model.planned(day, todayHas: !(today.page?.plans.isEmpty ?? true)) ? (on ? Palette.canvas : Palette.action) : .clear)
+                    VStack(spacing: 2) {
+                        Text(Self.weekday(day)).font(.geist(11.5)).foregroundStyle(on ? Color(light: 0xD7CFC0, dark: 0x15130E).opacity(on ? 1 : 0.7) : Palette.textSoft).lineLimit(1)
+                        Text(String(Int(day.suffix(2)) ?? 0)).font(.geist(16, .bold)).monospacedDigit().foregroundStyle(on ? Color(light: 0xFFFFFF, dark: 0x15130E) : Palette.text)
+                        Circle().fill(model.planned(day, todayHas: !(today.page?.plans.isEmpty ?? true)) ? Palette.action : .clear)
                             .frame(width: 5, height: 5)
                     }
-                    // The picked day in the page's own ink, its words in the paper's colour (light and dark).
-                    .foregroundStyle(on ? Palette.canvas : Palette.text)
-                    .frame(maxWidth: .infinity).frame(height: 66)
-                    .background(on ? Palette.text : Palette.quiet.opacity(0.6), in: .rect(cornerRadius: 14, style: .continuous))
+                    .frame(maxWidth: .infinity).padding(.vertical, 8)
+                    .background(on ? Palette.text : Palette.surface, in: .rect(cornerRadius: 14, style: .continuous))
+                    .overlay { if !on { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Palette.border, lineWidth: 1) } }
                     .contentShape(.rect)
                 }
                 .buttonStyle(PressStyle())
@@ -229,16 +228,14 @@ private struct SavedView: View {
     var body: some View {
         let count = (events?.count ?? 0) + (places?.count ?? 0)
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("Saved").font(.posterGrotesque(30)).tracking(-0.4).foregroundStyle(Palette.text)
                     .accessibilityAddTraits(.isHeader)
                 if events != nil, places != nil, count > 0 {
-                    Text(count == 1 ? "1 idea" : "\(count) ideas").font(.geist(15, .semibold)).foregroundStyle(Palette.textSoft)
+                    Text(count == 1 ? "1 idea" : "\(count) ideas").font(.geist(14.5)).foregroundStyle(Palette.textSoft)
                         .contentTransition(.numericText())
                 }
-                Spacer()
             }
-            Text("Saved ideas stay unscheduled until you add them to a plan.").font(.geist(14.5)).foregroundStyle(Palette.textSoft)
             if let problem {
                 HStack(spacing: 10) {
                     Text(problem).font(.geist(14.5, .semibold)).foregroundStyle(Palette.conflictText)

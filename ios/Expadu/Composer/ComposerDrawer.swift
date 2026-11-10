@@ -9,6 +9,10 @@ struct ComposerDrawer: View {
     @Binding var open: Bool
     @Binding var settings: Bool
     @Binding var searching: Bool
+    /// 0 closed, 1 open: it slides in a little and comes up out of the dark as the page moves away.
+    let progress: CGFloat
+    /// Where the title sits, as the page's own buttons do.
+    let top: CGFloat
     @Environment(ComposerModel.self) private var model
     @Environment(Session.self) private var session
     @State private var all = false
@@ -25,16 +29,20 @@ struct ComposerDrawer: View {
                 Text("Composer").font(.posterGrotesque(30)).tracking(-0.4).foregroundStyle(ink)
                 Spacer()
                 Button { searching = true } label: {
-                    Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .semibold)).foregroundStyle(ink).frame(width: 44, height: 44)
+                    Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .semibold)).foregroundStyle(ink)
+                        .frame(width: 44, height: 44)
+                        .glassEffect(.regular.interactive(), in: .circle)
+                        .contentShape(.circle)
                 }
-                .buttonStyle(.glass).buttonBorderShape(.circle)
+                .buttonStyle(PressStyle())
                 .accessibilityLabel("Search conversations")
             }
-            .padding(.leading, 20).padding(.trailing, 14).padding(.top, 10).padding(.bottom, 8)
+            .frame(height: 44)
+            .padding(.leading, 20).padding(.trailing, 14).padding(.top, top).padding(.bottom, 10)
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     place("My Plans", symbol: "calendar", .plans)
-                    place("Saved", symbol: "bookmark", .saved)
+                    place("Saved", symbol: "star", .saved)
                     Text("Recents").font(.geist(14, .medium)).foregroundStyle(soft)
                         .padding(.horizontal, 12).padding(.top, 18).padding(.bottom, 6)
                     let rows = recents
@@ -59,7 +67,10 @@ struct ComposerDrawer: View {
         .frame(width: 322, alignment: .leading)
         .frame(maxHeight: .infinity, alignment: .top)
         .overlay(alignment: .bottomLeading) { foot }
-        .opacity(open ? 1 : 0)
+        .offset(x: (progress - 1) * 56)
+        .opacity(progress > 0 ? 0.35 + progress * 0.65 : 0)
+        .allowsHitTesting(open)
+        .accessibilityHidden(!open)
         .alert("Rename this conversation", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
             TextField("Name", text: $name)
             Button("Save") {
@@ -87,13 +98,14 @@ struct ComposerDrawer: View {
     private func place(_ title: String, symbol: String, _ collection: ComposerModel.Collection) -> some View {
         let on = model.collection == collection
         return Button {
-            withAnimation(Motion.ios(0.4)) {
-                model.collection = collection
-                open = false
-            }
+            model.show(collection)
+            open = false
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(ink).frame(width: 24)
+                Group {
+                    if collection == .plans { CalendarMark() } else { Image(systemName: symbol).font(.system(size: 17, weight: .medium)) }
+                }
+                .foregroundStyle(ink).frame(width: 24)
                 Text(title).font(.geist(17, on ? .semibold : .medium)).foregroundStyle(ink)
                 Spacer(minLength: 0)
             }
@@ -109,17 +121,17 @@ struct ComposerDrawer: View {
         return Button {
             Task {
                 await model.open(conversation.id, api: session.api)
-                withAnimation(Motion.ios(0.4)) { open = false }
+                open = false
             }
         } label: {
             HStack(spacing: 14) {
-                RoundedRectangle(cornerRadius: 2).fill(on ? Palette.action : ink.opacity(0.3)).frame(width: 4, height: 20)
-                Text(conversation.title.isEmpty ? "A conversation" : conversation.title).font(.geist(17, on ? .semibold : .regular)).foregroundStyle(ink)
+                RoundedRectangle(cornerRadius: 2).fill(ComposerKind.colour(conversation) ?? ink.opacity(0.3)).frame(width: 4, height: 20)
+                Text(conversation.title.isEmpty ? "A conversation" : conversation.title).font(.geist(16, on ? .semibold : .regular)).foregroundStyle(ink)
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 if model.busy == "open-\(conversation.id)" { ProgressView().controlSize(.small) }
             }
-            .padding(.horizontal, 12).frame(height: 50)
+            .padding(.horizontal, 12).frame(height: 48)
             .background(on ? ink.opacity(0.08) : .clear, in: .rect(cornerRadius: 14, style: .continuous))
             .contentShape(.rect)
         }
@@ -135,7 +147,7 @@ struct ComposerDrawer: View {
         HStack {
             Button { settings = true } label: {
                 Text(session.initial).font(.geist(16, .semibold)).foregroundStyle(Palette.avatarText)
-                    .frame(width: 44, height: 44).background(Palette.avatarBackground, in: .circle)
+                    .frame(width: 48, height: 48).background(Palette.avatarBackground, in: .circle)
             }
             .buttonStyle(PressStyle())
             .accessibilityLabel("Composer settings")
@@ -143,7 +155,7 @@ struct ComposerDrawer: View {
             Button {
                 Task {
                     await model.newQuestion(session.api)
-                    withAnimation(Motion.ios(0.4)) { open = false }
+                    open = false
                 }
             } label: {
                 Label("New question", systemImage: "plus").labelStyle(Tight())
@@ -153,8 +165,36 @@ struct ComposerDrawer: View {
             }
             .buttonStyle(PressStyle())
         }
-        .padding(.leading, 18).padding(.trailing, 16).padding(.bottom, 12)
+        .padding(.leading, 18).padding(.trailing, 16).padding(.bottom, 0)
         .frame(width: 322)
+        .padding(.top, 46)
+        // The list fades out behind the foot (.dw-foot::before).
+        .background {
+            LinearGradient(stops: [.init(color: Color(light: 0xEFE8DA, dark: 0x12141F).opacity(0), location: 0), .init(color: Color(light: 0xEFE8DA, dark: 0x12141F), location: 0.64)],
+                           startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
+    }
+}
+
+/// What a conversation was about, as the colour of its tab: Travel, Paperwork, events, places, plans.
+enum ComposerKind {
+    static func colour(_ conversation: ComposerConversation) -> Color? {
+        for message in conversation.messages where !message.mine {
+            if message.kind == "plan" || message.kind == "change" { return Color(hex: 0xFFCC33) }
+            for block in message.blocks {
+                switch block {
+                case .trip, .departures, .place: return Color(hex: 0x95C11F)
+                case .checklist, .record, .proposal, .permission, .handoff, .guidance: return Color(hex: 0xC23B0E)
+                case .events: return Color(hex: 0x7A5CF0)
+                case .places: return Color(hex: 0x14A3BA)
+                case .planChanges: return Color(hex: 0xFFCC33)
+                default: continue
+                }
+            }
+        }
+        return nil
     }
 }
 
@@ -208,22 +248,17 @@ struct ComposerSettings: View {
                         }
                     }
                     .padding(14).frame(maxWidth: .infinity, alignment: .leading).card(radius: 18)
-                    VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 4) {
                         if let paperwork, paperwork.enabled {
-                            Button { Task { await setPaperwork(false) } } label: {
-                                PaperworkRow(symbol: "doc.text", title: "Withdraw the Paperwork permission", note: "Composer stops reading your Paperwork record", end: nil)
-                            }
-                            .buttonStyle(.plain)
-                            PaperworkDivider()
+                            Button("Withdraw the Paperwork permission") { Task { await setPaperwork(false) } }
+                                .font(.geist(15, .semibold)).foregroundStyle(TodayLink.ink).frame(minHeight: 40)
                         }
-                        Button { deleteAsked = true } label: {
-                            PaperworkRow(symbol: "trash", tint: Palette.conflictText, back: Palette.conflictBackground, title: "Delete conversation history",
-                                         note: "Every conversation, for good", end: nil)
+                        if !(model.workspace?.recents ?? []).isEmpty {
+                            Button("Delete conversation history") { deleteAsked = true }
+                                .font(.geist(15, .semibold)).foregroundStyle(Palette.conflictText).frame(minHeight: 40)
                         }
-                        .buttonStyle(.plain)
-                        .disabled((model.workspace?.recents ?? []).isEmpty)
                     }
-                    .card(radius: 18)
+                    .padding(.horizontal, 2)
                 }
                 .padding(.horizontal, 16).padding(.bottom, 10)
             }

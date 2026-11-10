@@ -20,6 +20,7 @@ struct ComposerPlacesCard: View {
     @State private var recorded: Set<String> = []
     @State private var sheet: ComposerBlock.Place?
     @State private var mapAt: String?
+    @Namespace private var mapSpace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -48,6 +49,7 @@ struct ComposerPlacesCard: View {
             PlacesMap(places: places.filter { left[$0.key] == nil && $0.row?.lat != nil }, selected: focus.key,
                       saved: { saved[$0.id] ?? $0.row?.saved ?? false }, save: { place in Task { await save(place) } },
                       open: { place in mapAt = nil; Task { try? await Task.sleep(for: .milliseconds(350)); sheet = place } })
+                .navigationTransition(.zoom(sourceID: focus.key, in: mapSpace))
         }
     }
 
@@ -72,6 +74,7 @@ struct ComposerPlacesCard: View {
                         .clipShape(.rect(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(PressStyle())
+                .matchedTransitionSource(id: place.key, in: mapSpace)
                 .accessibilityLabel("Show \(place.name) on the map")
                 Button { Task { await save(place) } } label: {
                     Image(systemName: on ? "bookmark.fill" : "bookmark").font(.system(size: 15, weight: .semibold))

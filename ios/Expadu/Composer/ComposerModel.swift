@@ -41,7 +41,33 @@ final class ComposerModel {
 
     /// What the menu opened in place of the conversation: My Plans or Saved.
     enum Collection: Equatable { case plans, saved }
-    var collection: Collection?
+    var collection: Collection? { didSet { if collection == nil { collectionBack = nil } } }
+    /// The view a pushed view goes back to (Saved, chosen from My Plans).
+    private(set) var collectionBack: Collection?
+    /// True while a pushed view slides back out.
+    private(set) var leaving = false
+
+    /// From one view to another: it pushes in, and the head's ‹ goes back.
+    func push(_ next: Collection) {
+        let from = collection
+        collectionBack = from
+        collection = next
+        collectionBack = from
+    }
+
+    /// From the drawer: the view on its own, with no way back but the menu.
+    func show(_ next: Collection) {
+        collectionBack = nil
+        collection = next
+    }
+
+    func back() {
+        guard let to = collectionBack else { return }
+        leaving = true
+        collection = to
+        collectionBack = nil
+        Task { try? await Task.sleep(for: .milliseconds(450)); leaving = false }
+    }
     /// The day My Plans and Saved are about.
     var day = ComposerModel.today
 
