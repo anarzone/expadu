@@ -32,21 +32,30 @@ struct SignInView: View {
     var body: some View {
         GeometryReader { outer in
             let top = outer.safeAreaInsets.top
-            ScrollView {
-                ZStack(alignment: .top) {
-                    StreetStrip(safeTop: top)
-                    topBar.padding(.top, top + 2).padding(.horizontal, 16)
-                    poster
-                        .padding(.top, top + 141)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 32)
+            ScrollViewReader { scroller in
+                ScrollView {
+                    ZStack(alignment: .top) {
+                        StreetStrip(safeTop: top)
+                        topBar.padding(.top, top + 2).padding(.horizontal, 16)
+                        poster
+                            .padding(.top, top + 141)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 32)
+                    }
+                    .frame(maxWidth: 520 + 32)
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: 520 + 32)
-                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .top)
+                .scrollDismissesKeyboard(.interactively)
+                .background(Palette.street)
+                // On a phone the keyboard grows once more after it opens (the Passwords bar on top),
+                // after the page has already scrolled for it: the field ended up half under the keys.
+                // Each time the keyboard settles, the field being typed in is brought into the open part.
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidChangeFrameNotification)) { _ in
+                    guard let focus else { return }
+                    withAnimation(.smooth(duration: 0.3)) { scroller.scrollTo(focus, anchor: UnitPoint(x: 0.5, y: 0.45)) }
+                }
             }
-            .ignoresSafeArea(edges: .top)
-            .scrollDismissesKeyboard(.interactively)
-            .background(Palette.street)
         }
         .environment(\.colorScheme, .light)
         .onChange(of: step) {
@@ -524,6 +533,7 @@ private struct PosterField: View {
                 .accessibilityLabel(label)
                 .posterInput(focused: focus.wrappedValue == field)
         }
+        .id(field)
     }
 }
 
@@ -562,6 +572,7 @@ private struct PosterPasswordField: View {
             }
             .posterInput(focused: focus.wrappedValue == .password)
         }
+        .id(SignInView.Field.password)
     }
 }
 
