@@ -70,6 +70,7 @@ struct ComposerScreen: View {
     @State private var dictation = Dictation()
     @State private var safeTop: CGFloat = 62
     @State private var safeBottom: CGFloat = 34
+    @State private var screenWidth: CGFloat = 402
     @FocusState private var typing: Bool
 
     private static let drawerWidth: CGFloat = 322
@@ -117,6 +118,7 @@ struct ComposerScreen: View {
         .animation(reduceMotion ? nil : searching ? ComposerMotion.ios(0.46) : ComposerMotion.ios(0.3), value: searching)
         .background(Color(light: 0xEFE8DA, dark: 0x12141F).ignoresSafeArea())
         .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { safeTop = $0.top; safeBottom = $0.bottom }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { screenWidth = $0 }
         .environment(model)
         .sheet(item: $sheet) { sheet in
             Group {
@@ -183,16 +185,20 @@ struct ComposerScreen: View {
                 .offset(y: onWall && !typing ? 0 : -14)
                 .animation(reduceMotion ? nil : ComposerMotion.glide(0.5), value: onWall && !typing)
             // The column stays on the wall behind the paper, so coming back doesn't build it again.
-            ComposerColumn(posters: posters) { poster in ask(poster.question) }
-                .aspectRatio(402 / 560, contentMode: .fit)
-                .frame(maxWidth: .infinity)
-                .scaleEffect(typing ? 0.6 : onWall ? 1 : 0.9, anchor: .top)
-                .offset(y: typing ? -62 : onWall ? 0 : -30)
-                .brightness(onWall ? 0 : -0.18)
-                .padding(.top, top(196))
-                // While typing, a tap on it only puts the keyboard away; it doesn't ask the poster.
-                .allowsHitTesting(onWall && !typing)
-                .accessibilityHidden(!onWall)
+            // It hangs from the top and takes no room, so the keyboard never moves or squeezes it.
+            Color.clear.overlay(alignment: .top) {
+                ComposerColumn(posters: posters) { poster in ask(poster.question) }
+                    // Its own size from the screen's width: the keyboard taking height must not shrink it
+                    // again on top of the canvas's 60%.
+                    .frame(width: screenWidth, height: screenWidth * 560 / 402)
+                    .scaleEffect(typing ? 0.6 : onWall ? 1 : 0.9, anchor: .top)
+                    .offset(y: typing ? -62 : onWall ? 0 : -30)
+                    .brightness(onWall ? 0 : -0.18)
+                    .padding(.top, top(196))
+                    // While typing, a tap on it only puts the keyboard away; it doesn't ask the poster.
+                    .allowsHitTesting(onWall && !typing)
+                    .accessibilityHidden(!onWall)
+            }
             if model.talking, model.collection == nil {
                 ComposerPaper(ask: ask)
                     .padding(.top, top(112))
