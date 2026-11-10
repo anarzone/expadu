@@ -691,6 +691,171 @@ public struct AppAPI: Sendable {
         _ = Self.composerReply(try await composer("PUT", "composer/paperwork-permission", body))
     }
 
+    // MARK: Travel
+
+    private static func query(_ pairs: [(String, String)]) -> String {
+        let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&+=?#"))
+        return pairs.map { "\($0.0)=\($0.1.addingPercentEncoding(withAllowedCharacters: allowed) ?? "")" }.joined(separator: "&")
+    }
+
+    /// Nearby: a station by its KVB name, else the closest to the point.
+    public func station(named name: String? = nil, latitude: Double? = nil, longitude: Double? = nil) async throws(APIFailure) -> StationReply {
+        var pairs: [(String, String)] = []
+        if let name { pairs.append(("stop", name)) }
+        if let latitude, let longitude { pairs += [("lat", String(latitude)), ("lng", String(longitude))] }
+        let reply = try await composer("GET", "travel/station?" + Self.query(pairs))
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try Station.decode(reply.data) } catch { throw .unreachable }
+    }
+
+    /// The stop picker: KVB stations by name.
+    public func stations(_ query: String) async throws(APIFailure) -> [StationHit] {
+        let reply = try await composer("GET", "travel/stations?" + Self.query([("q", query)]))
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try StationHit.list(reply.data, key: "stations") } catch { throw .unreachable }
+    }
+
+    /// ★ a station, or take the star off. The list as it now is comes back.
+    public func favouriteStop(_ name: String, on: Bool) async throws(APIFailure) -> [StationHit] {
+        let reply = try await composer(on ? "POST" : "DELETE", "travel/favourite-stops", ["name": name])
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+        do { return try StationHit.list(reply.data, key: "favourites") } catch { throw .unreachable }
+    }
+
+    /// A line's whole route both ways, from this station.
+    public func lineRoute(_ line: String, stop: String, latitude: Double?, longitude: Double?) async throws(APIFailure) -> LineRoute? {
+        var pairs = [("stop", stop), ("line", line)]
+        if let latitude, let longitude { pairs += [("lat", String(latitude)), ("lng", String(longitude))] }
+        let reply = try await composer("GET", "travel/line-route?" + Self.query(pairs))
+        guard reply.status == 200 else { throw .unreachable }
+        struct Wrap: Decodable { let route: LineRoute? }
+        do { return try TravelJSONAccess.decode(Wrap.self, reply.data).route } catch { throw .unreachable }
+    }
+
+    /// One stop's runs on a line.
+    public func lineStop(_ line: String, stop: String) async throws(APIFailure) -> LineStop? {
+        let reply = try await composer("GET", "travel/line-stop?" + Self.query([("stop", stop), ("line", line)]))
+        guard reply.status == 200 else { throw .unreachable }
+        struct Wrap: Decodable { let stop: LineStop? }
+        do { return try TravelJSONAccess.decode(Wrap.self, reply.data).stop } catch { throw .unreachable }
+    }
+
+    /// Travel's map: the lines through the station and their next stops.
+    public func linesMap(stop: String, latitude: Double?, longitude: Double?) async throws(APIFailure) -> LinesMap? {
+        var pairs = [("stop", stop)]
+        if let latitude, let longitude { pairs += [("lat", String(latitude)), ("lng", String(longitude))] }
+        let reply = try await composer("GET", "travel/lines-map?" + Self.query(pairs))
+        guard reply.status == 200 else { throw .unreachable }
+        struct Wrap: Decodable { let map: LinesMap? }
+        do { return try TravelJSONAccess.decode(Wrap.self, reply.data).map } catch { throw .unreachable }
+    }
+
+    /// Where a trip can go: ★ stops, saved places, recents, today's plans.
+    public func travelPlaces() async throws(APIFailure) -> TravelPlaces {
+        let reply = try await composer("GET", "travel/places")
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try TravelPlaces.decode(reply.data) } catch { throw .unreachable }
+    }
+
+    /// Home or Work, set to a picked place.
+    public func setTravelPlace(_ category: String, name: String, address: String?, latitude: Double, longitude: Double) async throws(APIFailure) -> TravelPlaces.Saved {
+        var body: [String: Any] = ["name": name, "lat": latitude, "lng": longitude]
+        if let address { body["address"] = address }
+        let reply = try await composer("PUT", "travel/places/\(category)", body)
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try TravelPlaces.saved(reply.data) } catch { throw .unreachable }
+    }
+
+    /// Places and stops as they type, in the body (never the URL).
+    public func tripSuggestions(_ query: String, role: String) async throws(APIFailure) -> [TripSuggestion] {
+        let reply = try await composer("POST", "travel/suggest", ["q": query, "role": role])
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try TripSuggestion.list(reply.data) } catch { throw .unreachable }
+    }
+
+    public enum TripWhen: Sendable, Equatable {
+        case now
+        case leave(Date)
+        case arrive(Date)
+    }
+
+    /// Plan a trip. The raw answer comes back too: a way is sent back as it came when it's kept or followed.
+    public func planTrip(to: TripPoint, from: TripPoint?, when: TripWhen, more: Bool = false) async throws(APIFailure) -> (plan: TripPlan, raw: Data) {
+        var body: [String: Any] = ["to_lat": to.lat, "to_lng": to.lng, "to_name": to.name, "checks_later": true]
+        if let from { body["from_lat"] = from.lat; body["from_lng"] = from.lng; body["from_name"] = from.name }
+        let iso = ISO8601DateFormatter()
+        switch when {
+        case .now: break
+        case let .leave(date): body["depart_at"] = iso.string(from: date)
+        case let .arrive(date): body["depart_at"] = iso.string(from: date); body["arrive_by"] = true
+        }
+        if more { body["more"] = true }
+        let reply = try await composer("POST", "travel/plan", body, timeout: 40)
+        if reply.status == 422 {
+            let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
+            throw .refused(json["code"] as? String == "location_required" ? "Where are you starting?" : json["message"] as? String ?? "No way found for this request.")
+        }
+        guard reply.status == 200 else { throw .unreachable }
+        do { return (try TripPlan.decode(reply.data), reply.data) } catch { throw .unreachable }
+    }
+
+    /// Whether they hold a Deutschlandticket, for the fares.
+    public func setDeutschlandticket(_ held: Bool) async throws(APIFailure) {
+        let reply = try await composer("PUT", "travel/deutschlandticket", ["held": held])
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+    }
+
+    /// Add to plan: this way for a plan on their day.
+    public func planTrip(journey: Data, date: String, target: String, remind: Bool) async throws(APIFailure) -> PlannedTrip {
+        let journey = (try? JSONSerialization.jsonObject(with: journey)) ?? [:]
+        let reply = try await composer("POST", "travel/planned-trips", ["journey": journey, "date": date, "target_id": target, "remind": remind])
+        if reply.status == 422 {
+            let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
+            throw .refused(json["message"] as? String ?? "That plan isn’t on your day.")
+        }
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+        do { return try PlannedTrip.decode(reply.data) } catch { throw .unreachable }
+    }
+
+    public func remindPlannedTrip(_ id: Int, remind: Bool) async throws(APIFailure) -> PlannedTrip {
+        let reply = try await composer("PATCH", "travel/planned-trips/\(id)", ["remind": remind])
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+        do { return try PlannedTrip.decode(reply.data) } catch { throw .unreachable }
+    }
+
+    public func removePlannedTrip(_ id: Int) async throws(APIFailure) {
+        let reply = try await composer("DELETE", "travel/planned-trips/\(id)")
+        guard (200..<300).contains(reply.status) || reply.status == 404 else { throw .unreachable }
+    }
+
+    public enum TravelTripStart: Sendable, Equatable {
+        case started
+        /// Another trip is being followed: to what, arriving when.
+        case busy(to: String, arrive: String?)
+    }
+
+    /// I'm on my way, on a way from Plan a trip.
+    public func startTravelTrip(journey: Data, to: TripPoint, from: TripPoint?, plan: (date: String, target: String)?, replace: Bool) async throws(APIFailure) -> TravelTripStart {
+        let journey = (try? JSONSerialization.jsonObject(with: journey)) ?? [:]
+        var body: [String: Any] = ["journey": journey, "destination": ["name": to.name, "lat": to.lat, "lng": to.lng], "replace": replace]
+        if let from { body["origin"] = ["name": from.name, "lat": from.lat, "lng": from.lng] }
+        if let plan { body["plan"] = ["date": plan.date, "target_id": plan.target] }
+        let reply = try await composer("POST", "travel/trip", body)
+        if reply.status == 409 {
+            let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
+            let trip = json["trip"] as? [String: Any]
+            let destination = trip?["destination"] as? [String: Any]
+            return .busy(to: destination?["name"] as? String ?? "another place", arrive: trip?["arrive_time"] as? String)
+        }
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+        return .started
+    }
+
+    public func endTravelTrip() async throws(APIFailure) {
+        let reply = try await composer("DELETE", "travel/trip")
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+    }
+
     private struct Raw: Sendable {
         let status: Int
         let data: Data

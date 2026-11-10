@@ -1484,6 +1484,148 @@ extension Components {
         }
         /// - Remark: Generated from `#/components/schemas/PersonPlanResource`.
         public typealias PersonPlanResource = [OpenAPIRuntime.OpenAPIValueContainer]
+        /// "Add to plan": the way picked for one of the person's own plans on a day.
+        /// The plan must be theirs and on that day; the way stays a journey, bounded
+        /// like a started trip.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PlanTripRequest`.
+        public struct PlanTripRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PlanTripRequest/date`.
+            public var date: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PlanTripRequest/target_id`.
+            public var targetId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PlanTripRequest/remind`.
+            public var remind: Swift.Bool?
+            /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey`.
+            public struct JourneyPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/depart_at`.
+                public var departAt: Swift.String
+                /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/arrive_at`.
+                public var arriveAt: Swift.String
+                /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload`.
+                public struct LegsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/mode`.
+                    @frozen public enum ModePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case walk = "walk"
+                        case bike = "bike"
+                        case bus = "bus"
+                        case tram = "tram"
+                        case subway = "subway"
+                        case rail = "rail"
+                        case ferry = "ferry"
+                    }
+                    /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/mode`.
+                    public var mode: Components.Schemas.PlanTripRequest.JourneyPayload.LegsPayloadPayload.ModePayload
+                    /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/intermediate_stops`.
+                    public var intermediateStops: [Swift.String]?
+                    /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/polyline`.
+                    public var polyline: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/depart_at`.
+                    public var departAt: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/arrive_at`.
+                    public var arriveAt: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/to`.
+                    public struct ToPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/to/name`.
+                        public var name: Swift.String?
+                        /// Creates a new `ToPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - name:
+                        public init(name: Swift.String? = nil) {
+                            self.name = name
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case name
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/LegsPayload/to`.
+                    public var to: Components.Schemas.PlanTripRequest.JourneyPayload.LegsPayloadPayload.ToPayload?
+                    /// Creates a new `LegsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - mode:
+                    ///   - intermediateStops:
+                    ///   - polyline:
+                    ///   - departAt:
+                    ///   - arriveAt:
+                    ///   - to:
+                    public init(
+                        mode: Components.Schemas.PlanTripRequest.JourneyPayload.LegsPayloadPayload.ModePayload,
+                        intermediateStops: [Swift.String]? = nil,
+                        polyline: Swift.String? = nil,
+                        departAt: Swift.String,
+                        arriveAt: Swift.String,
+                        to: Components.Schemas.PlanTripRequest.JourneyPayload.LegsPayloadPayload.ToPayload? = nil
+                    ) {
+                        self.mode = mode
+                        self.intermediateStops = intermediateStops
+                        self.polyline = polyline
+                        self.departAt = departAt
+                        self.arriveAt = arriveAt
+                        self.to = to
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case mode
+                        case intermediateStops = "intermediate_stops"
+                        case polyline
+                        case departAt = "depart_at"
+                        case arriveAt = "arrive_at"
+                        case to
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/legs`.
+                public typealias LegsPayload = [Components.Schemas.PlanTripRequest.JourneyPayload.LegsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey/legs`.
+                public var legs: Components.Schemas.PlanTripRequest.JourneyPayload.LegsPayload
+                /// Creates a new `JourneyPayload`.
+                ///
+                /// - Parameters:
+                ///   - departAt:
+                ///   - arriveAt:
+                ///   - legs:
+                public init(
+                    departAt: Swift.String,
+                    arriveAt: Swift.String,
+                    legs: Components.Schemas.PlanTripRequest.JourneyPayload.LegsPayload
+                ) {
+                    self.departAt = departAt
+                    self.arriveAt = arriveAt
+                    self.legs = legs
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case departAt = "depart_at"
+                    case arriveAt = "arrive_at"
+                    case legs
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PlanTripRequest/journey`.
+            public var journey: Components.Schemas.PlanTripRequest.JourneyPayload
+            /// Creates a new `PlanTripRequest`.
+            ///
+            /// - Parameters:
+            ///   - date:
+            ///   - targetId:
+            ///   - remind:
+            ///   - journey:
+            public init(
+                date: Swift.String,
+                targetId: Swift.String,
+                remind: Swift.Bool? = nil,
+                journey: Components.Schemas.PlanTripRequest.JourneyPayload
+            ) {
+                self.date = date
+                self.targetId = targetId
+                self.remind = remind
+                self.journey = journey
+            }
+            public enum CodingKeys: String, CodingKey {
+                case date
+                case targetId = "target_id"
+                case remind
+                case journey
+            }
+        }
         /// | |
         /// |---|
         /// | `composer_rank` <br/>  |
@@ -2286,6 +2428,246 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case jurisdiction
                 case requestId = "request_id"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/StartTripRequest`.
+        public struct StartTripRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey`.
+            public struct JourneyPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/depart_at`.
+                public var departAt: Swift.String
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/arrive_at`.
+                public var arriveAt: Swift.String
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload`.
+                public struct LegsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/mode`.
+                    @frozen public enum ModePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case walk = "walk"
+                        case bike = "bike"
+                        case bus = "bus"
+                        case tram = "tram"
+                        case subway = "subway"
+                        case rail = "rail"
+                        case ferry = "ferry"
+                    }
+                    /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/mode`.
+                    public var mode: Components.Schemas.StartTripRequest.JourneyPayload.LegsPayloadPayload.ModePayload
+                    /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/intermediate_stops`.
+                    public var intermediateStops: [Swift.String]?
+                    /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/polyline`.
+                    public var polyline: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/depart_at`.
+                    public var departAt: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/arrive_at`.
+                    public var arriveAt: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/to`.
+                    public struct ToPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/to/name`.
+                        public var name: Swift.String?
+                        /// Creates a new `ToPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - name:
+                        public init(name: Swift.String? = nil) {
+                            self.name = name
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case name
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/LegsPayload/to`.
+                    public var to: Components.Schemas.StartTripRequest.JourneyPayload.LegsPayloadPayload.ToPayload?
+                    /// Creates a new `LegsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - mode:
+                    ///   - intermediateStops:
+                    ///   - polyline:
+                    ///   - departAt:
+                    ///   - arriveAt:
+                    ///   - to:
+                    public init(
+                        mode: Components.Schemas.StartTripRequest.JourneyPayload.LegsPayloadPayload.ModePayload,
+                        intermediateStops: [Swift.String]? = nil,
+                        polyline: Swift.String? = nil,
+                        departAt: Swift.String,
+                        arriveAt: Swift.String,
+                        to: Components.Schemas.StartTripRequest.JourneyPayload.LegsPayloadPayload.ToPayload? = nil
+                    ) {
+                        self.mode = mode
+                        self.intermediateStops = intermediateStops
+                        self.polyline = polyline
+                        self.departAt = departAt
+                        self.arriveAt = arriveAt
+                        self.to = to
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case mode
+                        case intermediateStops = "intermediate_stops"
+                        case polyline
+                        case departAt = "depart_at"
+                        case arriveAt = "arrive_at"
+                        case to
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/legs`.
+                public typealias LegsPayload = [Components.Schemas.StartTripRequest.JourneyPayload.LegsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey/legs`.
+                public var legs: Components.Schemas.StartTripRequest.JourneyPayload.LegsPayload
+                /// Creates a new `JourneyPayload`.
+                ///
+                /// - Parameters:
+                ///   - departAt:
+                ///   - arriveAt:
+                ///   - legs:
+                public init(
+                    departAt: Swift.String,
+                    arriveAt: Swift.String,
+                    legs: Components.Schemas.StartTripRequest.JourneyPayload.LegsPayload
+                ) {
+                    self.departAt = departAt
+                    self.arriveAt = arriveAt
+                    self.legs = legs
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case departAt = "depart_at"
+                    case arriveAt = "arrive_at"
+                    case legs
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/journey`.
+            public var journey: Components.Schemas.StartTripRequest.JourneyPayload
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/destination`.
+            public struct DestinationPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/destination/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/destination/lat`.
+                public var lat: Swift.Double
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/destination/lng`.
+                public var lng: Swift.Double
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/destination/emoji`.
+                public var emoji: Swift.String?
+                /// Creates a new `DestinationPayload`.
+                ///
+                /// - Parameters:
+                ///   - name:
+                ///   - lat:
+                ///   - lng:
+                ///   - emoji:
+                public init(
+                    name: Swift.String,
+                    lat: Swift.Double,
+                    lng: Swift.Double,
+                    emoji: Swift.String? = nil
+                ) {
+                    self.name = name
+                    self.lat = lat
+                    self.lng = lng
+                    self.emoji = emoji
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case name
+                    case lat
+                    case lng
+                    case emoji
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/destination`.
+            public var destination: Components.Schemas.StartTripRequest.DestinationPayload
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/origin`.
+            public struct OriginPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/origin/name`.
+                public var name: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/origin/lat`.
+                public var lat: Swift.Double?
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/origin/lng`.
+                public var lng: Swift.Double?
+                /// Creates a new `OriginPayload`.
+                ///
+                /// - Parameters:
+                ///   - name:
+                ///   - lat:
+                ///   - lng:
+                public init(
+                    name: Swift.String? = nil,
+                    lat: Swift.Double? = nil,
+                    lng: Swift.Double? = nil
+                ) {
+                    self.name = name
+                    self.lat = lat
+                    self.lng = lng
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case name
+                    case lat
+                    case lng
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/origin`.
+            public var origin: Components.Schemas.StartTripRequest.OriginPayload?
+            /// Starting this trip while another runs replaces it only when the
+            /// person said so ("Replace the trip you're on?").
+            ///
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/replace`.
+            public var replace: Swift.Bool?
+            /// The plan on the person's own day this trip is for (Leave now,
+            /// Plan a trip): checked against their day, never taken as sent.
+            ///
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/plan`.
+            public struct PlanPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/plan/date`.
+                public var date: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/StartTripRequest/plan/target_id`.
+                public var targetId: Swift.String?
+                /// Creates a new `PlanPayload`.
+                ///
+                /// - Parameters:
+                ///   - date:
+                ///   - targetId:
+                public init(
+                    date: Swift.String? = nil,
+                    targetId: Swift.String? = nil
+                ) {
+                    self.date = date
+                    self.targetId = targetId
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case date
+                    case targetId = "target_id"
+                }
+            }
+            /// The plan on the person's own day this trip is for (Leave now,
+            /// Plan a trip): checked against their day, never taken as sent.
+            ///
+            /// - Remark: Generated from `#/components/schemas/StartTripRequest/plan`.
+            public var plan: Components.Schemas.StartTripRequest.PlanPayload?
+            /// Creates a new `StartTripRequest`.
+            ///
+            /// - Parameters:
+            ///   - journey:
+            ///   - destination:
+            ///   - origin:
+            ///   - replace: Starting this trip while another runs replaces it only when the
+            ///   - plan: The plan on the person's own day this trip is for (Leave now,
+            public init(
+                journey: Components.Schemas.StartTripRequest.JourneyPayload,
+                destination: Components.Schemas.StartTripRequest.DestinationPayload,
+                origin: Components.Schemas.StartTripRequest.OriginPayload? = nil,
+                replace: Swift.Bool? = nil,
+                plan: Components.Schemas.StartTripRequest.PlanPayload? = nil
+            ) {
+                self.journey = journey
+                self.destination = destination
+                self.origin = origin
+                self.replace = replace
+                self.plan = plan
+            }
+            public enum CodingKeys: String, CodingKey {
+                case journey
+                case destination
+                case origin
+                case replace
+                case plan
             }
         }
         /// - Remark: Generated from `#/components/schemas/SubmitQuestionAnswerRequest`.
