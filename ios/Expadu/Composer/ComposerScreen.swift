@@ -257,6 +257,7 @@ struct ComposerScreen: View {
         .accessibilityHidden(true)
     }
 
+    /// Clear glass over the wall, as the canvas's .gl: the sky shows through (regular glass turns milky there).
     private var head: some View {
         HStack {
             Button {
@@ -272,7 +273,7 @@ struct ComposerScreen: View {
                     }
                 }
                 .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: .circle)
+                .glassEffect(.clear.interactive(), in: .circle)
                 .contentShape(.circle)
             }
             .buttonStyle(PressStyle())
@@ -281,7 +282,7 @@ struct ComposerScreen: View {
             Button { shell.closeComposer() } label: {
                 Image(systemName: "xmark").font(.system(size: 17, weight: .semibold))
                     .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
+                    .glassEffect(.clear.interactive(), in: .circle)
                     .contentShape(.circle)
             }
             .buttonStyle(PressStyle())
