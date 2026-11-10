@@ -12,6 +12,7 @@ use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
 use App\Places\SetHomeOrWork;
 use App\Services\KvbApiService;
+use App\Services\KvbLineColors;
 use App\Transit\NearbyStation;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -46,6 +47,14 @@ class AppTravelController extends Controller
         } elseif (isset($data['lat'], $data['lng'])) {
             $closest = $nearby->closest((float) $data['lat'], (float) $data['lng']);
             $station = $closest === null ? null : [...$closest, 'unknown_stop' => $stop];
+        }
+
+        // Each line in KVB's own colour, as the nearby board has it: the app paints the board with it.
+        if ($station !== null) {
+            $station['lines'] = array_map(fn (array $line) => [
+                ...$line,
+                'color' => KvbLineColors::for((string) $line['line'], $line['mode'] ?? null),
+            ], $station['lines'] ?? []);
         }
 
         return response()->json([
