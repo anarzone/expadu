@@ -103,6 +103,8 @@ struct ComposerScreen: View {
                     .scaleEffect(typing ? 0.82 : 1, anchor: .top)
                     .offset(y: typing ? -110 : 0)
                     .opacity(typing ? 0.55 : 1)
+                    // While typing, a tap on it only puts the keyboard away; it doesn't ask the poster.
+                    .allowsHitTesting(!typing)
                     .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .top)))
             } else {
                 ComposerPaper(ask: ask)
@@ -293,7 +295,8 @@ struct ComposerScreen: View {
 
     private func ask(_ words: String) {
         let question = words.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !question.isEmpty else { return }
+        // Send with nothing written: the keyboard goes away.
+        guard !question.isEmpty else { typing = false; return }
         text = ""
         typing = false
         Task { await model.send(question, api: session.api, place: today.place, label: nil) }
