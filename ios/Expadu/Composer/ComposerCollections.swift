@@ -120,8 +120,8 @@ private struct WeekStrip: View {
                     withAnimation(Motion.ios(0.3)) { model.day = day }
                 } label: {
                     VStack(spacing: 2) {
-                        Text(Self.weekday(day)).font(.geist(11.5)).foregroundStyle(on ? Color(light: 0xD7CFC0, dark: 0x15130E).opacity(on ? 1 : 0.7) : Palette.textSoft).lineLimit(1)
-                        Text(String(Int(day.suffix(2)) ?? 0)).font(.geist(16, .bold)).monospacedDigit().foregroundStyle(on ? Color(light: 0xFFFFFF, dark: 0x15130E) : Palette.text)
+                        Text(Self.weekday(day)).font(.geist(11.5)).foregroundStyle(on ? Color(light: 0xD7CFC0, dark: 0x15130E).opacity(0.7) : Palette.textSoft).lineLimit(1)
+                        Text(String(Int(day.suffix(2)) ?? 0)).font(.geist(16, .bold)).monospacedDigit().foregroundStyle(on ? Palette.onInk : Palette.text)
                         Circle().fill(model.planned(day, todayHas: !(today.page?.plans.isEmpty ?? true)) ? Palette.action : .clear)
                             .frame(width: 5, height: 5)
                     }

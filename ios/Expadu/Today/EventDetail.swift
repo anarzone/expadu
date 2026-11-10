@@ -365,10 +365,10 @@ struct EventDetail: View {
                     }
                 } label: {
                     Text(added ? "✓ In your plan" : "Add to my day").font(.geist(17, .semibold))
-                        .foregroundStyle(added ? Color(hex: 0xA9320B) : .white)
+                        .foregroundStyle(added ? Palette.addedText : .white)
                         .contentTransition(.interpolate)
                         .padding(.horizontal, 22).frame(height: 50)
-                        .buttonFace(added ? Color(hex: 0xFBE2D4) : Color(hex: 0xC23B0E))
+                        .buttonFace(added ? Palette.addedBackground : Palette.action)
                 }
                 .buttonStyle(PressStyle())
                 .disabled(added || idea.candidate.isEmpty)

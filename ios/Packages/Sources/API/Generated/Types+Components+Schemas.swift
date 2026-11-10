@@ -996,6 +996,45 @@ extension Components {
                     public var minutes: Swift.Int
                     /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/stops`.
                     public var stops: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/StopsOnTheWayPayload`.
+                    public struct StopsOnTheWayPayloadPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/StopsOnTheWayPayload/name`.
+                        public var name: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/StopsOnTheWayPayload/time`.
+                        public var time: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/StopsOnTheWayPayload/lat`.
+                        public var lat: Swift.Double?
+                        /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/StopsOnTheWayPayload/lng`.
+                        public var lng: Swift.Double?
+                        /// Creates a new `StopsOnTheWayPayloadPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - name:
+                        ///   - time:
+                        ///   - lat:
+                        ///   - lng:
+                        public init(
+                            name: Swift.String,
+                            time: Swift.String,
+                            lat: Swift.Double? = nil,
+                            lng: Swift.Double? = nil
+                        ) {
+                            self.name = name
+                            self.time = time
+                            self.lat = lat
+                            self.lng = lng
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case name
+                            case time
+                            case lat
+                            case lng
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/stops_on_the_way`.
+                    public typealias StopsOnTheWayPayload = [Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayloadPayload]
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/stops_on_the_way`.
+                    public var stopsOnTheWay: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayload
                     /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/polyline`.
                     public var polyline: Swift.String?
                     /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/TurnsPayload`.
@@ -1058,6 +1097,7 @@ extension Components {
                     ///   - arriveTime:
                     ///   - minutes:
                     ///   - stops:
+                    ///   - stopsOnTheWay:
                     ///   - polyline:
                     ///   - turns:
                     public init(
@@ -1073,6 +1113,7 @@ extension Components {
                         arriveTime: Swift.String,
                         minutes: Swift.Int,
                         stops: Swift.Int? = nil,
+                        stopsOnTheWay: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayload,
                         polyline: Swift.String? = nil,
                         turns: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.TurnsPayload
                     ) {
@@ -1088,6 +1129,7 @@ extension Components {
                         self.arriveTime = arriveTime
                         self.minutes = minutes
                         self.stops = stops
+                        self.stopsOnTheWay = stopsOnTheWay
                         self.polyline = polyline
                         self.turns = turns
                     }
@@ -1104,6 +1146,7 @@ extension Components {
                         case arriveTime = "arrive_time"
                         case minutes
                         case stops
+                        case stopsOnTheWay = "stops_on_the_way"
                         case polyline
                         case turns
                     }
@@ -3259,6 +3302,45 @@ extension Components {
                         public var minutes: Swift.Int
                         /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/stops`.
                         public var stops: Swift.Int?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/StopsOnTheWayPayload`.
+                        public struct StopsOnTheWayPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/StopsOnTheWayPayload/name`.
+                            public var name: Swift.String
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/StopsOnTheWayPayload/time`.
+                            public var time: Swift.String
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/StopsOnTheWayPayload/lat`.
+                            public var lat: Swift.Double?
+                            /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/StopsOnTheWayPayload/lng`.
+                            public var lng: Swift.Double?
+                            /// Creates a new `StopsOnTheWayPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - name:
+                            ///   - time:
+                            ///   - lat:
+                            ///   - lng:
+                            public init(
+                                name: Swift.String,
+                                time: Swift.String,
+                                lat: Swift.Double? = nil,
+                                lng: Swift.Double? = nil
+                            ) {
+                                self.name = name
+                                self.time = time
+                                self.lat = lat
+                                self.lng = lng
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case name
+                                case time
+                                case lat
+                                case lng
+                            }
+                        }
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/stops_on_the_way`.
+                        public typealias StopsOnTheWayPayload = [Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayloadPayload]
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/stops_on_the_way`.
+                        public var stopsOnTheWay: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayload
                         /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/polyline`.
                         public var polyline: Swift.String?
                         /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/TurnsPayload`.
@@ -3321,6 +3403,7 @@ extension Components {
                         ///   - arriveTime:
                         ///   - minutes:
                         ///   - stops:
+                        ///   - stopsOnTheWay:
                         ///   - polyline:
                         ///   - turns:
                         public init(
@@ -3336,6 +3419,7 @@ extension Components {
                             arriveTime: Swift.String,
                             minutes: Swift.Int,
                             stops: Swift.Int? = nil,
+                            stopsOnTheWay: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayload,
                             polyline: Swift.String? = nil,
                             turns: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.TurnsPayload
                         ) {
@@ -3351,6 +3435,7 @@ extension Components {
                             self.arriveTime = arriveTime
                             self.minutes = minutes
                             self.stops = stops
+                            self.stopsOnTheWay = stopsOnTheWay
                             self.polyline = polyline
                             self.turns = turns
                         }
@@ -3367,6 +3452,7 @@ extension Components {
                             case arriveTime = "arrive_time"
                             case minutes
                             case stops
+                            case stopsOnTheWay = "stops_on_the_way"
                             case polyline
                             case turns
                         }
@@ -3553,6 +3639,45 @@ extension Components {
                     public var minutes: Swift.Int
                     /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/stops`.
                     public var stops: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/StopsOnTheWayPayload`.
+                    public struct StopsOnTheWayPayloadPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/StopsOnTheWayPayload/name`.
+                        public var name: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/StopsOnTheWayPayload/time`.
+                        public var time: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/StopsOnTheWayPayload/lat`.
+                        public var lat: Swift.Double?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/StopsOnTheWayPayload/lng`.
+                        public var lng: Swift.Double?
+                        /// Creates a new `StopsOnTheWayPayloadPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - name:
+                        ///   - time:
+                        ///   - lat:
+                        ///   - lng:
+                        public init(
+                            name: Swift.String,
+                            time: Swift.String,
+                            lat: Swift.Double? = nil,
+                            lng: Swift.Double? = nil
+                        ) {
+                            self.name = name
+                            self.time = time
+                            self.lat = lat
+                            self.lng = lng
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case name
+                            case time
+                            case lat
+                            case lng
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/stops_on_the_way`.
+                    public typealias StopsOnTheWayPayload = [Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.StopsOnTheWayPayloadPayload]
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/stops_on_the_way`.
+                    public var stopsOnTheWay: Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.StopsOnTheWayPayload
                     /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/polyline`.
                     public var polyline: Swift.String?
                     /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/TurnsPayload`.
@@ -3615,6 +3740,7 @@ extension Components {
                     ///   - arriveTime:
                     ///   - minutes:
                     ///   - stops:
+                    ///   - stopsOnTheWay:
                     ///   - polyline:
                     ///   - turns:
                     public init(
@@ -3630,6 +3756,7 @@ extension Components {
                         arriveTime: Swift.String,
                         minutes: Swift.Int,
                         stops: Swift.Int? = nil,
+                        stopsOnTheWay: Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.StopsOnTheWayPayload,
                         polyline: Swift.String? = nil,
                         turns: Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.TurnsPayload
                     ) {
@@ -3645,6 +3772,7 @@ extension Components {
                         self.arriveTime = arriveTime
                         self.minutes = minutes
                         self.stops = stops
+                        self.stopsOnTheWay = stopsOnTheWay
                         self.polyline = polyline
                         self.turns = turns
                     }
@@ -3661,6 +3789,7 @@ extension Components {
                         case arriveTime = "arrive_time"
                         case minutes
                         case stops
+                        case stopsOnTheWay = "stops_on_the_way"
                         case polyline
                         case turns
                     }
@@ -4127,6 +4256,20 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/TodayResource/paperwork`.
             public var paperwork: Components.Schemas.TodayResource.PaperworkPayload?
+            /// Why the Paperwork card says what it says: next (a step to do), clear (a record, nothing to do now), paused (processing stopped), unconfirmed (email still to confirm), none (no record yet).
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayResource/paperwork_status`.
+            @frozen public enum PaperworkStatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case unconfirmed = "unconfirmed"
+                case clear = "clear"
+                case paused = "paused"
+                case none = "none"
+                case next = "next"
+            }
+            /// Why the Paperwork card says what it says: next (a step to do), clear (a record, nothing to do now), paused (processing stopped), unconfirmed (email still to confirm), none (no record yet).
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayResource/paperwork_status`.
+            public var paperworkStatus: Components.Schemas.TodayResource.PaperworkStatusPayload
             /// - Remark: Generated from `#/components/schemas/TodayResource/continuation`.
             public struct ContinuationPayload: Codable, Hashable, Sendable {
                 /// - Remark: Generated from `#/components/schemas/TodayResource/continuation/kind`.
@@ -4386,6 +4529,7 @@ extension Components {
             ///   - ideasPart:
             ///   - free:
             ///   - paperwork:
+            ///   - paperworkStatus: Why the Paperwork card says what it says: next (a step to do), clear (a record, nothing to do now), paused (processing stopped), unconfirmed (email still to confirm), none (no record yet).
             ///   - continuation:
             ///   - saved:
             ///   - comingUp:
@@ -4407,6 +4551,7 @@ extension Components {
                 ideasPart: Swift.String,
                 free: Components.Schemas.TodayResource.FreePayload? = nil,
                 paperwork: Components.Schemas.TodayResource.PaperworkPayload? = nil,
+                paperworkStatus: Components.Schemas.TodayResource.PaperworkStatusPayload,
                 continuation: Components.Schemas.TodayResource.ContinuationPayload? = nil,
                 saved: Components.Schemas.TodayResource.SavedPayload? = nil,
                 comingUp: Components.Schemas.TodayResource.ComingUpPayload
@@ -4428,6 +4573,7 @@ extension Components {
                 self.ideasPart = ideasPart
                 self.free = free
                 self.paperwork = paperwork
+                self.paperworkStatus = paperworkStatus
                 self.continuation = continuation
                 self.saved = saved
                 self.comingUp = comingUp
@@ -4450,6 +4596,7 @@ extension Components {
                 case ideasPart = "ideas_part"
                 case free
                 case paperwork
+                case paperworkStatus = "paperwork_status"
                 case continuation
                 case saved
                 case comingUp = "coming_up"

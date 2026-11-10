@@ -44,6 +44,8 @@ public struct CityMap: UIViewRepresentable {
             case badge(text: String, fill: UIColor, ink: UIColor)
             /// A place, with its SF Symbol.
             case place(symbol: String)
+            /// A stop a ride passes: a small ring in the line's colour.
+            case stop(ring: UIColor)
         }
 
         public let id: String
@@ -286,7 +288,8 @@ private struct PinView: View {
                 if !pin.title.isEmpty {
                     Text(pin.title).font(.system(size: 12, weight: .bold)).lineLimit(1)
                         .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(.white.opacity(0.92), in: .capsule)
+                        .foregroundStyle(Self.labelInk)
+                    .background(.white.opacity(0.92), in: .capsule)
                 }
             }
         case let .badge(text, fill, ink):
@@ -301,10 +304,18 @@ private struct PinView: View {
                     .background(Color(red: 0.18, green: 0.44, blue: 0.82), in: .circle)
                     .overlay { Circle().strokeBorder(.white, lineWidth: 2) }
                 Text(pin.title).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                    .foregroundStyle(Self.labelInk)
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .background(.white.opacity(0.92), in: .capsule)
             }
+        case let .stop(ring):
+            Circle().fill(.white).frame(width: 9, height: 9)
+                .overlay { Circle().strokeBorder(Color(ring), lineWidth: 2.5) }
+                .accessibilityLabel(pin.title)
         }
     }
+
+    /// Labels sit on a white tag in light and dark maps alike, so their type stays dark.
+    static let labelInk = Color(red: 0x21 / 255, green: 0x1D / 255, blue: 0x15 / 255)
 }
 #endif

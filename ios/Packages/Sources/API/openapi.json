@@ -10098,6 +10098,38 @@
                                                     "null"
                                                 ]
                                             },
+                                            "stops_on_the_way": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "time": {
+                                                            "type": "string"
+                                                        },
+                                                        "lat": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "lng": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "time",
+                                                        "lat",
+                                                        "lng"
+                                                    ]
+                                                }
+                                            },
                                             "polyline": {
                                                 "type": [
                                                     "string",
@@ -10151,6 +10183,7 @@
                                             "arrive_time",
                                             "minutes",
                                             "stops",
+                                            "stops_on_the_way",
                                             "polyline",
                                             "turns"
                                         ]
@@ -11976,6 +12009,38 @@
                                                             "null"
                                                         ]
                                                     },
+                                                    "stops_on_the_way": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "name": {
+                                                                    "type": "string"
+                                                                },
+                                                                "time": {
+                                                                    "type": "string"
+                                                                },
+                                                                "lat": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                },
+                                                                "lng": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "name",
+                                                                "time",
+                                                                "lat",
+                                                                "lng"
+                                                            ]
+                                                        }
+                                                    },
                                                     "polyline": {
                                                         "type": [
                                                             "string",
@@ -12029,6 +12094,7 @@
                                                     "arrive_time",
                                                     "minutes",
                                                     "stops",
+                                                    "stops_on_the_way",
                                                     "polyline",
                                                     "turns"
                                                 ]
@@ -12147,6 +12213,38 @@
                                                 "null"
                                             ]
                                         },
+                                        "stops_on_the_way": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "time": {
+                                                        "type": "string"
+                                                    },
+                                                    "lat": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "lng": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "name",
+                                                    "time",
+                                                    "lat",
+                                                    "lng"
+                                                ]
+                                            }
+                                        },
                                         "polyline": {
                                             "type": [
                                                 "string",
@@ -12200,6 +12298,7 @@
                                         "arrive_time",
                                         "minutes",
                                         "stops",
+                                        "stops_on_the_way",
                                         "polyline",
                                         "turns"
                                     ]
@@ -12594,6 +12693,17 @@
                             "process"
                         ]
                     },
+                    "paperwork_status": {
+                        "type": "string",
+                        "description": "Why the Paperwork card says what it says: next (a step to do), clear (a record, nothing to do now), paused (processing stopped), unconfirmed (email still to confirm), none (no record yet).",
+                        "enum": [
+                            "unconfirmed",
+                            "clear",
+                            "paused",
+                            "none",
+                            "next"
+                        ]
+                    },
                     "continuation": {
                         "type": [
                             "object",
@@ -12795,6 +12905,7 @@
                     "ideas_part",
                     "free",
                     "paperwork",
+                    "paperwork_status",
                     "continuation",
                     "saved",
                     "coming_up"

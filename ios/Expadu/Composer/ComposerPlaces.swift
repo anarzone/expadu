@@ -315,7 +315,7 @@ struct PlaceSheet: View {
                 }
             }
         } label: {
-            Text(title).font(.geist(15, .semibold)).foregroundStyle(on ? Palette.onAction : Palette.text)
+            Text(title).font(.geist(15, .semibold)).foregroundStyle(on ? Palette.onInk : Palette.text)
                 .frame(maxWidth: .infinity).frame(height: 42)
                 .buttonFace(on ? Palette.text : Palette.quiet)
         }

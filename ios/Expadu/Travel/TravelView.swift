@@ -11,6 +11,7 @@ struct TravelView: View {
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.sectionBarCompact) private var barCompact
     @State private var model = TravelModel()
     @State private var planner = TripPlanner()
     @State private var leaveOpen = false
@@ -43,9 +44,16 @@ struct TravelView: View {
         }
         .foregroundStyle(model.map ? Palette.text : lead.ink)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.55), value: model.leadLine?.line)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // Where to? sits in the bottom row, between the folded section bar and Composer's button.
+        .overlay(alignment: .bottom) {
             WhereTo(open: { planner.open(from: model.station) }, speak: { planner.open(from: model.station, listening: true) })
-                .padding(.horizontal, 16).padding(.bottom, 12)
+                .padding(.leading, 16 + 56 + 10).padding(.trailing, 16 + 62 + 10)
+                .padding(.bottom, 28)
+                .opacity(barCompact ? 1 : 0)
+                .offset(y: barCompact ? 0 : 20)
+                .allowsHitTesting(barCompact)
+                .animation(.spring(duration: 0.4, bounce: 0.2), value: barCompact)
+                .ignoresSafeArea(edges: .bottom)
         }
         .task { await model.start(session.api) }
         .onDisappear { model.stop() }
@@ -133,7 +141,7 @@ struct TravelView: View {
                         Label("Lift out of order", systemImage: "arrow.up.arrow.down.square")
                             .font(.geist(11.5, .bold)).labelStyle(.titleAndIcon)
                             .padding(.horizontal, 7).frame(height: 19)
-                            .background(.white, in: .rect(cornerRadius: 10))
+                            .background(Palette.noticeBackground, in: .rect(cornerRadius: 10))
                             .foregroundStyle(Palette.conflictText)
                     }
                 }
@@ -277,7 +285,7 @@ private struct LineRail: View {
         Button { withAnimation(.snappy) { tap() } } label: {
             Text(title)
                 .font(.geist(13.5, .bold)).monospacedDigit()
-                .foregroundStyle(ink ?? (on ? Palette.text : Color.white))
+                .foregroundStyle(ink ?? (on ? Color(hex: 0x211D15) : Color.white))
                 .frame(minWidth: 30).frame(height: 28).padding(.horizontal, 4)
                 .background(fill == .clear ? Color.clear : fill, in: .rect(cornerRadius: 8))
                 .padding(3)
@@ -372,7 +380,7 @@ struct Band: View {
                 .background(Palette.warnBackground, in: .rect(cornerRadius: 10)).foregroundStyle(Palette.warnText)
         } else if let notice, notice.isMajor {
             Text(notice.headline.count > 22 ? "Line trouble" : notice.headline).font(.geist(11.5, .bold)).padding(.horizontal, 7).frame(height: 19)
-                .background(.white, in: .rect(cornerRadius: 10)).foregroundStyle(Palette.conflictText)
+                .background(Palette.noticeBackground, in: .rect(cornerRadius: 10)).foregroundStyle(Palette.conflictText)
         }
     }
 
@@ -513,18 +521,18 @@ private struct NoticeBanner: View {
         Button(action: tap) {
             HStack(spacing: 10) {
                 Image(systemName: "exclamationmark").font(.system(size: 13, weight: .heavy))
-                    .foregroundStyle(.white).frame(width: 26, height: 26).background(Palette.conflictText, in: .circle)
+                    .foregroundStyle(.white).frame(width: 26, height: 26).background(Color(hex: 0xC2321A), in: .circle)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(notice.headline).font(.geist(15.5, .bold)).lineLimit(1)
                     Text(notice.lines.count == 1 ? "Line \(notice.lines[0]) · from KVB" : "Lines \(notice.lines.joined(separator: ", ")) · from KVB")
-                        .font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                        .font(.geist(12.5)).foregroundStyle(Palette.noticeText.opacity(0.7)).lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
             }
-            .foregroundStyle(Palette.text)
+            .foregroundStyle(Palette.noticeText)
             .padding(.horizontal, 14).frame(height: 56)
-            .background(Palette.posterPaper)
+            .background(Palette.noticeBackground)
             .shadow(color: .black.opacity(0.3), radius: 9, y: 8)
             .opacity(dim ? 0.4 : 1)
             .contentShape(.rect)
