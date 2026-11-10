@@ -272,11 +272,11 @@ struct GettingThere: View {
     }
 
     private func spareInk(_ way: TodayPage.Way) -> Color {
-        way.status == "late" ? Palette.conflictText : way.spareMinutes <= 2 ? Palette.warnText : way.spareMinutes >= 10 ? Color(hex: 0x17603A) : Palette.text
+        way.status == "late" ? Palette.conflictText : way.spareMinutes <= 2 ? Palette.warnText : way.spareMinutes >= 10 ? Palette.goodText : Palette.text
     }
 
     private func spareTint(_ way: TodayPage.Way) -> Color {
-        way.status == "late" ? Palette.conflictBackground : way.spareMinutes <= 2 ? Palette.warnBackground : way.spareMinutes >= 10 ? Color(hex: 0xE4F4E8) : Palette.quiet
+        way.status == "late" ? Palette.conflictBackground : way.spareMinutes <= 2 ? Palette.warnBackground : way.spareMinutes >= 10 ? Palette.goodBackground : Palette.quiet
     }
 
     // MARK: Good to know

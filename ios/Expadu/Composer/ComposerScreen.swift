@@ -186,6 +186,16 @@ struct ComposerScreen: View {
                 .animation(reduceMotion ? nil : ComposerMotion.glide(0.5), value: onWall && !typing)
             // The column stays on the wall behind the paper, so coming back doesn't build it again.
             // It hangs from the top and takes no room, so the keyboard never moves or squeezes it.
+            // At night the column stays lit: a warm glow on the wall behind it.
+            if colorScheme == .dark {
+                Ellipse().fill(Color(red: 1, green: 200 / 255, blue: 120 / 255, opacity: 0.26))
+                    .frame(width: screenWidth * 0.85, height: screenWidth * 1.15)
+                    .blur(radius: 46)
+                    .padding(.top, top(196) + 30)
+                    .opacity(onWall && !typing ? 1 : 0)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
             Color.clear.overlay(alignment: .top) {
                 ComposerColumn(posters: posters) { poster in ask(poster.question) }
                     // Its own size from the screen's width: the keyboard taking height must not shrink it
@@ -256,6 +266,9 @@ struct ComposerScreen: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
             .clipped()
+            // At night the wall goes dark (the canvas's .ph.dark .wall: brightness .46, saturate .8).
+            .colorMultiply(colorScheme == .dark ? Color(white: 0.46) : .white)
+            .saturation(colorScheme == .dark ? 0.8 : 1)
         }
         .ignoresSafeArea()
         // The picture is wider than the screen; clipping it doesn't stop it catching taps.
@@ -363,7 +376,7 @@ struct ComposerScreen: View {
                     Button { text = String(dictation.finish().prefix(500)) } label: {
                         Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
                             .frame(width: 44, height: 44)
-                            .background(Palette.text, in: .rect(cornerRadius: 14, style: .continuous))
+                            .background(Palette.action, in: .rect(cornerRadius: 14, style: .continuous))
                     }
                     .buttonStyle(PressStyle())
                     .accessibilityLabel("Done speaking")
@@ -386,7 +399,7 @@ struct ComposerScreen: View {
                     Button { ask(text) } label: {
                         Image(systemName: "arrow.up").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
                             .frame(width: 44, height: 44)
-                            .background(Palette.text, in: .rect(cornerRadius: 14, style: .continuous))
+                            .background(Palette.action, in: .rect(cornerRadius: 14, style: .continuous))
                     }
                     .buttonStyle(PressStyle())
                     .disabled(model.pending != nil)

@@ -299,8 +299,8 @@ private struct TicketView: View {
                     Text(spare >= 0 ? "\(spare) min spare" : "\(-spare) min late")
                         .font(.geist(13, .bold))
                         .padding(.horizontal, 9).frame(height: 26)
-                        .background(spare < 0 ? Palette.conflictBackground : spare <= 2 ? Palette.warnBackground : spare >= 10 ? Color.green.opacity(0.15) : Palette.quiet, in: .rect(cornerRadius: 8))
-                        .foregroundStyle(spare < 0 ? Palette.conflictText : spare <= 2 ? Palette.warnText : spare >= 10 ? Color(hex: 0x1F7A45) : Palette.text)
+                        .background(spare < 0 ? Palette.conflictBackground : spare <= 2 ? Palette.warnBackground : spare >= 10 ? Palette.goodBackground : Palette.quiet, in: .rect(cornerRadius: 8))
+                        .foregroundStyle(spare < 0 ? Palette.conflictText : spare <= 2 ? Palette.warnText : spare >= 10 ? Palette.goodText : Palette.text)
                 }
                 let reasons = why(journey)
                 // Short reasons side by side; a long one (a notice) on its own line, wrapped.
@@ -589,8 +589,8 @@ private struct StateCard: View {
             Text(text).font(.geist(15)).foregroundStyle(Palette.textSoft)
             Button(action: go) { Text(button).font(.geist(16, .semibold)).frame(maxWidth: .infinity).frame(height: 48) }
                 .buttonStyle(PressStyle())
-                .buttonFace(Palette.text, radius: 14)
-                .foregroundStyle(Palette.surface)
+                .buttonFace(Palette.action, radius: 14)
+                .foregroundStyle(Palette.onAction)
         }
         .foregroundStyle(Palette.text)
         .padding(18)

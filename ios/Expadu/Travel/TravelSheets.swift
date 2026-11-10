@@ -542,7 +542,7 @@ struct NoticePopup: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "exclamationmark").font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(.white).frame(width: 26, height: 26).background(Palette.conflictText, in: .circle)
+                        .foregroundStyle(.white).frame(width: 26, height: 26).background(Color(hex: 0xC2321A), in: .circle)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(notice.headline).font(.geist(18, .bold)).fixedSize(horizontal: false, vertical: true)
                         Text(german ? "In German · from KVB" : "Translated from German").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
