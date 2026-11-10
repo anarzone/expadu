@@ -36,6 +36,10 @@ final class TravelModel {
     var notice: Station.Notice?
     private(set) var now = Date()
     private(set) var place: CLLocationCoordinate2D?
+    /// The board's stop came from a rough fix; it may not be the stop they're at.
+    private(set) var placeRough = false
+    /// The latest fix was rough (kept the board as it was, or built it from a guess).
+    private(set) var roughNow = false
     /// A stop they picked; nil follows where they are.
     private(set) var picked: String?
     /// The stop shown while its board loads: the picked one.
@@ -83,6 +87,7 @@ final class TravelModel {
         case .unavailable: "Times unavailable right now"
         }
         if line != nil || map { return basis }
+        if picked == nil, placeRough { return "Location rough · tap the name to pick your stop" }
         let source = picked != nil ? "Picked" : station.walkMin.map { "\($0) min walk" } ?? "Closest"
         return "\(source) · \(basis)"
     }
@@ -120,7 +125,18 @@ final class TravelModel {
     func load(_ api: AppAPI, quietly: Bool = false) async {
         if picked == nil {
             if !quietly && reply == nil { phase = .finding }
-            place = await locator.coordinate() ?? place
+            let fix = await locator.fix()
+            if let fix {
+                let rough = fix.horizontalAccuracy > OneLocation.rough
+                // A rough fix (underground, between tall buildings) never replaces a stop found from a good one.
+                if rough, reply?.station != nil, !placeRough {
+                    roughNow = true
+                } else {
+                    place = fix.coordinate
+                    placeRough = rough
+                    roughNow = rough
+                }
+            }
             guard let place else {
                 if reply == nil { phase = .noLocation }
                 return
