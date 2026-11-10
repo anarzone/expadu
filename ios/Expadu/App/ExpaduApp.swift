@@ -48,6 +48,8 @@ struct RootView: View {
                 SignInView()
             }
         }
+        // A tap outside a text field puts the keyboard away, everywhere.
+        .background { KeyboardDismissal() }
         // Each return to the app: the token renewed in good time, and a just-confirmed address let in.
         .onChange(of: phase, initial: true) {
             if phase == .active {
