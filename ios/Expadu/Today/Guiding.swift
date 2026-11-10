@@ -152,6 +152,14 @@ enum WayDrawing {
         if start, let first = legs.first.flatMap({ points($0).first }) {
             pins.append(.init(id: "start", coordinate: first, title: "", kind: .start))
         }
+        // Every stop a ride passes, as a small ring on its line (under the badges and flag).
+        for (index, leg) in legs.enumerated() where leg.rides {
+            let ring = UIColor(LineLook(hex: leg.color ?? "#1A4CD4").deep)
+            for (n, stop) in leg.stopsOnTheWay.enumerated() {
+                guard let lat = stop.latitude, let lng = stop.longitude else { continue }
+                pins.append(.init(id: "stop\(index)-\(n)", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), title: stop.name, kind: .stop(ring: ring)))
+            }
+        }
         for (index, leg) in legs.enumerated() where leg.rides {
             if let board = points(leg).first {
                 let look = LineLook(hex: leg.color ?? "#1A4CD4")

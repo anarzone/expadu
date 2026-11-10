@@ -63,6 +63,9 @@ final class AppJourney
             'arrive_time' => (string) ($leg['arrive_time'] ?? ''),
             'minutes' => (int) ($leg['duration_min'] ?? 0),
             'stops' => isset($leg['stops']) ? (int) $leg['stops'] : null,
+            // The stops it passes between boarding and getting off, with when it's there: the map's
+            // stop dots and the full stop list on the trip.
+            'stops_on_the_way' => self::stopsOnTheWay($leg),
             // The way it goes, for the map (MOTIS's encoded polyline, precision 7).
             'polyline' => $leg['polyline'] ?? null,
             // On foot: the router's turns, for the map and the next turn while walking.
@@ -151,6 +154,30 @@ final class AppJourney
     }
 
     /** "Köln Neumarkt" as the stop signs say it: "Neumarkt". */
+    /**
+     * A ride's stops between boarding and getting off.
+     *
+     * @param  array<string, mixed>  $leg
+     * @return list<array{name: string, time: string, lat: float|null, lng: float|null}>
+     */
+    public static function stopsOnTheWay(array $leg): array
+    {
+        $stops = [];
+        foreach ($leg['intermediate_stops'] ?? [] as $stop) {
+            if (! is_array($stop)) {
+                continue;
+            }
+            $stops[] = [
+                'name' => self::short($stop['name'] ?? null),
+                'time' => (string) ($stop['arrive_time'] ?? ''),
+                'lat' => isset($stop['lat']) ? (float) $stop['lat'] : null,
+                'lng' => isset($stop['lng']) ? (float) $stop['lng'] : null,
+            ];
+        }
+
+        return $stops;
+    }
+
     public static function short(?string $name): string
     {
         return $name === null ? '' : trim((string) preg_replace('/^(Köln|Koeln)\s+/u', '', $name));

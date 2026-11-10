@@ -75,7 +75,7 @@ struct TodayView: View {
                             case .day: YourDay(page: page)
                             case .ideas: if !model.shownIdeas.isEmpty { Ideas(page: page, sheet: $sheet) }
                             case .city: CologneToday(page: page, sheet: $sheet)
-                            case .paperwork: PaperworkCard(paperwork: page.paperwork)
+                            case .paperwork: PaperworkCard(paperwork: page.paperwork, status: page.paperworkStatus)
                             case .pickUp: if let continuation = page.continuation { PickUp(continuation: continuation) }
                             case .saved: if let saved = page.saved { SavedForLater(saved: saved, date: page.date, plans: page.plans) }
                             case .comingUp: if !page.tomorrow.isEmpty || !page.later.isEmpty { ComingUp(page: page) }

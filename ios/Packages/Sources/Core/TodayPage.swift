@@ -310,11 +310,29 @@ public struct TodayPage: Equatable, Sendable {
             public let polyline: String?
             /// On foot: our router's turns.
             public var turns: [Turn]
+            /// A ride's stops between boarding and getting off, with when it's there.
+            public var stopsOnTheWay: [Stop]
+
+            /// A stop a ride passes.
+            public struct Stop: Equatable, Sendable {
+                public let name: String
+                public let time: String
+                public let latitude: Double?
+                public let longitude: Double?
+
+                public init(name: String, time: String, latitude: Double?, longitude: Double?) {
+                    self.name = name
+                    self.time = time
+                    self.latitude = latitude
+                    self.longitude = longitude
+                }
+            }
 
             public init(mode: String, line: String?, color: String?, headsign: String?, from: String, to: String, departAt: Date, arriveAt: Date,
-                        departTime: String, arriveTime: String, minutes: Int, stops: Int?, polyline: String? = nil, turns: [Turn] = []) {
+                        departTime: String, arriveTime: String, minutes: Int, stops: Int?, polyline: String? = nil, turns: [Turn] = [], stopsOnTheWay: [Stop] = []) {
                 self.polyline = polyline
                 self.turns = turns
+                self.stopsOnTheWay = stopsOnTheWay
                 self.mode = mode
                 self.line = line
                 self.color = color
@@ -438,7 +456,7 @@ public struct TodayPage: Equatable, Sendable {
                 let last = index == legs.count - 1
                 let before = index > 0 ? legs[index - 1] : nil
                 if leg.rides {
-                    let sub = ["From \(leg.from)", leg.headsign.map { "towards \($0)" }, leg.stops.map { "\($0) stops" }].compactMap { $0 }.joined(separator: " · ")
+                    let sub = ["From \(leg.from)", leg.headsign.map { "towards \($0)" }, leg.stops.map { $0 == 1 ? "1 stop" : "\($0) stops" }].compactMap { $0 }.joined(separator: " · ")
                     steps.append(Step(kind: .ride, title: "\(leg.name) to \(leg.to)", sub: sub, at: leg.departAt, time: leg.departTime, color: leg.color, name: leg.name, leg: index))
                     if last {
                         steps.append(Step(kind: .getOff, title: "Get off at \(leg.to)", sub: "Then you’re there", at: leg.arriveAt, time: leg.arriveTime, color: leg.color, name: leg.name))
@@ -910,6 +928,8 @@ public struct TodayPage: Equatable, Sendable {
     public var trip: Trip?
     public let free: Free?
     public let paperwork: Paperwork?
+    /// next, clear, paused, unconfirmed or none: what the Paperwork card says when there's no next step.
+    public var paperworkStatus = "none"
     public let continuation: Continuation?
     public let saved: Saved?
     public let tomorrowDate: String?

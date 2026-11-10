@@ -35,6 +35,8 @@ struct ShellActions {
 
 extension EnvironmentValues {
     @Entry var shell = ShellActions()
+    /// The section bar is folded to its circle: Travel puts Where to? beside it.
+    @Entry var sectionBarCompact = false
 }
 
 /// The phone shell: the brand, the bell and the account over each page; at the bottom a Liquid Glass
@@ -79,6 +81,18 @@ struct ShellView: View {
             }
         }
         .environment(today)
+        .environment(\.sectionBarCompact, compact)
+        // Travel keeps the bar folded, so the board, its search and its sheets have the room;
+        // opened from its circle, it folds back after a moment.
+        .onChange(of: tab, initial: true) { _, section in
+            withAnimation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.2)) { compact = section == .travel }
+        }
+        .task(id: compact) {
+            guard tab == .travel, !compact else { return }
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled, tab == .travel else { return }
+            withAnimation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.2)) { compact = true }
+        }
         // From the trip's Live Activity: start the Leave card's way, or a new way from here.
         .onOpenURL { url in
             guard let link = DeepLink(url: url) else { return }
@@ -103,7 +117,7 @@ struct ShellView: View {
         }
         .environment(\.shell, ShellActions(
             openComposer: { composer = ComposerOpening(words: nil) },
-            show: { section in withAnimation(.snappy) { tab = section; compact = false } },
+            show: { section in withAnimation(.snappy) { tab = section; compact = section == .travel } },
             scrolled: scrolled
         ))
         .background(Palette.canvas)
@@ -144,11 +158,13 @@ struct ShellView: View {
                     .environment(today)
                     .environment(\.shell, ShellActions(
                         openComposer: {},
-                        show: { section in withAnimation(.snappy) { tab = section; compact = false } },
+                        show: { section in withAnimation(.snappy) { tab = section; compact = section == .travel } },
                         scrolled: { _ in },
                         closeComposer: { composer = nil }
                     ))
                     .transition(reduceMotion ? .opacity : .bloom(from: 31, x: -47, y: -52))
+                    // Composer lifts its own box over the keyboard; the shell must not move the page for it.
+                    .ignoresSafeArea(.keyboard)
                     .zIndex(20)
             }
         }
@@ -157,6 +173,7 @@ struct ShellView: View {
 
     /// Down hides the bar's words to a circle; up, or the top of the page, brings them back.
     private func scrolled(_ offset: CGFloat) {
+        guard tab != .travel else { return }
         let delta = offset - lastOffset
         lastOffset = offset
         let next: Bool? = offset < 40 ? false : delta > 6 ? true : delta < -6 ? false : nil

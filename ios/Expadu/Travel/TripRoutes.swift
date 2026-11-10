@@ -19,6 +19,8 @@ struct TripRoutesView: View {
     @State private var conditions = false
     @State private var whenOpen = false
     @State private var printed = false
+    /// Tickets or a plain list, as they last chose.
+    @AppStorage("routesAsList") private var asList = false
     @State private var undo: PlannedTrip?
 
     var body: some View {
@@ -43,7 +45,7 @@ struct TripRoutesView: View {
                               button: problem == "Where are you starting?" ? "Add a starting point" : "Change the plan", go: back)
                         .padding(.horizontal, 16).padding(.bottom, 30)
                 } else if !options.isEmpty {
-                    deck(options)
+                    if asList { list(options) } else { deck(options) }
                 }
             }
         }
@@ -85,8 +87,20 @@ struct TripRoutesView: View {
             }
         }
         .animation(.snappy, value: undo != nil)
-        .onChange(of: planner.answer?.journeys.count) { picked = nil; details = nil; printed = false }
-        .onChange(of: planner.sort) { picked = nil; details = nil; printed = false }
+        // A new answer or order prints the deck again (and shows it: it used to stay hidden).
+        .onChange(of: planner.answer?.journeys.map(\.departAt)) { reprint() }
+        .onChange(of: planner.sort) { reprint() }
+        .onChange(of: planner.prefs) { reprint() }
+    }
+
+    private func reprint() {
+        picked = nil
+        details = nil
+        printed = false
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(60))
+            printed = true
+        }
     }
 
     // MARK: Map
@@ -104,6 +118,14 @@ struct TripRoutesView: View {
         var pins: [CityMap.Pin] = []
         if let from = planner.answer?.from { pins.append(.init(id: "from", coordinate: .init(latitude: from.lat, longitude: from.lng), title: planner.from?.name ?? "You", kind: .start)) }
         if let to = planner.destination { pins.append(.init(id: "to", coordinate: .init(latitude: to.lat, longitude: to.lng), title: to.name, kind: .destination)) }
+        // Each ride's stops as small rings on its line, under the badges.
+        for (i, leg) in legs.enumerated() where leg.isRide {
+            let ring = UIColor(LineLook(hex: leg.color ?? "#00768B").deep)
+            for (n, stop) in (leg.intermediateStops ?? []).enumerated() {
+                guard let lat = stop.lat, let lng = stop.lng else { continue }
+                pins.append(.init(id: "s\(i)-\(n)", coordinate: .init(latitude: lat, longitude: lng), title: stop.name, kind: .stop(ring: ring)))
+            }
+        }
         for (i, leg) in legs.enumerated() where leg.isRide {
             if let lat = leg.from.lat, let lng = leg.from.lng, let line = leg.line {
                 let look = LineLook(hex: leg.color ?? "#00768B")
@@ -148,6 +170,11 @@ struct TripRoutesView: View {
                 }
                 Button { whenOpen = true } label: { tool(icon: "clock", text: planner.whenLabel, chevron: false) }
                     .buttonStyle(PressStyle())
+                Button { withAnimation(.smooth(duration: 0.35)) { asList.toggle(); details = nil } } label: {
+                    tool(icon: asList ? "rectangle.stack" : "list.bullet", text: asList ? "Tickets" : "List", chevron: false)
+                }
+                .buttonStyle(PressStyle())
+                .accessibilityLabel(asList ? "Show as tickets" : "Show as a list")
                 Button { withAnimation(.smooth) { conditions.toggle() } } label: { tool(icon: "checkmark", text: "Today’s conditions", chevron: false) }
                     .buttonStyle(PressStyle())
             }
@@ -223,6 +250,154 @@ struct TripRoutesView: View {
     }
 }
 
+extension TripRoutesView {
+    /// The ways as a plain list: each row says when to leave and be there, which line from which stop
+    /// towards where, and how it fits. A tap shows it on the map and opens its steps and actions.
+    func list(_ options: [TripPlanner.Option]) -> some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(options.enumerated()), id: \.element.id) { i, option in
+                    let open = details == option.index
+                    WayListRow(planner: planner, option: option, best: i == 0 ? planner.sort.label : nil, open: open,
+                               kept: planner.added[option.index] != nil,
+                               tap: {
+                                   withAnimation(.smooth(duration: 0.3)) {
+                                       picked = option.index
+                                       details = open ? nil : option.index
+                                   }
+                               }, show: {
+                                   Task { _ = await planner.start(option, replace: false, session.api, today: today) }
+                               }, add: planner.target == nil ? nil : {
+                                   Task { await planner.addToPlan(option, session.api) }
+                               })
+                    if i < options.count - 1 { Divider().padding(.leading, 16) }
+                }
+                Button { Task { await planner.showMore(session.api) } } label: {
+                    Label(planner.more ? "Fewer routes" : "More routes", systemImage: planner.more ? "arrow.uturn.backward" : "plus")
+                        .font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 48)
+                }
+                .buttonStyle(PressStyle())
+                .foregroundStyle(Palette.navTeal)
+            }
+            .padding(.vertical, 6)
+        }
+        .scrollIndicators(.hidden)
+        .frame(maxHeight: 470)
+        .background(Palette.surface, in: .rect(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.22), radius: 16, y: 10)
+        .padding(.horizontal, 12).padding(.bottom, 12)
+        .opacity(printed || reduceMotion ? 1 : 0)
+        .offset(y: printed || reduceMotion ? 0 : 30)
+        .animation(.smooth(duration: 0.35), value: printed)
+        .onAppear { printed = true }
+        .sensoryFeedback(.selection, trigger: details)
+    }
+}
+
+/// One way in the list: times, lines with their direction and boarding stop, fit and warnings.
+private struct WayListRow: View {
+    let planner: TripPlanner
+    let option: TripPlanner.Option
+    let best: String?
+    let open: Bool
+    let kept: Bool
+    let tap: () -> Void
+    let show: () -> Void
+    let add: (() -> Void)?
+
+    var body: some View {
+        let journey = option.journey
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: tap) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("\(journey.leaveTime) → \(journey.arriveTime)").font(.geist(18, .bold)).monospacedDigit()
+                        Text("\(journey.durationMin) min").font(.geist(14, .medium)).foregroundStyle(Palette.textSoft)
+                        Spacer(minLength: 0)
+                        if let spare = planner.spare(journey) {
+                            Text(spare >= 0 ? "\(spare) min spare" : "\(-spare) min late").font(.geist(12.5, .bold))
+                                .padding(.horizontal, 7).frame(height: 22)
+                                .background(spare < 0 ? Palette.conflictBackground : spare <= 2 ? Palette.warnBackground : spare >= 10 ? Palette.goodBackground : Palette.quiet, in: .rect(cornerRadius: 7))
+                                .foregroundStyle(spare < 0 ? Palette.conflictText : spare <= 2 ? Palette.warnText : spare >= 10 ? Palette.goodText : Palette.text)
+                        }
+                        Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft)
+                            .rotationEffect(.degrees(open ? 180 : 0))
+                    }
+                    ForEach(Array(journey.rides.enumerated()), id: \.offset) { _, ride in
+                        RideLine(leg: ride)
+                    }
+                    if journey.rides.isEmpty {
+                        Label(journey.mode == "bike" ? "By bike · \(journey.durationMin) min" : "On foot · \(journey.durationMin) min",
+                              systemImage: journey.mode == "bike" ? "bicycle" : "figure.walk").font(.geist(14, .medium))
+                    }
+                    HStack(spacing: 10) {
+                        if let best { Text(best).font(.geist(12, .bold)).foregroundStyle(Palette.navTeal) }
+                        if journey.transfers > 0 { Label("\(journey.transfers) change\(journey.transfers == 1 ? "" : "s")", systemImage: "arrow.triangle.swap") }
+                        if journey.walkMinutes > 0, journey.mode == "transit" { Label("\(journey.walkMinutes) min walking", systemImage: "figure.walk") }
+                        if !option.lifts.isEmpty { Label("Lift out", systemImage: "exclamationmark.triangle").foregroundStyle(Palette.warnText) }
+                        if journey.cancelled { Label("Cancelled", systemImage: "xmark.octagon").foregroundStyle(Palette.conflictText) }
+                    }
+                    .font(.geist(12.5, .medium)).foregroundStyle(Palette.textSoft).labelStyle(.titleAndIcon)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(PressStyle())
+            if open {
+                JourneySteps(journey: journey, to: planner.destination?.name ?? "")
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                HStack(spacing: 8) {
+                    Button(action: show) {
+                        Label(planner.busy == option.index && !kept ? "Starting…" : "Show the way", systemImage: "arrow.right")
+                            .font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
+                    }
+                    .buttonStyle(PressStyle())
+                    .buttonFace(Palette.action, radius: 12)
+                    .foregroundStyle(Palette.onAction)
+                    .disabled(journey.cancelled || planner.busy != nil)
+                    if let add {
+                        Button(action: add) {
+                            Text(kept ? "✓ In your plan" : planner.busy == option.index ? "Adding…" : "Add to plan")
+                                .font(.geist(15, .semibold)).padding(.horizontal, 12).frame(height: 44)
+                        }
+                        .buttonStyle(PressStyle())
+                        .background(Palette.quiet, in: .rect(cornerRadius: 12))
+                    }
+                }
+            }
+        }
+        .foregroundStyle(Palette.text)
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(open ? Palette.quiet.opacity(0.5) : .clear)
+    }
+}
+
+/// A ride as a line: its badge, where it's heading, and the stop you board at.
+struct RideLine: View {
+    let leg: TripPlan.Leg
+
+    var body: some View {
+        let look = LineLook(hex: leg.color ?? "#00768B")
+        HStack(spacing: 8) {
+            Text(leg.line ?? "").font(.geist(13, .bold)).monospacedDigit()
+                .foregroundStyle(look.ink)
+                .padding(.horizontal, 6).frame(minWidth: 30).frame(height: 22)
+                .background(look.base, in: .rect(cornerRadius: 6))
+            VStack(alignment: .leading, spacing: 0) {
+                Text(leg.headsign.map { "towards \(JourneySteps.short($0))" } ?? (leg.mode == "bus" ? "Bus" : "Tram"))
+                    .font(.geist(14, .semibold)).lineLimit(1)
+                Text("from \(JourneySteps.short(leg.from.name ?? "")) at \(leg.departTime)" + (leg.stops.map { " · \($0) stop\($0 == 1 ? "" : "s")" } ?? ""))
+                    .font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            if let delay = leg.delayMin, delay >= 2, leg.realtime == true {
+                Text("+\(delay)").font(.geist(12.5, .bold)).foregroundStyle(Palette.warnText)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// One way printed as a ticket: the lines' colours across its top, Leave and There, how long; then
 /// the spare minutes, why it's good, and its steps under Journey details.
 private struct TicketView: View {
@@ -295,6 +470,8 @@ private struct TicketView: View {
             // The perforation.
             Perforation().stroke(style: StrokeStyle(lineWidth: 1.5, dash: [5, 5])).foregroundStyle(Palette.border).frame(height: 1)
             VStack(alignment: .leading, spacing: 10) {
+                // Which tram, which way, from where: what to look for at the stop.
+                ForEach(Array(rides.enumerated()), id: \.offset) { _, ride in RideLine(leg: ride) }
                 if let spare = planner.spare(journey) {
                     Text(spare >= 0 ? "\(spare) min spare" : "\(-spare) min late")
                         .font(.geist(13, .bold))
@@ -318,7 +495,12 @@ private struct TicketView: View {
                 if journey.cancelled {
                     Text("A ride on this way is cancelled · Not offered").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
                 }
-                if open { JourneySteps(journey: journey, to: planner.destination?.name ?? "") .transition(.opacity.combined(with: .move(edge: .top))) }
+                if open {
+                    ScrollView { JourneySteps(journey: journey, to: planner.destination?.name ?? "") }
+                        .frame(maxHeight: 220)
+                        .scrollBounceBehavior(.basedOnSize)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
                 HStack(spacing: 8) {
                     Button(action: show) {
                         Label(planner.busy == option.index && !kept ? "Starting…" : "Show the way", systemImage: "arrow.right").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
@@ -359,7 +541,7 @@ private struct TicketView: View {
         Label(text, systemImage: icon).font(.geist(13, .bold)).labelStyle(.titleAndIcon)
             .padding(.horizontal, 7).frame(height: 24)
             .background(.white, in: .rect(cornerRadius: 6))
-            .foregroundStyle(Palette.text)
+            .foregroundStyle(Color(hex: 0x211D15))
     }
 
     private func icon(_ mode: String) -> String {

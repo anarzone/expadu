@@ -72,6 +72,13 @@ struct ComposerScreen: View {
     @State private var safeBottom: CGFloat = 34
     @State private var screenWidth: CGFloat = 402
     @FocusState private var typing: Bool
+    /// How far the keyboard reaches up from the screen's bottom edge; 0 when it's away.
+    @State private var keyboard: CGFloat = 0
+    /// Where the page sits on the screen. The keyboard can move it (up past the screen's top on a
+    /// phone), so the head, column and box are placed from the screen's own edges, not the page's.
+    @State private var pageTop: CGFloat = 62
+    @State private var pageBottom: CGFloat = 840
+    @State private var screenHeight: CGFloat = 874
 
     private static let drawerWidth: CGFloat = 322
     private var progress: CGFloat { dragging ?? (drawer ? 1 : 0) }
@@ -117,8 +124,27 @@ struct ComposerScreen: View {
         }
         .animation(reduceMotion ? nil : searching ? ComposerMotion.ios(0.46) : ComposerMotion.ios(0.3), value: searching)
         .background(Color(light: 0xEFE8DA, dark: 0x12141F).ignoresSafeArea())
-        .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { safeTop = $0.top; safeBottom = $0.bottom }
+        // The keyboard never resizes the page (that pushed the head into the status bar and left the box
+        // under the keys); only the box rises, to the keyboard's own edge, with its own timing.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { note in
+            guard let end = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            let screen = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.height ?? end.maxY
+            let reach = max(0, screen - end.minY)
+            let duration = note.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.3
+            withAnimation(reduceMotion ? nil : .smooth(duration: max(0.2, duration))) { keyboard = reach }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { keyboard = 0 }
+        }
+        // The screen's own edges, read while the keyboard is away (its arrival must not move the head).
+        .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { insets in
+            guard keyboard == 0, insets.top > 0 else { return }
+            safeTop = insets.top
+            safeBottom = insets.bottom
+        }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { screenWidth = $0 }
+        .onAppear { screenHeight = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.height ?? screenHeight }
         .environment(model)
         .sheet(item: $sheet) { sheet in
             Group {
@@ -179,7 +205,8 @@ struct ComposerScreen: View {
 
     private var page: some View {
         ZStack(alignment: .top) {
-            wall
+            // Held still on the screen while the keyboard moves the page.
+            wall.offset(y: keyboard > 0 ? safeTop - pageTop : 0)
             greeting
                 .opacity(onWall && !typing ? 1 : 0)
                 .offset(y: onWall && !typing ? 0 : -14)
@@ -191,7 +218,7 @@ struct ComposerScreen: View {
                 Ellipse().fill(Color(red: 1, green: 200 / 255, blue: 120 / 255, opacity: 0.26))
                     .frame(width: screenWidth * 0.85, height: screenWidth * 1.15)
                     .blur(radius: 46)
-                    .padding(.top, top(196) + 30)
+                    .padding(.top, screen(196) + 30)
                     .opacity(onWall && !typing ? 1 : 0)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
@@ -204,21 +231,21 @@ struct ComposerScreen: View {
                     .scaleEffect(typing ? 0.6 : onWall ? 1 : 0.9, anchor: .top)
                     .offset(y: typing ? -62 : onWall ? 0 : -30)
                     .brightness(onWall ? 0 : -0.18)
-                    .padding(.top, top(196))
+                    .padding(.top, screen(196))
                     // While typing, a tap on it only puts the keyboard away; it doesn't ask the poster.
                     .allowsHitTesting(onWall && !typing)
                     .accessibilityHidden(!onWall)
             }
             if model.talking, model.collection == nil {
                 ComposerPaper(ask: ask)
-                    .padding(.top, top(112))
+                    .padding(.top, screen(112))
                     .transition(.move(edge: .bottom))
                     .zIndex(2)
             }
             if let collection = model.collection {
                 ComposerCollectionPaper(collection: collection, open: { sheet = $0 }, ask: ask)
                     .id(collection)
-                    .padding(.top, top(112))
+                    .padding(.top, screen(112))
                     // From the drawer it fades in; from another view it pushes in from the right.
                     .transition(model.collectionBack != nil || model.leaving ? .move(edge: .trailing) : .opacity)
                     .zIndex(3)
@@ -238,13 +265,28 @@ struct ComposerScreen: View {
             }
             .padding(.horizontal, 12)
             // The canvas sets the box 34pt from the screen's edge, and the notice under it 22pt.
-            .padding(.bottom, typing ? 8 : showsNotice ? 22 - safeBottom : 34 - safeBottom)
+            .padding(.bottom, boxBottom)
             .zIndex(4)
+        }
+        // Measured from the screen's top edge, as the canvas: the safe area changes while the keyboard
+        // comes (its top read 0 on a phone), and the head jumped into the status bar with it.
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+            pageTop = frame.minY
+            pageBottom = frame.maxY
         }
         .animation(reduceMotion ? nil : ComposerMotion.glide(0.6), value: model.talking)
         .animation(reduceMotion ? nil : model.collectionBack != nil || model.leaving ? ComposerMotion.ios(0.42) : .easeOut(duration: 0.24), value: model.collection)
         .animation(reduceMotion ? nil : ComposerMotion.ios(0.45), value: typing)
         .animation(.spring(duration: 0.45, bounce: 0.25), value: model.note)
+    }
+
+    /// A height measured from the screen's top edge (the canvas's numbers), inside the page.
+    private func screen(_ y: CGFloat) -> CGFloat { y - pageTop }
+
+    /// The box's bottom: on the keyboard's edge while typing, else the canvas's 34pt (22 over the notice).
+    private var boxBottom: CGFloat {
+        let edge = keyboard > 0 ? screenHeight - keyboard - 8 : screenHeight - (showsNotice ? 22 : 34)
+        return max(0, pageBottom - edge)
     }
 
     private var showsNotice: Bool { onWall && !typing && model.disclosure?.available == true }
@@ -308,7 +350,7 @@ struct ComposerScreen: View {
             .accessibilityLabel("Close Composer")
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 16).padding(.top, top(58))
+        .padding(.horizontal, 16).padding(.top, screen(58))
     }
 
     private var greeting: some View {
@@ -326,7 +368,7 @@ struct ComposerScreen: View {
                 .accessibilityAddTraits(.isHeader)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18).padding(.top, top(104))
+        .padding(.horizontal, 18).padding(.top, screen(104))
         .allowsHitTesting(false)
     }
 
