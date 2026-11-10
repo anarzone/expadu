@@ -337,6 +337,2738 @@
                 }
             }
         },
+        "/composer/ask": {
+            "post": {
+                "operationId": "composer.ask",
+                "summary": "One message, answered (owner, 22 Oct 2026: one assistant for every message): the\nperson's last message in their conversation, under their say-so for this request\n(`processing`), from where they start (the page's From, or their browser's position).\nThe answer, and a plan it showed, go into the workspace, which comes back",
+                "tags": [
+                    "AppComposer"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "page": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "pattern": "^[\\pL ]+$",
+                                        "maxLength": 40
+                                    },
+                                    "lat": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ],
+                                        "minimum": -90,
+                                        "maximum": 90
+                                    },
+                                    "lng": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ],
+                                        "minimum": -180,
+                                        "maximum": 180
+                                    },
+                                    "from_label": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 80
+                                    },
+                                    "from_area": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "Altstadt-Nord",
+                                            "Altstadt-S\u00fcd",
+                                            "Neustadt-Nord",
+                                            "Neustadt-S\u00fcd",
+                                            "Deutz",
+                                            "Bayenthal",
+                                            "Godorf",
+                                            "Hahnwald",
+                                            "Immendorf",
+                                            "Marienburg",
+                                            "Meschenich",
+                                            "Raderberg",
+                                            "Raderthal",
+                                            "Rodenkirchen",
+                                            "Rondorf",
+                                            "S\u00fcrth",
+                                            "Wei\u00df",
+                                            "Zollstock",
+                                            "Braunsfeld",
+                                            "Junkersdorf",
+                                            "Klettenberg",
+                                            "Lindenthal",
+                                            "L\u00f6venich",
+                                            "M\u00fcngersdorf",
+                                            "S\u00fclz",
+                                            "Weiden",
+                                            "Widdersdorf",
+                                            "Bickendorf",
+                                            "Bocklem\u00fcnd/Mengenich",
+                                            "Ehrenfeld",
+                                            "Neuehrenfeld",
+                                            "Ossendorf",
+                                            "Vogelsang",
+                                            "Bilderst\u00f6ckchen",
+                                            "Longerich",
+                                            "Mauenheim",
+                                            "Niehl",
+                                            "Nippes",
+                                            "Riehl",
+                                            "Weidenpesch",
+                                            "Blumenberg",
+                                            "Chorweiler",
+                                            "Esch/Auweiler",
+                                            "F\u00fchlingen",
+                                            "Heimersdorf",
+                                            "Lindweiler",
+                                            "Merkenich",
+                                            "Pesch",
+                                            "Roggendorf/Thenhoven",
+                                            "Seeberg",
+                                            "Volkhoven/Weiler",
+                                            "Worringen",
+                                            "Eil",
+                                            "Elsdorf",
+                                            "Ensen",
+                                            "Finkenberg",
+                                            "Gremberghoven",
+                                            "Grengel",
+                                            "Langel",
+                                            "Libur",
+                                            "Lind",
+                                            "Poll",
+                                            "Porz",
+                                            "Urbach",
+                                            "Wahn",
+                                            "Wahnheide",
+                                            "Westhoven",
+                                            "Z\u00fcndorf",
+                                            "Br\u00fcck",
+                                            "H\u00f6henberg",
+                                            "Humboldt/Gremberg",
+                                            "Kalk",
+                                            "Merheim",
+                                            "Neubr\u00fcck",
+                                            "Ostheim",
+                                            "Rath/Heumar",
+                                            "Vingst",
+                                            "Buchforst",
+                                            "Buchheim",
+                                            "Dellbr\u00fcck",
+                                            "D\u00fcnnwald",
+                                            "Flittard",
+                                            "H\u00f6henhaus",
+                                            "Holweide",
+                                            "M\u00fclheim",
+                                            "Stammheim",
+                                            null
+                                        ]
+                                    },
+                                    "from_place": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "processing": {
+                                        "type": "object",
+                                        "properties": {
+                                            "consent": {
+                                                "type": "string"
+                                            },
+                                            "request_id": {
+                                                "type": "string",
+                                                "format": "uuid"
+                                            },
+                                            "notice_version": {
+                                                "type": "string",
+                                                "maxLength": 100
+                                            },
+                                            "provider_version": {
+                                                "type": "string",
+                                                "minLength": 64,
+                                                "maxLength": 64
+                                            }
+                                        }
+                                    },
+                                    "paperwork_processing": {
+                                        "type": "object",
+                                        "properties": {
+                                            "consent": {
+                                                "type": "string"
+                                            },
+                                            "request_id": {
+                                                "type": "string",
+                                                "format": "uuid"
+                                            },
+                                            "notice_version": {
+                                                "type": "string",
+                                                "maxLength": 100
+                                            },
+                                            "provider_version": {
+                                                "type": "string",
+                                                "minLength": 64,
+                                                "maxLength": 64
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/apply": {
+            "post": {
+                "operationId": "composer.apply",
+                "summary": "Apply on a change Composer proposed (its `proposal` card): made as proposed. The\nworkspace comes back with the card as it is now; refused, a 409 says why, with it",
+                "tags": [
+                    "AppComposer"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "token"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/undo": {
+            "post": {
+                "operationId": "composer.undo",
+                "summary": "Undo on a change Composer made in the last 24 hours, through the app's own way back",
+                "tags": [
+                    "AppComposer"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "token"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/act": {
+            "post": {
+                "operationId": "composer.act",
+                "summary": "A change the person made on a card themselves: a Paperwork record row's new date. Made,\nor proposed when they ask first, in a reply of Composer's own",
+                "tags": [
+                    "AppComposer"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "action": {
+                                        "type": "string",
+                                        "enum": [
+                                            "paperwork_fact"
+                                        ]
+                                    },
+                                    "key": {
+                                        "type": "string",
+                                        "maxLength": 80
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "maxLength": 40
+                                    }
+                                },
+                                "required": [
+                                    "action",
+                                    "key",
+                                    "value"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/progress/{requestId}": {
+            "get": {
+                "operationId": "composer.progress",
+                "summary": "How far Composer's assistant has got with a request, for the page's \"Looking at\u2026\" line\nwhile it works: its step (reading, writing) and what it has looked at so far\n(listings, places, weather, plans, taste). Only the asker's own request",
+                "tags": [
+                    "AppComposer"
+                ],
+                "parameters": [
+                    {
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/keep": {
+            "post": {
+                "operationId": "composer.keep",
+                "summary": "The person keeps the composed plan as it is: each stop counts as kept\nunedited (personalisation, with the opt-in). A plan with swaps or\nexclusions is not \"unedited\" and records nothing",
+                "tags": [
+                    "AppComposer"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "kept": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "kept"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "There is no plan to keep."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/places": {
+            "get": {
+                "operationId": "appComposer.places",
+                "summary": "Their own places to start from (Starting point): what the web page gets as `savedPlaces`",
+                "tags": [
+                    "AppComposer"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "places": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "category": {
+                                                        "type": "string"
+                                                    },
+                                                    "address": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "name",
+                                                    "category",
+                                                    "address"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "places"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/paperwork-permission": {
+            "get": {
+                "operationId": "composer.paperwork-permission.show",
+                "tags": [
+                    "AppComposerPaperworkPermission"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean"
+                                        },
+                                        "available": {
+                                            "type": "boolean"
+                                        },
+                                        "has_record": {
+                                            "type": "boolean",
+                                            "description": "Nothing for Composer to read without a record in use."
+                                        },
+                                        "disclosure": {
+                                            "type": "object",
+                                            "properties": {
+                                                "purpose": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "composer_rank",
+                                                        "composer_assist",
+                                                        "composer_paperwork",
+                                                        "notification_brief_ai",
+                                                        "today_rank"
+                                                    ]
+                                                },
+                                                "scope": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "until_you_turn_it_off",
+                                                        "single_request"
+                                                    ]
+                                                },
+                                                "available": {
+                                                    "type": "boolean"
+                                                },
+                                                "notice_version": {
+                                                    "type": "string"
+                                                },
+                                                "provider_version": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "purpose",
+                                                "scope",
+                                                "available",
+                                                "notice_version",
+                                                "provider_version"
+                                            ],
+                                            "additionalProperties": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "enabled",
+                                        "available",
+                                        "has_record",
+                                        "disclosure"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "composer.paperwork-permission.update",
+                "tags": [
+                    "AppComposerPaperworkPermission"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean"
+                                    },
+                                    "notice_version": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "provider_version": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "enabled"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean"
+                                                },
+                                                "in_flight": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "Composer no longer reads or changes your Paperwork record. A request already sent may finish at the AI service, but it won\u2019t be used."
+                                                }
+                                            },
+                                            "required": [
+                                                "enabled",
+                                                "in_flight",
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "enabled"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/workspace": {
+            "get": {
+                "operationId": "composer.workspace.show",
+                "tags": [
+                    "AppComposerWorkspace"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "composer.workspace.update",
+                "summary": "A change that can't go in answers 422 with its reason and the workspace,\nunchanged, so the reply can say why without a reload",
+                "tags": [
+                    "AppComposerWorkspace"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WorkspaceCommandRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/composer/day": {
+            "get": {
+                "operationId": "composer.day",
+                "summary": "What Composer's page carries beside the workspace, for the panel on any page:\nYour day, what the Paperwork record has coming up, tonight's listings and\nthe person's saved starting points (the new conversation's starters, My\nPlans' today and Starting point)",
+                "tags": [
+                    "AppComposerWorkspace"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "day": {
+                                            "type": "object",
+                                            "properties": {
+                                                "date": {
+                                                    "type": "string"
+                                                },
+                                                "timezone": {
+                                                    "type": "string",
+                                                    "const": "Europe/Berlin"
+                                                },
+                                                "now": {
+                                                    "type": "string"
+                                                },
+                                                "utc_offset": {
+                                                    "type": "string"
+                                                },
+                                                "relation": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "today",
+                                                        "past",
+                                                        "future"
+                                                    ]
+                                                },
+                                                "day_start": {
+                                                    "type": "string"
+                                                },
+                                                "day_end": {
+                                                    "type": "string"
+                                                },
+                                                "hours_in_day": {
+                                                    "type": "integer"
+                                                },
+                                                "revision": {
+                                                    "type": "integer",
+                                                    "description": "The workspace revision a Mark as done command must send."
+                                                },
+                                                "items": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "string",
+                                                                        "const": "transit"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "ok",
+                                                                            "tight",
+                                                                            "conflict"
+                                                                        ]
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "transit_fits",
+                                                                            "only_tight",
+                                                                            "no_connection_in_time"
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "string",
+                                                                        "const": "transit"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "const": "conflict"
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "const": "no_connection_in_time"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "const": "not_checked"
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "const": "routing_unavailable"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "const": "not_checked"
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "const": "not_checked"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "string",
+                                                                        "const": "walk"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "const": "ok"
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "const": "walk_fits"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": "integer",
+                                                                        "const": 0
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "string",
+                                                                        "const": "same_place"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "const": "ok"
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "const": "same_place"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "const": "not_checked"
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "const": "location_unknown"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "const": "conflict"
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "const": "overlap"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "from_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "to_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "gap_min": {
+                                                                        "type": [
+                                                                            "integer",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "margin_min": {
+                                                                        "type": "integer",
+                                                                        "enum": [
+                                                                            10,
+                                                                            5
+                                                                        ]
+                                                                    },
+                                                                    "travel_min": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "basis": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "status": {
+                                                                        "type": "string",
+                                                                        "const": "not_checked"
+                                                                    },
+                                                                    "reason": {
+                                                                        "type": "string",
+                                                                        "const": "end_unknown"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "from_id",
+                                                                    "to_id",
+                                                                    "gap_min",
+                                                                    "margin_min",
+                                                                    "travel_min",
+                                                                    "basis",
+                                                                    "status",
+                                                                    "reason"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                "next_trip": {
+                                                    "type": "string"
+                                                },
+                                                "active_trip": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "journey": {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        },
+                                                        "origin": {
+                                                            "type": [
+                                                                "array",
+                                                                "null"
+                                                            ],
+                                                            "items": {}
+                                                        },
+                                                        "destination": {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        },
+                                                        "target": {
+                                                            "type": [
+                                                                "array",
+                                                                "null"
+                                                            ],
+                                                            "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
+                                                            "items": {}
+                                                        },
+                                                        "started_at": {
+                                                            "type": "string"
+                                                        },
+                                                        "city": {
+                                                            "type": "string",
+                                                            "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "journey",
+                                                        "origin",
+                                                        "destination",
+                                                        "target",
+                                                        "started_at",
+                                                        "city"
+                                                    ]
+                                                },
+                                                "home": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "lat": {
+                                                            "type": "string"
+                                                        },
+                                                        "lng": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name",
+                                                        "lat",
+                                                        "lng"
+                                                    ]
+                                                },
+                                                "refresh_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "date",
+                                                "timezone",
+                                                "now",
+                                                "utc_offset",
+                                                "relation",
+                                                "day_start",
+                                                "day_end",
+                                                "hours_in_day",
+                                                "revision",
+                                                "items",
+                                                "links",
+                                                "next_trip",
+                                                "active_trip",
+                                                "home",
+                                                "refresh_at"
+                                            ]
+                                        },
+                                        "paperwork": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "deadline": {
+                                                            "type": [
+                                                                "object",
+                                                                "null"
+                                                            ],
+                                                            "properties": {
+                                                                "kind": {
+                                                                    "type": "string"
+                                                                },
+                                                                "document": {
+                                                                    "type": "string"
+                                                                },
+                                                                "date": {
+                                                                    "type": "string"
+                                                                },
+                                                                "days_remaining": {
+                                                                    "type": "string"
+                                                                },
+                                                                "process": {},
+                                                                "occurrence_key": {}
+                                                            },
+                                                            "required": [
+                                                                "kind",
+                                                                "document",
+                                                                "date",
+                                                                "days_remaining",
+                                                                "process",
+                                                                "occurrence_key"
+                                                            ]
+                                                        },
+                                                        "appointment": {
+                                                            "type": [
+                                                                "object",
+                                                                "null"
+                                                            ],
+                                                            "properties": {
+                                                                "starts_at": {
+                                                                    "type": "string"
+                                                                },
+                                                                "process": {},
+                                                                "occurrence_key": {},
+                                                                "documents": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "ready": {
+                                                                            "type": "integer",
+                                                                            "minimum": 0
+                                                                        },
+                                                                        "total": {
+                                                                            "type": "integer",
+                                                                            "minimum": 0
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "ready",
+                                                                        "total"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "starts_at",
+                                                                "process",
+                                                                "occurrence_key",
+                                                                "documents"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "deadline",
+                                                        "appointment"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "deadline": {
+                                                            "type": "null"
+                                                        },
+                                                        "appointment": {
+                                                            "type": "null"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "deadline",
+                                                        "appointment"
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        "around": {
+                                            "type": "object",
+                                            "properties": {
+                                                "tonight": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "count": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "from": {
+                                                            "type": "string"
+                                                        },
+                                                        "date": {
+                                                            "type": "string"
+                                                        },
+                                                        "titles": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "count",
+                                                        "from",
+                                                        "date",
+                                                        "titles"
+                                                    ]
+                                                },
+                                                "nearby": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "after": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "area": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "place": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "after",
+                                                        "area",
+                                                        "place"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "tonight",
+                                                "nearby"
+                                            ]
+                                        },
+                                        "savedPlaces": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "category": {
+                                                        "type": "string"
+                                                    },
+                                                    "address": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "name",
+                                                    "category",
+                                                    "address"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "day",
+                                        "paperwork",
+                                        "around",
+                                        "savedPlaces"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/conversations/{conversation}": {
+            "patch": {
+                "operationId": "composer.conversations.rename",
+                "summary": "Renames one of the person's own conversations (an empty title: the automatic one)",
+                "tags": [
+                    "AppComposerWorkspace"
+                ],
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    }
+                                },
+                                "required": [
+                                    "title"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Conversation not found."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "composer.conversations.destroy",
+                "summary": "Deletes one of the person's own conversations for good (the page asks first)",
+                "tags": [
+                    "AppComposerWorkspace"
+                ],
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Conversation not found."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/event": {
+            "get": {
+                "operationId": "composer.event",
+                "tags": [
+                    "AppComposerWorkspace"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/guidance": {
+            "get": {
+                "operationId": "composer.guidance",
+                "tags": [
+                    "AppComposerWorkspace"
+                ],
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 500
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "guides": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "verified_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "jurisdiction": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "sources": {
+                                                        "type": [
+                                                            "array",
+                                                            "null"
+                                                        ],
+                                                        "items": {}
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key",
+                                                    "title",
+                                                    "description",
+                                                    "verified_at",
+                                                    "jurisdiction",
+                                                    "sources"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "guides"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/composer/catalogue": {
+            "get": {
+                "operationId": "composer.catalogue",
+                "tags": [
+                    "AppComposerWorkspace"
+                ],
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "saved",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "items": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "items"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/events/saved": {
+            "get": {
+                "operationId": "appEventBookmark.index",
+                "tags": [
+                    "AppEventBookmark"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "event_id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "occurrence_start": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "available": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "event": {
+                                                        "type": [
+                                                            "array",
+                                                            "null"
+                                                        ],
+                                                        "items": {}
+                                                    }
+                                                },
+                                                "required": [
+                                                    "event_id",
+                                                    "occurrence_start",
+                                                    "title",
+                                                    "available",
+                                                    "event"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "events.save",
+                "summary": "Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)",
+                "tags": [
+                    "Events"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveEventRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "saved": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "saved"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/geocode": {
+            "get": {
+                "operationId": "composer.appGeocode",
+                "summary": "Places for a few typed words (Where? in Add a plan): Cologne's own places first, by name\n(\"Brauhaus Sion\" finds \"Sion Br\u00e4ues Traditionsbrauhaus\"), then the geocoder's addresses",
+                "tags": [
+                    "AppGeocode"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/places/{spot}/feedback": {
+            "post": {
+                "operationId": "composer.appPlaceFeedback",
+                "tags": [
+                    "AppPlaceFeedback"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "action": {
+                                        "type": "string",
+                                        "enum": [
+                                            "more_like_this",
+                                            "saved",
+                                            "been",
+                                            "not_interested",
+                                            "clear"
+                                        ]
+                                    },
+                                    "rating": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "up",
+                                            "down",
+                                            null
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "action"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rating": {
+                                            "type": "null"
+                                        },
+                                        "been": {
+                                            "type": "boolean"
+                                        },
+                                        "been_rating": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "state",
+                                        "rating",
+                                        "been",
+                                        "been_rating"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "get": {
+                "operationId": "appPlaceFeedback.standing",
+                "summary": "Where the person stands with the place now, for Composer's place sheet",
+                "tags": [
+                    "AppPlaceFeedback"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rating": {
+                                            "type": "null"
+                                        },
+                                        "been": {
+                                            "type": "boolean"
+                                        },
+                                        "been_rating": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "state",
+                                        "rating",
+                                        "been",
+                                        "been_rating"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/places/{spot}/been": {
+            "put": {
+                "operationId": "appPlaceFeedback.been",
+                "summary": "PUT /api/places/{spot}/been {rating?: up|down}",
+                "tags": [
+                    "AppPlaceFeedback"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "rating": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "up",
+                                            "down",
+                                            null
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rating": {
+                                            "type": "null"
+                                        },
+                                        "been": {
+                                            "type": "boolean"
+                                        },
+                                        "been_rating": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "state",
+                                        "rating",
+                                        "been",
+                                        "been_rating"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "appPlaceFeedback.forgetBeen",
+                "summary": "DELETE /api/places/{spot}/been",
+                "tags": [
+                    "AppPlaceFeedback"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "rating": {
+                                            "type": "null"
+                                        },
+                                        "been": {
+                                            "type": "boolean"
+                                        },
+                                        "been_rating": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "state",
+                                        "rating",
+                                        "been",
+                                        "been_rating"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/places/{spot}/work-answer": {
+            "get": {
+                "operationId": "appPlaceWorkAnswer.show",
+                "tags": [
+                    "AppPlaceWorkAnswer"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "can_answer": {
+                                            "type": "boolean"
+                                        },
+                                        "answer": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "laptop": {
+                                                    "type": "string"
+                                                },
+                                                "wifi": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "sockets": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "quiet": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "answered_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "laptop",
+                                                "wifi",
+                                                "sockets",
+                                                "quiet",
+                                                "answered_at"
+                                            ]
+                                        },
+                                        "totals": {
+                                            "type": "array",
+                                            "description": "Shown only from 3 people: below that, null (\"Not listed yet\").",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "can_answer",
+                                        "answer",
+                                        "totals"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "appPlaceWorkAnswer.update",
+                "tags": [
+                    "AppPlaceWorkAnswer"
+                ],
+                "parameters": [
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "laptop": {
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no"
+                                        ]
+                                    },
+                                    "wifi": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            null
+                                        ]
+                                    },
+                                    "sockets": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            null
+                                        ]
+                                    },
+                                    "quiet": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            null
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "laptop"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "can_answer": {
+                                            "type": "boolean"
+                                        },
+                                        "answer": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "laptop": {
+                                                    "type": "string"
+                                                },
+                                                "wifi": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "sockets": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "quiet": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "answered_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "laptop",
+                                                "wifi",
+                                                "sockets",
+                                                "quiet",
+                                                "answered_at"
+                                            ]
+                                        },
+                                        "totals": {
+                                            "type": "array",
+                                            "description": "Shown only from 3 people: below that, null (\"Not listed yet\").",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "can_answer",
+                                        "answer",
+                                        "totals"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Mark the place Been there or Saved first."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/privacy/processing/{purpose}": {
+            "get": {
+                "operationId": "privacy.processing.show",
+                "tags": [
+                    "AppProcessingNotice"
+                ],
+                "parameters": [
+                    {
+                        "name": "purpose",
+                        "in": "path",
+                        "required": true,
+                        "description": "The purpose ID",
+                        "schema": {
+                            "$ref": "#/components/schemas/ProcessingPurpose"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "purpose": {
+                                            "type": "string",
+                                            "enum": [
+                                                "composer_rank",
+                                                "composer_assist",
+                                                "composer_paperwork",
+                                                "notification_brief_ai",
+                                                "today_rank"
+                                            ]
+                                        },
+                                        "scope": {
+                                            "type": "string",
+                                            "enum": [
+                                                "until_you_turn_it_off",
+                                                "single_request"
+                                            ]
+                                        },
+                                        "available": {
+                                            "type": "boolean"
+                                        },
+                                        "notice_version": {
+                                            "type": "string"
+                                        },
+                                        "provider_version": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "purpose",
+                                        "scope",
+                                        "available",
+                                        "notice_version",
+                                        "provider_version"
+                                    ],
+                                    "additionalProperties": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "privacy.processing.withdraw",
+                "tags": [
+                    "AppProcessingNotice"
+                ],
+                "parameters": [
+                    {
+                        "name": "purpose",
+                        "in": "path",
+                        "required": true,
+                        "description": "The purpose ID",
+                        "schema": {
+                            "$ref": "#/components/schemas/ProcessingPurpose"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "withdrawn": {
+                                            "type": "boolean"
+                                        },
+                                        "in_flight": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Future processing is stopped and saved responses are removed. A request already sent may finish at the processor, but its response will not be used."
+                                        }
+                                    },
+                                    "required": [
+                                        "withdrawn",
+                                        "in_flight",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/day/command": {
             "post": {
                 "operationId": "day.command",
@@ -842,54 +3574,6 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/EventsDayResource"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    }
-                }
-            }
-        },
-        "/events/saved": {
-            "post": {
-                "operationId": "events.save",
-                "summary": "Save an event for later, or let it go: the web's bookmark (EventBookmarkController::store)",
-                "tags": [
-                    "Events"
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SaveEventRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "saved": {
-                                            "type": "boolean"
-                                        }
-                                    },
-                                    "required": [
-                                        "saved"
-                                    ]
                                 }
                             }
                         }
@@ -5545,6 +8229,18 @@
                 "items": {},
                 "title": "PersonPlanResource"
             },
+            "ProcessingPurpose": {
+                "type": "string",
+                "description": "| |\n|---|\n| `composer_rank` <br/>  |\n| `composer_assist` <br/> Composer's assistant: every message, answered from what it looks up (where you are, trips, what's on, places, plans). |\n| `composer_paperwork` <br/> Composer's assistant with the person's own Paperwork record, for one message (owner, 23 Oct 2026: \"make sure its accurate\"): Composer's own call, so its own notice. Bound to their case; withdrawing Composer's AI withdraws it too. |\n| `notification_brief_ai` <br/> The day's briefs written by the AI (owner, 26 Oct 2026): opt-in in Settings, off by default, on until they turn it off (ProcessingOptIns); each brief is still its own request. |\n| `today_rank` <br/> Today put in order by the AI from what personalisation learned (owner, 26 Oct 2026: \"AI should      * be used for personalization\"): on with personalisation under its second wording (PersonalisationWording, ProcessingOptIns), each ordering its own request (TodayRanker). |",
+                "enum": [
+                    "composer_rank",
+                    "composer_assist",
+                    "composer_paperwork",
+                    "notification_brief_ai",
+                    "today_rank"
+                ],
+                "title": "ProcessingPurpose"
+            },
             "ProfileDeleteRequest": {
                 "type": "object",
                 "description": "Deleting the account asks for the password, or, for an account made with\nGoogle that has none, the code just emailed to it (EXP-174).",
@@ -7733,6 +10429,114 @@
                     "has_password"
                 ],
                 "title": "UserResource"
+            },
+            "WorkspaceCommandRequest": {
+                "type": "object",
+                "properties": {
+                    "revision": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "action": {
+                        "type": "string",
+                        "description": "Every change applies directly with its own Undo; there is no\napproval, draft or date-move command any more.",
+                        "enum": [
+                            "message",
+                            "reply",
+                            "proposal",
+                            "reapply",
+                            "open",
+                            "edit",
+                            "remove",
+                            "add",
+                            "appointment",
+                            "replace",
+                            "undo",
+                            "redo",
+                            "fresh",
+                            "resume",
+                            "delete_history",
+                            "cancel_day",
+                            "complete",
+                            "uncomplete"
+                        ]
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Only a message carries words; its answer is worked out from the stored one (composer/ask).",
+                        "maxLength": 500
+                    },
+                    "kind": {
+                        "type": "string",
+                        "description": "A reply is only ever that the page couldn't get an answer.",
+                        "enum": [
+                            "failed"
+                        ]
+                    },
+                    "token": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "id": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "change": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid",
+                        "description": "Which change to undo (without it, the newest one), or to put back."
+                    },
+                    "candidate": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "start": {
+                        "type": "string"
+                    },
+                    "end": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "location": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 160
+                    },
+                    "lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "The place picked from the suggestions, when one was: its map point.",
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -180,
+                        "maximum": 180
+                    }
+                },
+                "required": [
+                    "revision",
+                    "action"
+                ],
+                "title": "WorkspaceCommandRequest"
             }
         },
         "responses": {

@@ -1032,6 +1032,12 @@ public struct TodayPage: Equatable, Sendable {
         return calendar.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: date)
     }
 
+    /// An ISO 8601 moment from the server ("2026-11-09T19:00:00+01:00"), with or without fractions.
+    public static func parse(_ text: String) -> Date? {
+        (try? Date.ISO8601FormatStyle(includingFractionalSeconds: false).parse(text))
+            ?? (try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(text))
+    }
+
     /// "19:00", in Cologne's time.
     public static func clock(_ date: Date) -> String {
         let say = DateFormatter()

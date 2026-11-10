@@ -1484,6 +1484,22 @@ extension Components {
         }
         /// - Remark: Generated from `#/components/schemas/PersonPlanResource`.
         public typealias PersonPlanResource = [OpenAPIRuntime.OpenAPIValueContainer]
+        /// | |
+        /// |---|
+        /// | `composer_rank` <br/>  |
+        /// | `composer_assist` <br/> Composer's assistant: every message, answered from what it looks up (where you are, trips, what's on, places, plans). |
+        /// | `composer_paperwork` <br/> Composer's assistant with the person's own Paperwork record, for one message (owner, 23 Oct 2026: "make sure its accurate"): Composer's own call, so its own notice. Bound to their case; withdrawing Composer's AI withdraws it too. |
+        /// | `notification_brief_ai` <br/> The day's briefs written by the AI (owner, 26 Oct 2026): opt-in in Settings, off by default, on until they turn it off (ProcessingOptIns); each brief is still its own request. |
+        /// | `today_rank` <br/> Today put in order by the AI from what personalisation learned (owner, 26 Oct 2026: "AI should      * be used for personalization"): on with personalisation under its second wording (PersonalisationWording, ProcessingOptIns), each ordering its own request (TodayRanker). |
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProcessingPurpose`.
+        @frozen public enum ProcessingPurpose: String, Codable, Hashable, Sendable, CaseIterable {
+            case composerRank = "composer_rank"
+            case composerAssist = "composer_assist"
+            case composerPaperwork = "composer_paperwork"
+            case notificationBriefAi = "notification_brief_ai"
+            case todayRank = "today_rank"
+        }
         /// Deleting the account asks for the password, or, for an account made with
         /// Google that has none, the code just emailed to it (EXP-174).
         ///
@@ -4151,6 +4167,148 @@ extension Components {
                 case email
                 case emailVerified = "email_verified"
                 case hasPassword = "has_password"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest`.
+        public struct WorkspaceCommandRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/revision`.
+            public var revision: Swift.Int
+            /// Every change applies directly with its own Undo; there is no
+            /// approval, draft or date-move command any more.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/action`.
+            @frozen public enum ActionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case message = "message"
+                case reply = "reply"
+                case proposal = "proposal"
+                case reapply = "reapply"
+                case open = "open"
+                case edit = "edit"
+                case remove = "remove"
+                case add = "add"
+                case appointment = "appointment"
+                case replace = "replace"
+                case undo = "undo"
+                case redo = "redo"
+                case fresh = "fresh"
+                case resume = "resume"
+                case deleteHistory = "delete_history"
+                case cancelDay = "cancel_day"
+                case complete = "complete"
+                case uncomplete = "uncomplete"
+            }
+            /// Every change applies directly with its own Undo; there is no
+            /// approval, draft or date-move command any more.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/action`.
+            public var action: Components.Schemas.WorkspaceCommandRequest.ActionPayload
+            /// Only a message carries words; its answer is worked out from the stored one (composer/ask).
+            ///
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/text`.
+            public var text: Swift.String?
+            /// A reply is only ever that the page couldn't get an answer.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case failed = "failed"
+            }
+            /// A reply is only ever that the page couldn't get an answer.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/kind`.
+            public var kind: Components.Schemas.WorkspaceCommandRequest.KindPayload?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/token`.
+            public var token: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/id`.
+            public var id: Swift.String?
+            /// Which change to undo (without it, the newest one), or to put back.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/change`.
+            public var change: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/candidate`.
+            public var candidate: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/date`.
+            public var date: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/start`.
+            public var start: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/end`.
+            public var end: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/name`.
+            public var name: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/location`.
+            public var location: Swift.String?
+            /// The place picked from the suggestions, when one was: its map point.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/lat`.
+            public var lat: Swift.Double?
+            /// - Remark: Generated from `#/components/schemas/WorkspaceCommandRequest/lng`.
+            public var lng: Swift.Double?
+            /// Creates a new `WorkspaceCommandRequest`.
+            ///
+            /// - Parameters:
+            ///   - revision:
+            ///   - action: Every change applies directly with its own Undo; there is no
+            ///   - text: Only a message carries words; its answer is worked out from the stored one (composer/ask).
+            ///   - kind: A reply is only ever that the page couldn't get an answer.
+            ///   - token:
+            ///   - id:
+            ///   - change: Which change to undo (without it, the newest one), or to put back.
+            ///   - candidate:
+            ///   - date:
+            ///   - start:
+            ///   - end:
+            ///   - name:
+            ///   - location:
+            ///   - lat: The place picked from the suggestions, when one was: its map point.
+            ///   - lng:
+            public init(
+                revision: Swift.Int,
+                action: Components.Schemas.WorkspaceCommandRequest.ActionPayload,
+                text: Swift.String? = nil,
+                kind: Components.Schemas.WorkspaceCommandRequest.KindPayload? = nil,
+                token: Swift.String? = nil,
+                id: Swift.String? = nil,
+                change: Swift.String? = nil,
+                candidate: Swift.String? = nil,
+                date: Swift.String? = nil,
+                start: Swift.String? = nil,
+                end: Swift.String? = nil,
+                name: Swift.String? = nil,
+                location: Swift.String? = nil,
+                lat: Swift.Double? = nil,
+                lng: Swift.Double? = nil
+            ) {
+                self.revision = revision
+                self.action = action
+                self.text = text
+                self.kind = kind
+                self.token = token
+                self.id = id
+                self.change = change
+                self.candidate = candidate
+                self.date = date
+                self.start = start
+                self.end = end
+                self.name = name
+                self.location = location
+                self.lat = lat
+                self.lng = lng
+            }
+            public enum CodingKeys: String, CodingKey {
+                case revision
+                case action
+                case text
+                case kind
+                case token
+                case id
+                case change
+                case candidate
+                case date
+                case start
+                case end
+                case name
+                case location
+                case lat
+                case lng
             }
         }
     }

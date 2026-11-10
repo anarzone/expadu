@@ -38,6 +38,13 @@ final class Dictation {
         request.shouldReportPartialResults = true
         if recognizer.supportsOnDeviceRecognition { request.requiresOnDeviceRecognition = true }
         let engine = AVAudioEngine()
+        // No microphone to hear (a Mac without one, the Simulator): its format is empty, and a tap on it throws.
+        let format = engine.inputNode.outputFormat(forBus: 0)
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            state = .unavailable
+            return
+        }
         Self.listen(to: engine.inputNode, into: request) { [weak self] level in
             Task { @MainActor in self?.level = level }
         }
