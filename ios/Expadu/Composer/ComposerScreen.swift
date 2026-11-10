@@ -440,9 +440,11 @@ struct ComposerScreen: View {
 
     // MARK: Posters
 
+    private var posters: [ComposerPoster] { Self.posters(today) }
+
     /// Today's posters: the person's own when there's something real to say (line trouble,
     /// Paperwork, what's on), then the city's own prompts. Always five, as the column is built.
-    private var posters: [ComposerPoster] {
+    static func posters(_ today: TodayModel) -> [ComposerPoster] {
         var list: [ComposerPoster] = []
         if let page = today.page {
             if let trouble = page.needs.first(where: { $0.line != nil }), let line = trouble.line {
@@ -513,7 +515,7 @@ struct MenuMark: View {
 }
 
 /// One poster on the column.
-struct ComposerPoster: Identifiable, Equatable {
+nonisolated struct ComposerPoster: Identifiable, Equatable, Sendable {
     enum Mark: Equatable { case spark, pin, calendar }
 
     let label: String
@@ -531,6 +533,8 @@ struct ComposerPoster: Identifiable, Equatable {
     let question: String
 
     var id: String { question }
+    /// What decides how it's printed.
+    var printKey: String { [label, number ?? "", tape, head, sub, cta].joined(separator: "|") }
 }
 
 struct ComposerNoteBar: View {

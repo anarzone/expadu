@@ -9,6 +9,14 @@ import UIKit
 /// own weight, slows, and springs onto the nearest poster; tap the poster in front to ask it, or a
 /// poster at the side to turn to it. It spins in once when Composer opens.
 struct ComposerColumn: View {
+    /// Prints the column's surfaces in the background ahead of opening (Shell calls it with Today).
+    static func prepare(_ posters: [ComposerPoster]) {
+        Task.detached(priority: .utility) {
+            _ = (ColumnArt.dome, ColumnArt.frieze, ColumnArt.base)
+            _ = ColumnArt.posters(posters)
+        }
+    }
+
     let posters: [ComposerPoster]
     let ask: (ComposerPoster) -> Void
     @State private var front = 0
@@ -67,8 +75,9 @@ private struct ColumnScene: UIViewRepresentable {
         context.coordinator.view = view
         view.addGestureRecognizer(UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pan(_:))))
         view.addGestureRecognizer(UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tapped(_:))))
-        context.coordinator.paint(posters)
-        context.coordinator.spinIn(reduceMotion: reduceMotion)
+        // It spins in once its posters are printed, as the canvas's waits for its fonts.
+        let coordinator = context.coordinator, still = reduceMotion
+        coordinator.paint(posters) { coordinator.spinIn(reduceMotion: still) }
         return view
     }
 
@@ -121,6 +130,7 @@ private struct ColumnScene: UIViewRepresentable {
         // MARK: The scene
 
         private func build() {
+            rot = -400
             camera.camera = SCNCamera()
             camera.camera?.fieldOfView = 38.1
             camera.camera?.projectionDirection = .vertical
@@ -143,12 +153,12 @@ private struct ColumnScene: UIViewRepresentable {
                 let a = CGFloat(i) / 28 * .pi / 2
                 dome.append(((R + 18) * pow(cos(a), 0.82), top + 26 + 78 * pow(sin(a), 1.12)))
             }
-            lathe(dome, Self.material(Self.domeTexture(), roughness: 0.5, metalness: 0.22))
+            lathe(dome, Self.material(ColumnArt.dome, roughness: 0.5, metalness: 0.22))
             lathe([(0, top + 142), (1.2, top + 136), (2.6, top + 124), (4, top + 116), (7.5, top + 112), (8, top + 108), (5, top + 104), (13, top + 100), (15, top + 97), (0, top + 97)], gold)
 
             // Eave, scalloped frieze, top ring.
             lathe([(R + 10, top + 33), (R + 17, top + 33), (R + 21, top + 31), (R + 21, top + 24)], gold)
-            lathe([(R + 8, top + 26), (R + 8, top + 2)], Self.material(Self.friezeTexture(), roughness: 0.55, metalness: 0.1))
+            lathe([(R + 8, top + 26), (R + 8, top + 2)], Self.material(ColumnArt.frieze, roughness: 0.55, metalness: 0.1))
             lathe([(R + 4, top + 5), (R + 8.5, top + 4), (R + 8.5, top - 1), (R + 4, top - 3)], gold)
 
             // The poster drum.
@@ -161,7 +171,7 @@ private struct ColumnScene: UIViewRepresentable {
 
             // The plinth: panels and rivets that turn with the column.
             lathe([(R + 4, bot + 3), (R + 8.5, bot + 1), (R + 8.5, bot - 4), (R + 4, bot - 6)], gold)
-            lathe([(R + 13, bot - 8), (R + 13, bot - 52)], Self.material(Self.baseTexture(), roughness: 0.5, metalness: 0.15))
+            lathe([(R + 13, bot - 8), (R + 13, bot - 52)], Self.material(ColumnArt.base, roughness: 0.5, metalness: 0.15))
             lathe([(R + 6, bot - 5), (R + 13, bot - 8)], Self.material(UIColor(red: 0.114, green: 0.271, blue: 0.216, alpha: 1), roughness: 0.6, metalness: 0.1))
             lathe([(R + 13, bot - 52), (R + 22, bot - 58), (R + 22, bot - 66)], Self.material(UIColor(red: 0.071, green: 0.161, blue: 0.122, alpha: 1), roughness: 0.7, metalness: 0.1))
 
@@ -223,93 +233,30 @@ private struct ColumnScene: UIViewRepresentable {
             column.addChildNode(SCNNode(geometry: geometry))
         }
 
-        // MARK: Printed surfaces
-
-        private static func picture(_ width: CGFloat, _ height: CGFloat, _ draw: (CGContext, CGFloat, CGFloat) -> Void) -> UIImage {
-            let format = UIGraphicsImageRendererFormat()
-            format.scale = 1
-            format.opaque = true
-            return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).image { draw($0.cgContext, width, height) }
-        }
-
-        private static func gradient(_ g: CGContext, _ from: UIColor, _ to: UIColor, _ rect: CGRect, horizontal: Bool = false) {
-            guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [from.cgColor, to.cgColor] as CFArray, locations: [0, 1]) else { return }
-            g.saveGState()
-            g.clip(to: rect)
-            g.drawLinearGradient(gradient, start: rect.origin, end: horizontal ? CGPoint(x: rect.maxX, y: rect.minY) : CGPoint(x: rect.minX, y: rect.maxY), options: [])
-            g.restoreGState()
-        }
-
-        private static func domeTexture() -> UIImage {
-            picture(2048, 256) { g, w, h in
-                gradient(g, UIColor(hex: 0x2F6F5C), UIColor(hex: 0x4F9A80), CGRect(x: 0, y: 0, width: w, height: h))
-                for _ in 0..<2600 {
-                    g.setFillColor((Bool.random() ? UIColor(red: 12 / 255, green: 44 / 255, blue: 34 / 255, alpha: .random(in: 0...0.1)) : UIColor(red: 150 / 255, green: 214 / 255, blue: 190 / 255, alpha: .random(in: 0...0.1))).cgColor)
-                    let r = CGFloat.random(in: 0...5)
-                    g.fillEllipse(in: CGRect(x: .random(in: 0...w) - r, y: .random(in: 0...h) - r, width: r * 2, height: r * 2))
-                }
-                for i in 0..<20 {
-                    let x = CGFloat(i) * w / 20
-                    g.setFillColor(UIColor(hex: 0x163D31).cgColor)
-                    g.fill(CGRect(x: x - 6, y: 0, width: 12, height: h))
-                    g.setFillColor(UIColor(hex: 0x7CC4AA).cgColor)
-                    g.fill(CGRect(x: x + 6, y: 0, width: 5, height: h))
-                }
-            }
-        }
-
-        private static func friezeTexture() -> UIImage {
-            picture(2048, 128) { g, w, h in
-                g.setFillColor(UIColor(hex: 0x15291F).cgColor)
-                g.fill(CGRect(x: 0, y: 0, width: w, height: h))
-                g.setFillColor(UIColor(hex: 0xD8AB4A).cgColor)
-                let n = 64
-                for i in 0..<n {
-                    let x = (CGFloat(i) + 0.5) * w / CGFloat(n), r = w / CGFloat(n) / 2 - 2
-                    g.fillEllipse(in: CGRect(x: x - r, y: h - r, width: r * 2, height: r * 2))
-                    g.fillEllipse(in: CGRect(x: x - 7, y: 15, width: 14, height: 14))
-                }
-            }
-        }
-
-        private static func baseTexture() -> UIImage {
-            picture(2048, 256) { g, w, h in
-                gradient(g, UIColor(hex: 0x2C6250), UIColor(hex: 0x173D31), CGRect(x: 0, y: 0, width: w, height: h))
-                let n = 20, panel = w / CGFloat(n)
-                for i in 0..<n {
-                    let x = CGFloat(i) * panel
-                    g.setStrokeColor(UIColor(hex: 0x0E241C).cgColor)
-                    g.setLineWidth(6)
-                    g.stroke(CGRect(x: x + 12, y: 26, width: panel - 24, height: h - 64))
-                    g.setStrokeColor(UIColor(red: 160 / 255, green: 220 / 255, blue: 195 / 255, alpha: 0.35).cgColor)
-                    g.setLineWidth(2)
-                    g.stroke(CGRect(x: x + 17, y: 31, width: panel - 34, height: h - 74))
-                    g.setFillColor(UIColor(hex: 0xD8AB4A).cgColor)
-                    g.fillEllipse(in: CGRect(x: x + panel / 2 - 6, y: h - 22, width: 12, height: 12))
-                }
-            }
-        }
-
-        /// The posters as one band round the drum, printed as the canvas prints them.
-        func paint(_ posters: [ComposerPoster]) {
+        /// The posters as one band round the drum: printed ahead of time (ComposerColumn.prepare),
+        /// or off the main thread now, so opening Composer never waits on it.
+        func paint(_ posters: [ComposerPoster], then: (@MainActor () -> Void)? = nil) {
             painted = posters
             count = max(posters.count, 1)
-            let scale: CGFloat = 3, width = 2 * .pi * radius / CGFloat(count), height = posterHeight
-            let image = Self.picture((width * scale).rounded() * CGFloat(count), height * scale) { g, _, _ in
-                for (index, poster) in posters.enumerated() {
-                    g.saveGState()
-                    g.translateBy(x: CGFloat(index) * (width * scale).rounded(), y: 0)
-                    g.scaleBy(x: scale, y: scale)
-                    g.clip(to: CGRect(x: 0, y: 0, width: width, height: height))
-                    PosterPrint.draw(poster, in: g, width: width, height: height)
-                    g.restoreGState()
-                }
+            rot = (rot / step).rounded() * step
+            if let image = ColumnArt.cached(posters) {
+                show(image)
+                then?()
+                return
             }
+            Task { [weak self] in
+                let image = await Task.detached(priority: .userInitiated) { ColumnArt.posters(posters) }.value
+                guard let self, self.painted == posters else { return }
+                self.show(image)
+                then?()
+            }
+        }
+
+        private func show(_ image: UIImage) {
             posterMaterial.diffuse.contents = image
             posterMaterial.diffuse.wrapS = .repeat
             posterMaterial.diffuse.mipFilter = .linear
             posterMaterial.diffuse.maxAnisotropy = 16
-            rot = (rot / step).rounded() * step
             apply()
         }
 
@@ -418,9 +365,109 @@ private struct ColumnScene: UIViewRepresentable {
     }
 }
 
+/// What is printed on the column, made off the main thread and kept: the dome, frieze and plinth
+/// once for the app's life, the posters per set. ComposerColumn.prepare prints them while Today is
+/// open, so Composer opens without stopping to draw (it cost ~110 ms of dropped frames).
+nonisolated enum ColumnArt {
+    static let dome = domeTexture()
+    static let frieze = friezeTexture()
+    static let base = baseTexture()
+
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var printed: (key: [String], image: UIImage)?
+
+    static func cached(_ posters: [ComposerPoster]) -> UIImage? {
+        lock.withLock { printed?.key == posters.map(\.printKey) ? printed?.image : nil }
+    }
+
+    /// The five posters as one band, 3× for a sharp print.
+    static func posters(_ posters: [ComposerPoster]) -> UIImage {
+        if let image = cached(posters) { return image }
+        let count = max(posters.count, 1)
+        let scale: CGFloat = 3, width = 2 * .pi * 190 / CGFloat(count), height: CGFloat = 400
+        let image = picture((width * scale).rounded() * CGFloat(count), height * scale) { g, _, _ in
+            for (index, poster) in posters.enumerated() {
+                g.saveGState()
+                g.translateBy(x: CGFloat(index) * (width * scale).rounded(), y: 0)
+                g.scaleBy(x: scale, y: scale)
+                g.clip(to: CGRect(x: 0, y: 0, width: width, height: height))
+                PosterPrint.draw(poster, in: g, width: width, height: height)
+                g.restoreGState()
+            }
+        }
+        lock.withLock { printed = (posters.map(\.printKey), image) }
+        return image
+    }
+
+    static func picture(_ width: CGFloat, _ height: CGFloat, _ draw: (CGContext, CGFloat, CGFloat) -> Void) -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).image { draw($0.cgContext, width, height) }
+    }
+
+    static func gradient(_ g: CGContext, _ from: UIColor, _ to: UIColor, _ rect: CGRect, horizontal: Bool = false) {
+        guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [from.cgColor, to.cgColor] as CFArray, locations: [0, 1]) else { return }
+        g.saveGState()
+        g.clip(to: rect)
+        g.drawLinearGradient(gradient, start: rect.origin, end: horizontal ? CGPoint(x: rect.maxX, y: rect.minY) : CGPoint(x: rect.minX, y: rect.maxY), options: [])
+        g.restoreGState()
+    }
+
+    static func domeTexture() -> UIImage {
+        picture(2048, 256) { g, w, h in
+            gradient(g, UIColor(hex: 0x2F6F5C), UIColor(hex: 0x4F9A80), CGRect(x: 0, y: 0, width: w, height: h))
+            for _ in 0..<2600 {
+                g.setFillColor((Bool.random() ? UIColor(red: 12 / 255, green: 44 / 255, blue: 34 / 255, alpha: .random(in: 0...0.1)) : UIColor(red: 150 / 255, green: 214 / 255, blue: 190 / 255, alpha: .random(in: 0...0.1))).cgColor)
+                let r = CGFloat.random(in: 0...5)
+                g.fillEllipse(in: CGRect(x: .random(in: 0...w) - r, y: .random(in: 0...h) - r, width: r * 2, height: r * 2))
+            }
+            for i in 0..<20 {
+                let x = CGFloat(i) * w / 20
+                g.setFillColor(UIColor(hex: 0x163D31).cgColor)
+                g.fill(CGRect(x: x - 6, y: 0, width: 12, height: h))
+                g.setFillColor(UIColor(hex: 0x7CC4AA).cgColor)
+                g.fill(CGRect(x: x + 6, y: 0, width: 5, height: h))
+            }
+        }
+    }
+
+    static func friezeTexture() -> UIImage {
+        picture(2048, 128) { g, w, h in
+            g.setFillColor(UIColor(hex: 0x15291F).cgColor)
+            g.fill(CGRect(x: 0, y: 0, width: w, height: h))
+            g.setFillColor(UIColor(hex: 0xD8AB4A).cgColor)
+            let n = 64
+            for i in 0..<n {
+                let x = (CGFloat(i) + 0.5) * w / CGFloat(n), r = w / CGFloat(n) / 2 - 2
+                g.fillEllipse(in: CGRect(x: x - r, y: h - r, width: r * 2, height: r * 2))
+                g.fillEllipse(in: CGRect(x: x - 7, y: 15, width: 14, height: 14))
+            }
+        }
+    }
+
+    static func baseTexture() -> UIImage {
+        picture(2048, 256) { g, w, h in
+            gradient(g, UIColor(hex: 0x2C6250), UIColor(hex: 0x173D31), CGRect(x: 0, y: 0, width: w, height: h))
+            let n = 20, panel = w / CGFloat(n)
+            for i in 0..<n {
+                let x = CGFloat(i) * panel
+                g.setStrokeColor(UIColor(hex: 0x0E241C).cgColor)
+                g.setLineWidth(6)
+                g.stroke(CGRect(x: x + 12, y: 26, width: panel - 24, height: h - 64))
+                g.setStrokeColor(UIColor(red: 160 / 255, green: 220 / 255, blue: 195 / 255, alpha: 0.35).cgColor)
+                g.setLineWidth(2)
+                g.stroke(CGRect(x: x + 17, y: 31, width: panel - 34, height: h - 74))
+                g.setFillColor(UIColor(hex: 0xD8AB4A).cgColor)
+                g.fillEllipse(in: CGRect(x: x + panel / 2 - 6, y: h - 22, width: 12, height: 12))
+            }
+        }
+    }
+}
+
 /// One poster as the canvas prints it: paper grain, a big faint number or mark, its label, the tape,
 /// the headline in capitals, the line under it and what tapping does.
-private enum PosterPrint {
+nonisolated private enum PosterPrint {
     static func draw(_ poster: ComposerPoster, in g: CGContext, width: CGFloat, height: CGFloat) {
         let paper = UIColor(poster.colour), ink = UIColor(poster.ink)
         g.setFillColor(paper.cgColor)
@@ -539,7 +586,7 @@ private enum PosterPrint {
     }
 }
 
-private extension UIColor {
+nonisolated private extension UIColor {
     convenience init(hex: UInt32) {
         self.init(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
     }

@@ -131,6 +131,11 @@ struct ShellView: View {
             }
         }
         .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.3), value: talk)
+        // Composer's column is printed while Today is open, so opening it never waits to draw.
+        .task(id: ComposerScreen.posters(today).map(\.printKey)) {
+            try? await Task.sleep(for: .seconds(1))
+            ComposerColumn.prepare(ComposerScreen.posters(today))
+        }
         // Composer opens out of its button and closes back into it (the canvas's bloom).
         .overlay {
             if let opening = composer {
