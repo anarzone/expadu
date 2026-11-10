@@ -130,20 +130,13 @@ struct EmptyDay: View {
 
 struct PulseDot: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var on = false
 
     var body: some View {
         Circle().fill(YourDay.line).frame(width: 13, height: 13)
-            .background {
-                Circle().fill(YourDay.line.opacity(0.35))
-                    .scaleEffect(on ? 2.2 : 1).opacity(on ? 0 : 1)
-            }
+            // Core Animation pulses the ring: nothing is redrawn per frame (Turning.swift).
+            .background { PulseRing(colour: YourDay.line, animated: !reduceMotion) }
             .offset(x: -25)
             .padding(.trailing, -13)
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.easeOut(duration: 1.8).repeatForever(autoreverses: false)) { on = true }
-            }
             .accessibilityHidden(true)
     }
 }

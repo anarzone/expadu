@@ -51,7 +51,10 @@ private struct ColumnScene: UIViewRepresentable {
         view.antialiasingMode = .multisampling4X
         view.scene = context.coordinator.scene
         view.pointOfView = context.coordinator.camera
-        view.isPlaying = true
+        // It draws only while it turns: a still column costs nothing (isPlaying redraws every frame).
+        view.isPlaying = false
+        view.rendersContinuously = false
+        context.coordinator.view = view
         view.addGestureRecognizer(UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pan(_:))))
         view.addGestureRecognizer(UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tapped)))
         context.coordinator.paint(posters)
@@ -79,6 +82,9 @@ private struct ColumnScene: UIViewRepresentable {
         private var startAngle: Float = 0
         private var count = 5
         var painted: [String] = []
+        weak var view: SCNView?
+        /// Which turn is the latest: an older one finishing doesn't put the column to sleep.
+        private var turning = 0
         /// The drum's radius and the poster band's height, in scene units.
         private let radius: CGFloat = 1
         private let height: CGFloat = 2.6
@@ -179,7 +185,15 @@ private struct ColumnScene: UIViewRepresentable {
             drum.removeAllActions()
             let turn = SCNAction.rotateTo(x: 0, y: CGFloat(target), z: 0, duration: time, usesShortestUnitArc: false)
             turn.timingMode = .easeOut
-            drum.runAction(turn)
+            turning += 1
+            let this = turning
+            view?.isPlaying = true
+            drum.runAction(turn) { [weak self] in
+                DispatchQueue.main.async {
+                    guard let self, self.turning == this else { return }
+                    self.view?.isPlaying = false
+                }
+            }
             let front = ((index % count) + count) % count
             if parent.front != front { parent.front = front }
         }
@@ -190,6 +204,8 @@ private struct ColumnScene: UIViewRepresentable {
             let perPoint = Float(2 / max(view.bounds.width, 1)) * 1.7
             switch gesture.state {
             case .began:
+                turning += 1
+                self.view?.isPlaying = true
                 drum.removeAllActions()
                 angle = drum.presentation.eulerAngles.y
                 startAngle = angle

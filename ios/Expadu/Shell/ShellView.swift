@@ -256,12 +256,25 @@ private struct SectionBar: View {
 enum ComposerLook {
     static let ink = Color(hex: 0x1D1A14)
 
+    static let stops: [Gradient.Stop] = [
+        .init(color: Color(hex: 0xA6F2FB), location: 0), .init(color: Color(hex: 0x05BADD), location: 0.2),
+        .init(color: Color(hex: 0x0B7F95), location: 0.38), .init(color: Color(hex: 0xFF3902), location: 0.6),
+        .init(color: Color(hex: 0xFFB067), location: 0.78), .init(color: Color(hex: 0xA6F2FB), location: 1),
+    ]
+
     static func ring(turn: Angle = .zero) -> AngularGradient {
-        AngularGradient(stops: [
-            .init(color: Color(hex: 0xA6F2FB), location: 0), .init(color: Color(hex: 0x05BADD), location: 0.2),
-            .init(color: Color(hex: 0x0B7F95), location: 0.38), .init(color: Color(hex: 0xFF3902), location: 0.6),
-            .init(color: Color(hex: 0xFFB067), location: 0.78), .init(color: Color(hex: 0xA6F2FB), location: 1),
-        ], center: .center, angle: turn)
+        AngularGradient(stops: stops, center: .center, angle: turn)
+    }
+
+    /// The ring and its glow, drawn once; Core Animation turns them (Turning.swift).
+    @MainActor static let ringImage: UIImage = picture(Circle().fill(ring()).frame(width: 62, height: 62))
+    @MainActor static let glowImage: UIImage = picture(
+        Circle().fill(ring()).frame(width: 70, height: 70).blur(radius: 11).frame(width: 120, height: 120))
+
+    @MainActor private static func picture(_ view: some View) -> UIImage {
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 3
+        return renderer.uiImage ?? UIImage()
     }
 }
 
@@ -273,18 +286,15 @@ struct AskComposerLabel: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { timeline in
-            let turn = Angle.degrees((timeline.date.timeIntervalSinceReferenceDate / 12).truncatingRemainder(dividingBy: 1) * 360)
-            HStack(spacing: 8) {
-                Image(.composerSpark).resizable().frame(width: 18, height: 18)
-                Text(title).lineLimit(1).minimumScaleFactor(0.85)
-            }
-            .font(.geist(16, .semibold)).foregroundStyle(.white)
-            .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity).frame(height: height)
-            .glassEffect(.regular.tint(ComposerLook.ink).interactive(), in: .capsule)
-            .overlay { Capsule().strokeBorder(ComposerLook.ring(turn: turn), lineWidth: 2.5) }
+        HStack(spacing: 8) {
+            Image(.composerSpark).resizable().frame(width: 18, height: 18)
+            Text(title).lineLimit(1).minimumScaleFactor(0.85)
         }
+        .font(.geist(16, .semibold)).foregroundStyle(.white)
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity).frame(height: height)
+        .glassEffect(.regular.tint(ComposerLook.ink).interactive(), in: .capsule)
+        .overlay { TurningCapsuleBorder(period: reduceMotion ? 0 : 12) }
     }
 }
 
@@ -296,23 +306,24 @@ private struct ComposerButton: View {
     @State private var pressed = false
     @State private var holding: Task<Void, Never>?
 
-    private static let colours = ComposerLook.ring()
-
     var body: some View {
         let listening = talk == .listening
-        TimelineView(.animation(paused: reduceMotion)) { timeline in
-            // A turn every 12 s at rest, every 2.4 s while listening.
-            let turn = Angle.degrees((timeline.date.timeIntervalSinceReferenceDate / (listening ? 2.4 : 12)).truncatingRemainder(dividingBy: 1) * 360)
-            ZStack {
-                Circle().fill(Self.colours).rotationEffect(turn)
-                    .padding(listening ? -9 : -3).blur(radius: listening ? 13 : 9).opacity(listening ? 1 : talk == .away ? 0.3 : 0.45)
-                Circle().fill(Self.colours).rotationEffect(turn)
-                Circle().fill(ComposerLook.ink).padding(3)
-                    .overlay { Circle().strokeBorder(.white.opacity(0.22), lineWidth: 0.5).padding(3) }
-                Image(.composerSpark).resizable().frame(width: 24, height: 24).foregroundStyle(.white)
-            }
+        // A turn every 12 s at rest, every 2.4 s while listening.
+        let period = reduceMotion ? 0 : listening ? 2.4 : 12
+        ZStack {
+            TurningImage(image: ComposerLook.ringImage, period: period)
+            Circle().fill(ComposerLook.ink).padding(3)
+                .overlay { Circle().strokeBorder(.white.opacity(0.22), lineWidth: 0.5).padding(3) }
+            Image(.composerSpark).resizable().frame(width: 24, height: 24).foregroundStyle(.white)
         }
         .frame(width: 62, height: 62)
+        .background {
+            TurningImage(image: ComposerLook.glowImage, period: period)
+                .frame(width: 120, height: 120)
+                .scaleEffect(listening ? 1.18 : 1)
+                .opacity(listening ? 1 : talk == .away ? 0.3 : 0.45)
+                .allowsHitTesting(false)
+        }
         .scaleEffect(listening ? 1.12 : pressed ? 0.94 : 1)
         .animation(.spring(duration: 0.35, bounce: 0.35), value: talk)
         .animation(.spring(duration: 0.25), value: pressed)
