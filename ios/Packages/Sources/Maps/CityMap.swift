@@ -168,7 +168,10 @@ public struct CityMap: UIViewRepresentable {
             fitCamera(map, pending.points, padding: pending.padding, animated: animateFit)
         }
 
-        private func fitCamera(_ map: MLNMapView, _ points: [CLLocationCoordinate2D], padding: UIEdgeInsets, animated: Bool) {
+        private func fitCamera(_ map: MLNMapView, _ all: [CLLocationCoordinate2D], padding: UIEdgeInsets, animated: Bool) {
+            // MapLibre throws on a point off the globe; such a point is never drawn or fitted.
+            let points = all.filter { CLLocationCoordinate2DIsValid($0) && !($0.latitude == 0 && $0.longitude == 0) }
+            guard !points.isEmpty else { return }
             if points.count == 1 {
                 map.setCenter(points[0], zoomLevel: 15, animated: animated)
                 return

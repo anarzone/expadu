@@ -92,7 +92,7 @@ struct TripRoutesView: View {
         let legs = option?.journey.legs ?? []
         let lines: [CityMap.Line] = legs.enumerated().compactMap { i, leg in
             guard let poly = leg.polyline else { return nil }
-            let points = Polyline.decode(poly, precision: 7)
+            let points = Polyline.decode(poly)
             guard points.count > 1 else { return nil }
             let walk = leg.mode == "walk"
             return CityMap.Line(id: "r\(option?.index ?? 0)-\(i)", points: points.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) },
@@ -270,15 +270,15 @@ private struct TicketView: View {
                     HStack(alignment: .bottom, spacing: 10) {
                         VStack(alignment: .leading, spacing: 0) {
                             Text("Leave").font(.geist(12.5, .medium)).opacity(0.85)
-                            Text(journey.leaveTime).font(.posterGrotesque(34)).monospacedDigit()
+                            Text(journey.leaveTime).font(.posterGrotesque(32)).monospacedDigit().fixedSize()
                         }
                         Image(systemName: "arrow.right").font(.system(size: 20, weight: .bold)).padding(.bottom, 8)
                         VStack(alignment: .leading, spacing: 0) {
                             Text("There").font(.geist(12.5, .medium)).opacity(0.85)
-                            Text(journey.arriveTime).font(.posterGrotesque(34)).monospacedDigit()
+                            Text(journey.arriveTime).font(.posterGrotesque(32)).monospacedDigit().fixedSize()
                         }
                         Spacer(minLength: 0)
-                        Text("\(journey.durationMin) min").font(.geist(13, .bold))
+                        Text("\(journey.durationMin) min").font(.geist(13, .bold)).fixedSize()
                             .padding(.horizontal, 9).frame(height: 26)
                             .background(.white.opacity(0.22), in: .rect(cornerRadius: 8))
                             .padding(.bottom, 6)
@@ -299,11 +299,18 @@ private struct TicketView: View {
                         .background(spare < 0 ? Palette.conflictBackground : spare <= 2 ? Palette.warnBackground : spare >= 10 ? Color.green.opacity(0.15) : Palette.quiet, in: .rect(cornerRadius: 8))
                         .foregroundStyle(spare < 0 ? Palette.conflictText : spare <= 2 ? Palette.warnText : spare >= 10 ? Color(hex: 0x1F7A45) : Palette.text)
                 }
+                let reasons = why(journey)
+                // Short reasons side by side; a long one (a notice) on its own line, wrapped.
                 FlowLayout(spacing: 6) {
-                    ForEach(why(journey), id: \.text) { item in
+                    ForEach(reasons.filter { $0.text.count <= 28 }, id: \.text) { item in
                         Label(item.text, systemImage: item.icon).font(.geist(13, .medium)).labelStyle(.titleAndIcon)
                             .foregroundStyle(item.warn ? Palette.warnText : Palette.text)
                     }
+                }
+                ForEach(reasons.filter { $0.text.count > 28 }, id: \.text) { item in
+                    Label(item.text, systemImage: item.icon).font(.geist(13, .medium)).labelStyle(.titleAndIcon)
+                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(item.warn ? Palette.warnText : Palette.text)
                 }
                 if journey.cancelled {
                     Text("A ride on this way is cancelled · Not offered").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
