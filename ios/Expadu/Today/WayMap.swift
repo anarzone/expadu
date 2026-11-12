@@ -180,7 +180,7 @@ struct WayMap: View {
                 section("Step by step") {
                     StepList(steps: TodayPage.Step.of(legs, to: to, start: starts), current: here.map { at in
                         TodayPage.Step.of(legs, to: to, start: starts).firstIndex { $0.leg == at.leg }
-                    } ?? nil)
+                    } ?? nil, legs: legs)
                 }
                 if !know.isEmpty {
                     section("Good to know") {

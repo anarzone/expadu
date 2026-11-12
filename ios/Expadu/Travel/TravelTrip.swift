@@ -25,7 +25,6 @@ struct TravelTrip: View {
     @State private var asking = false
     @State private var problem: String?
     @State private var working = false
-    @State private var openStops: Set<Int> = []
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
@@ -96,16 +95,23 @@ struct TravelTrip: View {
                 Text(meta).font(.geist(13)).opacity(0.9).lineLimit(1)
             }
             Spacer(minLength: 0)
+            // A new route when the plan went wrong: a missed tram, or starting from somewhere else.
             Menu {
                 if let ride = trip.legs.first(where: \.rides) {
                     Button { Task { await missed() } } label: { Label(ride.mode == "bus" ? "I missed the bus" : "I missed the tram", systemImage: "clock") }
                 }
                 Button { somewhereElse() } label: { Label("I’m somewhere else", systemImage: "location") }
-                Button(role: .destructive) { asking = true } label: { Label("End trip", systemImage: "xmark") }
             } label: {
-                Text(working ? "Finding…" : "Trip options").font(.geist(14, .semibold)).padding(.horizontal, 14).frame(height: 42)
+                Text(working ? "Finding…" : "Re-plan").font(.geist(14, .semibold)).padding(.horizontal, 14).frame(height: 42)
             }
             .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 14))
+            // Ending the trip is always in sight; it asks first, so a stray tap can't end it.
+            Button { asking = true } label: {
+                Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).frame(width: 42, height: 42).contentShape(.circle)
+            }
+            .buttonStyle(PressStyle())
+            .glassEffect(.clear.interactive(), in: .circle)
+            .accessibilityLabel("End trip")
         }
     }
 
@@ -197,18 +203,8 @@ struct TravelTrip: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    StepList(steps: steps, current: current)
-                    // Every stop on each ride, with when the tram is there.
-                    ForEach(Array(trip.legs.enumerated()), id: \.offset) { i, leg in
-                        if leg.rides, !leg.stopsOnTheWay.isEmpty {
-                            RideStops(leg: leg, open: openStops.contains(i)) {
-                                withAnimation(.smooth(duration: 0.3)) {
-                                    if openStops.contains(i) { openStops.remove(i) } else { openStops.insert(i) }
-                                }
-                            }
-                            .padding(.top, 12)
-                        }
-                    }
+                    // One list: each ride's stops fold into its step (Show stops), not a second list under it.
+                    StepList(steps: steps, current: current, legs: trip.legs)
                     Text(trip.legs.contains(where: \.rides)
                          ? "We’ll tell you one stop before. Your phone buzzes here, even with the screen off (with notifications on). The trip ends by itself."
                          : "It moves on by itself as you go. The trip ends by itself.")
@@ -325,60 +321,5 @@ extension TripPlanner {
 
     func stopFollowing() {
         if following { follower.stop(); following = false }
-    }
-}
-
-/// A ride's stops, folded to one row ("Tram 12 · 15 stops"); opened, each stop with its time on the line,
-/// down to the one to get off at.
-private struct RideStops: View {
-    let leg: TodayPage.Trip.Leg
-    let open: Bool
-    let toggle: () -> Void
-
-    /// The stops ridden, the one to get off at included, as the step counts them.
-    private var ridden: Int { leg.stops ?? leg.stopsOnTheWay.count + 1 }
-
-    private func row(_ name: String, time: String, colour: Color, off: Bool) -> some View {
-        HStack(spacing: 12) {
-            Circle().fill(off ? colour : Palette.surface).overlay { Circle().strokeBorder(colour, lineWidth: 2.5) }.frame(width: 11, height: 11)
-                .frame(width: 17)
-                .background { Rectangle().fill(colour).frame(width: 3).padding(.top, -10).padding(.bottom, off ? 15 : -10) }
-            Text(name).font(.geist(13.5, off ? .semibold : .regular))
-            if off { Text("Get off").font(.geist(12.5, .semibold)).foregroundStyle(Palette.textSoft) }
-            Spacer(minLength: 4)
-            Text(time).font(.geist(13)).monospacedDigit().foregroundStyle(Palette.textSoft)
-        }
-        .frame(minHeight: 30)
-    }
-
-    var body: some View {
-        let colour = LineLook(hex: leg.color ?? "#1A4CD4").base
-        VStack(alignment: .leading, spacing: 0) {
-            Button(action: toggle) {
-                HStack(spacing: 8) {
-                    Text(leg.line ?? "").font(.geist(12.5, .bold)).foregroundStyle(LineLook(hex: leg.color ?? "#1A4CD4").ink)
-                        .padding(.horizontal, 6).frame(minWidth: 26).frame(height: 20)
-                        .background(colour, in: .rect(cornerRadius: 5))
-                    Text("\(leg.from) → \(leg.to)").font(.geist(14, .semibold)).lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text("\(ridden) stop\(ridden == 1 ? "" : "s")").font(.geist(13)).foregroundStyle(Palette.textSoft)
-                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft)
-                        .rotationEffect(.degrees(open ? 180 : 0))
-                }
-                .frame(minHeight: 40).contentShape(.rect)
-            }
-            .buttonStyle(PressStyle())
-            .accessibilityLabel("Stops on line \(leg.line ?? ""), \(ridden)")
-            if open {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(leg.stopsOnTheWay.enumerated()), id: \.offset) { _, stop in
-                        row(stop.name, time: stop.time, colour: colour, off: false)
-                    }
-                    row(leg.to, time: leg.arriveTime, colour: colour, off: true)
-                }
-                .clipped()
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
     }
 }

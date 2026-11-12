@@ -152,7 +152,7 @@ struct GettingThere: View {
                     if onFoot(way), let turns = way.legs.first?.turns, !turns.isEmpty {
                         TurnList(turns: turns, to: idea.place ?? idea.title)
                     } else {
-                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.aimFor().map(TodayPage.clock)))
+                        StepList(steps: TodayPage.Step.of(way.legs, to: idea.place ?? idea.title, start: idea.aimFor().map(TodayPage.clock)), legs: way.legs)
                     }
                 }
                 .padding(.top, 14).padding(.horizontal, 18).padding(.bottom, 14)

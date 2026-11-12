@@ -218,7 +218,7 @@ private struct TripCard: View {
                 .padding(14)
                 Rectangle().fill(Palette.border).frame(height: 1)
                 if open {
-                    StepList(steps: TodayPage.Step.of(legs, to: trip.trip.for.place, start: trip.trip.for.start))
+                    StepList(steps: TodayPage.Step.of(legs, to: trip.trip.for.place, start: trip.trip.for.start), legs: legs)
                         .padding(14)
                         .transition(.opacity)
                 }
