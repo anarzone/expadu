@@ -4,6 +4,7 @@ namespace App\Day;
 
 use App\Composer\PlanCatalogue;
 use App\Day\Contracts\RecordedAppointments;
+use App\Models\ActiveTrip;
 use App\Models\ComposerWorkspace;
 use App\Models\PlannedTrip;
 use App\Models\User;
@@ -125,7 +126,8 @@ class DayProjection
             ], $items),
             'links' => $relation === 'past' ? [] : $this->links->between($items, $now),
             'next_trip' => $nextTrip,
-            'active_trip' => $user->activeTrip?->toShared(),
+            // The same trip every screen sees: a finished one is gone (Composer reads it this way too).
+            'active_trip' => ActiveTrip::currentFor($user)?->toShared(),
             'home' => $home === null ? null : $this->home($home),
             'refresh_at' => $this->refreshAt($items, $nextTrip, $now, $relation),
         ];

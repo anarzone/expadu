@@ -20,9 +20,10 @@ class ActiveTrip extends Model
     /**
      * A trip is over this long after its arrival: the trip page has said
      * "Arrived", and the row (with where it started) goes. Location is kept
-     * only while the trip needs it.
+     * only while the trip needs it. Long enough for a late tram, short enough
+     * that "Going home" isn't still on the board an hour after getting there.
      */
-    public const OVER_AFTER_ARRIVAL_MINUTES = 120;
+    public const OVER_AFTER_ARRIVAL_MINUTES = 20;
 
     /** Nothing in the service area takes a day; older rows are pruned nightly. */
     public const PRUNE_AFTER_HOURS = 24;
