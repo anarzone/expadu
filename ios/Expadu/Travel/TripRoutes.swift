@@ -299,15 +299,19 @@ extension TripRoutesView {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(listOrder(options).enumerated()), id: \.element.id) { i, option in
-                            Button {
-                                withAnimation(.smooth(duration: 0.3)) { picked = option.index; details = option.index }
-                            } label: {
-                                RouteRow(planner: planner, option: option, best: option.index == options.first?.index && planner.sort == .best,
-                                         selected: picked == option.index)
+                        let rows = listRows(options)
+                        ForEach(Array(rows.routes.enumerated()), id: \.element.option.id) { i, row in
+                            routeButton(row.option, also: row.also, options: options)
+                            if i < rows.routes.count - 1 || !rows.later.isEmpty { Divider().padding(.leading, 16) }
+                        }
+                        if !rows.later.isEmpty {
+                            Text("Later").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 2)
+                            ForEach(Array(rows.later.enumerated()), id: \.element.id) { i, option in
+                                routeButton(option, also: [], options: options)
+                                if i < rows.later.count - 1 { Divider().padding(.leading, 16) }
                             }
-                            .buttonStyle(PressStyle())
-                            if i < options.count - 1 { Divider().padding(.leading, 16) }
                         }
                         Button { Task { await planner.showMore(session.api) } } label: {
                             Label(planner.more ? "Fewer routes" : "Show later routes", systemImage: planner.more ? "arrow.uturn.backward" : "plus")
@@ -343,9 +347,44 @@ extension TripRoutesView {
     }
 
     /// Best for you first, then the rest in the order they leave: a list that reads down the clock.
-    private func listOrder(_ options: [TripPlanner.Option]) -> [TripPlanner.Option] {
-        guard planner.sort == .best, let first = options.first else { return options }
-        return [first] + options.dropFirst().sorted { ($0.journey.departDate ?? .distantFuture) < ($1.journey.departDate ?? .distantFuture) }
+    private func routeButton(_ option: TripPlanner.Option, also: [String], options: [TripPlanner.Option]) -> some View {
+        Button {
+            withAnimation(.smooth(duration: 0.3)) { picked = option.index; details = option.index }
+        } label: {
+            RouteRow(planner: planner, option: option, best: option.index == options.first?.index && planner.sort == .best,
+                     selected: picked == option.index, also: also)
+        }
+        .buttonStyle(PressStyle())
+    }
+
+    /// The list as Google and Apple set it: each different route once (the best first, then by when it
+    /// leaves) with its later runs named on its row, so the alternatives share the first screen instead
+    /// of one route at ten-minute steps. The later runs follow under Later, still a tap away. Another
+    /// order (Earliest arrival, Least walking…) lists every run as it sorts them.
+    private func listRows(_ options: [TripPlanner.Option]) -> (routes: [(option: TripPlanner.Option, also: [String])], later: [TripPlanner.Option]) {
+        guard planner.sort == .best, let first = options.first else { return (options.map { ($0, []) }, []) }
+        let departs: (TripPlanner.Option, TripPlanner.Option) -> Bool = { ($0.journey.departDate ?? .distantFuture) < ($1.journey.departDate ?? .distantFuture) }
+        var order: [String] = []
+        var runs: [String: [TripPlanner.Option]] = [:]
+        for option in options {
+            let key = Self.route(option.journey)
+            if runs[key] == nil { order.append(key) }
+            runs[key, default: []].append(option)
+        }
+        let heads = order.compactMap { runs[$0]?.first }
+        let routes = [first] + heads.filter { $0.index != first.index }.sorted(by: departs)
+        let headIDs = Set(routes.map(\.index))
+        let later = options.filter { !headIDs.contains($0.index) }.sorted(by: departs)
+        return (routes.map { head in
+            let others = (runs[Self.route(head.journey)] ?? []).filter { $0.index != head.index }.sorted(by: departs)
+            return (head, others.prefix(3).map(\.journey.leaveTime))
+        }, later)
+    }
+
+    /// A route as a rider tells routes apart: the lines in order, or how it goes when it rides none.
+    private static func route(_ journey: TripPlan.Journey) -> String {
+        let lines = journey.rides.map { $0.line ?? "?" }
+        return lines.isEmpty ? journey.mode : lines.joined(separator: ">")
     }
 }
 
@@ -356,6 +395,8 @@ private struct RouteRow: View {
     let option: TripPlanner.Option
     let best: Bool
     let selected: Bool
+    /// When the same route leaves later ("18:47", "18:57"), named on the row.
+    var also: [String] = []
 
     var body: some View {
         let journey = option.journey
@@ -383,6 +424,10 @@ private struct RouteRow: View {
                 status(journey)
             }
             .font(.geist(13.5)).foregroundStyle(Palette.textSoft)
+            if !also.isEmpty {
+                Label("Also " + also.joined(separator: " · "), systemImage: "arrow.clockwise")
+                    .font(.geist(12.5, .medium)).foregroundStyle(Palette.textSoft).monospacedDigit()
+            }
             if let spare = planner.spare(journey) {
                 Text(spare >= 0 ? "\(spare) min spare" : "\(-spare) min late").font(.geist(12.5, .bold))
                     .foregroundStyle(spare < 0 ? Palette.conflictText : spare <= 2 ? Palette.warnText : Palette.goodText)
