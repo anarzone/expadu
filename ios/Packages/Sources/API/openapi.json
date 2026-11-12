@@ -1591,6 +1591,7 @@
                                                         "object",
                                                         "null"
                                                     ],
+                                                    "description": "The same trip every screen sees: a finished one is gone (Composer reads it this way too).",
                                                     "properties": {
                                                         "journey": {
                                                             "type": "array",
@@ -2662,8 +2663,7 @@
                                             "type": "string"
                                         },
                                         "journeys": {
-                                            "type": "array",
-                                            "items": {}
+                                            "type": "string"
                                         },
                                         "degraded": {
                                             "type": [
@@ -4611,13 +4611,20 @@
                                                                         },
                                                                         "between": {
                                                                             "type": "integer"
+                                                                        },
+                                                                        "path": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
                                                                         }
                                                                     },
                                                                     "required": [
                                                                         "towards",
                                                                         "stops",
                                                                         "end",
-                                                                        "between"
+                                                                        "between",
+                                                                        "path"
                                                                     ]
                                                                 }
                                                             }
@@ -10130,6 +10137,15 @@
                                                     ]
                                                 }
                                             },
+                                            "delay_min": {
+                                                "type": [
+                                                    "integer",
+                                                    "null"
+                                                ]
+                                            },
+                                            "cancelled": {
+                                                "type": "boolean"
+                                            },
                                             "polyline": {
                                                 "type": [
                                                     "string",
@@ -10184,6 +10200,8 @@
                                             "minutes",
                                             "stops",
                                             "stops_on_the_way",
+                                            "delay_min",
+                                            "cancelled",
                                             "polyline",
                                             "turns"
                                         ]
@@ -12041,6 +12059,15 @@
                                                             ]
                                                         }
                                                     },
+                                                    "delay_min": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "cancelled": {
+                                                        "type": "boolean"
+                                                    },
                                                     "polyline": {
                                                         "type": [
                                                             "string",
@@ -12095,6 +12122,8 @@
                                                     "minutes",
                                                     "stops",
                                                     "stops_on_the_way",
+                                                    "delay_min",
+                                                    "cancelled",
                                                     "polyline",
                                                     "turns"
                                                 ]
@@ -12245,6 +12274,15 @@
                                                 ]
                                             }
                                         },
+                                        "delay_min": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "cancelled": {
+                                            "type": "boolean"
+                                        },
                                         "polyline": {
                                             "type": [
                                                 "string",
@@ -12299,6 +12337,8 @@
                                         "minutes",
                                         "stops",
                                         "stops_on_the_way",
+                                        "delay_min",
+                                        "cancelled",
                                         "polyline",
                                         "turns"
                                     ]

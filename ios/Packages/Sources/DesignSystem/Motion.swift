@@ -18,6 +18,8 @@ public enum MotionToken: String, CaseIterable, Identifiable, Codable, Sendable {
     case posterPaste = "poster.paste"
     case navSelect = "nav.select"
     case press = "press"
+    /// The trip screen switching between its steps and its map.
+    case tripMapSwitch = "trip.mapSwitch"
 
     public var id: String { rawValue }
 
@@ -39,6 +41,13 @@ public enum MotionToken: String, CaseIterable, Identifiable, Codable, Sendable {
             [
                 MotionVariant("Sink", .easeOut(duration: 0.16)),
                 MotionVariant("Off", nil),
+            ]
+        case .tripMapSwitch:
+            [
+                MotionVariant("Morph", .smooth(duration: 0.55)),
+                MotionVariant("Grow", .spring(duration: 0.55, bounce: 0.12)),
+                MotionVariant("Slide up", .smooth(duration: 0.45)),
+                MotionVariant("Fade", .easeInOut(duration: 0.3)),
             ]
         }
     }

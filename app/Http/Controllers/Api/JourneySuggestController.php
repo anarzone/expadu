@@ -12,6 +12,7 @@ use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Place;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -64,7 +65,7 @@ class JourneySuggestController extends Controller
                 'emoji' => $place->emoji,
             ]);
 
-        $matches = collect($routes->geocode($query, $bias));
+        $matches = $this->matches($routes, $query, $bias);
 
         // The geocoder ranks an exact name anywhere above a nearby one
         // ("Wiener Platz" in München before Köln's): what's within reach
@@ -82,7 +83,7 @@ class JourneySuggestController extends Controller
             $matches = $matches->sortBy(fn (Place $place) => $far($place));
         }
 
-        $hits = $matches
+        $hits = $this->tidy($matches, $bias)
             ->map(fn (Place $place) => [
                 'kind' => $place->kind ?? 'place',
                 'name' => $place->name,
@@ -94,6 +95,27 @@ class JourneySuggestController extends Controller
             ->take(8 - $saved->count());
 
         return response()->json($saved->concat($hits)->values());
+    }
+
+    /**
+     * What the geocoder finds for the query.
+     *
+     * @return Collection<int, Place>
+     */
+    protected function matches(RouteService $routes, string $query, GeoPoint $bias): Collection
+    {
+        return collect($routes->geocode($query, $bias));
+    }
+
+    /**
+     * The sorted matches as they are shown; the web keeps them all.
+     *
+     * @param  Collection<int, Place>  $matches
+     * @return Collection<int, Place>
+     */
+    protected function tidy(Collection $matches, GeoPoint $bias): Collection
+    {
+        return $matches;
     }
 
     /**

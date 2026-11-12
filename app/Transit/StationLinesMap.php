@@ -10,16 +10,17 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Travel's "Lines and stops" map (departures-next/transit-map.js), for any
- * station: each tram and train line through it, with the next stops each way
- * and where it ends, from the static timetable (gtfs_*). Each way is the
+ * station: each tram and train line through it, every stop each way to where
+ * it ends, from the static timetable (gtfs_*), and the way it runs along the
+ * tracks from the routing engine ({@see LinePaths}) when it answers. Each way is the
  * line's most common trip in that direction today, so works show as they
  * run (17 not drawn while it doesn't run). Buses are listed, not drawn.
  * Nothing when the timetable isn't loaded or doesn't know the station.
  */
 class StationLinesMap
 {
-    /** Stops shown each way before the line's end. */
-    private const NEXT = 2;
+    /** A run's next stop this close to the timetable's is the same way. */
+    private const SAME_WAY_KM = 0.3;
 
     /** How far from the board's station a timetable stop of that name may be. */
     private const NEAR_METRES = 400;
@@ -30,19 +31,20 @@ class StationLinesMap
     public function __construct(
         private readonly TravelEstimator $distance,
         private readonly GtfsDepartureService $gtfs,
+        private readonly LinePaths $paths,
     ) {}
 
     /**
      * @return array{
      *     station: array{name: string, lat: float, lng: float},
-     *     lines: list<array{line: string, mode: 'tram'|'rail', ways: list<array{towards: string, stops: list<array{name: string, lat: float, lng: float}>, end: array{name: string, lat: float, lng: float}|null, between: int}>}>,
+     *     lines: list<array{line: string, mode: 'tram'|'rail', ways: list<array{towards: string, stops: list<array{name: string, lat: float, lng: float}>, end: array{name: string, lat: float, lng: float}|null, between: int, path: string|null}>}>,
      *     buses: list<string>
      * }|null
      */
     public function for(string $name, float $lat, float $lng): ?array
     {
         $day = GtfsDepartureService::serviceDay();
-        $key = 'travel:lines-map:v3:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.$day->format('Ymd').':'.md5(mb_strtolower($name).'|'.round($lat, 4).'|'.round($lng, 4));
+        $key = 'travel:lines-map:v4:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.$day->format('Ymd').':'.md5(mb_strtolower($name).'|'.round($lat, 4).'|'.round($lng, 4));
 
         // Cached as scalars only (arrays), for the service day (to 03:00).
         return Cache::remember($key, $day->copy()->addDay()->addHours(3), fn () => $this->build($name, $lat, $lng));
@@ -145,6 +147,9 @@ class StationLinesMap
             'lng' => round((float) $stop->stop_lng, 6),
         ];
 
+        // The track each run takes from here, from the engine; matched to a way by its line and next stop.
+        $tracks = $chosen === [] ? [] : $this->paths->from($name, $lat, $lng);
+
         $lines = [];
         foreach ($chosen as $way) {
             $run = $runs->get($way['trip_id'])?->values();
@@ -158,14 +163,19 @@ class StationLinesMap
                 continue;
             }
             $last = $after->last();
-            $shown = $after->take(self::NEXT)->reject(fn (object $stop) => $stop === $last)->values();
+            $shown = $after->reject(fn (object $stop) => $stop === $last)->values();
+            $next = $after->first();
+            $track = collect($tracks)->first(fn (array $run) => $run['line'] === $way['line'] && $run['stops'] !== []
+                && $this->distance->haversineKm((float) $next->stop_lat, (float) $next->stop_lng, $run['stops'][0]['lat'], $run['stops'][0]['lng']) <= self::SAME_WAY_KM);
 
             $lines[$way['line']] ??= ['line' => $way['line'], 'mode' => $way['mode'], 'ways' => []];
             $lines[$way['line']]['ways'][] = [
                 'towards' => $sign($last->stop_name),
                 'stops' => $shown->map($point)->all(),
                 'end' => $point($last),
-                'between' => max(0, $after->count() - 1 - $shown->count()),
+                'between' => 0,
+                // Along the tracks (encoded, precision 7); null draws the way through its stops.
+                'path' => $track !== null && count($track['points']) > 1 ? Polyline::encode($track['points'], Polyline::PRECISION) : null,
             ];
         }
 

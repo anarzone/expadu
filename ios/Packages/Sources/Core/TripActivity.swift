@@ -64,15 +64,24 @@ public struct TripPhase: Codable, Hashable, Sendable {
         let step = live.step
         let arrive = trip.arriveTime ?? steps.last?.time ?? ""
         let leg = step.leg.map { trip.legs[$0] }
+        // The ride this moment is about (the one on, or the one walked to), as the live board reads it.
+        let upcoming = steps.dropFirst(live.current).first { $0.kind == .ride }
+        let ride = (step.kind == .ride ? leg : nil) ?? upcoming?.leg.map { trip.legs[$0] }
+        let late = ride.flatMap { $0.cancelled ? nil : $0.delayMin }.flatMap { $0 >= 2 ? $0 : nil }
         func make(_ kind: Kind, badge: String? = nil, color: String? = nil, symbol: String, short: String, until: Date? = nil, title: String, detail: String) -> TripPhase {
-            TripPhase(kind: kind, badge: badge, color: color, symbol: symbol, short: short, until: until, title: title, detail: detail,
-                      steps: steps.count, current: live.current, arrive: arrive)
+            TripPhase(kind: kind, badge: badge, color: color, symbol: symbol, short: short, until: until, title: title,
+                      detail: late.map { "\($0) min late · " + detail } ?? detail,
+                      steps: steps.count, current: live.current, arrive: arrive, delay: late)
         }
 
         if live.current == steps.count - 1 || here?.arrived == true {
             let early = trip.startTime.flatMap { start in TodayPage.minutes(from: arrive, to: start) }
             return make(.arrived, symbol: "checkmark", short: "There", title: "You’re there",
                         detail: early.map { $0 > 0 ? "\($0) min early" : "Enjoy it" } ?? "Enjoy it")
+        }
+        if let ride, ride.cancelled, live.current < steps.count - 1 {
+            return make(.trouble, symbol: "exclamationmark.triangle.fill", short: "Off", title: "\(ride.name) is cancelled",
+                        detail: "Open Expadu for a new route from here")
         }
         if let missed = here?.missed {
             return make(.trouble, symbol: "exclamationmark.triangle.fill", short: "Gone", title: "\(missed.name) has left",

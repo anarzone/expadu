@@ -312,6 +312,10 @@ public struct TodayPage: Equatable, Sendable {
             public var turns: [Turn]
             /// A ride's stops between boarding and getting off, with when it's there.
             public var stopsOnTheWay: [Stop]
+            /// Minutes late by the live reading (the same board Travel shows); its times already include them.
+            public var delayMin: Int?
+            /// The live reading says this run won't come.
+            public var cancelled = false
 
             /// A stop a ride passes.
             public struct Stop: Equatable, Sendable {
@@ -329,7 +333,10 @@ public struct TodayPage: Equatable, Sendable {
             }
 
             public init(mode: String, line: String?, color: String?, headsign: String?, from: String, to: String, departAt: Date, arriveAt: Date,
-                        departTime: String, arriveTime: String, minutes: Int, stops: Int?, polyline: String? = nil, turns: [Turn] = [], stopsOnTheWay: [Stop] = []) {
+                        departTime: String, arriveTime: String, minutes: Int, stops: Int?, polyline: String? = nil, turns: [Turn] = [], stopsOnTheWay: [Stop] = [],
+                        delayMin: Int? = nil, cancelled: Bool = false) {
+                self.delayMin = delayMin
+                self.cancelled = cancelled
                 self.polyline = polyline
                 self.turns = turns
                 self.stopsOnTheWay = stopsOnTheWay
@@ -456,7 +463,9 @@ public struct TodayPage: Equatable, Sendable {
                 let last = index == legs.count - 1
                 let before = index > 0 ? legs[index - 1] : nil
                 if leg.rides {
-                    let sub = ["From \(leg.from)", leg.headsign.map { "towards \($0)" }, leg.stops.map { $0 == 1 ? "1 stop" : "\($0) stops" }].compactMap { $0 }.joined(separator: " · ")
+                    // Live first: a cancelled or late run is the news.
+                    let live: String? = leg.cancelled ? "Cancelled" : leg.delayMin.flatMap { $0 >= 2 ? "\($0) min late" : nil }
+                    let sub = [live, "From \(leg.from)", leg.headsign.map { "towards \($0)" }, leg.stops.map { $0 == 1 ? "1 stop" : "\($0) stops" }].compactMap { $0 }.joined(separator: " · ")
                     steps.append(Step(kind: .ride, title: "\(leg.name) to \(leg.to)", sub: sub, at: leg.departAt, time: leg.departTime, color: leg.color, name: leg.name, leg: index))
                     if last {
                         steps.append(Step(kind: .getOff, title: "Get off at \(leg.to)", sub: "Then you’re there", at: leg.arriveAt, time: leg.arriveTime, color: leg.color, name: leg.name))
@@ -464,9 +473,14 @@ public struct TodayPage: Equatable, Sendable {
                 } else if last, let before, before.rides {
                     steps.append(Step(kind: .getOff, title: "Get off at \(before.to)", sub: "\(leg.minutes) min walk to \(to)", at: before.arriveAt, time: before.arriveTime, color: before.color, name: before.name,
                                       leg: index))
+                } else if let before, before.rides, !last, legs[index + 1].rides {
+                    // A walk between two rides is a change: where, and to which line.
+                    let next = legs[index + 1]
+                    steps.append(Step(kind: .walk, title: "Change at \(before.to)", sub: "\(leg.minutes) min walk to \(next.name)", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
+                                      leg: index))
                 } else {
                     let place = last || leg.to.isEmpty ? to : leg.to
-                    steps.append(Step(kind: .walk, title: leg.mode == "bike" ? "Cycle to \(place)" : "Walk to \(place)", sub: "\(leg.minutes) min", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
+                    steps.append(Step(kind: .walk, title: leg.mode == "bike" ? "Cycle to \(place)" : "Walk to \(place)", sub: "\(leg.minutes) min \(leg.mode == "bike" ? "by bike" : "walk")", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
                                       leg: index))
                 }
             }

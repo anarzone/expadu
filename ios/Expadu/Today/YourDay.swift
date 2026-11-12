@@ -527,7 +527,7 @@ struct LeaveCard: View {
                         if starting {
                             ProgressView().tint(.white)
                         } else {
-                            Label("I’m on my way", systemImage: "figure.walk")
+                            Label("Start trip", systemImage: "figure.walk")
                         }
                     }
                     .font(.geist(15, .semibold)).foregroundStyle(.white)
@@ -538,7 +538,7 @@ struct LeaveCard: View {
                 .buttonStyle(PressStyle())
                 .disabled(starting)
                 Button { othersOpen = true } label: {
-                    Label("Other ways", systemImage: "arrow.triangle.branch")
+                    Label("Other routes", systemImage: "arrow.triangle.branch")
                         .font(.geist(15, .medium)).foregroundStyle(Palette.text)
                         .padding(.horizontal, 16).frame(height: 44)
                         .buttonFace(Palette.quiet)
@@ -566,7 +566,7 @@ struct LeaveCard: View {
             Button("Replace") { start(replace: true) }
             Button("Keep", role: .cancel) {}
         } message: {
-            Text("You’re already on your way somewhere else.")
+            Text("You’re already on a trip somewhere else.")
         }
     }
 

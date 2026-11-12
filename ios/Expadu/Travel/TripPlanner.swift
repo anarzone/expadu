@@ -29,7 +29,7 @@ final class TripPlanner {
         var id: Int { rawValue }
         var label: String {
             switch self {
-            case .best: "Best for you"
+            case .best: "Best route"
             case .arrival: "Earliest arrival"
             case .duration: "Shortest journey"
             case .walking: "Least walking"
@@ -55,6 +55,8 @@ final class TripPlanner {
     // The page
     var shown = false
     var showTrip = false
+    /// The trip opens on its map (the board card's hold menu), once.
+    var tripOnMap = false
     var field = Field.to
     var query = ""
     var listening = false
@@ -194,7 +196,7 @@ final class TripPlanner {
                 answer = reply.plan
                 raw = reply.raw
                 loading = false
-                if reply.plan.journeys.isEmpty { problem = "No ways right now" }
+                if reply.plan.journeys.isEmpty { problem = "No routes right now" }
             }
         } catch {
             withAnimation(.smooth) {

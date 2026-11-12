@@ -203,12 +203,11 @@ public struct Station: Decodable, Equatable, Sendable {
     }
 
     /// Every departure here as one list, soonest first: a line one way and its run.
-    public func departures(now: Date) -> [Departure] {
+    /// Each direction's next run (or its next few), soonest first; a cancelled one stays shown until its time.
+    public func departures(now: Date, runs: Int = 1) -> [Departure] {
         lines.flatMap { line in
-            line.dirs.compactMap { dir in
-                // The next one that runs; a cancelled one stays shown until its time.
-                guard let run = dir.next ?? dir.later.first else { return nil }
-                return Departure(line: line, dir: dir, run: run)
+            line.dirs.flatMap { dir in
+                ([dir.next].compactMap { $0 } + dir.later).prefix(runs).map { Departure(line: line, dir: dir, run: $0) }
             }
         }
         .sorted { ($0.run.date ?? .distantFuture) < ($1.run.date ?? .distantFuture) }
@@ -246,7 +245,8 @@ public struct Departure: Equatable, Sendable, Identifiable {
     public let dir: Station.Direction
     public let run: Station.Run
 
-    public var id: String { dir.id }
+    /// A direction can show more than one run (a quiet stop's board), so the run is part of the row's name.
+    public var id: String { "\(dir.id)|\(run.id)" }
 }
 
 public struct StationReply: Decodable, Sendable {
@@ -329,9 +329,13 @@ public struct LinesMap: Decodable, Equatable, Sendable {
 
     public struct Way: Decodable, Equatable, Sendable {
         public let towards: String
+        /// Every stop after the station, the end not included.
         public let stops: [Point]
         public let end: Point?
         public let between: Int?
+        /// The way along the tracks from the station to its end (encoded, precision 7); nil when the
+        /// routing engine didn't answer, and the way is drawn through its stops.
+        public let path: String?
     }
 
     public struct Line: Decodable, Equatable, Sendable {
@@ -481,6 +485,15 @@ public struct TripPlan: Sendable {
         public let lines: [String]
         public let legs: [Leg]
         public let tight: Bool?
+        /// Earlier trams of other lines that make the same first connection ("16 at 19:37" on an 18 route).
+        public let firstRideAlso: [Also]?
+
+        public struct Also: Decodable, Equatable, Sendable {
+            public let line: String
+            public let color: String?
+            public let departAt: String
+            public let departTime: String
+        }
 
         public var departDate: Date? { TravelJSON.date(departAt) }
         public var arriveDate: Date? { TravelJSON.date(arriveAt) }

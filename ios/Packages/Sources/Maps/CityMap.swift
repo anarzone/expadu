@@ -76,10 +76,17 @@ public struct CityMap: UIViewRepresentable {
     let showsUser: Bool
     /// A new value fits the camera again even when `fit` is the same (Show the whole way after panning).
     let fitID: Int
+    /// How far up from the bottom the map's credit (i) sits, clear of whatever lies over the map there.
+    let creditInset: CGFloat
+    /// Parts of the map covered by something laid over it (a list at the bottom): the map's centre, its
+    /// fits and following the phone all keep clear of them, and a change moves the map smoothly.
+    let viewInset: UIEdgeInsets
 
     public init(lines: [Line], pins: [Pin], fit: [CLLocationCoordinate2D], padding: UIEdgeInsets = UIEdgeInsets(top: 40, left: 40, bottom: 40, right: 40),
-                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0) {
+                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0, creditInset: CGFloat = 8, viewInset: UIEdgeInsets = .zero) {
         self.fitID = fitID
+        self.creditInset = creditInset
+        self.viewInset = viewInset
         self.lines = lines
         self.pins = pins
         self.fit = fit
@@ -127,6 +134,13 @@ public struct CityMap: UIViewRepresentable {
         }
         map.isScrollEnabled = interactive
         map.isZoomEnabled = interactive
+        map.attributionButtonMargins = CGPoint(x: 8, y: creditInset)
+        // Only a map that is given an inset takes it over from the system's automatic one.
+        if viewInset != .zero || context.coordinator.insetSet, map.contentInset != viewInset {
+            context.coordinator.insetSet = true
+            map.automaticallyAdjustsContentInset = false
+            map.setContentInset(viewInset, animated: true, completionHandler: nil)
+        }
         context.coordinator.apply(self)
     }
 
@@ -134,6 +148,8 @@ public struct CityMap: UIViewRepresentable {
     public final class Coordinator: NSObject, MLNMapViewDelegate {
         weak var map: MLNMapView?
         var dark = false
+        /// The map was given a viewInset once; it keeps managing its own from then on.
+        var insetSet = false
         private var spec: CityMap?
         private var drawnLines: [Line] = []
         private var drawnPins: [Pin] = []
@@ -163,14 +179,32 @@ public struct CityMap: UIViewRepresentable {
             if styleReady, spec.lines != drawnLines { drawLines(map, spec.lines) }
         }
 
+        /// The last fit and the size it was made at: a map still growing into its place (a keyboard going
+        /// down as the screen opens) fits again at its full size.
+        private var lastFit: (points: [CLLocationCoordinate2D], padding: UIEdgeInsets, size: CGSize, at: Date)?
+
         /// The camera can only fit once the map has its size.
         func fitIfPending() {
-            guard let map, let pending = pendingFit, map.bounds.width > 0, map.bounds.height > 0 else { return }
-            pendingFit = nil
-            fitCamera(map, pending.points, padding: pending.padding, animated: animateFit)
+            guard let map, map.bounds.width > 0, map.bounds.height > 0 else { return }
+            if let pending = pendingFit {
+                pendingFit = nil
+                lastFit = (pending.points, pending.padding, map.bounds.size, .now)
+                fitCamera(map, pending.points, padding: pending.padding, animated: animateFit)
+            } else if let last = lastFit, last.size != map.bounds.size, Date.now.timeIntervalSince(last.at) < 1.5 {
+                lastFit = (last.points, last.padding, map.bounds.size, last.at)
+                fitCamera(map, last.points, padding: last.padding, animated: false)
+            }
         }
 
-        private func fitCamera(_ map: MLNMapView, _ all: [CLLocationCoordinate2D], padding: UIEdgeInsets, animated: Bool) {
+        private func fitCamera(_ map: MLNMapView, _ all: [CLLocationCoordinate2D], padding wanted: UIEdgeInsets, animated: Bool) {
+            // Padding that leaves almost no room (a short map under a tall panel) shrinks to keep 120 pt for the way.
+            var padding = wanted
+            let room = map.bounds.height - padding.top - padding.bottom
+            if room < 120, padding.top + padding.bottom > 0 {
+                let k = max(0, map.bounds.height - 120) / (padding.top + padding.bottom)
+                padding.top *= k
+                padding.bottom *= k
+            }
             // MapLibre throws on a point off the globe; such a point is never drawn or fitted.
             let points = all.filter { CLLocationCoordinate2DIsValid($0) && !($0.latitude == 0 && $0.longitude == 0) }
             guard !points.isEmpty else { return }
