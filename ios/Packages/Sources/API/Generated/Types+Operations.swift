@@ -7791,7 +7791,7 @@ public enum Operations {
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/source`.
                         public var source: Swift.String
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/journeys`.
-                        public var journeys: [OpenAPIRuntime.OpenAPIValueContainer]
+                        public var journeys: Swift.String
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/degraded`.
                         public struct DegradedPayload: Codable, Hashable, Sendable {
                             /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/degraded/departures`.
@@ -8635,7 +8635,7 @@ public enum Operations {
                         ///   - city: Stop names carry the city ("Köln Neumarkt"); Plan a trip shows
                         public init(
                             source: Swift.String,
-                            journeys: [OpenAPIRuntime.OpenAPIValueContainer],
+                            journeys: Swift.String,
                             degraded: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.DegradedPayload? = nil,
                             from: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.FromPayload,
                             to: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.ToPayload,

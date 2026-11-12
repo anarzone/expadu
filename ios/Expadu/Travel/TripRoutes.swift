@@ -415,7 +415,13 @@ private struct RouteRow: View {
             LegStrip(journey: journey)
             HStack(spacing: 6) {
                 if let first {
-                    Text("\(first.departTime) from \(JourneySteps.short(first.from.name ?? ""))").lineLimit(1)
+                    // With earlier lines for the same connection, each says when it comes: "16 at 19:37 or 18 at 19:44".
+                    if let also = journey.firstRideAlso, !also.isEmpty {
+                        Text((also.map { "\($0.line) at \($0.departTime)" } + ["\(first.line ?? "") at \(first.departTime)"]).joined(separator: " or ")
+                             + " from \(JourneySteps.short(first.from.name ?? ""))").lineLimit(1).minimumScaleFactor(0.85)
+                    } else {
+                        Text("\(first.departTime) from \(JourneySteps.short(first.from.name ?? ""))").lineLimit(1)
+                    }
                     Text(journey.transfers > 0 ? "· \(journey.transfers) change\(journey.transfers == 1 ? "" : "s")" : "· direct").lineLimit(1)
                 } else {
                     Text(journey.mode == "bike" ? "By bike" : "On foot")
@@ -470,9 +476,21 @@ struct LegStrip: View {
 
     private func strip(walks: Bool) -> some View {
         let parts = journey.legs.filter { $0.isRide || (walks && $0.durationMin >= 2) || ($0.mode == "bike") }
+        let firstRide = parts.firstIndex { $0.isRide }
         return HStack(spacing: 5) {
             ForEach(Array(parts.enumerated()), id: \.offset) { i, leg in
                 if i > 0 { Image(systemName: "chevron.compact.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft) }
+                // The first ride's other lines that make the same connection, before it: "16 / 18".
+                if i == firstRide, let also = journey.firstRideAlso, !also.isEmpty {
+                    ForEach(Array(Set(also.map(\.line))).sorted(), id: \.self) { line in
+                        let look = LineLook(hex: also.first { $0.line == line }?.color ?? "#00768B")
+                        Text(line).font(.geist(13.5, .bold)).monospacedDigit().foregroundStyle(look.ink)
+                            .padding(.horizontal, 7).frame(height: 24)
+                            .background(look.base, in: .rect(cornerRadius: 6))
+                            .fixedSize()
+                        Text("/").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
+                    }
+                }
                 if leg.isRide {
                     let look = LineLook(hex: leg.color ?? "#00768B")
                     HStack(spacing: 3) {

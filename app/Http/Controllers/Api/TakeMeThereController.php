@@ -16,6 +16,7 @@ use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\FareAdvisor;
+use App\Transit\FirstRideChoices;
 use App\Transit\JourneyRanker;
 use App\Transit\TripConditions;
 use App\Transit\TripDisruptions;
@@ -213,6 +214,11 @@ class TakeMeThereController extends Controller
             boards: ! $later && $this->secondsLeft($deadline) >= self::BOARDS_MIN_SECONDS,
         );
         $checks = $later ? JourneyChecksController::keep($user->id, array_map(fn (Journey $j) => $j->toArray(), $ranked), $from, $to) : null;
+
+        // Leaving now: the earlier trams that make the same first connection (the 16 the router drops for the 18).
+        if ($departAt === null && ! $arriveBy) {
+            $journeys = app(FirstRideChoices::class)->add($journeys, min(3.0, $this->secondsLeft($deadline)));
+        }
 
         $this->learn($user, $validated, $from, $to, $journeys);
 

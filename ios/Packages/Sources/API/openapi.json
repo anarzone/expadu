@@ -2663,8 +2663,7 @@
                                             "type": "string"
                                         },
                                         "journeys": {
-                                            "type": "array",
-                                            "items": {}
+                                            "type": "string"
                                         },
                                         "degraded": {
                                             "type": [

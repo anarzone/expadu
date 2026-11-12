@@ -485,6 +485,15 @@ public struct TripPlan: Sendable {
         public let lines: [String]
         public let legs: [Leg]
         public let tight: Bool?
+        /// Earlier trams of other lines that make the same first connection ("16 at 19:37" on an 18 route).
+        public let firstRideAlso: [Also]?
+
+        public struct Also: Decodable, Equatable, Sendable {
+            public let line: String
+            public let color: String?
+            public let departAt: String
+            public let departTime: String
+        }
 
         public var departDate: Date? { TravelJSON.date(departAt) }
         public var arriveDate: Date? { TravelJSON.date(arriveAt) }

@@ -891,6 +891,44 @@ class TransitousAdapter implements RouteService
     }
 
     /**
+     * Every ride straight from one stop to another leaving from a time on: the lines that serve that
+     * stretch, each run with when it leaves and gets there. The router's own answer keeps only the
+     * last run that makes a connection; a rider at the stop wants the one coming now too.
+     *
+     * @return list<array{line: string, headsign: string|null, depart_at: string, arrive_at: string, cancelled: bool}>
+     */
+    public function directRides(GeoPoint $from, GeoPoint $to, CarbonImmutable $at, int $max = 8): array
+    {
+        $timeout = $this->callTimeout(4.0) ?? throw new \RuntimeException('direct rides time budget spent');
+
+        $response = PerfLogger::measure("ext:{$this->source()}.direct", fn () => Http::baseUrl($this->baseUrl())
+            ->timeout($timeout)
+            ->connectTimeout(min(3.0, $timeout))
+            ->withHeaders(['User-Agent' => 'expadu.com'])
+            ->get($this->planPath(), $this->planQuery($from, $to, $at, $max, [
+                'maxTransfers' => 0, 'maxPreTransitTime' => 240, 'maxPostTransitTime' => 240, 'searchWindow' => 1800,
+            ]))
+            ->throw());
+
+        $rides = [];
+        foreach ($response->json('itineraries', []) as $itinerary) {
+            $legs = array_values(array_filter($itinerary['legs'] ?? [], fn (array $leg) => ($leg['mode'] ?? 'WALK') !== 'WALK'));
+            if (count($legs) !== 1 || ! isset($legs[0]['startTime'], $legs[0]['endTime'])) {
+                continue;
+            }
+            $rides[] = [
+                'line' => trim((string) ($legs[0]['routeShortName'] ?? '')),
+                'headsign' => $legs[0]['headsign'] ?? null,
+                'depart_at' => CarbonImmutable::parse($legs[0]['startTime'])->setTimezone(config('app.timezone'))->toIso8601String(),
+                'arrive_at' => CarbonImmutable::parse($legs[0]['endTime'])->setTimezone(config('app.timezone'))->toIso8601String(),
+                'cancelled' => (bool) ($legs[0]['cancelled'] ?? false),
+            ];
+        }
+
+        return $rides;
+    }
+
+    /**
      * The runs leaving a stop soon, one per line and headsign: the trips a line map is drawn from.
      *
      * @return list<array{line: string, headsign: string, trip: string}>
