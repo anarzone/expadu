@@ -203,12 +203,11 @@ public struct Station: Decodable, Equatable, Sendable {
     }
 
     /// Every departure here as one list, soonest first: a line one way and its run.
-    public func departures(now: Date) -> [Departure] {
+    /// Each direction's next run (or its next few), soonest first; a cancelled one stays shown until its time.
+    public func departures(now: Date, runs: Int = 1) -> [Departure] {
         lines.flatMap { line in
-            line.dirs.compactMap { dir in
-                // The next one that runs; a cancelled one stays shown until its time.
-                guard let run = dir.next ?? dir.later.first else { return nil }
-                return Departure(line: line, dir: dir, run: run)
+            line.dirs.flatMap { dir in
+                ([dir.next].compactMap { $0 } + dir.later).prefix(runs).map { Departure(line: line, dir: dir, run: $0) }
             }
         }
         .sorted { ($0.run.date ?? .distantFuture) < ($1.run.date ?? .distantFuture) }
@@ -246,7 +245,8 @@ public struct Departure: Equatable, Sendable, Identifiable {
     public let dir: Station.Direction
     public let run: Station.Run
 
-    public var id: String { dir.id }
+    /// A direction can show more than one run (a quiet stop's board), so the run is part of the row's name.
+    public var id: String { "\(dir.id)|\(run.id)" }
 }
 
 public struct StationReply: Decodable, Sendable {

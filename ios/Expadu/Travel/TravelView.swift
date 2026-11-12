@@ -237,7 +237,8 @@ struct TravelView: View {
                 }
             }
             .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: model.line)
-            .padding(.bottom, 40)
+            // The last rows scroll up clear of Where to? and the buttons beside it.
+            .padding(.bottom, 120)
         }
         .scrollIndicators(.hidden)
         .refreshable { await model.load(session.api) }
@@ -363,7 +364,8 @@ struct Band: View {
     }
 
     private var via: String {
-        let stops = departure.dir.via.filter { !$0.isEmpty }
+        // "via Merkenich" on a tram to Merkenich says nothing.
+        let stops = departure.dir.via.filter { !$0.isEmpty && !TravelModel.same($0, departure.dir.dest) }
         if run.cancelled || late != nil || notice != nil { return stops.first.map { "via \($0)" } ?? "" }
         return stops.isEmpty ? "" : "via " + stops.prefix(2).joined(separator: " · ")
     }
@@ -495,8 +497,8 @@ private struct OnYourWayRow: View {
                 Image(systemName: "figure.walk").font(.system(size: 17, weight: .bold)).frame(width: 38, height: 38)
                     .background(.white.opacity(0.14), in: .circle)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("On your way").font(.posterGrotesque(19))
-                    Text("To \(trip.to)" + (trip.arriveTime.map { " · there \($0)" } ?? "") + " · Back to your trip").font(.geist(12.5)).opacity(0.82).lineLimit(1)
+                    Text("Going to \(trip.to)").font(.posterGrotesque(19)).lineLimit(1)
+                    Text((trip.arriveTime.map { "Arrive \($0) · " } ?? "") + "See your steps").font(.geist(12.5)).opacity(0.82).lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
