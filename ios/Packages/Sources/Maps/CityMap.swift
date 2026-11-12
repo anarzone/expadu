@@ -163,14 +163,32 @@ public struct CityMap: UIViewRepresentable {
             if styleReady, spec.lines != drawnLines { drawLines(map, spec.lines) }
         }
 
+        /// The last fit and the size it was made at: a map still growing into its place (a keyboard going
+        /// down as the screen opens) fits again at its full size.
+        private var lastFit: (points: [CLLocationCoordinate2D], padding: UIEdgeInsets, size: CGSize, at: Date)?
+
         /// The camera can only fit once the map has its size.
         func fitIfPending() {
-            guard let map, let pending = pendingFit, map.bounds.width > 0, map.bounds.height > 0 else { return }
-            pendingFit = nil
-            fitCamera(map, pending.points, padding: pending.padding, animated: animateFit)
+            guard let map, map.bounds.width > 0, map.bounds.height > 0 else { return }
+            if let pending = pendingFit {
+                pendingFit = nil
+                lastFit = (pending.points, pending.padding, map.bounds.size, .now)
+                fitCamera(map, pending.points, padding: pending.padding, animated: animateFit)
+            } else if let last = lastFit, last.size != map.bounds.size, Date.now.timeIntervalSince(last.at) < 1.5 {
+                lastFit = (last.points, last.padding, map.bounds.size, last.at)
+                fitCamera(map, last.points, padding: last.padding, animated: false)
+            }
         }
 
-        private func fitCamera(_ map: MLNMapView, _ all: [CLLocationCoordinate2D], padding: UIEdgeInsets, animated: Bool) {
+        private func fitCamera(_ map: MLNMapView, _ all: [CLLocationCoordinate2D], padding wanted: UIEdgeInsets, animated: Bool) {
+            // Padding that leaves almost no room (a short map under a tall panel) shrinks to keep 120 pt for the way.
+            var padding = wanted
+            let room = map.bounds.height - padding.top - padding.bottom
+            if room < 120, padding.top + padding.bottom > 0 {
+                let k = max(0, map.bounds.height - 120) / (padding.top + padding.bottom)
+                padding.top *= k
+                padding.bottom *= k
+            }
             // MapLibre throws on a point off the globe; such a point is never drawn or fitted.
             let points = all.filter { CLLocationCoordinate2DIsValid($0) && !($0.latitude == 0 && $0.longitude == 0) }
             guard !points.isEmpty else { return }

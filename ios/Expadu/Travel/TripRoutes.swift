@@ -10,7 +10,10 @@ import SwiftUI
 /// way or Add to plan. Sorted as you pick; today's conditions say what was checked.
 struct TripRoutesView: View {
     @Bindable var planner: TripPlanner
+    /// Back to the search, to change where to.
     let back: () -> Void
+    /// Straight back to the Travel board.
+    let close: () -> Void
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -19,15 +22,19 @@ struct TripRoutesView: View {
     @State private var conditions = false
     @State private var whenOpen = false
     @State private var printed = false
-    /// Tickets or a plain list, as they last chose.
-    @AppStorage("routesAsList") private var asList = false
+    /// A plain list (the default) or the tickets, as they last chose.
+    @AppStorage("routesList") private var asList = true
+    /// The list's panel pulled up to fill most of the screen.
+    @State private var panelLarge = false
+    @State private var panelDrag: CGFloat = 0
+    @State private var screenHeight: CGFloat = 874
     @State private var undo: PlannedTrip?
 
     var body: some View {
         let options = planner.options
         let current = options.first { $0.index == picked } ?? options.first
         ZStack(alignment: .top) {
-            map(current)
+            map(current, bottom: mapBottom(options))
                 .ignoresSafeArea()
             VStack(spacing: 10) {
                 head
@@ -41,14 +48,20 @@ struct TripRoutesView: View {
                 if planner.loading {
                     LoadingCard(step: planner.loadStep).padding(.horizontal, 16).padding(.bottom, 30)
                 } else if let problem = planner.problem {
-                    StateCard(title: problem, text: problem == "Where are you starting?" ? "We need a starting point to find the way." : "Try a stop nearby, or take off a preference.",
+                    StateCard(title: problem, text: problem == "Where are you starting?" ? "We need a starting point to find routes." : "Try a stop nearby, or take off a preference.",
                               button: problem == "Where are you starting?" ? "Add a starting point" : "Change the plan", go: back)
                         .padding(.horizontal, 16).padding(.bottom, 30)
-                } else if !options.isEmpty {
-                    if asList { list(options) } else { deck(options) }
+                } else if !options.isEmpty, !asList {
+                    deck(options)
                 }
             }
+            if asList, !planner.loading, planner.problem == nil, !options.isEmpty {
+                panel(options)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { screenHeight = $0 }
+        .animation(.smooth(duration: 0.35), value: asList)
         .animation(.smooth(duration: 0.35), value: conditions)
         .sheet(isPresented: $whenOpen, onDismiss: { Task { await planner.plan(session.api) } }) {
             WhenSheet(planner: planner)
@@ -105,7 +118,13 @@ struct TripRoutesView: View {
 
     // MARK: Map
 
-    private func map(_ option: TripPlanner.Option?) -> some View {
+    /// How much of the map's bottom the results cover, so the way is fitted above them.
+    private func mapBottom(_ options: [TripPlanner.Option]) -> CGFloat {
+        guard !options.isEmpty else { return 120 }
+        return asList ? panelHeight + 24 : 420
+    }
+
+    private func map(_ option: TripPlanner.Option?, bottom: CGFloat) -> some View {
         let legs = option?.journey.legs ?? []
         let lines: [CityMap.Line] = legs.enumerated().compactMap { i, leg in
             guard let poly = leg.polyline else { return nil }
@@ -133,7 +152,8 @@ struct TripRoutesView: View {
             }
         }
         let fit = lines.flatMap(\.points) + pins.map(\.coordinate)
-        return CityMap(lines: lines, pins: pins, fit: fit, padding: UIEdgeInsets(top: 170, left: 40, bottom: 380, right: 40), fitID: option?.index ?? -1)
+        return CityMap(lines: lines, pins: pins, fit: fit, padding: UIEdgeInsets(top: 190, left: 44, bottom: bottom, right: 44),
+                       fitID: (option?.index ?? -1) * 10 + (panelLarge ? 1 : 0) + (asList ? 2 : 0))
             .background(Palette.quiet)
     }
 
@@ -141,7 +161,7 @@ struct TripRoutesView: View {
 
     private var head: some View {
         HStack(spacing: 8) {
-            CircleButton(symbol: "chevron.left", label: "Back", tap: back)
+            CircleButton(symbol: "chevron.left", label: "Change where to", tap: back)
             Button(action: back) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("To \(planner.destination?.name ?? "")").font(.geist(16, .bold)).lineLimit(1)
@@ -153,6 +173,8 @@ struct TripRoutesView: View {
             }
             .buttonStyle(PressStyle())
             .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
+            // Straight back to the board, from any step of planning.
+            CircleButton(symbol: "xmark", label: "Close, back to Travel", tap: close)
         }
         .padding(.horizontal, 12).padding(.top, 6)
         .foregroundStyle(Palette.text)
@@ -251,124 +273,250 @@ struct TripRoutesView: View {
 }
 
 extension TripRoutesView {
-    /// The ways as a plain list: each row says when to leave and be there, which line from which stop
-    /// towards where, and how it fits. A tap shows it on the map and opens its steps and actions.
-    func list(_ options: [TripPlanner.Option]) -> some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(options.enumerated()), id: \.element.id) { i, option in
-                    let open = details == option.index
-                    WayListRow(planner: planner, option: option, best: i == 0 ? planner.sort.label : nil, open: open,
-                               kept: planner.added[option.index] != nil,
-                               tap: {
-                                   withAnimation(.smooth(duration: 0.3)) {
-                                       picked = option.index
-                                       details = open ? nil : option.index
-                                   }
-                               }, show: {
-                                   Task { _ = await planner.start(option, replace: false, session.api, today: today) }
-                               }, add: planner.target == nil ? nil : {
-                                   Task { await planner.addToPlan(option, session.api) }
-                               })
-                    if i < options.count - 1 { Divider().padding(.leading, 16) }
+    private var panelHeight: CGFloat {
+        let medium = max(360, screenHeight * 0.52), large = screenHeight * 0.84
+        return min(large, max(medium - 80, (panelLarge ? large : medium) - panelDrag))
+    }
+
+    /// The ways in a panel over the map's lower half; pulled up it fills most of the screen. A row opens
+    /// that way's steps in the same panel, with Show the way always in reach.
+    func panel(_ options: [TripPlanner.Option]) -> some View {
+        let chosen = options.first { $0.index == details }
+        return VStack(spacing: 0) {
+            // The handle: drag or tap to make the panel taller or shorter.
+            Capsule().fill(Palette.border).frame(width: 36, height: 5)
+                .frame(maxWidth: .infinity).frame(height: 22)
+                .contentShape(.rect)
+                .onTapGesture { withAnimation(.smooth(duration: 0.35)) { panelLarge.toggle() } }
+                .accessibilityLabel(panelLarge ? "Show more map" : "Show more routes")
+                .accessibilityAddTraits(.isButton)
+            if let chosen {
+                RouteDetail(planner: planner, option: chosen, kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
+                            back: { withAnimation(.smooth(duration: 0.3)) { details = nil } },
+                            show: { Task { _ = await planner.start(chosen, replace: false, session.api, today: today) } },
+                            add: planner.target == nil ? nil : { Task { await planner.addToPlan(chosen, session.api) } })
+                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)).combined(with: .opacity))
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(listOrder(options).enumerated()), id: \.element.id) { i, option in
+                            Button {
+                                withAnimation(.smooth(duration: 0.3)) { picked = option.index; details = option.index }
+                            } label: {
+                                RouteRow(planner: planner, option: option, best: option.index == options.first?.index && planner.sort == .best,
+                                         selected: picked == option.index)
+                            }
+                            .buttonStyle(PressStyle())
+                            if i < options.count - 1 { Divider().padding(.leading, 16) }
+                        }
+                        Button { Task { await planner.showMore(session.api) } } label: {
+                            Label(planner.more ? "Fewer routes" : "Show later routes", systemImage: planner.more ? "arrow.uturn.backward" : "plus")
+                                .font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 52)
+                        }
+                        .buttonStyle(PressStyle())
+                        .foregroundStyle(Palette.navTeal)
+                    }
+                    .padding(.bottom, 24)
                 }
-                Button { Task { await planner.showMore(session.api) } } label: {
-                    Label(planner.more ? "Fewer routes" : "More routes", systemImage: planner.more ? "arrow.uturn.backward" : "plus")
-                        .font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 48)
-                }
-                .buttonStyle(PressStyle())
-                .foregroundStyle(Palette.navTeal)
+                .scrollIndicators(.hidden)
+                .transition(.opacity)
             }
-            .padding(.vertical, 6)
         }
-        .scrollIndicators(.hidden)
-        .frame(maxHeight: 470)
-        .background(Palette.surface, in: .rect(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.22), radius: 16, y: 10)
-        .padding(.horizontal, 12).padding(.bottom, 12)
-        .opacity(printed || reduceMotion ? 1 : 0)
-        .offset(y: printed || reduceMotion ? 0 : 30)
-        .animation(.smooth(duration: 0.35), value: printed)
-        .onAppear { printed = true }
+        .frame(height: panelHeight, alignment: .top)
+        .frame(maxWidth: .infinity)
+        .background(Palette.surface, in: .rect(topLeadingRadius: 28, topTrailingRadius: 28))
+        .shadow(color: .black.opacity(0.18), radius: 18, y: -4)
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .ignoresSafeArea(edges: .bottom)
+        .gesture(
+            DragGesture(minimumDistance: 10)
+                .onChanged { panelDrag = $0.translation.height }
+                .onEnded { value in
+                    withAnimation(.smooth(duration: 0.35)) {
+                        if value.predictedEndTranslation.height < -80 { panelLarge = true }
+                        else if value.predictedEndTranslation.height > 80 { panelLarge = false }
+                        panelDrag = 0
+                    }
+                }
+        )
         .sensoryFeedback(.selection, trigger: details)
+    }
+
+    /// Best for you first, then the rest in the order they leave: a list that reads down the clock.
+    private func listOrder(_ options: [TripPlanner.Option]) -> [TripPlanner.Option] {
+        guard planner.sort == .best, let first = options.first else { return options }
+        return [first] + options.dropFirst().sorted { ($0.journey.departDate ?? .distantFuture) < ($1.journey.departDate ?? .distantFuture) }
     }
 }
 
-/// One way in the list: times, lines with their direction and boarding stop, fit and warnings.
-private struct WayListRow: View {
+/// One way in the list, as transit apps set it: leave → there and how long; the lines in order with
+/// the walks between; when the first one leaves, from where, and whether it's on time.
+private struct RouteRow: View {
     let planner: TripPlanner
     let option: TripPlanner.Option
-    let best: String?
-    let open: Bool
+    let best: Bool
+    let selected: Bool
+
+    var body: some View {
+        let journey = option.journey
+        let first = journey.rides.first
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(journey.leaveTime) – \(journey.arriveTime)").font(.geist(18, .bold)).monospacedDigit()
+                if best {
+                    Text("Best").font(.geist(12, .bold)).foregroundStyle(Palette.navTeal)
+                        .padding(.horizontal, 6).frame(height: 20)
+                        .background(Palette.selectBackground, in: .rect(cornerRadius: 6))
+                }
+                Spacer(minLength: 4)
+                Text("\(journey.durationMin) min").font(.geist(17, .bold)).monospacedDigit()
+            }
+            LegStrip(journey: journey)
+            HStack(spacing: 6) {
+                if let first {
+                    Text("\(first.departTime) from \(JourneySteps.short(first.from.name ?? ""))").lineLimit(1)
+                    Text(journey.transfers > 0 ? "· \(journey.transfers) change\(journey.transfers == 1 ? "" : "s")" : "· direct").lineLimit(1)
+                } else {
+                    Text(journey.mode == "bike" ? "By bike" : "On foot")
+                }
+                Spacer(minLength: 4)
+                status(journey)
+            }
+            .font(.geist(13.5)).foregroundStyle(Palette.textSoft)
+            if let spare = planner.spare(journey) {
+                Text(spare >= 0 ? "\(spare) min spare" : "\(-spare) min late").font(.geist(12.5, .bold))
+                    .foregroundStyle(spare < 0 ? Palette.conflictText : spare <= 2 ? Palette.warnText : Palette.goodText)
+            }
+        }
+        .foregroundStyle(Palette.text)
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(selected ? Palette.quiet.opacity(0.6) : .clear)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func status(_ journey: TripPlan.Journey) -> some View {
+        if journey.cancelled {
+            Text("Cancelled").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
+        } else if let late = journey.rides.compactMap({ $0.realtime == true ? $0.delayMin : nil }).max(), late >= 2 {
+            Text("\(late) min late").font(.geist(13, .semibold)).foregroundStyle(Palette.warnText)
+        } else if journey.rides.contains(where: { $0.realtime == true }) {
+            HStack(spacing: 4) { Circle().fill(Palette.goodText).frame(width: 6, height: 6); Text("On time") }
+                .font(.geist(13, .semibold)).foregroundStyle(Palette.goodText)
+        } else if !option.lifts.isEmpty {
+            Label("Lift out", systemImage: "exclamationmark.triangle").font(.geist(13, .semibold)).foregroundStyle(Palette.warnText)
+        }
+    }
+}
+
+/// The legs in order: a walk as its minutes, a ride as its line's badge, small chevrons between.
+struct LegStrip: View {
+    let journey: TripPlan.Journey
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            strip(walks: true)
+            strip(walks: false)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
+    }
+
+    private func strip(walks: Bool) -> some View {
+        let parts = journey.legs.filter { $0.isRide || (walks && $0.durationMin >= 2) || ($0.mode == "bike") }
+        return HStack(spacing: 5) {
+            ForEach(Array(parts.enumerated()), id: \.offset) { i, leg in
+                if i > 0 { Image(systemName: "chevron.compact.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft) }
+                if leg.isRide {
+                    let look = LineLook(hex: leg.color ?? "#00768B")
+                    HStack(spacing: 3) {
+                        Image(systemName: leg.mode == "bus" ? "bus.fill" : "tram.fill").font(.system(size: 11, weight: .bold))
+                        Text(leg.line ?? "").font(.geist(13.5, .bold)).monospacedDigit()
+                    }
+                    .foregroundStyle(look.ink)
+                    .padding(.horizontal, 7).frame(height: 24)
+                    .background(look.base, in: .rect(cornerRadius: 6))
+                    .fixedSize()
+                } else {
+                    HStack(spacing: 2) {
+                        Image(systemName: leg.mode == "bike" ? "bicycle" : "figure.walk").font(.system(size: 13, weight: .semibold))
+                        Text("\(leg.durationMin)").font(.geist(13, .semibold)).monospacedDigit()
+                    }
+                    .foregroundStyle(Palette.textSoft)
+                    .fixedSize()
+                }
+            }
+        }
+    }
+
+    private var spoken: String {
+        journey.legs.compactMap { leg in
+            leg.isRide ? "\(leg.mode == "bus" ? "bus" : "tram") \(leg.line ?? "")" : leg.durationMin >= 2 ? "\(leg.durationMin) minutes \(leg.mode == "bike" ? "by bike" : "walking")" : nil
+        }.joined(separator: ", then ")
+    }
+}
+
+/// One way opened in the panel: its steps, with Show the way (and Add to plan) pinned under them.
+private struct RouteDetail: View {
+    let planner: TripPlanner
+    let option: TripPlanner.Option
     let kept: Bool
-    let tap: () -> Void
+    let best: Bool
+    let back: () -> Void
     let show: () -> Void
     let add: (() -> Void)?
 
     var body: some View {
         let journey = option.journey
-        VStack(alignment: .leading, spacing: 8) {
-            Button(action: tap) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("\(journey.leaveTime) → \(journey.arriveTime)").font(.geist(18, .bold)).monospacedDigit()
-                        Text("\(journey.durationMin) min").font(.geist(14, .medium)).foregroundStyle(Palette.textSoft)
-                        Spacer(minLength: 0)
-                        if let spare = planner.spare(journey) {
-                            Text(spare >= 0 ? "\(spare) min spare" : "\(-spare) min late").font(.geist(12.5, .bold))
-                                .padding(.horizontal, 7).frame(height: 22)
-                                .background(spare < 0 ? Palette.conflictBackground : spare <= 2 ? Palette.warnBackground : spare >= 10 ? Palette.goodBackground : Palette.quiet, in: .rect(cornerRadius: 7))
-                                .foregroundStyle(spare < 0 ? Palette.conflictText : spare <= 2 ? Palette.warnText : spare >= 10 ? Palette.goodText : Palette.text)
-                        }
-                        Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft)
-                            .rotationEffect(.degrees(open ? 180 : 0))
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                Button(action: back) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left").font(.system(size: 14, weight: .semibold))
+                        Text("All routes").font(.geist(15, .semibold))
                     }
-                    ForEach(Array(journey.rides.enumerated()), id: \.offset) { _, ride in
-                        RideLine(leg: ride)
-                    }
-                    if journey.rides.isEmpty {
-                        Label(journey.mode == "bike" ? "By bike · \(journey.durationMin) min" : "On foot · \(journey.durationMin) min",
-                              systemImage: journey.mode == "bike" ? "bicycle" : "figure.walk").font(.geist(14, .medium))
-                    }
-                    HStack(spacing: 10) {
-                        if let best { Text(best).font(.geist(12, .bold)).foregroundStyle(Palette.navTeal) }
-                        if journey.transfers > 0 { Label("\(journey.transfers) change\(journey.transfers == 1 ? "" : "s")", systemImage: "arrow.triangle.swap") }
-                        if journey.walkMinutes > 0, journey.mode == "transit" { Label("\(journey.walkMinutes) min walking", systemImage: "figure.walk") }
-                        if !option.lifts.isEmpty { Label("Lift out", systemImage: "exclamationmark.triangle").foregroundStyle(Palette.warnText) }
-                        if journey.cancelled { Label("Cancelled", systemImage: "xmark.octagon").foregroundStyle(Palette.conflictText) }
-                    }
-                    .font(.geist(12.5, .medium)).foregroundStyle(Palette.textSoft).labelStyle(.titleAndIcon)
+                    .frame(minHeight: 44).contentShape(.rect)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(.rect)
+                .buttonStyle(PressStyle())
+                .foregroundStyle(Palette.navTeal)
+                Spacer()
+                Text("\(journey.durationMin) min").font(.geist(15, .bold))
             }
-            .buttonStyle(PressStyle())
-            if open {
+            .padding(.horizontal, 16)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("\(journey.leaveTime) – \(journey.arriveTime)").font(.geist(24, .bold)).monospacedDigit()
+                LegStrip(journey: journey)
+            }
+            .padding(.horizontal, 16).padding(.bottom, 10)
+            Divider()
+            ScrollView {
                 JourneySteps(journey: journey, to: planner.destination?.name ?? "")
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                HStack(spacing: 8) {
-                    Button(action: show) {
-                        Label(planner.busy == option.index && !kept ? "Starting…" : "Show the way", systemImage: "arrow.right")
-                            .font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
+                    .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 12)
+            }
+            .scrollIndicators(.hidden)
+            HStack(spacing: 8) {
+                Button(action: show) {
+                    Label(planner.busy == option.index && !kept ? "Starting…" : "Start trip", systemImage: "arrow.right")
+                        .font(.geist(16, .semibold)).frame(maxWidth: .infinity).frame(height: 50)
+                }
+                .buttonStyle(PressStyle())
+                .buttonFace(Palette.action, radius: 14)
+                .foregroundStyle(Palette.onAction)
+                .disabled(journey.cancelled || planner.busy != nil)
+                if let add {
+                    Button(action: add) {
+                        Text(kept ? "✓ In my day" : planner.busy == option.index ? "Adding…" : "Add to my day")
+                            .font(.geist(15, .semibold)).padding(.horizontal, 14).frame(height: 50)
                     }
                     .buttonStyle(PressStyle())
-                    .buttonFace(Palette.action, radius: 12)
-                    .foregroundStyle(Palette.onAction)
-                    .disabled(journey.cancelled || planner.busy != nil)
-                    if let add {
-                        Button(action: add) {
-                            Text(kept ? "✓ In your plan" : planner.busy == option.index ? "Adding…" : "Add to plan")
-                                .font(.geist(15, .semibold)).padding(.horizontal, 12).frame(height: 44)
-                        }
-                        .buttonStyle(PressStyle())
-                        .background(Palette.quiet, in: .rect(cornerRadius: 12))
-                    }
+                    .background(Palette.quiet, in: .rect(cornerRadius: 14))
                 }
             }
+            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 30)
+            .background(Palette.surface)
         }
         .foregroundStyle(Palette.text)
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .background(open ? Palette.quiet.opacity(0.5) : .clear)
     }
 }
 
@@ -493,7 +641,7 @@ private struct TicketView: View {
                         .foregroundStyle(item.warn ? Palette.warnText : Palette.text)
                 }
                 if journey.cancelled {
-                    Text("A ride on this way is cancelled · Not offered").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
+                    Text("A ride on this route is cancelled · Not offered").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
                 }
                 if open {
                     ScrollView { JourneySteps(journey: journey, to: planner.destination?.name ?? "") }
@@ -503,7 +651,7 @@ private struct TicketView: View {
                 }
                 HStack(spacing: 8) {
                     Button(action: show) {
-                        Label(planner.busy == option.index && !kept ? "Starting…" : "Show the way", systemImage: "arrow.right").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
+                        Label(planner.busy == option.index && !kept ? "Starting…" : "Start trip", systemImage: "arrow.right").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
                     }
                     .buttonStyle(PressStyle())
                     .buttonFace(Palette.action, radius: 12)
@@ -511,7 +659,7 @@ private struct TicketView: View {
                     .disabled(journey.cancelled || planner.busy != nil)
                     if let add {
                         Button(action: add) {
-                            Text(kept ? "✓ In your plan" : planner.busy == option.index ? "Adding…" : "Add to plan").font(.geist(15, .semibold)).padding(.horizontal, 12).frame(height: 44)
+                            Text(kept ? "✓ In my day" : planner.busy == option.index ? "Adding…" : "Add to my day").font(.geist(15, .semibold)).padding(.horizontal, 12).frame(height: 44)
                                 .contentTransition(.opacity)
                         }
                         .buttonStyle(PressStyle())
@@ -610,25 +758,32 @@ struct JourneySteps: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(journey.legs.enumerated()), id: \.offset) { i, leg in
                 step(colour: leg.isRide ? LineLook(hex: leg.color ?? "#00768B").base : Palette.textSoft,
-                     dashed: !leg.isRide, title: title(leg, first: i == 0), sub: sub(leg), at: leg.departTime)
+                     dashed: !leg.isRide, title: title(i), sub: sub(i), at: leg.departTime)
             }
             step(colour: Palette.action, dashed: false, title: "You’re there", sub: to, at: journey.arriveTime, last: true)
             Text("Live times where the feed has them.").font(.geist(12)).foregroundStyle(Palette.textSoft).padding(.top, 6)
         }
     }
 
-    private func title(_ leg: TripPlan.Leg, first: Bool) -> String {
+    /// What a step says: a walk between two rides is a change; the last walk goes to the destination.
+    private func title(_ i: Int) -> String {
+        let legs = journey.legs, leg = legs[i]
         let place = Self.short(leg.to.name ?? "")
         switch leg.mode {
-        case "walk": return place.isEmpty ? "Walk" : "Walk to \(place)"
-        case "bike": return place.isEmpty ? "Cycle" : "Cycle to \(place)"
+        case "walk":
+            let afterRide = i > 0 && legs[i - 1].isRide, beforeRide = i < legs.count - 1 && legs[i + 1].isRide
+            if afterRide && beforeRide { return "Change at \(Self.short(leg.from.name ?? place))" }
+            if i == legs.count - 1 { return "Walk to \(Self.short(to))" }
+            return place.isEmpty ? "Walk" : "Walk to \(place)"
+        case "bike": return "Cycle to \(place.isEmpty ? Self.short(to) : place)"
         default:
             let what = leg.mode == "bus" ? "Bus" : "Tram"
-            return first ? "\(what) \(leg.line ?? "") to \(place)" : "\(what) \(leg.line ?? "") to \(place)"
+            return "\(what) \(leg.line ?? "") to \(place)"
         }
     }
 
-    private func sub(_ leg: TripPlan.Leg) -> String {
+    private func sub(_ i: Int) -> String {
+        let legs = journey.legs, leg = legs[i]
         if leg.isRide {
             var parts: [String] = []
             if let from = leg.from.name { parts.append("From \(Self.short(from))") }
@@ -638,7 +793,10 @@ struct JourneySteps: View {
             if leg.cancelled == true { parts.append("Cancelled") }
             return parts.joined(separator: " · ")
         }
-        return "\(leg.durationMin) min" + (leg.distanceM.map { " · \($0) m" } ?? "")
+        // A change says which line it walks to; any walk, its metres when there are enough to matter.
+        let next = i < legs.count - 1 && i > 0 && legs[i - 1].isRide && legs[i + 1].isRide ? legs[i + 1] : nil
+        let towards = next.map { " to \($0.mode == "bus" ? "Bus" : "Tram") \($0.line ?? "")" } ?? ""
+        return "\(leg.durationMin) min walk" + towards + (leg.distanceM.flatMap { $0 >= 50 ? " · \($0) m" : nil } ?? "")
     }
 
     private func step(colour: Color, dashed: Bool, title: String, sub: String, at: String, last: Bool = false) -> some View {
@@ -662,7 +820,8 @@ struct JourneySteps: View {
     }
 
     static func short(_ name: String) -> String {
-        name.hasPrefix("Köln ") ? String(name.dropFirst(5)) : name
+        for prefix in ["Köln ", "Koeln "] where name.hasPrefix(prefix) { return String(name.dropFirst(prefix.count)) }
+        return name
     }
 }
 
@@ -683,7 +842,7 @@ private struct ConditionsCard: View {
             }
             .padding(.bottom, 6)
             row("clock", "Live times", liveText)
-            row("exclamationmark.triangle", "Notices", answer.disruptions.isEmpty ? "No KVB notices on these ways." : answer.disruptions.map(\.headline).joined(separator: " · "))
+            row("exclamationmark.triangle", "Notices", answer.disruptions.isEmpty ? "No KVB notices on these routes." : answer.disruptions.map(\.headline).joined(separator: " · "))
             row("cloud.sun", "Weather", weatherText)
             if let target = planner.target, let journey = current?.journey, let spare = planner.spare(journey) {
                 row("calendar", "Your day", "\(target.title) at \(target.startTime ?? ""). \(spare) min spare on this way.")
@@ -712,10 +871,10 @@ private struct ConditionsCard: View {
     private var liveText: String {
         guard let journey = current?.journey else { return "—" }
         let live = journey.rides.filter { $0.realtime == true }
-        if live.isEmpty { return "Timetable times on this way: no live reading." }
+        if live.isEmpty { return "Timetable times on this route: no live reading." }
         let late = live.compactMap(\.delayMin).max() ?? 0
         let cancelled = journey.rides.contains { $0.cancelled == true }
-        return cancelled ? "A ride on this way is cancelled." : late >= 2 ? "Running \(late) min late now." : "Running on time."
+        return cancelled ? "A ride on this route is cancelled." : late >= 2 ? "Running \(late) min late now." : "Running on time."
     }
 
     private var weatherText: String {
