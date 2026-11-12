@@ -257,7 +257,7 @@ struct PlaceSheet: View {
                                 }
                                 Spacer(minLength: 0)
                                 if finding { ProgressView().controlSize(.small) } else {
-                                    Label("Show the way", systemImage: "arrow.right").labelStyle(.titleAndIcon).font(.geist(14, .semibold)).foregroundStyle(TodayLink.ink)
+                                    Label("See routes", systemImage: "arrow.right").labelStyle(.titleAndIcon).font(.geist(14, .semibold)).foregroundStyle(TodayLink.ink)
                                 }
                             }
                             .padding(12).card(radius: 18)

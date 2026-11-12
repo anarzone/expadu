@@ -15,6 +15,9 @@ struct TravelView: View {
     @State private var model = TravelModel()
     @State private var planner = TripPlanner()
     @State private var leaveOpen = false
+    /// The trip card's hold menu: End trip asks first; a new route that fails says why.
+    @State private var endingTrip = false
+    @State private var tripProblem: String?
     @State private var otherWaysFor: TodayPage.Leave?
 
     var body: some View {
@@ -96,6 +99,18 @@ struct TravelView: View {
                 TravelTrip(trip: trip).environment(planner)
             }
         }
+        .alert("End this trip?", isPresented: $endingTrip) {
+            Button("Keep", role: .cancel) {}
+            Button("End trip", role: .destructive) {
+                Task {
+                    await today.endTrip(session.api, arrived: false)
+                    planner.stopFollowing()
+                }
+            }
+        } message: { Text("The live steps stop. The trip stays on your day.") }
+        .alert("No new route", isPresented: Binding(get: { tripProblem != nil }, set: { if !$0 { tripProblem = nil } })) {
+            Button("OK", role: .cancel) { tripProblem = nil }
+        } message: { Text(tripProblem ?? "") }
         // A trip ended elsewhere (arrived, stopped on Today): stop following it here too.
         .onChange(of: today.page?.trip == nil) { _, gone in if gone { planner.stopFollowing() } }
         .environment(planner)
@@ -204,7 +219,13 @@ struct TravelView: View {
                 if model.line == nil, let leave = today.page?.leave, leave.leaveTime != nil, today.page?.trip == nil {
                     NextTripRow(leave: leave, dim: model.open != nil) { leaveOpen = true }
                 } else if model.line == nil, let trip = today.page?.trip {
-                    OnYourWayRow(trip: trip, dim: model.open != nil) { planner.showTrip = true }
+                    OnYourWayRow(trip: trip, dim: model.open != nil,
+                                 open: { planner.showTrip = true },
+                                 map: { planner.tripOnMap = true; planner.showTrip = true },
+                                 replan: model.place.map { place in {
+                                     Task { tripProblem = await today.newWay(session.api, trip: trip, from: TodayPage.Point(latitude: place.latitude, longitude: place.longitude)) }
+                                 } },
+                                 end: { endingTrip = true })
                 }
                 if let notice = model.station?.majorNotice, model.line == nil || notice.lines.contains(model.line ?? "") {
                     NoticeBanner(notice: notice, dim: model.open != nil) { withAnimation(.smooth(duration: 0.3)) { model.notice = notice } }
@@ -237,7 +258,8 @@ struct TravelView: View {
                 }
             }
             .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: model.line)
-            .padding(.bottom, 40)
+            // The last rows scroll up clear of Where to? and the buttons beside it.
+            .padding(.bottom, 120)
         }
         .scrollIndicators(.hidden)
         .refreshable { await model.load(session.api) }
@@ -342,9 +364,22 @@ struct Band: View {
                     .font(.geist(12, .medium)).opacity(0.92)
                 }
                 Spacer(minLength: 4)
-                HStack(spacing: 2) {
-                    ForEach(Array(String(format: "%02d", min(run.minutes(from: now), 99)).enumerated()), id: \.offset) { _, digit in
-                        FlapDigit(character: digit, grey: grey || run.cancelled)
+                // Minutes on the flaps; an hour or more away, its clock time (a capped "99" said nothing).
+                if run.minutes(from: now) >= 60 {
+                    HStack(spacing: 1.5) {
+                        ForEach(Array(run.time.enumerated()), id: \.offset) { _, ch in
+                            if ch == ":" {
+                                Text(":").font(.geist(18, .bold))
+                            } else {
+                                FlapDigit(character: ch, grey: grey || run.cancelled, width: 19, height: 30, size: 20)
+                            }
+                        }
+                    }
+                } else {
+                    HStack(spacing: 2) {
+                        ForEach(Array(String(format: "%02d", run.minutes(from: now)).enumerated()), id: \.offset) { _, digit in
+                            FlapDigit(character: digit, grey: grey || run.cancelled)
+                        }
                     }
                 }
             }
@@ -363,7 +398,8 @@ struct Band: View {
     }
 
     private var via: String {
-        let stops = departure.dir.via.filter { !$0.isEmpty }
+        // "via Merkenich" on a tram to Merkenich says nothing.
+        let stops = departure.dir.via.filter { !$0.isEmpty && !TravelModel.same($0, departure.dir.dest) }
         if run.cancelled || late != nil || notice != nil { return stops.first.map { "via \($0)" } ?? "" }
         return stops.isEmpty ? "" : "via " + stops.prefix(2).joined(separator: " · ")
     }
@@ -386,7 +422,7 @@ struct Band: View {
 
     private var spoken: String {
         let minutes = run.minutes(from: now)
-        var text = "Line \(departure.line.line) to \(departure.dir.dest), " + (minutes == 0 ? "now" : "in \(minutes) minutes")
+        var text = "Line \(departure.line.line) to \(departure.dir.dest), " + (minutes == 0 ? "now" : minutes >= 60 ? "at \(run.time)" : "in \(minutes) minutes")
         if run.cancelled { text += ", cancelled" } else if let late { text += ", \(late) minutes late" }
         if grey { text += ", timetable time" }
         return text
@@ -451,25 +487,20 @@ private struct NextTripRow: View {
             HStack(spacing: 12) {
                 let minutes = max(0, leave.leaveInMinutes ?? 0)
                 ZStack {
-                    Circle().stroke(.white.opacity(0.2), lineWidth: 4)
+                    Circle().stroke(Palette.border, lineWidth: 4)
                     Circle().trim(from: 0, to: max(0.04, min(1, Double(minutes) / 10)))
-                        .stroke(minutes <= 2 ? Color(hex: 0xFF8A5C) : Color(hex: 0xFFE9A6), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .stroke(minutes <= 2 ? Palette.action : Palette.navTeal, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     Text("\(minutes)").font(.geist(15, .bold)).monospacedDigit().contentTransition(.numericText(countsDown: true))
                 }
-                .frame(width: 38, height: 38)
+                .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Leave at \(leave.leaveTime ?? "")").font(.posterGrotesque(19))
-                    Text(sub).font(.geist(12.5)).opacity(0.82).lineLimit(1)
+                    Text("Leave at \(leave.leaveTime ?? "")").font(.geist(16, .bold))
+                    Text(sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
             }
-            .foregroundStyle(Color(hex: 0xFFF6E3))
-            .padding(.horizontal, 14).frame(height: 60)
-            .background(Color(hex: 0x211D15))
-            .opacity(dim ? 0.4 : 1)
-            .contentShape(.rect)
+            .tripCard(dim: dim)
         }
         .buttonStyle(PressStyle())
         .accessibilityLabel("Leave at \(leave.leaveTime ?? ""), \(sub)")
@@ -478,36 +509,182 @@ private struct NextTripRow: View {
     private var sub: String {
         var parts = ["To \(leave.to)"]
         if let start = leave.start { parts.append(start) }
-        if let line = leave.line { parts.append("tram \(line)") }
+        if let line = leave.line { parts.append("line \(Board.badge(line))") }
         return parts.joined(separator: " · ")
     }
 }
 
-/// A trip being followed: back to it.
+/// A trip being followed, as Citymapper and Apple Maps keep one in sight: what to do now (the
+/// step, its line, the minutes it counts down to) and where it goes, moving on by itself with a
+/// strip of how far along the trip is. Tap opens it; swipe looks at the step before or after
+/// (it comes back to now after a while), as on Today's card; hold for the map, a new route or End.
 private struct OnYourWayRow: View {
     let trip: TodayPage.Trip
     let dim: Bool
-    let tap: () -> Void
+    let open: () -> Void
+    let map: () -> Void
+    /// A new route from where the phone is; nil while it hasn't said.
+    let replan: (() -> Void)?
+    let end: () -> Void
+    @State private var picked: Int?
+    @State private var swipedLeft = true
+    @State private var drag: CGFloat = 0
+    @State private var back: Task<Void, Never>?
+
+    private func look(by delta: Int, from index: Int, current: Int) {
+        let next = min(max(index + delta, 0), trip.steps.count - 1)
+        guard next != index else { return }
+        withAnimation(.spring(duration: 0.4, bounce: 0.2)) { picked = next == current ? nil : next }
+        back?.cancel()
+        back = Task {
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(duration: 0.4, bounce: 0.2)) { swipedLeft = false; picked = nil }
+        }
+    }
 
     var body: some View {
-        Button(action: tap) {
-            HStack(spacing: 12) {
-                Image(systemName: "figure.walk").font(.system(size: 17, weight: .bold)).frame(width: 38, height: 38)
-                    .background(.white.opacity(0.14), in: .circle)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("On your way").font(.posterGrotesque(19))
-                    Text("To \(trip.to)" + (trip.arriveTime.map { " · there \($0)" } ?? "") + " · Back to your trip").font(.geist(12.5)).opacity(0.82).lineLimit(1)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+        TimelineView(.periodic(from: .now, by: 15)) { timeline in
+            card(trip.live(at: timeline.date, picked: picked), at: timeline.date)
+        }
+    }
+
+    private func card(_ live: TodayPage.Live, at date: Date) -> some View {
+        // The line this step rides, or the next one it walks to.
+        let ride = trip.steps.dropFirst(live.index).first { $0.kind == .ride || $0.kind == .getOff }
+        let colours = LineLook(hex: ride?.color ?? "#00768B")
+        return VStack(spacing: 10) {
+            row(live, ride: ride, look: colours)
+                .id(live.index)
+                .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: swipedLeft ? 40 : -40)),
+                                        removal: .opacity.combined(with: .offset(x: swipedLeft ? -40 : 40))))
+            progress(Self.done(trip, at: date), colour: colours.base)
+        }
+        .offset(x: drag)
+        .tripCard(dim: dim)
+        .onTapGesture(perform: open)
+        .gesture(swipe(live))
+        .contentShape(.contextMenuPreview, .rect(cornerRadius: 18))
+        .contextMenu { menu }
+        .sensoryFeedback(.selection, trigger: picked)
+        .animation(.smooth(duration: 0.4), value: live.index)
+        .modifier(Spoken(text: spoken(live), open: open, end: end,
+                         next: { look(by: 1, from: live.index, current: live.current) },
+                         previous: { look(by: -1, from: live.index, current: live.current) }))
+    }
+
+    private func spoken(_ live: TodayPage.Live) -> String {
+        let going = Self.going(trip.to)
+        return going + ". Now: " + live.step.title + ", " + live.big + ", " + live.bigNote
+    }
+
+    /// VoiceOver: one element that opens the trip, with the swipe and End as actions.
+    private struct Spoken: ViewModifier {
+        let text: String
+        let open: () -> Void
+        let end: () -> Void
+        let next: () -> Void
+        let previous: () -> Void
+
+        func body(content: Content) -> some View {
+            content
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(text)
+                .accessibilityHint("Opens your trip. Hold for more.")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction(.default, open)
+                .accessibilityAction(named: "Next step", next)
+                .accessibilityAction(named: "Previous step", previous)
+                .accessibilityAction(named: "End trip", end)
+        }
+    }
+
+    private func row(_ live: TodayPage.Live, ride: TodayPage.Step?, look: LineLook) -> some View {
+        HStack(spacing: 12) {
+            badge(ride, look: look)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(live.waiting ? live.label : live.step.title).font(.geist(16, .bold)).lineLimit(1)
+                Text(picked != nil ? live.label : destination(trip))
+                    .font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
             }
-            .foregroundStyle(Color(hex: 0xFFF6E3))
-            .padding(.horizontal, 14).frame(height: 60)
-            .background(Color(hex: 0x211D15))
+            Spacer(minLength: 4)
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(live.big).font(.posterGrotesque(20)).monospacedDigit().contentTransition(.numericText(countsDown: true))
+                Text(live.bigNote).font(.geist(11.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+            }
+            // No chevron: the trip slides up over the board, it isn't a page pushed in from the side.
+        }
+    }
+
+    @ViewBuilder
+    private func badge(_ ride: TodayPage.Step?, look: LineLook) -> some View {
+        if let ride, let line = trip.badge(ride) {
+            Text(line).font(.geist(17, .bold)).monospacedDigit().foregroundStyle(look.ink)
+                .frame(minWidth: 40, minHeight: 40).padding(.horizontal, 2)
+                .background(look.base, in: .rect(cornerRadius: 10))
+        } else {
+            Image(systemName: "figure.walk").font(.system(size: 17, weight: .semibold))
+                .frame(width: 40, height: 40).background(Palette.quiet, in: .rect(cornerRadius: 10))
+        }
+    }
+
+    /// How far along the trip is, by the clock, in the line's colour.
+    private func progress(_ done: CGFloat, colour: Color) -> some View {
+        GeometryReader { proxy in
+            Capsule().fill(Palette.border)
+                .overlay(alignment: .leading) { Capsule().fill(colour).frame(width: max(6, proxy.size.width * done)) }
+        }
+        .frame(height: 4)
+        .accessibilityHidden(true)
+    }
+
+    private func swipe(_ live: TodayPage.Live) -> some Gesture {
+        DragGesture(minimumDistance: 18)
+            .onChanged { value in
+                guard abs(value.translation.width) > abs(value.translation.height) * 1.4 else { return }
+                drag = value.translation.width * 0.35
+            }
+            .onEnded { value in
+                withAnimation(.spring(duration: 0.35, bounce: 0.3)) { drag = 0 }
+                guard abs(value.translation.width) > 50, abs(value.translation.width) > abs(value.translation.height) * 1.4 else { return }
+                swipedLeft = value.translation.width < 0
+                look(by: swipedLeft ? 1 : -1, from: live.index, current: live.current)
+            }
+    }
+
+    @ViewBuilder
+    private var menu: some View {
+        Button(action: open) { Label("Open steps", systemImage: "list.bullet") }
+        Button(action: map) { Label("Show on the map", systemImage: "map") }
+        if let replan { Button(action: replan) { Label("New route from here", systemImage: "arrow.triangle.turn.up.right.diamond") } }
+        Divider()
+        Button(role: .destructive, action: end) { Label("End trip", systemImage: "xmark") }
+    }
+
+    /// "Going home · arrive 19:30".
+    private func destination(_ trip: TodayPage.Trip) -> String {
+        Self.going(trip.to) + (trip.arriveTime.map { " · arrive \($0)" } ?? "")
+    }
+
+    /// The share of the trip behind them by the clock, 0 before leaving.
+    static func done(_ trip: TodayPage.Trip, at date: Date) -> CGFloat {
+        guard let start = trip.steps.first?.at, let end = trip.steps.last?.at, end > start else { return 0 }
+        return CGFloat(min(1, max(0, date.timeIntervalSince(start) / end.timeIntervalSince(start))))
+    }
+
+    static func going(_ to: String) -> String { TodayPage.Trip.going(to) }
+}
+
+private extension View {
+    /// The board's trip rows: a light card set in from the edges, so it never reads as a departure band.
+    func tripCard(dim: Bool) -> some View {
+        foregroundStyle(Palette.text)
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(Palette.surface, in: .rect(cornerRadius: 18))
+            .shadow(color: .black.opacity(0.12), radius: 10, y: 3)
+            .padding(.horizontal, 12).padding(.vertical, 8)
             .opacity(dim ? 0.4 : 1)
             .contentShape(.rect)
-        }
-        .buttonStyle(PressStyle())
     }
 }
 
@@ -528,7 +705,6 @@ private struct NoticeBanner: View {
                         .font(.geist(12.5)).foregroundStyle(Palette.noticeText.opacity(0.7)).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
             }
             .foregroundStyle(Palette.noticeText)
             .padding(.horizontal, 14).frame(height: 56)

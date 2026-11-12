@@ -17,13 +17,21 @@ struct TravelTrip: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var looking: Int?
+    /// The map view (the whole screen) instead of the steps.
     @State private var mapOn = false
+    /// On the map: the camera follows the phone; off, it shows the whole way.
+    @State private var followMe = false
+    @State private var fitTick = 0
+    /// On the map: the steps in the lower left, over the map (the map moves up to keep you in sight).
+    @State private var stepsOpen = false
     @State private var asking = false
     @State private var problem: String?
     @State private var working = false
-    @State private var sheetOpen = true
-    @State private var sheetDrag: CGFloat = 0
-    @State private var openStops: Set<Int> = []
+    /// Where the line's colour ends on the map: the bottom of the band, measured.
+    @State private var bandBottom: CGFloat = 230
+    /// Where the Map button sits on the screen, for the map to grow out of ("Grow").
+    @State private var mapAnchor = UnitPoint(x: 0.85, y: 0.5)
+    @State private var screen = CGSize(width: 402, height: 874)
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
@@ -34,28 +42,60 @@ struct TravelTrip: View {
             let step = steps.indices.contains(shown) ? steps[shown] : nil
             let look = LineLook(hex: trip.legs.first { $0.rides }?.color ?? "#00768B")
             ZStack(alignment: .top) {
-                look.fill.ignoresSafeArea()
-                if let line = trip.legs.first(where: \.rides)?.line {
+                if mapOn {
+                    // The map view: the whole screen is the map, the step you're on in a band on top.
+                    mapLayer(current: current)
+                        .transition(mapTransition)
+                }
+                // The line's colour: the whole screen with the steps; on the map it gathers into the band.
+                UnevenRoundedRectangle(bottomLeadingRadius: mapOn ? 26 : 0, bottomTrailingRadius: mapOn ? 26 : 0)
+                    .fill(look.fill)
+                    .shadow(color: .black.opacity(mapOn ? 0.2 : 0), radius: 14, y: 4)
+                    .frame(height: mapOn ? bandBottom : nil)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                if !mapOn, let line = trip.legs.first(where: \.rides)?.line {
                     Text(line).font(.posterGrotesque(360)).tracking(-16)
                         .foregroundStyle(look.ink.opacity(0.1)).lineLimit(1).fixedSize()
                         .offset(x: -20, y: 40).frame(maxWidth: .infinity, alignment: .leading)
                         .allowsHitTesting(false)
+                        .transition(.opacity)
                 }
-                VStack(alignment: .leading, spacing: 14) {
-                    head(look)
-                    bars(steps.count, current: current, shown: shown, ink: look.ink)
-                    if let step { moment(step, index: shown, count: steps.count, now: now, look: look) }
+                VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: mapOn ? 12 : 14) {
+                        head(look)
+                        if !mapOn {
+                            bars(steps.count, current: current, shown: shown, ink: look.ink)
+                                .transition(.opacity)
+                        }
+                        if let step {
+                            // One step, two sizes: the old one goes quickly, the new one comes just after,
+                            // so the two never sit on top of each other.
+                            if mapOn {
+                                bandMoment(step, index: shown, count: steps.count, now: now)
+                                    .transition(stepSwap)
+                            } else {
+                                moment(step, index: shown, count: steps.count, now: now, look: look)
+                                    .transition(stepSwap)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, mapOn ? 16 : 18)
+                    .foregroundStyle(look.ink)
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { bottom in
+                        if mapOn { withAnimation(switchAnimation) { bandBottom = bottom } }
+                    }
+                    if !mapOn {
+                        way(steps: steps, current: current)
+                            .transition(wayTransition)
+                    }
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 16).padding(.top, 8)
-                .foregroundStyle(look.ink)
-                VStack {
-                    Spacer()
-                    sheet(steps: steps, current: current, look: look)
-                }
-                .ignoresSafeArea(edges: .bottom)
             }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { screen = $0 }
             .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: shown)
+            .onChange(of: MotionStore.shared.replays[.tripMapSwitch]) { switchMap(!mapOn) }
         }
         .task(id: looking) {
             // A look ahead comes back to the step they're on after a while.
@@ -63,17 +103,22 @@ struct TravelTrip: View {
             try? await Task.sleep(for: .seconds(6))
             withAnimation(.smooth) { looking = nil }
         }
-        .alert("Stop this trip?", isPresented: $asking) {
+        .alert("End this trip?", isPresented: $asking) {
             Button("Keep", role: .cancel) {}
-            Button("Stop", role: .destructive) {
+            Button("End trip", role: .destructive) {
                 Task {
                     await today.endTrip(session.api, arrived: false)
                     planner.stopFollowing()
                     dismiss()
                 }
             }
-        } message: { Text("We’ll stop following it. It stays on your day.") }
-        .onAppear { planner.follow(trip) }
+        } message: { Text("The live steps stop. The trip stays on your day.") }
+        .onAppear {
+            planner.follow(trip)
+            if planner.tripOnMap { mapOn = true; planner.tripOnMap = false }
+        }
+        // A new route (re-planned here or on Today) is the one followed from now on.
+        .onChange(of: trip) { planner.follow(trip) }
     }
 
     private func head(_ look: LineLook) -> some View {
@@ -85,20 +130,27 @@ struct TravelTrip: View {
             .glassEffect(.clear.interactive(), in: .circle)
             .accessibilityLabel("Minimise")
             VStack(alignment: .leading, spacing: 1) {
-                Text("To \(trip.to)").font(.geist(17, .bold)).lineLimit(1)
+                Text(TodayPage.Trip.going(trip.to)).font(.geist(17, .bold)).lineLimit(1)
                 Text(meta).font(.geist(13)).opacity(0.9).lineLimit(1)
             }
             Spacer(minLength: 0)
+            // A new route when the plan went wrong: a missed tram, or starting from somewhere else.
             Menu {
                 if let ride = trip.legs.first(where: \.rides) {
                     Button { Task { await missed() } } label: { Label(ride.mode == "bus" ? "I missed the bus" : "I missed the tram", systemImage: "clock") }
                 }
                 Button { somewhereElse() } label: { Label("I’m somewhere else", systemImage: "location") }
-                Button(role: .destructive) { asking = true } label: { Label("Stop the trip", systemImage: "xmark") }
             } label: {
-                Text(working ? "Finding…" : "Not right?").font(.geist(14, .semibold)).padding(.horizontal, 14).frame(height: 42)
+                Text(working ? "Finding…" : "Re-plan").font(.geist(14, .semibold)).padding(.horizontal, 14).frame(height: 42)
             }
             .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 14))
+            // Ending the trip is always in sight; it asks first, so a stray tap can't end it.
+            Button { asking = true } label: {
+                Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).frame(width: 42, height: 42).contentShape(.circle)
+            }
+            .buttonStyle(PressStyle())
+            .glassEffect(.clear.interactive(), in: .circle)
+            .accessibilityLabel("End trip")
         }
     }
 
@@ -127,15 +179,14 @@ struct TravelTrip: View {
 
     private func moment(_ step: TodayPage.Step, index: Int, count: Int, now: Date, look: LineLook) -> some View {
         // Before a step starts, the minutes until it does (leave in…); once on it, until the next one.
-        let next = trip.steps.indices.contains(index + 1) ? trip.steps[index + 1].at : nil
-        let until = step.at > now ? step.at : (next ?? step.at)
-        let minutes = max(0, Int((until.timeIntervalSince(now) / 60).rounded(.up)))
+        let minutes = minutesLeft(step, index: index, now: now)
         return VStack(alignment: .leading, spacing: 10) {
             Text(index == count - 1 ? "Arrived" : "\(index + 1) of \(count)").font(.geist(13, .semibold)).opacity(0.9)
             Text(step.title).font(.posterGrotesque(36)).tracking(-0.4).fixedSize(horizontal: false, vertical: true)
                 .contentTransition(.opacity)
             if index < count - 1 {
                 HStack(alignment: .lastTextBaseline, spacing: 8) {
+                    Text(countdownLabel(step, index: index, now: now)).font(.geist(17, .semibold))
                     HStack(spacing: 2) {
                         ForEach(Array(String(format: "%02d", min(minutes, 99)).enumerated()), id: \.offset) { _, digit in
                             FlapDigit(character: digit, width: 40, height: 58, size: 44)
@@ -146,8 +197,8 @@ struct TravelTrip: View {
             }
             if !step.sub.isEmpty {
                 HStack(spacing: 8) {
-                    if step.kind == .ride, let line = step.name.split(separator: " ").last {
-                        Label(String(line), systemImage: "tram.fill").font(.geist(13, .bold))
+                    if step.kind == .ride, let line = trip.badge(step) {
+                        Label(line, systemImage: "tram.fill").font(.geist(13, .bold))
                             .padding(.horizontal, 7).frame(height: 24).background(.white, in: .rect(cornerRadius: 6)).foregroundStyle(Palette.text)
                     }
                     Text(step.sub).font(.geist(15, .medium))
@@ -160,82 +211,183 @@ struct TravelTrip: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func sheet(steps: [TodayPage.Step], current: Int, look: LineLook) -> some View {
+    /// What the minutes count down to: leaving, the next tram, getting off, or being there.
+    private func countdownLabel(_ step: TodayPage.Step, index: Int, now: Date) -> String {
+        if step.at > now { return index == 0 ? "Leave in" : "Starts in" }
+        guard trip.steps.indices.contains(index + 1) else { return "" }
+        let next = trip.steps[index + 1]
+        switch next.kind {
+        case .ride: return "\(next.name) in"
+        case .getOff: return "Get off in"
+        case .there: return step.kind == .ride ? "Get off in" : "There in"
+        case .walk: return step.kind == .ride ? "Get off in" : "Next in"
+        }
+    }
+
+    /// The whole way, on the page under the step you're on: every step (the one you're on marked, the ones
+    /// done faded), each ride's stops, and the map in the same card.
+    private func way(steps: [TodayPage.Step], current: Int) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            // The handle: tap or drag to fold the sheet away and bring it back.
-            VStack(spacing: 10) {
-                Capsule().fill(Palette.border).frame(width: 36, height: 5)
-                if !sheetOpen {
-                    HStack {
-                        Text("Your way").font(.geist(15, .semibold))
-                        Text("· \(steps.count) steps").font(.geist(15)).foregroundStyle(Palette.textSoft)
-                        Spacer()
-                        Image(systemName: "chevron.up").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.textSoft)
-                    }
+            HStack {
+                Text("All steps").font(.geist(16, .bold))
+                Text("· \(steps.count)").font(.geist(15)).foregroundStyle(Palette.textSoft)
+                Spacer(minLength: 0)
+                Button { switchMap(true) } label: {
+                    Label("Map", systemImage: "map").font(.geist(14, .semibold))
+                        .padding(.horizontal, 12).frame(height: 38)
                 }
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+                    mapAnchor = UnitPoint(x: frame.midX / max(1, screen.width), y: frame.midY / max(1, screen.height))
+                }
+                .buttonStyle(PressStyle())
+                .background(Palette.quiet, in: .rect(cornerRadius: 12))
+                .accessibilityHint("Shows the way on a full-screen map")
             }
-            .frame(maxWidth: .infinity).frame(minHeight: 28)
-            .contentShape(.rect)
-            .onTapGesture { withAnimation(.smooth(duration: 0.35)) { sheetOpen.toggle() } }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(sheetOpen ? "Fold away your way" : "Show your way")
-            .accessibilityAddTraits(.isButton)
-            if sheetOpen {
-                HStack(spacing: 8) {
-                    Button { withAnimation(.smooth) { mapOn.toggle() } } label: {
-                        Label("On the map", systemImage: "map").font(.geist(15, .semibold)).padding(.horizontal, 14).frame(height: 46)
-                    }
-                    .buttonStyle(PressStyle())
-                    .background(mapOn ? Palette.selectBackground : Palette.quiet, in: .rect(cornerRadius: 14))
-                    Spacer(minLength: 0)
-                }
-                if mapOn {
-                    CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
-                            padding: UIEdgeInsets(top: 24, left: 24, bottom: 24, right: 24), showsUser: true)
-                        .frame(height: 180)
-                        .clipShape(.rect(cornerRadius: 18))
-                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
-                }
-                Text("Your way").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
-                ScrollView {
-                    StepList(steps: steps, current: current)
-                    // Every stop on each ride, with when the tram is there.
-                    ForEach(Array(trip.legs.enumerated()), id: \.offset) { i, leg in
-                        if leg.rides, !leg.stopsOnTheWay.isEmpty {
-                            RideStops(leg: leg, open: openStops.contains(i)) {
-                                withAnimation(.smooth(duration: 0.3)) {
-                                    if openStops.contains(i) { openStops.remove(i) } else { openStops.insert(i) }
-                                }
-                            }
-                            .padding(.top, 12)
-                        }
-                    }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    // One list: each ride's stops fold into its step (Show stops), not a second list under it.
+                    StepList(steps: steps, current: current, legs: trip.legs)
                     Text(trip.legs.contains(where: \.rides)
                          ? "We’ll tell you one stop before. Your phone buzzes here, even with the screen off (with notifications on). The trip ends by itself."
                          : "It moves on by itself as you go. The trip ends by itself.")
-                        .font(.geist(12.5)).foregroundStyle(Palette.textSoft).padding(.top, 8)
+                        .font(.geist(12.5)).foregroundStyle(Palette.textSoft).padding(.top, 12)
                 }
-                .frame(maxHeight: mapOn ? 200 : 360)
-                .scrollIndicators(.hidden)
+                .padding(.bottom, 20)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .foregroundStyle(Palette.text)
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Palette.surface, in: .rect(cornerRadius: 26))
+        .padding(.horizontal, 10)
+        .padding(.bottom, 6)
+    }
+
+    /// The map view's map: the route and where you are on the whole screen (the band lies over its top).
+    /// Steps lays the steps over the lower left of the map, the one you're on at the bottom and the next
+    /// ones above it fading out (as live comments do), and moves the map up so you stay in sight.
+    private func mapLayer(current: Int) -> some View {
+        CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
+                padding: UIEdgeInsets(top: stepsOpen ? 225 : 250, left: 40, bottom: stepsOpen ? 16 : 130, right: 40), follow: followMe, showsUser: true,
+                fitID: fitTick * 10 + (stepsOpen ? 1 : 0), creditInset: stepsOpen ? 8 : 70,
+                // The list's top fades out, so the map only keeps clear of its solid lower part.
+                viewInset: UIEdgeInsets(top: 0, left: 0, bottom: stepsOpen ? Self.feedHeight * 0.7 + 64 : 0, right: 0))
+            .ignoresSafeArea()
+            .overlay(alignment: .bottomLeading) { mapControls(current: current) }
+            .sensoryFeedback(.selection, trigger: followMe)
+            .sensoryFeedback(.selection, trigger: stepsOpen)
+    }
+
+    private static let feedHeight: CGFloat = 300
+
+    /// The step you're on, compact, in the band over the map; its title is the same one as the big
+    /// step's, gliding between the two.
+    private func bandMoment(_ step: TodayPage.Step, index: Int, count: Int, now: Date) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(step.title).font(.posterGrotesque(24)).lineLimit(2).minimumScaleFactor(0.8)
+                if !step.sub.isEmpty { Text(step.sub).font(.geist(13.5, .medium)).opacity(0.9).lineLimit(1) }
+            }
+            Spacer(minLength: 6)
+            if index < count - 1 {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(countdownLabel(step, index: index, now: now)).font(.geist(12.5, .semibold)).opacity(0.9)
+                    HStack(alignment: .lastTextBaseline, spacing: 3) {
+                        Text("\(minutesLeft(step, index: index, now: now))").font(.posterGrotesque(32)).monospacedDigit()
+                            .contentTransition(.numericText())
+                        Text("min").font(.geist(14, .semibold))
+                    }
+                }
                 .transition(.opacity)
             }
         }
-        .foregroundStyle(Palette.text)
-        .padding(16).padding(.bottom, 24)
-        .background(Palette.surface, in: .rect(topLeadingRadius: 30, topTrailingRadius: 30))
-        .shadow(color: .black.opacity(0.25), radius: 20, y: -6)
-        .offset(y: max(0, sheetDrag))
-        .gesture(
-            DragGesture(minimumDistance: 12)
-                .onChanged { sheetDrag = sheetOpen ? $0.translation.height : min(0, $0.translation.height) + 0 }
-                .onEnded { value in
-                    withAnimation(.smooth(duration: 0.35)) {
-                        if value.translation.height > 60 || value.predictedEndTranslation.height > 160 { sheetOpen = false }
-                        else if value.translation.height < -40 { sheetOpen = true }
-                        sheetDrag = 0
-                    }
+        .contentTransition(.opacity)
+    }
+
+    // MARK: Switching between the steps and the map (Motion Lab token trip.mapSwitch)
+
+    private var switchVariant: String { MotionStore.shared.variant(of: .tripMapSwitch).id }
+
+    private var switchAnimation: Animation? { MotionStore.shared.animation(.tripMapSwitch, reduceMotion: reduceMotion) }
+
+    private func switchMap(_ on: Bool) {
+        guard on != mapOn else { return }
+        withAnimation(switchAnimation) { mapOn = on }
+    }
+
+    /// How the map comes and goes: zooming in as the colour gathers up (Morph), growing out of the
+    /// Map button (Grow), rising from the bottom (Slide up), or a plain fade.
+    private var mapTransition: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        return switch switchVariant {
+        case "Grow": .scale(scale: 0.06, anchor: mapAnchor).combined(with: .opacity)
+        case "Slide up": .move(edge: .bottom)
+        case "Fade": .opacity
+        default: .scale(scale: 1.08).combined(with: .opacity)
+        }
+    }
+
+    private var stepSwap: AnyTransition {
+        .asymmetric(insertion: .opacity.animation(reduceMotion ? nil : .easeOut(duration: 0.22).delay(0.18)),
+                    removal: .opacity.animation(reduceMotion ? nil : .easeIn(duration: 0.12)))
+    }
+
+    /// The steps card: sinking away under the map (Morph), or fading.
+    private var wayTransition: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        return switch switchVariant {
+        case "Morph": .move(edge: .bottom).combined(with: .opacity)
+        default: .opacity
+        }
+    }
+
+    /// Steps (the list over the map) at the lower left, with the list above it when open; the step
+    /// list view and follow-me at the lower right.
+    private func mapControls(current: Int) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if stepsOpen {
+                StepsFeed(trip: trip, current: current)
+                    .frame(height: Self.feedHeight)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+            HStack(spacing: 8) {
+                Button { withAnimation(.smooth(duration: 0.35)) { stepsOpen.toggle() } } label: {
+                    Label(stepsOpen ? "Hide steps" : "Steps", systemImage: stepsOpen ? "chevron.down" : "list.bullet")
+                        .font(.geist(15, .semibold)).padding(.horizontal, 16).frame(height: 46)
+                        .contentTransition(.opacity)
                 }
-        )
+                .buttonStyle(PressStyle())
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
+                Spacer(minLength: 0)
+                Button { switchMap(false) } label: {
+                    Image(systemName: "list.bullet.rectangle.portrait").font(.system(size: 18, weight: .semibold)).frame(width: 46, height: 46)
+                }
+                .buttonStyle(PressStyle())
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
+                .accessibilityLabel("Back to the step list")
+                Button {
+                    withAnimation(.smooth) {
+                        followMe.toggle()
+                        if !followMe { fitTick += 1 }
+                    }
+                } label: {
+                    Image(systemName: followMe ? "location.fill" : "location").font(.system(size: 18, weight: .semibold)).frame(width: 46, height: 46)
+                }
+                .buttonStyle(PressStyle())
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
+                .accessibilityLabel(followMe ? "Show the whole route" : "Follow me")
+            }
+        }
+        .foregroundStyle(Palette.text)
+        .padding(.horizontal, 16).padding(.bottom, 8)
+    }
+
+    /// The minutes the countdown shows: until the step starts, or until the next one once on it.
+    private func minutesLeft(_ step: TodayPage.Step, index: Int, now: Date) -> Int {
+        let next = trip.steps.indices.contains(index + 1) ? trip.steps[index + 1].at : nil
+        let until = step.at > now ? step.at : (next ?? step.at)
+        return max(0, Int((until.timeIntervalSince(now) / 60).rounded(.up)))
     }
 
     /// The next way from where they are now: the trip goes on with it.
@@ -255,6 +407,26 @@ struct TravelTrip: View {
     }
 }
 
+extension TodayPage.Trip {
+    /// The line badge for a step ("12", "RE 1"), from its ride's own line, never parsed from the step's
+    /// words ("RE1 (RRX)" read "(RRX)"). Getting off keeps the ride's line; walks have none.
+    func badge(_ step: TodayPage.Step) -> String? {
+        guard let at = steps.firstIndex(of: step) else { return nil }
+        let ride = step.kind == .ride ? step : step.kind == .getOff ? steps[..<at].last { $0.kind == .ride } : nil
+        guard let leg = ride?.leg, legs.indices.contains(leg), let line = legs[leg].line, !line.isEmpty else { return nil }
+        return Board.badge(line)
+    }
+
+    /// Where a trip goes, said as a person would: "Going home", "Going to work", "Going to Neumarkt".
+    static func going(_ to: String) -> String {
+        switch to.lowercased() {
+        case "home": "Going home"
+        case "work": "Going to work"
+        default: "Going to \(to)"
+        }
+    }
+}
+
 extension TripPlanner {
     /// The trip's Live Activity keeps moving while it's followed, on the screen or not.
     func follow(_ trip: TodayPage.Trip) {
@@ -267,47 +439,75 @@ extension TripPlanner {
     }
 }
 
-/// A ride's stops, folded to one row ("Tram 12 · 15 stops"); opened, each stop with its time on the line.
-private struct RideStops: View {
-    let leg: TodayPage.Trip.Leg
-    let open: Bool
-    let toggle: () -> Void
+/// The steps over the map's lower left, as live comments sit over a video: the one you're on at the
+/// bottom, the next ones above it fading out towards the top, the ones done below it (scroll down).
+/// It scrolls, and moves on by itself as the trip does.
+private struct StepsFeed: View {
+    let trip: TodayPage.Trip
+    let current: Int
+    private var steps: [TodayPage.Step] { trip.steps }
 
     var body: some View {
-        let colour = LineLook(hex: leg.color ?? "#1A4CD4").base
-        VStack(alignment: .leading, spacing: 0) {
-            Button(action: toggle) {
-                HStack(spacing: 8) {
-                    Text(leg.line ?? "").font(.geist(12.5, .bold)).foregroundStyle(LineLook(hex: leg.color ?? "#1A4CD4").ink)
-                        .padding(.horizontal, 6).frame(minWidth: 26).frame(height: 20)
-                        .background(colour, in: .rect(cornerRadius: 5))
-                    Text("\(leg.from) → \(leg.to)").font(.geist(14, .semibold)).lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text("\(leg.stopsOnTheWay.count) stop\(leg.stopsOnTheWay.count == 1 ? "" : "s")").font(.geist(13)).foregroundStyle(Palette.textSoft)
-                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft)
-                        .rotationEffect(.degrees(open ? 180 : 0))
-                }
-                .frame(minHeight: 40).contentShape(.rect)
-            }
-            .buttonStyle(PressStyle())
-            .accessibilityLabel("Stops on line \(leg.line ?? ""), \(leg.stopsOnTheWay.count)")
-            if open {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(leg.stopsOnTheWay.enumerated()), id: \.offset) { _, stop in
-                        HStack(spacing: 12) {
-                            Circle().fill(Palette.surface).overlay { Circle().strokeBorder(colour, lineWidth: 2.5) }.frame(width: 11, height: 11)
-                                .frame(width: 17)
-                                .background { Rectangle().fill(colour).frame(width: 3).padding(.vertical, -10) }
-                            Text(stop.name).font(.geist(13.5))
-                            Spacer(minLength: 4)
-                            Text(stop.time).font(.geist(13)).monospacedDigit().foregroundStyle(Palette.textSoft)
-                        }
-                        .frame(minHeight: 30)
+        ScrollViewReader { reader in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(steps.enumerated().reversed()), id: \.offset) { index, step in
+                        row(step, index: index).id(index)
                     }
                 }
-                .clipped()
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .padding(.top, 120).padding(.bottom, 4)
             }
+            .scrollIndicators(.hidden)
+            .defaultScrollAnchor(.bottom)
+            .mask {
+                LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black.opacity(0.35), location: 0.25),
+                                       .init(color: .black, location: 0.55), .init(color: .black, location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+            .onAppear { reader.scrollTo(current, anchor: .bottom) }
+            .onChange(of: current) { _, now in withAnimation(.smooth(duration: 0.6)) { reader.scrollTo(now, anchor: .bottom) } }
+        }
+        .frame(maxWidth: 290, alignment: .leading)
+    }
+
+    private func row(_ step: TodayPage.Step, index: Int) -> some View {
+        let now = index == current
+        return HStack(alignment: .top, spacing: 8) {
+            mark(step)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 5) {
+                    Text(step.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                    if now {
+                        Text("Now").font(.geist(10.5, .bold)).foregroundStyle(Palette.onAction)
+                            .padding(.horizontal, 5).frame(height: 16).background(Palette.action, in: .rect(cornerRadius: 4))
+                    }
+                }
+                Text(step.title).font(.geist(now ? 15 : 14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                if index >= current, !step.sub.isEmpty {
+                    Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(now ? 2 : 1)
+                }
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .overlay { if now { RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.action.opacity(0.8), lineWidth: 1.5) } }
+        .foregroundStyle(Palette.text)
+        .opacity(index < current ? 0.55 : 1)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(now ? .isSelected : [])
+    }
+
+    @ViewBuilder
+    private func mark(_ step: TodayPage.Step) -> some View {
+        if step.kind == .ride, let line = trip.badge(step) {
+            let colours = LineLook(hex: step.color ?? "#00768B")
+            Text(line).font(.geist(12, .bold)).foregroundStyle(colours.ink)
+                .padding(.horizontal, 5).frame(minWidth: 26).frame(height: 20)
+                .background(colours.base, in: .rect(cornerRadius: 5))
+        } else {
+            Image(systemName: step.kind == .there ? "flag.fill" : step.kind == .getOff ? "arrow.down.right" : "figure.walk")
+                .font(.system(size: 12, weight: .bold)).frame(width: 26, height: 20)
+                .foregroundStyle(step.kind == .there ? Palette.action : Palette.textSoft)
         }
     }
 }

@@ -14,6 +14,7 @@ use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\JourneyRanker;
+use App\Transit\TripLive;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -389,7 +390,8 @@ final class TripAnswers
     public function onTheWay(User $user, string $ask, CarbonImmutable $now): ?array
     {
         $active = ActiveTrip::currentFor($user);
-        $journey = self::named($active?->journey);
+        // As it runs now, read from the same live board as Travel's (never the times it started with).
+        $journey = self::named($active === null ? null : app(TripLive::class)->apply($active->journey));
         if (! is_array($journey) || ($journey['legs'] ?? []) === []) {
             return null;
         }

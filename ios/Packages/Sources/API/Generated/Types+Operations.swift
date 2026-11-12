@@ -4522,6 +4522,8 @@ public enum Operations {
                             public var links: Operations.Composer_day.Output.Ok.Body.JsonPayload.DayPayload.LinksPayload
                             /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/next_trip`.
                             public var nextTrip: Swift.String
+                            /// The same trip every screen sees: a finished one is gone (Composer reads it this way too).
+                            ///
                             /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/active_trip`.
                             public struct ActiveTripPayload: Codable, Hashable, Sendable {
                                 /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/active_trip/journey`.
@@ -4573,6 +4575,8 @@ public enum Operations {
                                     case city
                                 }
                             }
+                            /// The same trip every screen sees: a finished one is gone (Composer reads it this way too).
+                            ///
                             /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/active_trip`.
                             public var activeTrip: Operations.Composer_day.Output.Ok.Body.JsonPayload.DayPayload.ActiveTripPayload?
                             /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/home`.
@@ -4629,7 +4633,7 @@ public enum Operations {
                             ///   - items:
                             ///   - links:
                             ///   - nextTrip:
-                            ///   - activeTrip:
+                            ///   - activeTrip: The same trip every screen sees: a finished one is gone (Composer reads it this way too).
                             ///   - home:
                             ///   - refreshAt:
                             public init(
@@ -7787,7 +7791,7 @@ public enum Operations {
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/source`.
                         public var source: Swift.String
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/journeys`.
-                        public var journeys: [OpenAPIRuntime.OpenAPIValueContainer]
+                        public var journeys: Swift.String
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/degraded`.
                         public struct DegradedPayload: Codable, Hashable, Sendable {
                             /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/degraded/departures`.
@@ -8631,7 +8635,7 @@ public enum Operations {
                         ///   - city: Stop names carry the city ("Köln Neumarkt"); Plan a trip shows
                         public init(
                             source: Swift.String,
-                            journeys: [OpenAPIRuntime.OpenAPIValueContainer],
+                            journeys: Swift.String,
                             degraded: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.DegradedPayload? = nil,
                             from: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.FromPayload,
                             to: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.ToPayload,
@@ -12835,6 +12839,8 @@ public enum Operations {
                                     public var end: Operations.Travel_appStationLinesMap.Output.Ok.Body.JsonPayload.MapPayload.LinesPayloadPayload.WaysPayloadPayload.EndPayload?
                                     /// - Remark: Generated from `#/paths/travel/lines-map/GET/responses/200/content/json/map/LinesPayload/WaysPayload/between`.
                                     public var between: Swift.Int
+                                    /// - Remark: Generated from `#/paths/travel/lines-map/GET/responses/200/content/json/map/LinesPayload/WaysPayload/path`.
+                                    public var path: Swift.String?
                                     /// Creates a new `WaysPayloadPayload`.
                                     ///
                                     /// - Parameters:
@@ -12842,22 +12848,26 @@ public enum Operations {
                                     ///   - stops:
                                     ///   - end:
                                     ///   - between:
+                                    ///   - path:
                                     public init(
                                         towards: Swift.String,
                                         stops: Operations.Travel_appStationLinesMap.Output.Ok.Body.JsonPayload.MapPayload.LinesPayloadPayload.WaysPayloadPayload.StopsPayload,
                                         end: Operations.Travel_appStationLinesMap.Output.Ok.Body.JsonPayload.MapPayload.LinesPayloadPayload.WaysPayloadPayload.EndPayload? = nil,
-                                        between: Swift.Int
+                                        between: Swift.Int,
+                                        path: Swift.String? = nil
                                     ) {
                                         self.towards = towards
                                         self.stops = stops
                                         self.end = end
                                         self.between = between
+                                        self.path = path
                                     }
                                     public enum CodingKeys: String, CodingKey {
                                         case towards
                                         case stops
                                         case end
                                         case between
+                                        case path
                                     }
                                 }
                                 /// - Remark: Generated from `#/paths/travel/lines-map/GET/responses/200/content/json/map/LinesPayload/ways`.

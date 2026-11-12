@@ -297,6 +297,8 @@ public enum ComposerBlock: Decodable, Equatable, Sendable {
         public struct Line: Decodable, Equatable, Sendable {
             public let line: String
             public let mode: String
+            /// `#RRGGBB`, the line's colour as Travel's board shows it.
+            public let color: String?
             public let dirs: [Dir]
         }
 
@@ -317,6 +319,9 @@ public enum ComposerBlock: Decodable, Equatable, Sendable {
             public let minutes: Int
             public let delay: Int?
             public let cancelled: Bool?
+
+            /// When it leaves; the minutes counted from it stay right as time goes on.
+            public var date: Date? { TravelJSON.date(at) }
         }
 
         public struct Notice: Decodable, Equatable, Sendable {

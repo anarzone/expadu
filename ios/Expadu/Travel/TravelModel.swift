@@ -59,7 +59,9 @@ final class TravelModel {
     /// Every departure here, soonest first, filtered by the rail's line.
     var departures: [Departure] {
         guard let station else { return [] }
-        let all = station.departures(now: now)
+        var all = station.departures(now: now)
+        // A quiet stop (a line or two) would show one row each way and an empty board: its next few runs show instead.
+        if all.count < 5 { all = station.departures(now: now, runs: 3) }
         guard let line else { return all }
         return all.filter { $0.line.line == line }
     }

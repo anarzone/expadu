@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Models\BureaucracyPerson;
 use App\Services\KvbLineColors;
+use App\Transit\TripLive;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -75,9 +76,9 @@ class TodayResource extends JsonResource
                 'travel_min' => isset($link['travel_min']) ? (int) $link['travel_min'] : null,
                 'gap_min' => isset($link['gap_min']) ? (int) $link['gap_min'] : null,
             ], $day['links'] ?? []),
-            /** @var array{plan_id: string|null, to: string, start_time: string|null, status: string, leave_time: string|null, leave_in_min: int|null, arrive_time: string|null, spare_min: int|null, line: string|null, color: string|null, departs: string|null, from: string|null, walk_min: int|null, transfers: int|null, live: bool, ways: array<int, array{leave_time: string, arrive_time: string, spare_min: int, status: string, mode: string, lines: array<int, array{line: string, color: string}>, departs: string|null, from: string|null, walk_min: int, transfers: int, minutes: int, in_plan: bool, live: bool, legs: array<int, array{mode: string, line: string|null, color: string|null, headsign: string|null, from: string, to: string, depart_at: string, arrive_at: string, depart_time: string, arrive_time: string, minutes: int, stops: int|null, stops_on_the_way: array<int, array{name: string, time: string, lat: float|null, lng: float|null}>, polyline: string|null, turns: array<int, array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>}>}>}|null */
+            /** @var array{plan_id: string|null, to: string, start_time: string|null, status: string, leave_time: string|null, leave_in_min: int|null, arrive_time: string|null, spare_min: int|null, line: string|null, color: string|null, departs: string|null, from: string|null, walk_min: int|null, transfers: int|null, live: bool, ways: array<int, array{leave_time: string, arrive_time: string, spare_min: int, status: string, mode: string, lines: array<int, array{line: string, color: string}>, departs: string|null, from: string|null, walk_min: int, transfers: int, minutes: int, in_plan: bool, live: bool, legs: array<int, array{mode: string, line: string|null, color: string|null, headsign: string|null, from: string, to: string, depart_at: string, arrive_at: string, depart_time: string, arrive_time: string, minutes: int, stops: int|null, stops_on_the_way: array<int, array{name: string, time: string, lat: float|null, lng: float|null}>, delay_min: int|null, cancelled: bool, polyline: string|null, turns: array<int, array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>}>}>}|null */
             'leave' => $this->leave($day['next_trip'] ?? null),
-            /** @var array{to: string, arrive_time: string|null, start_time: string|null, legs: array<int, array{mode: string, line: string|null, color: string|null, headsign: string|null, from: string, to: string, depart_at: string, arrive_at: string, depart_time: string, arrive_time: string, minutes: int, stops: int|null, stops_on_the_way: array<int, array{name: string, time: string, lat: float|null, lng: float|null}>, polyline: string|null, turns: array<int, array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>}>}|null */
+            /** @var array{to: string, arrive_time: string|null, start_time: string|null, legs: array<int, array{mode: string, line: string|null, color: string|null, headsign: string|null, from: string, to: string, depart_at: string, arrive_at: string, depart_time: string, arrive_time: string, minutes: int, stops: int|null, stops_on_the_way: array<int, array{name: string, time: string, lat: float|null, lng: float|null}>, delay_min: int|null, cancelled: bool, polyline: string|null, turns: array<int, array{direction: string, street: string, metres: int, polyline: string|null, level_change: bool}>}>}|null */
             'trip' => $this->trip($day['active_trip'] ?? null),
             /** @var array{kind: string, document: string|null, title: string, date: string, days_remaining: int, next: string|null, ready: int|null, total: int|null, process: string|null}|null */
             'deadline' => $this->deadline($paperwork['strip'] ?? null),
@@ -272,11 +273,14 @@ class TodayResource extends JsonResource
             return null;
         }
 
+        // As it runs now: each ride read from the same live board Travel shows.
+        $journey = app(TripLive::class)->apply($trip['journey']);
+
         return [
             'to' => (string) ($trip['destination']['name'] ?? ''),
-            'arrive_time' => $trip['journey']['arrive_time'] ?? null,
+            'arrive_time' => $journey['arrive_time'] ?? null,
             'start_time' => isset($trip['target']['start_at']) ? Carbon::parse($trip['target']['start_at'])->setTimezone('Europe/Berlin')->format('H:i') : null,
-            'legs' => $this->legs($trip['journey']),
+            'legs' => $this->legs($journey),
         ];
     }
 

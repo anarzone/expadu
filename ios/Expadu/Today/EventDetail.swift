@@ -313,7 +313,7 @@ struct EventDetail: View {
         do throws(APIFailure) {
             let next = try await session.api.planWay(to: idea.title, latitude: latitude, longitude: longitude, fromLatitude: from?.latitude, fromLongitude: from?.longitude,
                                                      startsAt: idea.aimFor())
-            withAnimation(.snappy) { plan = next; planProblem = next.ways.isEmpty ? "No way there was found for this time. Try again in a moment." : nil }
+            withAnimation(.snappy) { plan = next; planProblem = next.ways.isEmpty ? "No route there was found for this time. Try again in a moment." : nil }
         } catch {
             withAnimation(.snappy) { planProblem = Self.words(error) }
         }

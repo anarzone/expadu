@@ -95,7 +95,7 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
             TurnVoice.shared.say(turn.words, once: "\(key):\(here.leg):\(turn.words)")
         }
         if let since = offSince, date.timeIntervalSince(since) > 15 {
-            TurnVoice.shared.say("You’re off the way.", once: "\(key):off:\(Int(since.timeIntervalSinceReferenceDate))")
+            TurnVoice.shared.say("You’re off the route.", once: "\(key):off:\(Int(since.timeIntervalSinceReferenceDate))")
         }
         if let missed = here.missed {
             TurnVoice.shared.say("\(missed.name) has left. Open Expadu for a new way.", once: "\(key):missed:\(missed.departTime)")
@@ -251,7 +251,7 @@ struct TripTrouble: View {
             Button(action: replan) {
                 HStack(spacing: 8) {
                     if busy { ProgressView().tint(.white) } else { Image(systemName: "arrow.triangle.turn.up.right.diamond.fill") }
-                    Text("New way from here")
+                    Text("New route from here")
                 }
                 .font(.geist(15, .semibold)).foregroundStyle(.white)
                 .frame(maxWidth: .infinity).frame(height: 44)

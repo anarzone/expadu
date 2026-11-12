@@ -1035,6 +1035,10 @@ extension Components {
                     public typealias StopsOnTheWayPayload = [Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayloadPayload]
                     /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/stops_on_the_way`.
                     public var stopsOnTheWay: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayload
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/delay_min`.
+                    public var delayMin: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/cancelled`.
+                    public var cancelled: Swift.Bool
                     /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/polyline`.
                     public var polyline: Swift.String?
                     /// - Remark: Generated from `#/components/schemas/JourneyPlanResource/WaysPayload/LegsPayload/TurnsPayload`.
@@ -1098,6 +1102,8 @@ extension Components {
                     ///   - minutes:
                     ///   - stops:
                     ///   - stopsOnTheWay:
+                    ///   - delayMin:
+                    ///   - cancelled:
                     ///   - polyline:
                     ///   - turns:
                     public init(
@@ -1114,6 +1120,8 @@ extension Components {
                         minutes: Swift.Int,
                         stops: Swift.Int? = nil,
                         stopsOnTheWay: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayload,
+                        delayMin: Swift.Int? = nil,
+                        cancelled: Swift.Bool,
                         polyline: Swift.String? = nil,
                         turns: Components.Schemas.JourneyPlanResource.WaysPayloadPayload.LegsPayloadPayload.TurnsPayload
                     ) {
@@ -1130,6 +1138,8 @@ extension Components {
                         self.minutes = minutes
                         self.stops = stops
                         self.stopsOnTheWay = stopsOnTheWay
+                        self.delayMin = delayMin
+                        self.cancelled = cancelled
                         self.polyline = polyline
                         self.turns = turns
                     }
@@ -1147,6 +1157,8 @@ extension Components {
                         case minutes
                         case stops
                         case stopsOnTheWay = "stops_on_the_way"
+                        case delayMin = "delay_min"
+                        case cancelled
                         case polyline
                         case turns
                     }
@@ -3341,6 +3353,10 @@ extension Components {
                         public typealias StopsOnTheWayPayload = [Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayloadPayload]
                         /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/stops_on_the_way`.
                         public var stopsOnTheWay: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayload
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/delay_min`.
+                        public var delayMin: Swift.Int?
+                        /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/cancelled`.
+                        public var cancelled: Swift.Bool
                         /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/polyline`.
                         public var polyline: Swift.String?
                         /// - Remark: Generated from `#/components/schemas/TodayResource/leave/WaysPayload/LegsPayload/TurnsPayload`.
@@ -3404,6 +3420,8 @@ extension Components {
                         ///   - minutes:
                         ///   - stops:
                         ///   - stopsOnTheWay:
+                        ///   - delayMin:
+                        ///   - cancelled:
                         ///   - polyline:
                         ///   - turns:
                         public init(
@@ -3420,6 +3438,8 @@ extension Components {
                             minutes: Swift.Int,
                             stops: Swift.Int? = nil,
                             stopsOnTheWay: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.StopsOnTheWayPayload,
+                            delayMin: Swift.Int? = nil,
+                            cancelled: Swift.Bool,
                             polyline: Swift.String? = nil,
                             turns: Components.Schemas.TodayResource.LeavePayload.WaysPayloadPayload.LegsPayloadPayload.TurnsPayload
                         ) {
@@ -3436,6 +3456,8 @@ extension Components {
                             self.minutes = minutes
                             self.stops = stops
                             self.stopsOnTheWay = stopsOnTheWay
+                            self.delayMin = delayMin
+                            self.cancelled = cancelled
                             self.polyline = polyline
                             self.turns = turns
                         }
@@ -3453,6 +3475,8 @@ extension Components {
                             case minutes
                             case stops
                             case stopsOnTheWay = "stops_on_the_way"
+                            case delayMin = "delay_min"
+                            case cancelled
                             case polyline
                             case turns
                         }
@@ -3678,6 +3702,10 @@ extension Components {
                     public typealias StopsOnTheWayPayload = [Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.StopsOnTheWayPayloadPayload]
                     /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/stops_on_the_way`.
                     public var stopsOnTheWay: Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.StopsOnTheWayPayload
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/delay_min`.
+                    public var delayMin: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/cancelled`.
+                    public var cancelled: Swift.Bool
                     /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/polyline`.
                     public var polyline: Swift.String?
                     /// - Remark: Generated from `#/components/schemas/TodayResource/trip/LegsPayload/TurnsPayload`.
@@ -3741,6 +3769,8 @@ extension Components {
                     ///   - minutes:
                     ///   - stops:
                     ///   - stopsOnTheWay:
+                    ///   - delayMin:
+                    ///   - cancelled:
                     ///   - polyline:
                     ///   - turns:
                     public init(
@@ -3757,6 +3787,8 @@ extension Components {
                         minutes: Swift.Int,
                         stops: Swift.Int? = nil,
                         stopsOnTheWay: Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.StopsOnTheWayPayload,
+                        delayMin: Swift.Int? = nil,
+                        cancelled: Swift.Bool,
                         polyline: Swift.String? = nil,
                         turns: Components.Schemas.TodayResource.TripPayload.LegsPayloadPayload.TurnsPayload
                     ) {
@@ -3773,6 +3805,8 @@ extension Components {
                         self.minutes = minutes
                         self.stops = stops
                         self.stopsOnTheWay = stopsOnTheWay
+                        self.delayMin = delayMin
+                        self.cancelled = cancelled
                         self.polyline = polyline
                         self.turns = turns
                     }
@@ -3790,6 +3824,8 @@ extension Components {
                         case minutes
                         case stops
                         case stopsOnTheWay = "stops_on_the_way"
+                        case delayMin = "delay_min"
+                        case cancelled
                         case polyline
                         case turns
                     }

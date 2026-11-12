@@ -328,12 +328,12 @@ final class TodayModel {
         do throws(APIFailure) {
             let plan = try await api.planWay(to: trip.to, latitude: end.latitude, longitude: end.longitude,
                                              fromLatitude: from.latitude, fromLongitude: from.longitude, startsAt: nil)
-            guard let way = plan.ways.first else { return "No way from here right now." }
+            guard let way = plan.ways.first else { return "No route from here right now." }
             _ = try await api.startWay(plan: plan.plan, way: 0, replace: true)
             await load(api, quietly: true)
             cardFlips += 1
             let how = way.lines.isEmpty ? "on foot" : way.legs.filter(\.rides).map(\.name).joined(separator: ", then ")
-            sayInCard(Note(text: "New way: leave \(way.leaveTime), \(how), there \(way.arriveTime).", symbol: "arrow.triangle.branch"))
+            sayInCard(Note(text: "New route: leave \(way.leaveTime), \(how), there \(way.arriveTime).", symbol: "arrow.triangle.branch"))
             return nil
         } catch {
             return Self.words(error)

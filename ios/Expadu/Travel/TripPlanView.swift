@@ -20,7 +20,7 @@ struct TripPlanView: View {
         ZStack {
             Palette.surface.ignoresSafeArea()
             if planner.routesShown {
-                TripRoutesView(planner: planner, back: { planner.closeRoutes(); focused = true })
+                TripRoutesView(planner: planner, back: { planner.closeRoutes(); focused = true }, close: { planner.closeRoutes(); dismiss() })
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             } else {
                 page.transition(.move(edge: .leading).combined(with: .opacity))
@@ -201,7 +201,8 @@ struct TripPlanView: View {
                 if q.isEmpty, planner.field == .to {
                     heading("Favourites")
                     group {
-                        if let station {
+                        // The board's stop, unless it's the one they're standing at: no one plans a trip to where they are.
+                        if let station, !(planner.from == nil && (station.walkMin ?? 99) <= 5) {
                             PlanRow(icon: stationFavourite ? "star.fill" : "tram.fill", title: station.name, sub: "Stop · shown on Travel") {
                                 Task { await go(TripPoint(name: station.name, lat: station.areas.first?.lat ?? 0, lng: station.areas.first?.lng ?? 0)) }
                             }
@@ -238,11 +239,11 @@ struct TripPlanView: View {
                             }
                         }
                     }
-                    if !planner.places.recentDestinations.isEmpty {
+                    if !recents.isEmpty {
                         heading("Recent")
                         group {
-                            ForEach(Array(planner.places.recentDestinations.enumerated()), id: \.offset) { _, recent in
-                                PlanRow(icon: "clock.arrow.circlepath", title: recent.name, sub: recent.area) {
+                            ForEach(Array(recents.enumerated()), id: \.offset) { _, recent in
+                                PlanRow(icon: "clock.arrow.circlepath", title: JourneySteps.short(recent.name), sub: recent.area) {
                                     if let lat = recent.lat, let lng = recent.lng { Task { await go(TripPoint(name: recent.name, lat: lat, lng: lng)) } }
                                 }
                             }
@@ -274,8 +275,8 @@ struct TripPlanView: View {
                     if !planner.suggestions.isEmpty {
                         group {
                             ForEach(planner.suggestions) { hit in
-                                PlanRow(icon: icon(hit.kind), title: hit.name, sub: hit.area) {
-                                    let end = TripPoint(name: hit.name, lat: hit.lat, lng: hit.lng)
+                                PlanRow(icon: icon(hit.kind), title: JourneySteps.short(hit.name), sub: hit.area) {
+                                    let end = TripPoint(name: JourneySteps.short(hit.name), lat: hit.lat, lng: hit.lng)
                                     if planner.field == .from { planner.setFrom(end) } else { Task { await go(end) } }
                                 }
                             }
@@ -330,6 +331,11 @@ struct TripPlanView: View {
         }
     }
 
+    /// Recent destinations, without Home and Work (they're in Favourites just above).
+    private var recents: [TravelPlaces.Recent] {
+        planner.places.recentDestinations.filter { !["home", "work", "zuhause", "arbeit"].contains($0.name.lowercased()) }
+    }
+
     private func go(_ end: TripPoint, target: TravelPlaces.Plan? = nil) async {
         focused = false
         await planner.go(to: end, target: target, session.api)
@@ -337,7 +343,7 @@ struct TripPlanView: View {
 
     private func pickFirst() async {
         if let hit = planner.suggestions.first {
-            let end = TripPoint(name: hit.name, lat: hit.lat, lng: hit.lng)
+            let end = TripPoint(name: JourneySteps.short(hit.name), lat: hit.lat, lng: hit.lng)
             if planner.field == .from { planner.setFrom(end) } else { await go(end) }
         }
     }

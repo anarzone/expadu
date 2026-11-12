@@ -66,6 +66,9 @@ final class AppJourney
             // The stops it passes between boarding and getting off, with when it's there: the map's
             // stop dots and the full stop list on the trip.
             'stops_on_the_way' => self::stopsOnTheWay($leg),
+            // Minutes late by the live reading (a started trip: the board's), and whether the run is cancelled.
+            'delay_min' => isset($leg['delay_min']) ? (int) $leg['delay_min'] : null,
+            'cancelled' => (bool) ($leg['cancelled'] ?? false),
             // The way it goes, for the map (MOTIS's encoded polyline, precision 7).
             'polyline' => $leg['polyline'] ?? null,
             // On foot: the router's turns, for the map and the next turn while walking.
