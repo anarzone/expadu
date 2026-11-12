@@ -55,6 +55,10 @@ final class TripPlanner {
     // The page
     var shown = false
     var showTrip = false
+    /// Leave at (Start trip, Other routes) for the next trip on their day, from Today or the board.
+    var leaveOpen = false
+    /// Other routes was picked in Leave at: Plan a trip opens for it once the sheet has gone.
+    var otherRoutesFor: TodayPage.Leave?
     /// The trip opens on its map (the board card's hold menu), once.
     var tripOnMap = false
     var field = Field.to
@@ -97,7 +101,13 @@ final class TripPlanner {
 
     // MARK: Opening
 
-    func open(from station: Station?, listening: Bool = false) {
+    /// The board's stop when Plan a trip opened from Travel (its ★ and the lines straight from it); nil elsewhere.
+    private(set) var station: Station?
+    private(set) var stationFavourite = false
+
+    func open(from station: Station?, favourite: Bool = false, listening: Bool = false) {
+        self.station = station
+        stationFavourite = favourite
         fromStation = station?.name
         field = .to
         query = ""
@@ -113,6 +123,7 @@ final class TripPlanner {
     private var pendingPlan: (id: String?, title: String)?
 
     func openPlan(_ leave: TodayPage.Leave) {
+        station = nil
         fromStation = nil
         field = .to
         query = ""

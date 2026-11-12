@@ -14,7 +14,7 @@ struct ComposerCard: View {
         switch block {
         case let .place(place): WhereCard(place: place)
         case let .departures(station): DeparturesCard(station: station)
-        case let .trip(trip): TripCard(trip: trip, showText: showText)
+        case let .trip(trip): ComposerTripCard(trip: trip, showText: showText)
         case let .choices(text): if showText { Words(text: text) }
         case let .events(events): EventsCard(events: events)
         case let .places(places): ComposerPlacesCard(places: places)
@@ -185,7 +185,7 @@ private struct DeparturesCard: View {
 
 /// The way somewhere, as a ticket (the canvas's .tk): the line, when to leave and arrive, its
 /// steps, and I'm on my way or the map.
-private struct TripCard: View {
+private struct ComposerTripCard: View {
     let trip: ComposerBlock.Trip
     let showText: Bool
     @Environment(Session.self) private var session

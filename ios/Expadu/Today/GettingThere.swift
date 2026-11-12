@@ -109,7 +109,7 @@ struct GettingThere: View {
                 .padding(.bottom, 12)
         }
         if let live {
-            LiveTrip(trip: live)
+            TripCard(trip: live)
                 .padding(.bottom, 14)
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
         }

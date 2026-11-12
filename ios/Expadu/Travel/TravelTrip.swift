@@ -25,6 +25,7 @@ struct TravelTrip: View {
     /// On the map: the steps in the lower left, over the map (the map moves up to keep you in sight).
     @State private var stepsOpen = false
     @State private var asking = false
+    @AppStorage("speakTurns") private var speak = false
     @State private var problem: String?
     @State private var working = false
     /// Where the line's colour ends on the map: the bottom of the band, measured.
@@ -37,7 +38,8 @@ struct TravelTrip: View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
             let now = timeline.date
             let steps = trip.steps
-            let current = steps.lastIndex { $0.at <= now } ?? 0
+            // The step they're on: where the phone is when walking, the clock on a ride (one rule, the card's too).
+            let current = trip.live(at: now, guided: planner.follower.here?.step).current
             let shown = looking ?? current
             let step = steps.indices.contains(shown) ? steps[shown] : nil
             let look = LineLook(hex: trip.legs.first { $0.rides }?.color ?? "#00768B")
@@ -140,6 +142,13 @@ struct TravelTrip: View {
                     Button { Task { await missed() } } label: { Label(ride.mode == "bus" ? "I missed the bus" : "I missed the tram", systemImage: "clock") }
                 }
                 Button { somewhereElse() } label: { Label("I’m somewhere else", systemImage: "location") }
+                Divider()
+                Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
+                if planner.follower.here?.arrived == true || trip.live(at: .now).current >= trip.steps.count - 2 {
+                    Button {
+                        Task { await today.endTrip(session.api, arrived: true); planner.stopFollowing(); dismiss() }
+                    } label: { Label("I’m there", systemImage: "checkmark") }
+                }
             } label: {
                 Text(working ? "Finding…" : "Re-plan").font(.geist(14, .semibold)).padding(.horizontal, 14).frame(height: 42)
             }
@@ -207,8 +216,33 @@ struct TravelTrip: View {
                 .glassEffect(.clear, in: .rect(cornerRadius: 14))
             }
             if let problem { Text(problem).font(.geist(14, .medium)).opacity(0.9) }
+            // Walking: the next turn, from where the phone is.
+            if index == current(now), step.kind == .walk, let here = planner.follower.here, let turn = here.turn, !here.offRoute {
+                TurnRow(turn: turn, metres: here.metresToTurn)
+                    .padding(10).background(Palette.surface, in: .rect(cornerRadius: 16)).foregroundStyle(Palette.text)
+                    .transition(.opacity)
+            }
+            // Gone wrong: off the route for a while, or the ride left without them. A new route in one tap.
+            if let trouble {
+                TripTrouble(text: trouble, busy: working) { Task { await missed() } }
+                    .padding(12).background(Palette.surface, in: .rect(cornerRadius: 16)).foregroundStyle(Palette.text)
+                    .transition(.opacity)
+            }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// The step they're on now (the phone when walking, else the clock).
+    private func current(_ now: Date) -> Int { trip.live(at: now, guided: planner.follower.here?.step).current }
+
+    /// Off the route for 15 s, or the ride gone, as the follower sees it.
+    private var trouble: String? {
+        guard let here = planner.follower.here else { return nil }
+        if let missed = here.missed { return "\(missed.name) has left. A new route from here?" }
+        if here.offRoute, let since = planner.follower.offSince, Date.now.timeIntervalSince(since) > 15 {
+            return "You’re off the route, \(TurnRow.distance(Int(here.offBy))) from it."
+        }
+        return nil
     }
 
     /// What the minutes count down to: leaving, the next tram, getting off, or being there.
@@ -394,8 +428,9 @@ struct TravelTrip: View {
     private func missed() async {
         working = true
         defer { working = false }
-        guard let place = today.place else { problem = "Your phone hasn’t said where you are."; return }
-        problem = await today.newWay(session.api, trip: trip, from: TodayPage.Point(latitude: place.latitude, longitude: place.longitude))
+        let point = planner.follower.point ?? today.place.map { TodayPage.Point(latitude: $0.latitude, longitude: $0.longitude) }
+        guard let point else { problem = "Your phone hasn’t said where you are."; return }
+        problem = await today.newWay(session.api, trip: trip, from: point)
     }
 
     /// Plan again from another starting point.

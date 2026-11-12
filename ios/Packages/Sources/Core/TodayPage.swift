@@ -396,7 +396,9 @@ public struct TodayPage: Equatable, Sendable {
             let steps = steps
             // Started well before leaving (from an event's Getting there): the card waits for the
             // leave time instead of saying "walk now" hours early.
-            if picked == nil, (guided ?? 0) == 0, let first = steps.first, first.at.timeIntervalSince(date) > 60 {
+            // The phone's place doesn't count yet either: standing on a later ride's line (its last tram
+            // passes here) isn't being on that step. Within 5 minutes of leaving, it does.
+            if picked == nil, let first = steps.first, first.at.timeIntervalSince(date) > ((guided ?? 0) == 0 ? 60 : 300) {
                 let ride = steps.first { $0.kind == .ride }
                 return Live(index: 0, current: 0, label: "Leave at \(first.time)", step: first,
                             big: Self.span(first.at.timeIntervalSince(date)),
