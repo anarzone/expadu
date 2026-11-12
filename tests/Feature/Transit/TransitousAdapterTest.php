@@ -285,6 +285,35 @@ function fakeItinerary(array $legs, int $transfers, int $durationSec): array
     ];
 }
 
+test('adds the routes a less-walking or no-change ask finds, once each, beside the main answer', function () {
+    // Main answer: tram 12 then a long walk. Less walking: 12 then 3 to the door (new), and 12
+    // again (known, skipped). No change: 12 only (known, skipped).
+    $direct = fakeItinerary([fakeLeg('TRAM', ['routeShortName' => '12'])], 0, 2580);
+    $change = fn (string $at) => array_merge(fakeItinerary([
+        fakeLeg('TRAM', ['routeShortName' => '12', 'startTime' => $at]),
+        fakeLeg('TRAM', ['routeShortName' => '3']),
+    ], 1, 2700), ['startTime' => $at]);
+
+    Http::fake(function ($request) use ($direct, $change) {
+        $url = urldecode($request->url());
+
+        return match (true) {
+            str_contains($url, 'directModes=') => Http::response(['direct' => []]),
+            str_contains($url, 'maxPostTransitTime=300') => Http::response(['itineraries' => [
+                $change('2026-07-06T07:00:00Z'), $change('2026-07-06T07:10:00Z'), $change('2026-07-06T07:20:00Z'), $direct,
+            ]]),
+            default => Http::response(['itineraries' => [$direct]]),
+        };
+    });
+
+    $result = (new TransitousAdapter)->plan(new GeoPoint(51.02, 6.95), new GeoPoint(50.94, 6.95));
+    $routes = collect($result->journeys)->map(fn ($j) => implode('>', $j->lines()))->countBy()->all();
+
+    // The main route once; the new one with its next two runs, not three.
+    expect($routes)->toBe(['12' => 1, '12>3' => 2]);
+    Http::assertSent(fn ($r) => str_contains(urldecode($r->url()), 'maxTransfers=0'));
+});
+
 test('re-plans without buses to surface a competitive S-Bahn route the primary set pruned', function () {
     // Primary set: a tram+bus route, no rail. The rescue call (transitModes,
     // no bus) answers with the pruned tram→S-Bahn option.

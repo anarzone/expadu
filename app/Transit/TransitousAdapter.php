@@ -13,6 +13,8 @@ use App\Transit\Dto\JourneyResult;
 use App\Transit\Dto\Leg;
 use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -74,6 +76,21 @@ class TransitousAdapter implements RouteService
     /** Don't start an optional sub-call with less than this much budget left. */
     private const MIN_SUBCALL_SECONDS = 1.0;
 
+    /**
+     * Narrower asks beside the main plan. The engine answers with a Pareto set, so a way with a
+     * change but little walking (12 then 3 to the door) or with no change but a longer walk is
+     * dropped whenever another way beats it on every count, and the list showed one route at
+     * ten-minute steps where Google and Apple show three. Each ask here keeps only the routes the
+     * main answer doesn't already have.
+     */
+    private const ALTERNATIVES = [
+        'less_walking' => ['maxPreTransitTime' => 420, 'maxPostTransitTime' => 300],
+        'no_change' => ['maxTransfers' => 0],
+    ];
+
+    /** Runs kept of each route the alternatives add: the next one and the one after. */
+    private const ALTERNATIVE_RUNS = 2;
+
     /** Absolute wall-clock deadline (microtime) set by withTimeBudget(); null = per-call caps only. */
     private ?float $deadline = null;
 
@@ -110,6 +127,8 @@ class TransitousAdapter implements RouteService
                 }
             }
         }
+
+        $itineraries = $this->withAlternatives($from, $to, $departAt, $timeExtra, $itineraries);
 
         // Rail rescue: when the set has no *clean* rail option (rail + short
         // walk, no bus feeder/egress), yet a station sits within walking reach
@@ -463,15 +482,69 @@ class TransitousAdapter implements RouteService
     }
 
     /**
-     * One MOTIS plan call, mapping the chosen response bucket to journeys.
-     * MOTIS splits its answer into `itineraries` (transit) and `direct`
-     * (walk/bike); each call reads exactly one so the two buckets never
-     * collide. Throws on HTTP error so the caller (and failover) can react.
+     * The main answer plus the routes the narrower asks find that it lacks, asked at once. Best
+     * effort: an ask that fails or runs out of time leaves the answer as it was.
      *
-     * @param  array<string, mixed>  $extra  extra query params (e.g. directModes)
+     * @param  array<string, mixed>  $timeExtra
+     * @param  list<Journey>  $itineraries
      * @return list<Journey>
      */
-    private function fetchBucket(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, array $extra, string $bucket, float $timeout): array
+    private function withAlternatives(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, array $timeExtra, array $itineraries): array
+    {
+        $timeout = $this->callTimeout(4.0);
+        if ($timeout === null) {
+            return $itineraries;
+        }
+
+        try {
+            $responses = PerfLogger::measure("ext:{$this->source()}.alternatives", fn () => Http::pool(fn (Pool $pool) => array_map(
+                fn (string $name, array $extra) => $pool->as($name)
+                    ->baseUrl($this->baseUrl())
+                    ->timeout($timeout)
+                    ->connectTimeout(min(3.0, $timeout))
+                    ->withHeaders(['User-Agent' => 'expadu.com'])
+                    ->get($this->planPath(), $this->planQuery($from, $to, $departAt, 4, $timeExtra + $extra)),
+                array_keys(self::ALTERNATIVES),
+                array_values(self::ALTERNATIVES),
+            )));
+        } catch (\Throwable) {
+            return $itineraries;
+        }
+
+        $known = array_fill_keys(array_map($this->route(...), $itineraries), true);
+        $added = [];
+        foreach ($responses as $response) {
+            if (! $response instanceof Response || ! $response->successful()) {
+                continue;
+            }
+            foreach ($response->json('itineraries', []) as $itinerary) {
+                $journey = $this->mapItinerary($itinerary);
+                if ($journey === null || isset($known[$this->route($journey)])) {
+                    continue;
+                }
+                $added[$this->route($journey)][$journey->departAt->getTimestamp()] = $journey;
+            }
+        }
+
+        foreach ($added as $runs) {
+            ksort($runs);
+            array_push($itineraries, ...array_slice(array_values($runs), 0, self::ALTERNATIVE_RUNS));
+        }
+
+        return $itineraries;
+    }
+
+    /** A route as a rider tells routes apart: its lines in order ("12>3"), or how it goes when it rides none. */
+    private function route(Journey $journey): string
+    {
+        return implode('>', $journey->lines()) ?: $journey->mode();
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     * @return array<string, mixed>
+     */
+    private function planQuery(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, array $extra): array
     {
         $query = [
             'fromPlace' => "{$from->lat},{$from->lng}",
@@ -483,6 +556,22 @@ class TransitousAdapter implements RouteService
         if ($departAt !== null) {
             $query['time'] = $departAt->utc()->toIso8601ZuluString();
         }
+
+        return $query;
+    }
+
+    /**
+     * One MOTIS plan call, mapping the chosen response bucket to journeys.
+     * MOTIS splits its answer into `itineraries` (transit) and `direct`
+     * (walk/bike); each call reads exactly one so the two buckets never
+     * collide. Throws on HTTP error so the caller (and failover) can react.
+     *
+     * @param  array<string, mixed>  $extra  extra query params (e.g. directModes)
+     * @return list<Journey>
+     */
+    private function fetchBucket(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, array $extra, string $bucket, float $timeout): array
+    {
+        $query = $this->planQuery($from, $to, $departAt, $max, $extra);
 
         $response = PerfLogger::measure("ext:{$this->source()}.plan", fn () => Http::baseUrl($this->baseUrl())
             ->timeout($timeout)
