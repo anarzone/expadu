@@ -163,7 +163,7 @@ private struct LockCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Circle().fill(phase.kind == .leave ? Palette.action : Color(hex: 0x2F9E5B)).frame(width: 7, height: 7)
-                Text(phase.kind == .leave ? "Time to go · \(to)" : "Going to \(to)").font(.geist(13, .bold))
+                Text(phase.kind == .leave ? "Time to go · \(to)" : (["home": "Going home", "work": "Going to work"][to.lowercased()] ?? "Going to \(to)")).font(.geist(13, .bold))
                     .foregroundStyle(phase.kind == .leave ? Palette.action : Color(hex: 0x2F9E5B)).lineLimit(1)
                 Spacer(minLength: 4)
                 if !phase.arrive.isEmpty {

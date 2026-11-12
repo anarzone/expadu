@@ -453,25 +453,21 @@ private struct NextTripRow: View {
             HStack(spacing: 12) {
                 let minutes = max(0, leave.leaveInMinutes ?? 0)
                 ZStack {
-                    Circle().stroke(.white.opacity(0.2), lineWidth: 4)
+                    Circle().stroke(Palette.border, lineWidth: 4)
                     Circle().trim(from: 0, to: max(0.04, min(1, Double(minutes) / 10)))
-                        .stroke(minutes <= 2 ? Color(hex: 0xFF8A5C) : Color(hex: 0xFFE9A6), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .stroke(minutes <= 2 ? Palette.action : Palette.navTeal, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     Text("\(minutes)").font(.geist(15, .bold)).monospacedDigit().contentTransition(.numericText(countsDown: true))
                 }
-                .frame(width: 38, height: 38)
+                .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Leave at \(leave.leaveTime ?? "")").font(.posterGrotesque(19))
-                    Text(sub).font(.geist(12.5)).opacity(0.82).lineLimit(1)
+                    Text("Leave at \(leave.leaveTime ?? "")").font(.geist(16, .bold))
+                    Text(sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.textSoft)
             }
-            .foregroundStyle(Color(hex: 0xFFF6E3))
-            .padding(.horizontal, 14).frame(height: 60)
-            .background(Color(hex: 0x211D15))
-            .opacity(dim ? 0.4 : 1)
-            .contentShape(.rect)
+            .tripCard(dim: dim)
         }
         .buttonStyle(PressStyle())
         .accessibilityLabel("Leave at \(leave.leaveTime ?? ""), \(sub)")
@@ -485,31 +481,70 @@ private struct NextTripRow: View {
     }
 }
 
-/// A trip being followed: back to it.
+/// A trip being followed, as Citymapper and Apple Maps keep one in sight: what to do now (the
+/// step, its line, the minutes it counts down to) and where it goes; a tap goes back to it.
 private struct OnYourWayRow: View {
     let trip: TodayPage.Trip
     let dim: Bool
     let tap: () -> Void
 
     var body: some View {
-        Button(action: tap) {
-            HStack(spacing: 12) {
-                Image(systemName: "figure.walk").font(.system(size: 17, weight: .bold)).frame(width: 38, height: 38)
-                    .background(.white.opacity(0.14), in: .circle)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Going to \(trip.to)").font(.posterGrotesque(19)).lineLimit(1)
-                    Text((trip.arriveTime.map { "Arrive \($0) · " } ?? "") + "See your steps").font(.geist(12.5)).opacity(0.82).lineLimit(1)
+        TimelineView(.periodic(from: .now, by: 15)) { timeline in
+            let live = trip.live(at: timeline.date)
+            // The line this step rides, or the next one it walks to.
+            let ride = trip.steps.dropFirst(live.index).first { $0.kind == .ride || $0.kind == .getOff }
+            Button(action: tap) {
+                HStack(spacing: 12) {
+                    if let ride, let line = ride.name.split(separator: " ").last {
+                        let look = LineLook(hex: ride.color ?? "#00768B")
+                        Text(String(line)).font(.geist(17, .bold)).monospacedDigit().foregroundStyle(look.ink)
+                            .frame(minWidth: 40, minHeight: 40).padding(.horizontal, 2)
+                            .background(look.base, in: .rect(cornerRadius: 10))
+                    } else {
+                        Image(systemName: "figure.walk").font(.system(size: 17, weight: .semibold))
+                            .frame(width: 40, height: 40).background(Palette.quiet, in: .rect(cornerRadius: 10))
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(live.waiting ? live.label : live.step.title).font(.geist(16, .bold)).lineLimit(1)
+                        Text(Self.going(trip.to) + (trip.arriveTime.map { " · arrive \($0)" } ?? ""))
+                            .font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text(live.big).font(.posterGrotesque(20)).monospacedDigit().contentTransition(.numericText(countsDown: true))
+                        Text(live.bigNote).font(.geist(11.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                    }
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.textSoft)
                 }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+                .tripCard(dim: dim)
             }
-            .foregroundStyle(Color(hex: 0xFFF6E3))
-            .padding(.horizontal, 14).frame(height: 60)
-            .background(Color(hex: 0x211D15))
+            .buttonStyle(PressStyle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(Self.going(trip.to)). Now: \(live.step.title), \(live.big), \(live.bigNote)")
+            .accessibilityHint("Opens your trip")
+        }
+    }
+
+    /// "Going home", "Going to work", "Going to Neumarkt".
+    static func going(_ to: String) -> String {
+        switch to.lowercased() {
+        case "home": "Going home"
+        case "work": "Going to work"
+        default: "Going to \(to)"
+        }
+    }
+}
+
+private extension View {
+    /// The board's trip rows: a light card set in from the edges, so it never reads as a departure band.
+    func tripCard(dim: Bool) -> some View {
+        foregroundStyle(Palette.text)
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(Palette.surface, in: .rect(cornerRadius: 18))
+            .shadow(color: .black.opacity(0.12), radius: 10, y: 3)
+            .padding(.horizontal, 12).padding(.vertical, 8)
             .opacity(dim ? 0.4 : 1)
             .contentShape(.rect)
-        }
-        .buttonStyle(PressStyle())
     }
 }
 
