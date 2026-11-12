@@ -12835,6 +12835,8 @@ public enum Operations {
                                     public var end: Operations.Travel_appStationLinesMap.Output.Ok.Body.JsonPayload.MapPayload.LinesPayloadPayload.WaysPayloadPayload.EndPayload?
                                     /// - Remark: Generated from `#/paths/travel/lines-map/GET/responses/200/content/json/map/LinesPayload/WaysPayload/between`.
                                     public var between: Swift.Int
+                                    /// - Remark: Generated from `#/paths/travel/lines-map/GET/responses/200/content/json/map/LinesPayload/WaysPayload/path`.
+                                    public var path: Swift.String?
                                     /// Creates a new `WaysPayloadPayload`.
                                     ///
                                     /// - Parameters:
@@ -12842,22 +12844,26 @@ public enum Operations {
                                     ///   - stops:
                                     ///   - end:
                                     ///   - between:
+                                    ///   - path:
                                     public init(
                                         towards: Swift.String,
                                         stops: Operations.Travel_appStationLinesMap.Output.Ok.Body.JsonPayload.MapPayload.LinesPayloadPayload.WaysPayloadPayload.StopsPayload,
                                         end: Operations.Travel_appStationLinesMap.Output.Ok.Body.JsonPayload.MapPayload.LinesPayloadPayload.WaysPayloadPayload.EndPayload? = nil,
-                                        between: Swift.Int
+                                        between: Swift.Int,
+                                        path: Swift.String? = nil
                                     ) {
                                         self.towards = towards
                                         self.stops = stops
                                         self.end = end
                                         self.between = between
+                                        self.path = path
                                     }
                                     public enum CodingKeys: String, CodingKey {
                                         case towards
                                         case stops
                                         case end
                                         case between
+                                        case path
                                     }
                                 }
                                 /// - Remark: Generated from `#/paths/travel/lines-map/GET/responses/200/content/json/map/LinesPayload/ways`.

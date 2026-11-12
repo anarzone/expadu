@@ -4611,13 +4611,20 @@
                                                                         },
                                                                         "between": {
                                                                             "type": "integer"
+                                                                        },
+                                                                        "path": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
                                                                         }
                                                                     },
                                                                     "required": [
                                                                         "towards",
                                                                         "stops",
                                                                         "end",
-                                                                        "between"
+                                                                        "between",
+                                                                        "path"
                                                                     ]
                                                                 }
                                                             }

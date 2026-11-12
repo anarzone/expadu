@@ -583,41 +583,64 @@ struct NoticePopup: View {
 struct TravelMap: View {
     let model: TravelModel
 
+    /// A way's drawing: along its tracks, else through its stops from the station.
+    private static func points(_ way: LinesMap.Way, from station: LinesMap.Point) -> [CLLocationCoordinate2D] {
+        if let path = way.path {
+            let track = Polyline.decode(path).map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+            if track.count > 1 { return track }
+        }
+        return ([station] + way.stops + [way.end].compactMap { $0 }).map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
+    }
+
     var body: some View {
         let map = model.linesMap
         let focus = model.line
-        let lines: [CityMap.Line] = (map?.lines ?? []).flatMap { line in
-            line.ways.enumerated().map { i, way in
-                let station = map.map { CLLocationCoordinate2D(latitude: $0.station.lat, longitude: $0.station.lng) }
-                let points = [station].compactMap { $0 } + way.stops.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
-                    + [way.end].compactMap { $0 }.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
-                let on = focus == nil || focus == line.line
-                return CityMap.Line(id: "m\(line.line)-\(i)", points: points, color: UIColor(model.look(line.line).base),
-                                    width: on ? (focus == nil ? 5 : 8) : 4, faint: !on)
-            }
-        }
-        let pins: [CityMap.Pin] = map.map { m in
-            [CityMap.Pin(id: "station", coordinate: CLLocationCoordinate2D(latitude: m.station.lat, longitude: m.station.lng), title: m.station.name, kind: .place(symbol: "tram.fill"))]
-                + m.lines.filter { focus == nil || $0.line == focus }.flatMap { line in
-                    line.ways.compactMap { way in way.end.map { end in
-                        CityMap.Pin(id: "end-\(line.line)-\(end.name)", coordinate: CLLocationCoordinate2D(latitude: end.lat, longitude: end.lng), title: end.name,
-                                    kind: .badge(text: line.line, fill: UIColor(model.look(line.line).base), ink: UIColor(model.look(line.line).ink)))
-                    } }
+        let station = map.map { CLLocationCoordinate2D(latitude: $0.station.lat, longitude: $0.station.lng) }
+        let lines: [CityMap.Line] = map.map { m in
+            m.lines.flatMap { line in
+                line.ways.enumerated().map { i, way in
+                    let on = focus == nil || focus == line.line
+                    return CityMap.Line(id: "m\(line.line)-\(i)", points: Self.points(way, from: m.station), color: UIColor(model.look(line.line).base),
+                                        width: on ? (focus == nil ? 5 : 8) : 4, faint: !on)
                 }
+            }
         } ?? []
-        let fit = focus == nil ? (map?.lines.flatMap { $0.ways.flatMap { $0.stops } } ?? []).map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) } : pins.map(\.coordinate)
+        let shown = (map?.lines ?? []).filter { focus == nil || $0.line == focus }
+        // Every stop the shown lines make, once (lines share stops), as a ring in its line's colour.
+        var seen = Set<String>()
+        let stops: [CityMap.Pin] = shown.flatMap { line in
+            line.ways.flatMap { way in way.stops.compactMap { stop -> CityMap.Pin? in
+                let key = "\(stop.name)|\(Int(stop.lat * 2000))|\(Int(stop.lng * 2000))"
+                guard seen.insert(key).inserted else { return nil }
+                return CityMap.Pin(id: "stop-\(key)", coordinate: CLLocationCoordinate2D(latitude: stop.lat, longitude: stop.lng), title: stop.name,
+                                   kind: .stop(ring: UIColor(model.look(line.line).deep)))
+            } }
+        }
+        let ends: [CityMap.Pin] = shown.flatMap { line in
+            line.ways.compactMap { way in way.end.map { end in
+                CityMap.Pin(id: "end-\(line.line)-\(end.name)", coordinate: CLLocationCoordinate2D(latitude: end.lat, longitude: end.lng), title: end.name,
+                            kind: .badge(text: line.line, fill: UIColor(model.look(line.line).base), ink: UIColor(model.look(line.line).ink)))
+            } }
+        }
+        let pins = (map.map { [CityMap.Pin(id: "station", coordinate: CLLocationCoordinate2D(latitude: $0.station.lat, longitude: $0.station.lng), title: $0.station.name, kind: .place(symbol: "tram.fill"))] } ?? [])
+            + stops + ends
+        // All lines: the station and the next few stops each way. One line: all of it.
+        let fit: [CLLocationCoordinate2D] = focus == nil
+            ? [station].compactMap { $0 } + (map?.lines ?? []).flatMap { $0.ways.flatMap { $0.stops.prefix(3) } }.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
+            : lines.filter { !$0.faint }.flatMap(\.points)
         ZStack(alignment: .bottom) {
             CityMap(lines: lines, pins: pins, fit: fit, padding: UIEdgeInsets(top: 260, left: 40, bottom: 160, right: 40), showsUser: true, fitID: (focus ?? "").hashValue)
-            Text(note(map)).font(.geist(12.5)).foregroundStyle(Palette.text)
-                .padding(.horizontal, 12).padding(.vertical, 8)
-                .glassEffect(.regular, in: .rect(cornerRadius: 14))
-                .padding(.horizontal, 16).padding(.bottom, 150)
+            if let note = note(map) {
+                Text(note).font(.geist(12.5)).foregroundStyle(Palette.text)
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 14))
+                    .padding(.horizontal, 16).padding(.bottom, 150)
+            }
         }
     }
 
-    private func note(_ map: LinesMap?) -> String {
+    private func note(_ map: LinesMap?) -> String? {
         guard let map else { return "Drawing the lines…" }
-        let buses = map.buses.isEmpty ? "" : " Buses \(map.buses.joined(separator: " · ")) are listed, not drawn."
-        return "Drawn through the stops each line passes, then straight to where it ends." + buses
+        return map.buses.isEmpty ? nil : "Buses \(map.buses.joined(separator: " · ")) stop here too."
     }
 }

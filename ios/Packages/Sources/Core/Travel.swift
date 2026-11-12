@@ -329,9 +329,13 @@ public struct LinesMap: Decodable, Equatable, Sendable {
 
     public struct Way: Decodable, Equatable, Sendable {
         public let towards: String
+        /// Every stop after the station, the end not included.
         public let stops: [Point]
         public let end: Point?
         public let between: Int?
+        /// The way along the tracks from the station to its end (encoded, precision 7); nil when the
+        /// routing engine didn't answer, and the way is drawn through its stops.
+        public let path: String?
     }
 
     public struct Line: Decodable, Equatable, Sendable {

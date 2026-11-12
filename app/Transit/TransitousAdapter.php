@@ -891,6 +891,69 @@ class TransitousAdapter implements RouteService
     }
 
     /**
+     * The runs leaving a stop soon, one per line and headsign: the trips a line map is drawn from.
+     *
+     * @return list<array{line: string, headsign: string, trip: string}>
+     */
+    public function tripsAt(string $stopId, int $count = 40): array
+    {
+        $timeout = $this->callTimeout(5.0) ?? throw new \RuntimeException('stoptimes time budget spent');
+
+        $response = PerfLogger::measure("ext:{$this->source()}.stoptimes", fn () => Http::baseUrl($this->baseUrl())
+            ->timeout($timeout)
+            ->connectTimeout(min(3.0, $timeout))
+            ->withHeaders(['User-Agent' => 'expadu.com'])
+            ->get('/api/v1/stoptimes', ['stopId' => $stopId, 'n' => $count])
+            ->throw());
+
+        $seen = [];
+        foreach ($response->json('stopTimes', []) as $time) {
+            $line = trim((string) ($time['routeShortName'] ?? ''));
+            $headsign = trim((string) ($time['headsign'] ?? ''));
+            if ($line === '' || ! isset($time['tripId'])) {
+                continue;
+            }
+            $seen["{$line}|{$headsign}"] ??= ['line' => $line, 'headsign' => $headsign, 'trip' => (string) $time['tripId']];
+        }
+
+        return array_values($seen);
+    }
+
+    /**
+     * One run from its first stop to its last: every stop, and the way it goes along the tracks.
+     *
+     * @return array{stops: list<array{name: string, lat: float, lng: float}>, points: list<array{0: float, 1: float}>}|null
+     */
+    public function tripPath(string $tripId): ?array
+    {
+        $timeout = $this->callTimeout(5.0) ?? throw new \RuntimeException('trip time budget spent');
+
+        $response = PerfLogger::measure("ext:{$this->source()}.trip", fn () => Http::baseUrl($this->baseUrl())
+            ->timeout($timeout)
+            ->connectTimeout(min(3.0, $timeout))
+            ->withHeaders(['User-Agent' => 'expadu.com'])
+            ->get('/api/v1/trip', ['tripId' => $tripId])
+            ->throw());
+
+        $stops = [];
+        $points = [];
+        foreach ($response->json('legs', []) as $leg) {
+            $places = [$leg['from'] ?? null, ...($leg['intermediateStops'] ?? []), $leg['to'] ?? null];
+            foreach ($places as $place) {
+                if (isset($place['name'], $place['lat'], $place['lon'])) {
+                    $stops[] = ['name' => (string) $place['name'], 'lat' => (float) $place['lat'], 'lng' => (float) $place['lon']];
+                }
+            }
+            $geometry = $leg['legGeometry'] ?? null;
+            if (is_array($geometry) && isset($geometry['points'])) {
+                array_push($points, ...(Polyline::decode((string) $geometry['points'], (int) ($geometry['precision'] ?? 6)) ?? []));
+            }
+        }
+
+        return $stops === [] ? null : ['stops' => $stops, 'points' => $points];
+    }
+
+    /**
      * The plan endpoint path. Transitous runs a build that serves v3; our
      * self-hosted MOTIS (see {@see MotisAdapter}) serves v1. Geocode and
      * reverse-geocode are v1 on both.
