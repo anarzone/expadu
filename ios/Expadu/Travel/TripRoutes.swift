@@ -5,9 +5,9 @@ import DesignSystem
 import Maps
 import SwiftUI
 
-/// The routes (the canvas's results): the way drawn on the map, and each way printed as a ticket in
-/// its lines' colours: when to leave and when you're there, why it's good, its steps, and Show the
-/// way or Add to plan. Sorted as you pick; today's conditions say what was checked.
+/// The routes (the canvas's results): the way drawn on the map, and the ways as a list in
+/// its lines' colours: when to leave and when you're there, why it's good, its steps, and Start trip
+/// or Add to my day. Sorted as you pick; today's conditions say what was checked.
 struct TripRoutesView: View {
     @Bindable var planner: TripPlanner
     /// Back to the search, to change where to.
@@ -21,9 +21,7 @@ struct TripRoutesView: View {
     @State private var details: Int?
     @State private var conditions = false
     @State private var whenOpen = false
-    @State private var printed = false
     /// A plain list (the default) or the tickets, as they last chose.
-    @AppStorage("routesList") private var asList = true
     /// The list's panel pulled up to fill most of the screen.
     @State private var panelLarge = false
     @State private var panelDrag: CGFloat = 0
@@ -51,17 +49,14 @@ struct TripRoutesView: View {
                     StateCard(title: problem, text: problem == "Where are you starting?" ? "We need a starting point to find routes." : "Try a stop nearby, or take off a preference.",
                               button: problem == "Where are you starting?" ? "Add a starting point" : "Change the plan", go: back)
                         .padding(.horizontal, 16).padding(.bottom, 30)
-                } else if !options.isEmpty, !asList {
-                    deck(options)
                 }
             }
-            if asList, !planner.loading, planner.problem == nil, !options.isEmpty {
+            if !planner.loading, planner.problem == nil, !options.isEmpty {
                 panel(options)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { screenHeight = $0 }
-        .animation(.smooth(duration: 0.35), value: asList)
         .animation(.smooth(duration: 0.35), value: conditions)
         .sheet(isPresented: $whenOpen, onDismiss: { Task { await planner.plan(session.api) } }) {
             WhenSheet(planner: planner)
@@ -100,20 +95,15 @@ struct TripRoutesView: View {
             }
         }
         .animation(.snappy, value: undo != nil)
-        // A new answer or order prints the deck again (and shows it: it used to stay hidden).
-        .onChange(of: planner.answer?.journeys.map(\.departAt)) { reprint() }
-        .onChange(of: planner.sort) { reprint() }
-        .onChange(of: planner.prefs) { reprint() }
+        // A new answer or order starts from the top of the list, nothing picked.
+        .onChange(of: planner.answer?.journeys.map(\.departAt)) { reset() }
+        .onChange(of: planner.sort) { reset() }
+        .onChange(of: planner.prefs) { reset() }
     }
 
-    private func reprint() {
+    private func reset() {
         picked = nil
         details = nil
-        printed = false
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(60))
-            printed = true
-        }
     }
 
     // MARK: Map
@@ -121,7 +111,7 @@ struct TripRoutesView: View {
     /// How much of the map's bottom the results cover, so the way is fitted above them.
     private func mapBottom(_ options: [TripPlanner.Option]) -> CGFloat {
         guard !options.isEmpty else { return 120 }
-        return asList ? panelHeight + 24 : 420
+        return panelHeight + 24
     }
 
     private func map(_ option: TripPlanner.Option?, bottom: CGFloat) -> some View {
@@ -135,7 +125,7 @@ struct TripRoutesView: View {
         }
         let fit = lines.flatMap(\.points) + pins.map(\.coordinate)
         return CityMap(lines: lines, pins: pins, fit: fit, padding: UIEdgeInsets(top: 190, left: 44, bottom: bottom, right: 44),
-                       fitID: (option?.index ?? -1) * 10 + (panelLarge ? 1 : 0) + (asList ? 2 : 0))
+                       fitID: (option?.index ?? -1) * 10 + (panelLarge ? 1 : 0))
             .background(Palette.quiet)
     }
 
@@ -174,11 +164,6 @@ struct TripRoutesView: View {
                 }
                 Button { whenOpen = true } label: { tool(icon: "clock", text: planner.whenLabel, chevron: false) }
                     .buttonStyle(PressStyle())
-                Button { withAnimation(.smooth(duration: 0.35)) { asList.toggle(); details = nil } } label: {
-                    tool(icon: asList ? "rectangle.stack" : "list.bullet", text: asList ? "Tickets" : "List", chevron: false)
-                }
-                .buttonStyle(PressStyle())
-                .accessibilityLabel(asList ? "Show as tickets" : "Show as a list")
                 Button { withAnimation(.smooth) { conditions.toggle() } } label: { tool(icon: "checkmark", text: "Today’s conditions", chevron: false) }
                     .buttonStyle(PressStyle())
             }
@@ -200,58 +185,6 @@ struct TripRoutesView: View {
         .frame(minHeight: 44)
     }
 
-    // MARK: Deck
-
-    private func deck(_ options: [TripPlanner.Option]) -> some View {
-        VStack(spacing: 8) {
-            ScrollView(.horizontal) {
-                LazyHStack(spacing: 12) {
-                    ForEach(Array(options.enumerated()), id: \.element.id) { i, option in
-                        TicketView(planner: planner, option: option, stamp: i == 0 ? planner.sort.label : nil, open: details == option.index,
-                                   kept: planner.added[option.index] != nil, toggle: {
-                                       withAnimation(.smooth(duration: 0.35)) { details = details == option.index ? nil : option.index }
-                                   }, show: {
-                                       Task { _ = await planner.start(option, replace: false, session.api, today: today) }
-                                   }, add: planner.target == nil ? nil : {
-                                       Task { await planner.addToPlan(option, session.api) }
-                                   })
-                        .containerRelativeFrame(.horizontal) { width, _ in width - 36 }
-                        .id(option.index)
-                        // Printed one after another as the deck comes in.
-                        .offset(y: printed || reduceMotion ? 0 : 40)
-                        .opacity(printed || reduceMotion ? 1 : 0)
-                        .animation(.spring(duration: 0.5, bounce: 0.25).delay(Double(min(i, 3)) * 0.12), value: printed)
-                    }
-                    Button { Task { await planner.showMore(session.api) } } label: {
-                        VStack(alignment: .leading) {
-                            Image(systemName: planner.more ? "arrow.uturn.backward" : "plus").font(.system(size: 20, weight: .semibold))
-                            Spacer()
-                            Text(planner.more ? "Fewer routes" : "More routes").font(.geist(16, .bold))
-                        }
-                        .padding(16).frame(width: 150, height: 150, alignment: .leading)
-                        .background(Palette.surface, in: .rect(cornerRadius: 22))
-                        .foregroundStyle(Palette.text)
-                    }
-                    .buttonStyle(PressStyle())
-                }
-                .scrollTargetLayout()
-            }
-            .contentMargins(.horizontal, 18, for: .scrollContent)
-            .scrollTargetBehavior(.viewAligned)
-            .scrollPosition(id: $picked, anchor: .center)
-            .scrollIndicators(.hidden)
-            .frame(maxHeight: 520)
-            HStack(spacing: 6) {
-                ForEach(options) { option in
-                    Circle().fill(option.index == (picked ?? options.first?.index) ? Palette.text : Palette.text.opacity(0.25)).frame(width: 6, height: 6)
-                }
-            }
-            .padding(.bottom, 14)
-            .accessibilityHidden(true)
-        }
-        .onAppear { printed = true }
-        .sensoryFeedback(.selection, trigger: picked)
-    }
 }
 
 extension TripRoutesView {
@@ -563,235 +496,6 @@ private struct RouteDetail: View {
             .background(Palette.surface)
         }
         .foregroundStyle(Palette.text)
-    }
-}
-
-/// A ride as a line: its badge, where it's heading, and the stop you board at.
-struct RideLine: View {
-    let leg: TripPlan.Leg
-
-    var body: some View {
-        let look = LineLook(hex: leg.color ?? "#00768B")
-        HStack(spacing: 8) {
-            Text(leg.line ?? "").font(.geist(13, .bold)).monospacedDigit()
-                .foregroundStyle(look.ink)
-                .padding(.horizontal, 6).frame(minWidth: 30).frame(height: 22)
-                .background(look.base, in: .rect(cornerRadius: 6))
-            VStack(alignment: .leading, spacing: 0) {
-                Text(leg.headsign.map { "towards \(StopName.short($0))" } ?? (leg.mode == "bus" ? "Bus" : "Tram"))
-                    .font(.geist(14, .semibold)).lineLimit(1)
-                Text("from \(StopName.short(leg.from.name ?? "")) at \(leg.departTime)" + (leg.stops.map { " · \($0) stop\($0 == 1 ? "" : "s")" } ?? ""))
-                    .font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            if let delay = leg.delayMin, delay >= 2, leg.realtime == true {
-                Text("+\(delay)").font(.geist(12.5, .bold)).foregroundStyle(Palette.warnText)
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// One way printed as a ticket: the lines' colours across its top, Leave and There, how long; then
-/// the spare minutes, why it's good, and its steps under Journey details.
-private struct TicketView: View {
-    let planner: TripPlanner
-    let option: TripPlanner.Option
-    let stamp: String?
-    let open: Bool
-    let kept: Bool
-    let toggle: () -> Void
-    let show: () -> Void
-    let add: (() -> Void)?
-
-    var body: some View {
-        let journey = option.journey
-        let rides = journey.rides
-        let looks = rides.map { LineLook(hex: $0.color ?? "#00768B") }
-        let bike = journey.mode == "bike"
-        let walk = journey.mode == "walk"
-        VStack(spacing: 0) {
-            ZStack(alignment: .topLeading) {
-                Group {
-                    if looks.count > 1 { LineLook.fill(from: looks[0], to: looks[looks.count - 1]) } else { (looks.first ?? LineLook(hex: walk ? "#6A6253" : "#00768B")).fill }
-                }
-                if rides.count == 1, let line = rides[0].line {
-                    Text(line).font(.posterGrotesque(130)).tracking(-6)
-                        .foregroundStyle((looks.first?.ink ?? .white).opacity(0.14))
-                        .lineLimit(1).fixedSize()
-                        .offset(x: 150, y: -14)
-                }
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 6) {
-                        if bike {
-                            plate(icon: "bicycle", text: "Bike")
-                        } else if walk {
-                            plate(icon: "figure.walk", text: "Walk")
-                        } else {
-                            ForEach(Array(rides.enumerated()), id: \.offset) { _, ride in plate(icon: icon(ride.mode), text: ride.line ?? ride.mode) }
-                        }
-                        Text(lineText(journey)).font(.geist(13, .semibold)).lineLimit(1)
-                        Spacer(minLength: 0)
-                        if let stamp {
-                            Text(stamp.uppercased()).font(.geist(10.5, .heavy)).tracking(0.6)
-                                .padding(.horizontal, 7).padding(.vertical, 4)
-                                .overlay { RoundedRectangle(cornerRadius: 5).strokeBorder(lineWidth: 2) }
-                                .rotationEffect(.degrees(-6))
-                        }
-                    }
-                    HStack(alignment: .bottom, spacing: 10) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("Leave").font(.geist(12.5, .medium)).opacity(0.85)
-                            Text(journey.leaveTime).font(.posterGrotesque(32)).monospacedDigit().fixedSize()
-                        }
-                        Image(systemName: "arrow.right").font(.system(size: 20, weight: .bold)).padding(.bottom, 8)
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("There").font(.geist(12.5, .medium)).opacity(0.85)
-                            Text(journey.arriveTime).font(.posterGrotesque(32)).monospacedDigit().fixedSize()
-                        }
-                        Spacer(minLength: 0)
-                        Text("\(journey.durationMin) min").font(.geist(13, .bold)).fixedSize()
-                            .padding(.horizontal, 9).frame(height: 26)
-                            .background(.white.opacity(0.22), in: .rect(cornerRadius: 8))
-                            .padding(.bottom, 6)
-                    }
-                }
-                .padding(16)
-            }
-            .foregroundStyle(looks.first?.ink ?? .white)
-            .frame(height: 150)
-            .clipped()
-            // The perforation.
-            Perforation().stroke(style: StrokeStyle(lineWidth: 1.5, dash: [5, 5])).foregroundStyle(Palette.border).frame(height: 1)
-            VStack(alignment: .leading, spacing: 10) {
-                // Which tram, which way, from where: what to look for at the stop.
-                ForEach(Array(rides.enumerated()), id: \.offset) { _, ride in RideLine(leg: ride) }
-                if let spare = planner.spare(journey) {
-                    Text(spare >= 0 ? "\(spare) min spare" : "\(-spare) min late")
-                        .font(.geist(13, .bold))
-                        .padding(.horizontal, 9).frame(height: 26)
-                        .background(spare < 0 ? Palette.conflictBackground : spare <= 2 ? Palette.warnBackground : spare >= 10 ? Palette.goodBackground : Palette.quiet, in: .rect(cornerRadius: 8))
-                        .foregroundStyle(spare < 0 ? Palette.conflictText : spare <= 2 ? Palette.warnText : spare >= 10 ? Palette.goodText : Palette.text)
-                }
-                let reasons = why(journey)
-                // Short reasons side by side; a long one (a notice) on its own line, wrapped.
-                FlowLayout(spacing: 6) {
-                    ForEach(reasons.filter { $0.text.count <= 28 }, id: \.text) { item in
-                        Label(item.text, systemImage: item.icon).font(.geist(13, .medium)).labelStyle(.titleAndIcon)
-                            .foregroundStyle(item.warn ? Palette.warnText : Palette.text)
-                    }
-                }
-                ForEach(reasons.filter { $0.text.count > 28 }, id: \.text) { item in
-                    Label(item.text, systemImage: item.icon).font(.geist(13, .medium)).labelStyle(.titleAndIcon)
-                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                        .foregroundStyle(item.warn ? Palette.warnText : Palette.text)
-                }
-                if journey.cancelled {
-                    Text("A ride on this route is cancelled · Not offered").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
-                }
-                if open {
-                    ScrollView { StepList(steps: TodayPage.Step.of(journey.tripLegs, to: planner.destination?.name ?? "", start: nil), legs: journey.tripLegs) }
-                        .frame(maxHeight: 220)
-                        .scrollBounceBehavior(.basedOnSize)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-                HStack(spacing: 8) {
-                    Button(action: show) {
-                        Label(planner.busy == option.index && !kept ? "Starting…" : "Start trip", systemImage: "arrow.right").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
-                    }
-                    .buttonStyle(PressStyle())
-                    .buttonFace(Palette.action, radius: 12)
-                    .foregroundStyle(Palette.onAction)
-                    .disabled(journey.cancelled || planner.busy != nil)
-                    if let add {
-                        Button(action: add) {
-                            Text(kept ? "✓ In my day" : planner.busy == option.index ? "Adding…" : "Add to my day").font(.geist(15, .semibold)).padding(.horizontal, 12).frame(height: 44)
-                                .contentTransition(.opacity)
-                        }
-                        .buttonStyle(PressStyle())
-                        .background(Palette.quiet, in: .rect(cornerRadius: 12))
-                        .sensoryFeedback(.success, trigger: kept)
-                    }
-                }
-                Button(action: toggle) {
-                    HStack(spacing: 4) {
-                        Text("Journey details")
-                        Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold)).rotationEffect(.degrees(open ? 180 : 0))
-                    }
-                    .font(.geist(14, .semibold)).foregroundStyle(Palette.navTeal).frame(minHeight: 36)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(16)
-            .foregroundStyle(Palette.text)
-        }
-        .background(Palette.surface)
-        .clipShape(.rect(cornerRadius: 22))
-        .shadow(color: .black.opacity(0.22), radius: 16, y: 12)
-        .accessibilityElement(children: .contain)
-    }
-
-    private func plate(icon: String, text: String) -> some View {
-        Label(text, systemImage: icon).font(.geist(13, .bold)).labelStyle(.titleAndIcon)
-            .padding(.horizontal, 7).frame(height: 24)
-            .background(.white, in: .rect(cornerRadius: 6))
-            .foregroundStyle(Color(hex: 0x211D15))
-    }
-
-    private func icon(_ mode: String) -> String {
-        switch mode {
-        case "bus": "bus.fill"
-        case "rail", "regional", "suburban", "train", "highspeed": "train.side.front.car"
-        case "subway": "tram.tunnel.fill"
-        default: "tram.fill"
-        }
-    }
-
-    private func lineText(_ journey: TripPlan.Journey) -> String {
-        if journey.mode == "bike" { return "By bike" }
-        if journey.mode == "walk" { return "On foot" }
-        let first = journey.rides.first.map { "at \($0.departTime)" } ?? ""
-        return journey.transfers > 0 ? "\(first) · \(journey.transfers) change\(journey.transfers == 1 ? "" : "s")" : first
-    }
-
-    private struct Why: Hashable { let icon: String; let text: String; let warn: Bool }
-
-    private func why(_ journey: TripPlan.Journey) -> [Why] {
-        var out: [Why] = []
-        if journey.mode == "transit" {
-            out.append(journey.transfers == 0 ? Why(icon: "checkmark", text: "No change", warn: false) : Why(icon: "tram", text: "\(journey.transfers) change\(journey.transfers == 1 ? "" : "s")", warn: false))
-        }
-        let walk = journey.walkMinutes
-        if walk > 0, journey.mode != "bike" { out.append(Why(icon: "figure.walk", text: "\(walk) min walking", warn: false)) }
-        if journey.mode == "bike" { out.append(Why(icon: "bicycle", text: "\(journey.durationMin) min cycling", warn: false)) }
-        if let late = journey.rides.compactMap({ $0.realtime == true ? $0.delayMin : nil }).max(), late >= 3 {
-            out.append(Why(icon: "clock.badge.exclamationmark", text: "\(late) min late now", warn: true))
-        }
-        if let lift = option.lifts.first { out.append(Why(icon: "exclamationmark.triangle", text: "Lift out of order at \(lift.stop ?? lift.label)", warn: true)) }
-        // Only what the forecast says for the hour they set off: likely rain, or dry; nothing without one.
-        if let answer = planner.answer, let rain = rainChance(answer, at: journey.departDate) {
-            if rain >= 50 { out.append(Why(icon: "cloud.rain", text: "Rain likely on the way", warn: true)) }
-            else if rain < 20 { out.append(Why(icon: "sun.max", text: "Dry on the way", warn: false)) }
-        }
-        let lines = Set(journey.rides.compactMap(\.line))
-        if let notice = planner.answer?.disruptions.first(where: { !Set($0.lines ?? []).isDisjoint(with: lines) }) {
-            out.append(Why(icon: "exclamationmark.triangle", text: notice.headline, warn: true))
-        }
-        return out
-    }
-
-    private func rainChance(_ answer: TripPlan, at date: Date?) -> Int? {
-        guard let date else { return nil }
-        return answer.weather.min { abs((TravelJSONAccessDates.date($0.at) ?? .distantPast).timeIntervalSince(date)) < abs((TravelJSONAccessDates.date($1.at) ?? .distantPast).timeIntervalSince(date)) }?.precipProbability
-    }
-}
-
-nonisolated private struct Perforation: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: rect.midY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-        return path
     }
 }
 
