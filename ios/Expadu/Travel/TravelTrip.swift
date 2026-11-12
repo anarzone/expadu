@@ -79,7 +79,10 @@ struct TravelTrip: View {
                 }
             }
         } message: { Text("The live steps stop. The trip stays on your day.") }
-        .onAppear { planner.follow(trip) }
+        .onAppear {
+            planner.follow(trip)
+            if planner.tripOnMap { mapOn = true; planner.tripOnMap = false }
+        }
     }
 
     private func head(_ look: LineLook) -> some View {
@@ -91,7 +94,7 @@ struct TravelTrip: View {
             .glassEffect(.clear.interactive(), in: .circle)
             .accessibilityLabel("Minimise")
             VStack(alignment: .leading, spacing: 1) {
-                Text("To \(trip.to)").font(.geist(17, .bold)).lineLimit(1)
+                Text(TodayPage.Trip.going(trip.to)).font(.geist(17, .bold)).lineLimit(1)
                 Text(meta).font(.geist(13)).opacity(0.9).lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -309,6 +312,17 @@ struct TravelTrip: View {
         planner.shown = true
         planner.field = .from
         planner.query = ""
+    }
+}
+
+extension TodayPage.Trip {
+    /// Where a trip goes, said as a person would: "Going home", "Going to work", "Going to Neumarkt".
+    static func going(_ to: String) -> String {
+        switch to.lowercased() {
+        case "home": "Going home"
+        case "work": "Going to work"
+        default: "Going to \(to)"
+        }
     }
 }
 

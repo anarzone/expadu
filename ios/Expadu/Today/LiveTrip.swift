@@ -172,11 +172,11 @@ struct LiveTrip: View {
         // Map, Steps and End are on the card; holding it gives only the rarer ones, never the same twice.
         .contextMenu {
             Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
-            Button { replan() } label: { Label("New way from here", systemImage: "arrow.triangle.turn.up.right.diamond") }
+            Button { replan() } label: { Label("New route from here", systemImage: "arrow.triangle.turn.up.right.diamond") }
                 .disabled(follow.point == nil)
         }
         .accessibilityAction(named: speak ? "Stop speaking turns" : "Speak turns") { speak.toggle() }
-        .accessibilityAction(named: "New way from here") { replan() }
+        .accessibilityAction(named: "New route from here") { replan() }
         .animation(Motion.spring, value: model.cardNote)
         .sheet(isPresented: $mapOpen) { WayMap(to: trip.to, legs: trip.legs, guiding: (trip, follow)) }
         .onAppear {

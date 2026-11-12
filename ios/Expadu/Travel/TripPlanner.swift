@@ -55,6 +55,8 @@ final class TripPlanner {
     // The page
     var shown = false
     var showTrip = false
+    /// The trip opens on its map (the board card's hold menu), once.
+    var tripOnMap = false
     var field = Field.to
     var query = ""
     var listening = false
