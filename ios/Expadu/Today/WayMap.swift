@@ -72,7 +72,7 @@ struct WayMap: View {
                     .padding(.horizontal, 14).padding(.top, 10)
                     .transition(.opacity.combined(with: .offset(y: -8)))
             } else if let here, here.offRoute {
-                Label("You’re off the way. Go back to the line, or plan a new way on the card.", systemImage: "exclamationmark.triangle.fill")
+                Label("You’re off the route. Go back to the line, or find a new route on the card.", systemImage: "exclamationmark.triangle.fill")
                     .font(.geist(14, .semibold)).foregroundStyle(Palette.warnText)
                     .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Palette.warnBackground, in: .rect(cornerRadius: 18))
@@ -160,7 +160,7 @@ struct WayMap: View {
                     Button { close(then: start) } label: {
                         HStack(spacing: 8) {
                             if starting { ProgressView().tint(.white) } else { Image(systemName: "figure.walk") }
-                            Text("I’m on my way").lineLimit(1)
+                            Text("Start trip").lineLimit(1)
                         }
                         .font(.geist(17, .semibold)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 50)
@@ -175,7 +175,7 @@ struct WayMap: View {
                 }
                 actions
                 if guiding == nil, ways.count > 1, picked != nil {
-                    section("Other ways") { otherWays }
+                    section("Other routes") { otherWays }
                 }
                 section("Step by step") {
                     StepList(steps: TodayPage.Step.of(legs, to: to, start: starts), current: here.map { at in

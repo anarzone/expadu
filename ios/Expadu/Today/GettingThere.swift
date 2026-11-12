@@ -42,7 +42,7 @@ struct GettingThere: View {
                     } else {
                         VStack(spacing: 12) {
                             ProgressView()
-                            Text("Finding the ways…").font(.geist(14)).foregroundStyle(Palette.textSoft)
+                            Text("Finding routes…").font(.geist(14)).foregroundStyle(Palette.textSoft)
                         }
                         .frame(maxWidth: .infinity).padding(.top, 80)
                     }
@@ -87,7 +87,7 @@ struct GettingThere: View {
             Button("Replace") { start(replace: true) }
             Button("Keep", role: .cancel) {}
         } message: {
-            Text("You’re already on your way somewhere else.")
+            Text("You’re already on a trip somewhere else.")
         }
     }
 
@@ -132,7 +132,7 @@ struct GettingThere: View {
             )
             .sensoryFeedback(.impact(weight: .light), trigger: mapOpen) { _, open in open }
             .accessibilityElement()
-            .accessibilityLabel("Map of your way")
+            .accessibilityLabel("Map of your route")
             .accessibilityHint("Opens the full map")
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { mapOpen = true }
@@ -165,7 +165,7 @@ struct GettingThere: View {
             .id(flips)
             .modifier(TicketFlip(trigger: flips))
         }
-        heading("Other ways")
+        heading("Other routes")
         VStack(spacing: 0) {
             ForEach(Array(plan.ways.enumerated()), id: \.offset) { index, other in
                 if index > 0 { Rectangle().fill(Palette.border).frame(height: 1).padding(.leading, 59) }
@@ -237,7 +237,7 @@ struct GettingThere: View {
                     Button { start(replace: false) } label: {
                         HStack(spacing: 8) {
                             if starting { ProgressView().tint(.white) } else { Image(systemName: "figure.walk") }
-                            Text("I’m on my way").lineLimit(1)
+                            Text("Start trip").lineLimit(1)
                         }
                         .font(.geist(17, .semibold)).foregroundStyle(.white)
                         .fixedSize()
@@ -302,7 +302,7 @@ struct GettingThere: View {
             rows.append(.init(symbol: "arrow.up.arrow.down", tint: Color(hex: 0xE09A06), title: "Out of order: \(lift)", note: "Allow a few extra minutes if you need step-free access."))
         }
         for notice in plan.notices where !notice.major {
-            rows.append(.init(symbol: "tram.fill", tint: Color(hex: 0x6A459B), title: notice.title, note: notice.lines.isEmpty ? "On your way" : "Line " + notice.lines.joined(separator: ", ")))
+            rows.append(.init(symbol: "tram.fill", tint: Color(hex: 0x6A459B), title: notice.title, note: notice.lines.isEmpty ? "On your route" : "Line " + notice.lines.joined(separator: ", ")))
         }
         return rows
     }

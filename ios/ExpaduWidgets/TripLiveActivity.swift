@@ -138,13 +138,13 @@ private struct Action: View {
         switch phase.kind {
         case .leave:
             Link(destination: URL(string: "expadu://trip/start")!) {
-                Label("I’m on my way", systemImage: "figure.walk").font(.geist(15, .semibold)).foregroundStyle(.white)
+                Label("Start trip", systemImage: "figure.walk").font(.geist(15, .semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 40)
                     .background(Palette.action, in: .capsule)
             }
         case .trouble:
             Link(destination: URL(string: "expadu://trip/new-way")!) {
-                Label("New way from here", systemImage: "arrow.triangle.turn.up.right.diamond.fill").font(.geist(15, .semibold)).foregroundStyle(.black)
+                Label("New route from here", systemImage: "arrow.triangle.turn.up.right.diamond.fill").font(.geist(15, .semibold)).foregroundStyle(.black)
                     .frame(maxWidth: .infinity).frame(height: 40)
                     .background(Color(hex: 0xF2A516), in: .capsule)
             }
@@ -163,7 +163,7 @@ private struct LockCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Circle().fill(phase.kind == .leave ? Palette.action : Color(hex: 0x2F9E5B)).frame(width: 7, height: 7)
-                Text(phase.kind == .leave ? "Time to go · \(to)" : "On your way · \(to)").font(.geist(13, .bold))
+                Text(phase.kind == .leave ? "Time to go · \(to)" : "Going to \(to)").font(.geist(13, .bold))
                     .foregroundStyle(phase.kind == .leave ? Palette.action : Color(hex: 0x2F9E5B)).lineLimit(1)
                 Spacer(minLength: 4)
                 if !phase.arrive.isEmpty {

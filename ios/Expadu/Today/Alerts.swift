@@ -354,8 +354,8 @@ struct LineTroubleDetail: View {
         let onIt = lines.contains(line)
         let others = lines.filter { $0 != line }
         return Label {
-            Text(onIt ? "On your way today: one of today’s ways rides line \(Board.badge(line))."
-                 : others.isEmpty ? "Not on your way today." : "Not on your way today: you ride \(others.count == 1 ? "line" : "lines") \(others.map { Board.badge($0) }.joined(separator: ", ")).")
+            Text(onIt ? "Your trips today: one of today’s routes rides line \(Board.badge(line))."
+                 : others.isEmpty ? "Not on your routes today." : "Not on your routes today: you ride \(others.count == 1 ? "line" : "lines") \(others.map { Board.badge($0) }.joined(separator: ", ")).")
                 .fixedSize(horizontal: false, vertical: true)
         } icon: {
             Image(systemName: onIt ? "exclamationmark.circle.fill" : "checkmark.circle.fill")

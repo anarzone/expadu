@@ -227,7 +227,7 @@ private struct TripCard: View {
                         Button { Task { await start(journey) } } label: {
                             HStack(spacing: 7) {
                                 if starting { ProgressView().tint(.white) } else { Image(systemName: "figure.walk") }
-                                Text("I’m on my way")
+                                Text("Start trip")
                             }
                             .font(.geist(15, .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 42)

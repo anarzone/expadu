@@ -332,7 +332,7 @@ struct LeaveSheet: View {
                     starting = false
                 }
             } label: {
-                Label(starting ? "Starting…" : "I’m on my way", systemImage: "figure.walk")
+                Label(starting ? "Starting…" : "Start trip", systemImage: "figure.walk")
                     .font(.geist(17, .semibold)).frame(maxWidth: .infinity).frame(height: 52)
             }
             .buttonStyle(PressStyle())
@@ -340,7 +340,7 @@ struct LeaveSheet: View {
             .foregroundStyle(Palette.onAction)
             .disabled(starting || leave.ways.isEmpty)
             Button(action: otherWays) {
-                Label("Other ways", systemImage: "arrow.triangle.branch").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
+                Label("Other routes", systemImage: "arrow.triangle.branch").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
             }
             .buttonStyle(PressStyle())
             .background(Palette.quiet, in: .rect(cornerRadius: 14))

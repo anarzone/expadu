@@ -29,7 +29,7 @@ final class TripPlanner {
         var id: Int { rawValue }
         var label: String {
             switch self {
-            case .best: "Best for you"
+            case .best: "Best route"
             case .arrival: "Earliest arrival"
             case .duration: "Shortest journey"
             case .walking: "Least walking"
@@ -194,7 +194,7 @@ final class TripPlanner {
                 answer = reply.plan
                 raw = reply.raw
                 loading = false
-                if reply.plan.journeys.isEmpty { problem = "No ways right now" }
+                if reply.plan.journeys.isEmpty { problem = "No routes right now" }
             }
         } catch {
             withAnimation(.smooth) {
