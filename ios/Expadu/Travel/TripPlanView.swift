@@ -243,7 +243,7 @@ struct TripPlanView: View {
                         heading("Recent")
                         group {
                             ForEach(Array(recents.enumerated()), id: \.offset) { _, recent in
-                                PlanRow(icon: "clock.arrow.circlepath", title: JourneySteps.short(recent.name), sub: recent.area) {
+                                PlanRow(icon: "clock.arrow.circlepath", title: StopName.short(recent.name), sub: recent.area) {
                                     if let lat = recent.lat, let lng = recent.lng { Task { await go(TripPoint(name: recent.name, lat: lat, lng: lng)) } }
                                 }
                             }
@@ -275,8 +275,8 @@ struct TripPlanView: View {
                     if !planner.suggestions.isEmpty {
                         group {
                             ForEach(planner.suggestions) { hit in
-                                PlanRow(icon: icon(hit.kind), title: JourneySteps.short(hit.name), sub: hit.area) {
-                                    let end = TripPoint(name: JourneySteps.short(hit.name), lat: hit.lat, lng: hit.lng)
+                                PlanRow(icon: icon(hit.kind), title: StopName.short(hit.name), sub: hit.area) {
+                                    let end = TripPoint(name: StopName.short(hit.name), lat: hit.lat, lng: hit.lng)
                                     if planner.field == .from { planner.setFrom(end) } else { Task { await go(end) } }
                                 }
                             }
@@ -343,7 +343,7 @@ struct TripPlanView: View {
 
     private func pickFirst() async {
         if let hit = planner.suggestions.first {
-            let end = TripPoint(name: JourneySteps.short(hit.name), lat: hit.lat, lng: hit.lng)
+            let end = TripPoint(name: StopName.short(hit.name), lat: hit.lat, lng: hit.lng)
             if planner.field == .from { planner.setFrom(end) } else { await go(end) }
         }
     }
