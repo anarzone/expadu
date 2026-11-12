@@ -27,6 +27,11 @@ struct TravelTrip: View {
     @State private var asking = false
     @State private var problem: String?
     @State private var working = false
+    /// Where the line's colour ends on the map: the bottom of the band, measured.
+    @State private var bandBottom: CGFloat = 230
+    /// Where the Map button sits on the screen, for the map to grow out of ("Grow").
+    @State private var mapAnchor = UnitPoint(x: 0.85, y: 0.5)
+    @State private var screen = CGSize(width: 402, height: 874)
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
@@ -39,31 +44,58 @@ struct TravelTrip: View {
             ZStack(alignment: .top) {
                 if mapOn {
                     // The map view: the whole screen is the map, the step you're on in a band on top.
-                    fullMap(step: step, index: shown, current: current, count: steps.count, now: now, look: look)
+                    mapLayer(current: current)
+                        .transition(mapTransition)
+                }
+                // The line's colour: the whole screen with the steps; on the map it gathers into the band.
+                UnevenRoundedRectangle(bottomLeadingRadius: mapOn ? 26 : 0, bottomTrailingRadius: mapOn ? 26 : 0)
+                    .fill(look.fill)
+                    .shadow(color: .black.opacity(mapOn ? 0.2 : 0), radius: 14, y: 4)
+                    .frame(height: mapOn ? bandBottom : nil)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                if !mapOn, let line = trip.legs.first(where: \.rides)?.line {
+                    Text(line).font(.posterGrotesque(360)).tracking(-16)
+                        .foregroundStyle(look.ink.opacity(0.1)).lineLimit(1).fixedSize()
+                        .offset(x: -20, y: 40).frame(maxWidth: .infinity, alignment: .leading)
+                        .allowsHitTesting(false)
                         .transition(.opacity)
-                } else {
-                    look.fill.ignoresSafeArea()
-                    if let line = trip.legs.first(where: \.rides)?.line {
-                        Text(line).font(.posterGrotesque(360)).tracking(-16)
-                            .foregroundStyle(look.ink.opacity(0.1)).lineLimit(1).fixedSize()
-                            .offset(x: -20, y: 40).frame(maxWidth: .infinity, alignment: .leading)
-                            .allowsHitTesting(false)
-                    }
-                    VStack(spacing: 0) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            head(look)
+                }
+                VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: mapOn ? 12 : 14) {
+                        head(look)
+                        if !mapOn {
                             bars(steps.count, current: current, shown: shown, ink: look.ink)
-                            if let step { moment(step, index: shown, count: steps.count, now: now, look: look) }
+                                .transition(.opacity)
                         }
-                        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 18)
-                        .foregroundStyle(look.ink)
-                        way(steps: steps, current: current)
+                        if let step {
+                            // One step, two sizes: the old one goes quickly, the new one comes just after,
+                            // so the two never sit on top of each other.
+                            if mapOn {
+                                bandMoment(step, index: shown, count: steps.count, now: now)
+                                    .transition(stepSwap)
+                            } else {
+                                moment(step, index: shown, count: steps.count, now: now, look: look)
+                                    .transition(stepSwap)
+                            }
+                        }
                     }
-                    .transition(.opacity)
+                    .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, mapOn ? 16 : 18)
+                    .foregroundStyle(look.ink)
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { bottom in
+                        if mapOn { withAnimation(switchAnimation) { bandBottom = bottom } }
+                    }
+                    if !mapOn {
+                        way(steps: steps, current: current)
+                            .transition(wayTransition)
+                    }
+                    Spacer(minLength: 0)
                 }
             }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { screen = $0 }
             .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: shown)
-            .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: mapOn)
+            .onChange(of: MotionStore.shared.replays[.tripMapSwitch]) { switchMap(!mapOn) }
         }
         .task(id: looking) {
             // A look ahead comes back to the step they're on after a while.
@@ -198,9 +230,12 @@ struct TravelTrip: View {
                 Text("All steps").font(.geist(16, .bold))
                 Text("· \(steps.count)").font(.geist(15)).foregroundStyle(Palette.textSoft)
                 Spacer(minLength: 0)
-                Button { mapOn = true } label: {
+                Button { switchMap(true) } label: {
                     Label("Map", systemImage: "map").font(.geist(14, .semibold))
                         .padding(.horizontal, 12).frame(height: 38)
+                }
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+                    mapAnchor = UnitPoint(x: frame.midX / max(1, screen.width), y: frame.midY / max(1, screen.height))
                 }
                 .buttonStyle(PressStyle())
                 .background(Palette.quiet, in: .rect(cornerRadius: 12))
@@ -227,58 +262,81 @@ struct TravelTrip: View {
         .padding(.bottom, 6)
     }
 
-    /// The map view: the route and where you are on the whole screen, the step you're on in a band on
-    /// top. Steps lays the steps over the lower left of the map, the one you're on at the bottom and
-    /// the next ones above it fading out (as live comments do), and moves the map up so you stay in sight.
-    private func fullMap(step: TodayPage.Step?, index: Int, current: Int, count: Int, now: Date, look: LineLook) -> some View {
-        ZStack(alignment: .top) {
-            CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
-                    padding: UIEdgeInsets(top: stepsOpen ? 225 : 250, left: 40, bottom: stepsOpen ? 16 : 130, right: 40), follow: followMe, showsUser: true,
-                    fitID: fitTick * 10 + (stepsOpen ? 1 : 0), creditInset: stepsOpen ? 8 : 70,
-                    // The list's top fades out, so the map only keeps clear of its solid lower part.
-                    viewInset: UIEdgeInsets(top: 0, left: 0, bottom: stepsOpen ? Self.feedHeight * 0.7 + 64 : 0, right: 0))
-                .ignoresSafeArea()
-            band(step: step, index: index, count: count, now: now, look: look)
-        }
-        .overlay(alignment: .bottomLeading) { mapControls(current: current) }
-        .sensoryFeedback(.selection, trigger: followMe)
-        .sensoryFeedback(.selection, trigger: stepsOpen)
+    /// The map view's map: the route and where you are on the whole screen (the band lies over its top).
+    /// Steps lays the steps over the lower left of the map, the one you're on at the bottom and the next
+    /// ones above it fading out (as live comments do), and moves the map up so you stay in sight.
+    private func mapLayer(current: Int) -> some View {
+        CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
+                padding: UIEdgeInsets(top: stepsOpen ? 225 : 250, left: 40, bottom: stepsOpen ? 16 : 130, right: 40), follow: followMe, showsUser: true,
+                fitID: fitTick * 10 + (stepsOpen ? 1 : 0), creditInset: stepsOpen ? 8 : 70,
+                // The list's top fades out, so the map only keeps clear of its solid lower part.
+                viewInset: UIEdgeInsets(top: 0, left: 0, bottom: stepsOpen ? Self.feedHeight * 0.7 + 64 : 0, right: 0))
+            .ignoresSafeArea()
+            .overlay(alignment: .bottomLeading) { mapControls(current: current) }
+            .sensoryFeedback(.selection, trigger: followMe)
+            .sensoryFeedback(.selection, trigger: stepsOpen)
     }
 
     private static let feedHeight: CGFloat = 300
 
-    /// The step you're on, in the line's colour, over the top of the map.
-    private func band(step: TodayPage.Step?, index: Int, count: Int, now: Date, look: LineLook) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            head(look)
-            if let step {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(step.title).font(.posterGrotesque(24)).lineLimit(2).minimumScaleFactor(0.8)
-                        if !step.sub.isEmpty { Text(step.sub).font(.geist(13.5, .medium)).opacity(0.9).lineLimit(1) }
-                    }
-                    Spacer(minLength: 6)
-                    if index < count - 1 {
-                        VStack(alignment: .trailing, spacing: 0) {
-                            Text(countdownLabel(step, index: index, now: now)).font(.geist(12.5, .semibold)).opacity(0.9)
-                            HStack(alignment: .lastTextBaseline, spacing: 3) {
-                                Text("\(minutesLeft(step, index: index, now: now))").font(.posterGrotesque(32)).monospacedDigit()
-                                    .contentTransition(.numericText())
-                                Text("min").font(.geist(14, .semibold))
-                            }
-                        }
+    /// The step you're on, compact, in the band over the map; its title is the same one as the big
+    /// step's, gliding between the two.
+    private func bandMoment(_ step: TodayPage.Step, index: Int, count: Int, now: Date) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(step.title).font(.posterGrotesque(24)).lineLimit(2).minimumScaleFactor(0.8)
+                if !step.sub.isEmpty { Text(step.sub).font(.geist(13.5, .medium)).opacity(0.9).lineLimit(1) }
+            }
+            Spacer(minLength: 6)
+            if index < count - 1 {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(countdownLabel(step, index: index, now: now)).font(.geist(12.5, .semibold)).opacity(0.9)
+                    HStack(alignment: .lastTextBaseline, spacing: 3) {
+                        Text("\(minutesLeft(step, index: index, now: now))").font(.posterGrotesque(32)).monospacedDigit()
+                            .contentTransition(.numericText())
+                        Text("min").font(.geist(14, .semibold))
                     }
                 }
-                .contentTransition(.opacity)
+                .transition(.opacity)
             }
         }
-        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 16)
-        .foregroundStyle(look.ink)
-        .background {
-            UnevenRoundedRectangle(bottomLeadingRadius: 26, bottomTrailingRadius: 26)
-                .fill(look.fill)
-                .shadow(color: .black.opacity(0.2), radius: 14, y: 4)
-                .ignoresSafeArea(edges: .top)
+        .contentTransition(.opacity)
+    }
+
+    // MARK: Switching between the steps and the map (Motion Lab token trip.mapSwitch)
+
+    private var switchVariant: String { MotionStore.shared.variant(of: .tripMapSwitch).id }
+
+    private var switchAnimation: Animation? { MotionStore.shared.animation(.tripMapSwitch, reduceMotion: reduceMotion) }
+
+    private func switchMap(_ on: Bool) {
+        guard on != mapOn else { return }
+        withAnimation(switchAnimation) { mapOn = on }
+    }
+
+    /// How the map comes and goes: zooming in as the colour gathers up (Morph), growing out of the
+    /// Map button (Grow), rising from the bottom (Slide up), or a plain fade.
+    private var mapTransition: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        return switch switchVariant {
+        case "Grow": .scale(scale: 0.06, anchor: mapAnchor).combined(with: .opacity)
+        case "Slide up": .move(edge: .bottom)
+        case "Fade": .opacity
+        default: .scale(scale: 1.08).combined(with: .opacity)
+        }
+    }
+
+    private var stepSwap: AnyTransition {
+        .asymmetric(insertion: .opacity.animation(reduceMotion ? nil : .easeOut(duration: 0.22).delay(0.18)),
+                    removal: .opacity.animation(reduceMotion ? nil : .easeIn(duration: 0.12)))
+    }
+
+    /// The steps card: sinking away under the map (Morph), or fading.
+    private var wayTransition: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        return switch switchVariant {
+        case "Morph": .move(edge: .bottom).combined(with: .opacity)
+        default: .opacity
         }
     }
 
@@ -300,7 +358,7 @@ struct TravelTrip: View {
                 .buttonStyle(PressStyle())
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
                 Spacer(minLength: 0)
-                Button { mapOn = false } label: {
+                Button { switchMap(false) } label: {
                     Image(systemName: "list.bullet.rectangle.portrait").font(.system(size: 18, weight: .semibold)).frame(width: 46, height: 46)
                 }
                 .buttonStyle(PressStyle())
