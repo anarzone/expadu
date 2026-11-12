@@ -309,18 +309,6 @@ final class TodayModel {
         return false
     }
 
-    /// I'm on my way on a way Getting there planned: Today shows the trip live after it.
-    func startWay(_ api: AppAPI, plan: WayPlan, way: Int, replace: Bool) async -> (running: Bool, problem: String?) {
-        do throws(APIFailure) {
-            let started = try await api.startWay(plan: plan.plan, way: way, replace: replace)
-            if started == .running { return (true, nil) }
-            await load(api, quietly: true)
-            return (false, nil)
-        } catch {
-            return (false, Self.words(error))
-        }
-    }
-
     /// Off the way or the ride gone: our planner again, from where the phone is to the same place,
     /// and the trip goes on with the first way. Nil when it did, else why not.
     func newWay(_ api: AppAPI, trip: TodayPage.Trip, from: TodayPage.Point) async -> String? {

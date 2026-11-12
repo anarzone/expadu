@@ -191,17 +191,23 @@ private struct ComposerTripCard: View {
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
     @Environment(ComposerModel.self) private var model
+    @Environment(TripPlanner.self) private var planner
     @State private var open = false
-    @State private var map = false
-    @Namespace private var mapSpace
-    @State private var starting = false
-    @State private var problem: String?
 
     var body: some View {
+        // The trip under way is the same live card as Today's and the board's, never the answer's snapshot.
+        if trip.trip.link == "trip", let running = today.page?.trip {
+            TripCard(trip: running).padding(.horizontal, -12)
+        } else {
+            answer
+        }
+    }
+
+    private var answer: some View {
         let journey = trip.trip.journey
         let ride = journey.legs.first { $0.mode != "walk" && $0.mode != "bike" }
         let legs = Self.legs(journey)
-        VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 10) {
             if let major = trip.major {
                 VStack(alignment: .leading, spacing: 4) {
                     Label(major.title, systemImage: "exclamationmark.triangle.fill").labelStyle(Tight())
@@ -254,25 +260,14 @@ private struct ComposerTripCard: View {
                         .transition(.opacity)
                 }
                 HStack(spacing: 8) {
-                    if trip.trip.link != "trip" {
-                        Button { Task { await start(journey) } } label: {
-                            HStack(spacing: 7) {
-                                if starting { ProgressView().tint(.white) } else { Image(systemName: "figure.walk") }
-                                Text("Start trip")
-                            }
+                    // Travel's routes to the same place and time: the one route list, map and Start trip.
+                    Button { Task { await routes(journey) } } label: {
+                        Label("Routes", systemImage: "arrow.triangle.branch").labelStyle(Tight())
                             .font(.geist(15, .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 42)
                             .buttonFace(Palette.action)
-                        }
-                        .buttonStyle(PressStyle()).disabled(starting)
-                    }
-                    Button { map = true } label: {
-                        Label("Map", systemImage: "map").labelStyle(Tight())
-                            .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
-                            .padding(.horizontal, 16).frame(height: 42).buttonFace(Palette.quiet)
                     }
                     .buttonStyle(PressStyle())
-                    .matchedTransitionSource(id: "map", in: mapSpace)
                     Button { withAnimation(Motion.ios(0.3)) { open.toggle() } } label: {
                         Label(open ? "Hide steps" : "Steps", systemImage: "list.bullet").labelStyle(Tight())
                             .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
@@ -281,37 +276,26 @@ private struct ComposerTripCard: View {
                     .buttonStyle(PressStyle())
                 }
                 .padding(12)
-                if let problem {
-                    Text(problem).font(.geist(13.5, .semibold)).foregroundStyle(Palette.conflictText).padding(.horizontal, 14).padding(.bottom, 12)
-                }
             }
             .card(radius: 22)
             Text(trip.trip.basis == "live" ? "Times from KVB, live where the feed has them." : "Timetable times; live times show on the day.")
                 .font(.geist(12.5)).foregroundStyle(Palette.textSoft)
         }
-        .fullScreenCover(isPresented: $map) {
-            // The map grows out of the button that opened it.
-            WayMap(to: trip.trip.for.place, legs: legs).navigationTransition(.zoom(sourceID: "map", in: mapSpace))
-        }
     }
 
-    /// I'm on my way: the way there again from where the phone is, and the first one starts. Today
-    /// shows it live after.
-    private func start(_ journey: ComposerBlock.Journey) async {
+    /// The routes there, in Travel's planner over Composer: from where the phone is, arriving by the
+    /// plan's start when it has one.
+    private func routes(_ journey: ComposerBlock.Journey) async {
         guard let end = journey.legs.last?.to else { return }
-        starting = true
-        defer { starting = false }
-        do throws(APIFailure) {
-            let plan = try await session.api.planWay(to: trip.trip.for.place, latitude: end.lat, longitude: end.lng,
-                                                     fromLatitude: today.place?.latitude, fromLongitude: today.place?.longitude, startsAt: nil)
-            guard !plan.ways.isEmpty else { problem = "No way there right now. Try again in a moment."; return }
-            let (running, why) = await today.startWay(session.api, plan: plan, way: 0, replace: false)
-            if let why { problem = why } else if running { problem = "You’re already on your way somewhere else. End that trip on Today first." } else {
-                model.say("You’re on your way. Today shows it live.")
-            }
-        } catch {
-            problem = ComposerModel.words(error)
-        }
+        planner.shown = true
+        await planner.routes(to: TripPoint(name: trip.trip.for.place, lat: end.lat, lng: end.lng), startsAt: Self.start(trip.trip.for.start), session.api)
+    }
+
+    /// "18:30" as today's time; nil when it's gone or there's none.
+    private static func start(_ clock: String?) -> Date? {
+        guard let clock, let hour = Int(clock.prefix(2)), let minute = Int(clock.suffix(2)) else { return nil }
+        let date = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: .now)
+        return date.flatMap { $0 > .now ? $0 : nil }
     }
 
     /// The journey as the app's own legs, for its step list and map.
