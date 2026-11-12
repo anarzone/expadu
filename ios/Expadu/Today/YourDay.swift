@@ -38,7 +38,7 @@ struct YourDay: View {
                 if !done.isEmpty { DoneFold(page: page, done: done, open: $doneOpen) }
                 plans(before, firstIsNext: true)
                 if let trip = tripHere {
-                    LiveTrip(trip: trip).padding(.bottom, 14)
+                    TripCard(trip: trip).padding(.horizontal, -12).padding(.bottom, 6)
                         .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
                                                 removal: .opacity.combined(with: .offset(y: -10)).combined(with: .scale(scale: 0.97))))
                 }
@@ -148,6 +148,7 @@ struct Stop: View {
     let next: Bool
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
+    @Environment(TripPlanner.self) private var planner
     @State private var details = false
     @State private var editing = false
 
@@ -209,11 +210,12 @@ struct Stop: View {
             // The trip goes under the plan it's for: the next one, or a later one while this one is under way.
             if let trip = page.trip, trip.to == plan.title {
                 // lvlive in, tlaway out.
-                LiveTrip(trip: trip).padding(.top, 12)
+                TripCard(trip: trip).padding(.horizontal, -12).padding(.top, 4)
                     .transition(.asymmetric(insertion: .scale(scale: 0.985).combined(with: .opacity),
                                             removal: .opacity.combined(with: .offset(y: -10)).combined(with: .scale(scale: 0.97))))
             } else if page.trip == nil, let leave = page.leave, leave.isKnown, forThis {
-                LeaveCard(leave: leave, place: plan.shortPlace).padding(.top, 12)
+                // The same Leave row as the Travel board; Leave at opens over the page.
+                LeaveRow(leave: leave) { planner.leaveOpen = true }.padding(.horizontal, -12).padding(.top, 4)
                     .transition(.opacity)
             }
         }
@@ -461,177 +463,9 @@ struct CardSay: View {
     }
 }
 
-/// When to leave: a ring counting down, the line, when you're there, the minutes to spare,
-/// the walk to the platform, and the trip's two actions. A changed way turns its values over and
-/// the card glows green (lvflip, lvglow); its note sits at its top.
-struct LeaveCard: View {
-    let leave: TodayPage.Leave
-    let place: String?
-    private let warn = Color(hex: 0xC98208)
-    @Environment(Session.self) private var session
-    @Environment(TodayModel.self) private var model
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var starting = false
-    @State private var othersOpen = false
-    @State private var replaceAsked = false
-    @State private var glow = 0.0
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if let say = model.cardNote {
-                CardSay(note: say).padding(.top, -2)
-            }
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle().stroke(Palette.quiet, lineWidth: 4)
-                    Circle().trim(from: 0, to: ringFill).stroke(warn, style: StrokeStyle(lineWidth: 4, lineCap: .round)).rotationEffect(.degrees(-90))
-                        .animation(Motion.ios(0.8), value: ringFill)
-                    // Minutes in the last hour; further off, hours ("10 h").
-                    let minutes = leave.leaveInMinutes ?? 0
-                    VStack(spacing: -1) {
-                        Text(minutes >= 60 ? "\(minutes / 60)" : "\(minutes)").font(.posterGrotesque(15)).contentTransition(.numericText(countsDown: true))
-                        Text(minutes >= 60 ? "h" : "min").font(.geist(9, .semibold)).foregroundStyle(Palette.textSoft)
-                    }
-                }
-                .frame(width: 46, height: 46)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Leave at \(leave.leaveTime ?? "")").font(.geist(17, .bold)).modifier(Flip(trigger: model.cardFlips))
-                    if leave.live {
-                        HStack(spacing: 5) {
-                            Circle().frame(width: 7, height: 7)
-                            Text("Live · KVB").font(.geist(12.5, .bold))
-                        }
-                        .foregroundStyle(Motion.green)
-                    }
-                }
-            }
-            HStack(spacing: 6) {
-                if let line = leave.line, let departs = leave.departs {
-                    tile(label: nil, badge: Board.badge(line), line: LineLook(hex: leave.color ?? "#1A4CD4"), value: departs, note: leave.from ?? "", order: 1)
-                }
-                tile(label: "There", badge: nil, line: nil, value: leave.arriveTime ?? "", note: place ?? leave.to, order: 2)
-                if let spare = leave.spareMinutes, spare < 0 {
-                    // Late: by how much, in the warning colour, never a negative spare.
-                    tile(label: "Late", badge: nil, line: nil, value: "\(-spare) min", note: leave.start.map { "after \($0)" } ?? "", warning: true, order: 3)
-                } else if let spare = leave.spareMinutes {
-                    tile(label: "Spare", badge: nil, line: nil, value: "\(spare) min", note: leave.start.map { "before \($0)" } ?? "", order: 3)
-                }
-            }
-            if let note = leave.note {
-                Label(note, systemImage: "figure.walk").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
-                    .labelStyle(Tight())
-            }
-            HStack(spacing: 8) {
-                Button { start(replace: false) } label: {
-                    Group {
-                        if starting {
-                            ProgressView().tint(.white)
-                        } else {
-                            Label("Start trip", systemImage: "figure.walk")
-                        }
-                    }
-                    .font(.geist(15, .semibold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).frame(height: 44)
-                    .buttonFace(Palette.action)
-                    .contentShape(.capsule)
-                }
-                .buttonStyle(PressStyle())
-                .disabled(starting)
-                Button { othersOpen = true } label: {
-                    Label("Other routes", systemImage: "arrow.triangle.branch")
-                        .font(.geist(15, .medium)).foregroundStyle(Palette.text)
-                        .padding(.horizontal, 16).frame(height: 44)
-                        .buttonFace(Palette.quiet)
-                        .contentShape(.capsule)
-                }
-                .buttonStyle(PressStyle())
-                .disabled(leave.ways.count < 2)
-            }
-            .labelStyle(Tight())
-        }
-        .padding(14)
-        .background(Palette.surface, in: .rect(cornerRadius: 20))
-        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(warn.opacity(0.55), lineWidth: 1.5) }
-        // lvglow: green for a moment after the way changed, the halo fading out.
-        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(Motion.green, lineWidth: 2).opacity(glow) }
-        .background { RoundedRectangle(cornerRadius: 20).stroke(Motion.green.opacity(0.14), lineWidth: 12).opacity(glow) }
-        .animation(Motion.spring, value: model.cardNote)
-        .onChange(of: model.cardFlips) {
-            guard !reduceMotion else { return }
-            glow = 1
-            withAnimation(.easeOut(duration: 1.0).delay(0.4)) { glow = 0 }
-        }
-        .sheet(isPresented: $othersOpen) { OtherWaysSheet(leave: leave) }
-        .confirmationDialog("Replace the trip you’re on?", isPresented: $replaceAsked, titleVisibility: .visible) {
-            Button("Replace") { start(replace: true) }
-            Button("Keep", role: .cancel) {}
-        } message: {
-            Text("You’re already on a trip somewhere else.")
-        }
-    }
-
-    /// I'm on my way, on the way the card shows; a trip already running asks first.
-    private func start(replace: Bool) {
-        // No way loaded yet: never a dead button. Look again and say what came of it.
-        guard let way = leave.ways.first else {
-            starting = true
-            Task {
-                await model.findWay(session.api)
-                starting = false
-            }
-            return
-        }
-        starting = true
-        Task {
-            let running = await model.startTrip(session.api, way: way, replace: replace)
-            starting = false
-            if running { replaceAsked = true }
-        }
-    }
-
-    /// Fuller as the time to leave comes closer, over the last quarter hour.
-    private var ringFill: Double {
-        max(0.04, 1 - Double(min(leave.leaveInMinutes ?? 15, 15)) / 15)
-    }
-
-    private func tile(label: String?, badge: String?, line: LineLook?, value: String, note: String, warning: Bool = false, order: Int) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            if let badge, let line {
-                Label(badge, systemImage: "tram.fill").labelStyle(.titleAndIcon)
-                    .font(.geist(12, .bold)).foregroundStyle(line.ink)
-                    .padding(.horizontal, 6).frame(height: 20)
-                    .background(line.fill, in: .rect(cornerRadius: 5))
-            } else if let label {
-                Text(label.uppercased()).font(.geist(10.5, .bold)).tracking(0.4).foregroundStyle(warning ? Palette.conflictText : Palette.textSoft)
-            }
-            Text(value).font(.posterGrotesque(19)).monospacedDigit().foregroundStyle(warning ? Palette.conflictText : Palette.text)
-                .modifier(Flip(trigger: model.cardFlips, order: order))
-            Text(note).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1).minimumScaleFactor(0.85)
-        }
-        .padding(.vertical, 9).padding(.horizontal, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Palette.quiet, in: .rect(cornerRadius: 12))
-    }
-}
-
 /// On your way, live (the canvas's .trip-l): progress bars for the steps, the step they're on by the
 /// clock in its line's colour, every step when asked, the way on a map, and End. It turns live in
 /// place: the card settles in, its parts rise one after another, the dot pulses.
-
-struct WhyLines: View {
-    let way: TodayPage.Way
-    let start: String?
-
-    var body: some View {
-        let lines: [(String, String)] = [
-            way.lines.isEmpty ? nil : ("checkmark", way.transfers == 0 ? "No change" : way.transfers == 1 ? "1 change" : "\(way.transfers) changes"),
-            way.walkMinutes > 0 ? ("figure.walk", "\(way.walkMinutes) min walking") : nil,
-            way.spareMinutes < 0 ? ("exclamationmark.triangle.fill", "\(-way.spareMinutes) min after your \(start ?? "start")")
-                : way.spareMinutes <= 2 ? ("exclamationmark.triangle.fill", "Only \(way.spareMinutes) min before your \(start ?? "start")") : nil,
-        ].compactMap { $0 }
-        FlowLines(lines: lines)
-    }
-}
 
 struct FlowLines: View {
     let lines: [(String, String)]

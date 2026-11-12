@@ -309,18 +309,6 @@ final class TodayModel {
         return false
     }
 
-    /// I'm on my way on a way Getting there planned: Today shows the trip live after it.
-    func startWay(_ api: AppAPI, plan: WayPlan, way: Int, replace: Bool) async -> (running: Bool, problem: String?) {
-        do throws(APIFailure) {
-            let started = try await api.startWay(plan: plan.plan, way: way, replace: replace)
-            if started == .running { return (true, nil) }
-            await load(api, quietly: true)
-            return (false, nil)
-        } catch {
-            return (false, Self.words(error))
-        }
-    }
-
     /// Off the way or the ride gone: our planner again, from where the phone is to the same place,
     /// and the trip goes on with the first way. Nil when it did, else why not.
     func newWay(_ api: AppAPI, trip: TodayPage.Trip, from: TodayPage.Point) async -> String? {
@@ -413,10 +401,22 @@ final class TodayModel {
         }
     }
 
+    /// Departures near them: the same board reply Travel's board reads (the nearest stop's live runs,
+    /// with KVB's delays and DELFI's cancellations), so Today never shows other times than Travel.
     func loadBoard(_ api: AppAPI) async {
         let place = await locator.coordinate() ?? OneLocation.neumarkt
-        if let next = try? await api.nearby(latitude: place.latitude, longitude: place.longitude) {
-            withAnimation(.snappy) { board = next }
+        guard let reply = try? await api.station(latitude: place.latitude, longitude: place.longitude), let station = reply.station else { return }
+        let now = Date.now
+        let rows: [Board.Departure] = station.lines.flatMap { line in
+            line.dirs.compactMap { dir -> Board.Departure? in
+                let runs = dir.runs.filter { ($0.date ?? .distantPast) >= now.addingTimeInterval(-30) }
+                guard let next = runs.first else { return nil }
+                return Board.Departure(line: line.line, direction: dir.dest, stop: station.name, color: line.color ?? "#4A4A4A",
+                                       minutes: runs.prefix(3).map { $0.minutes(from: now) }, delay: next.delay ?? 0,
+                                       cancelled: next.cancelled || dir.cancelled, disrupted: dir.disrupted)
+            }
         }
+        .sorted { ($0.minutes.first ?? 999) < ($1.minutes.first ?? 999) }
+        withAnimation(.snappy) { board = Board(stops: [Board.Stop(name: station.name, walkMinutes: station.walkMin ?? 0)], departures: rows) }
     }
 }

@@ -125,31 +125,13 @@ struct TripRoutesView: View {
     }
 
     private func map(_ option: TripPlanner.Option?, bottom: CGFloat) -> some View {
-        let legs = option?.journey.legs ?? []
-        let lines: [CityMap.Line] = legs.enumerated().compactMap { i, leg in
-            guard let poly = leg.polyline else { return nil }
-            let points = Polyline.decode(poly)
-            guard points.count > 1 else { return nil }
-            let walk = leg.mode == "walk"
-            return CityMap.Line(id: "r\(option?.index ?? 0)-\(i)", points: points.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) },
-                                color: walk ? UIColor(Palette.textSoft) : UIColor(LineLook(hex: leg.color ?? "#00768B").base), width: walk ? 4 : 7, dashed: walk)
-        }
-        var pins: [CityMap.Pin] = []
-        if let from = planner.answer?.from { pins.append(.init(id: "from", coordinate: .init(latitude: from.lat, longitude: from.lng), title: planner.from?.name ?? "You", kind: .start)) }
-        if let to = planner.destination { pins.append(.init(id: "to", coordinate: .init(latitude: to.lat, longitude: to.lng), title: to.name, kind: .destination)) }
-        // Each ride's stops as small rings on its line, under the badges.
-        for (i, leg) in legs.enumerated() where leg.isRide {
-            let ring = UIColor(LineLook(hex: leg.color ?? "#00768B").deep)
-            for (n, stop) in (leg.intermediateStops ?? []).enumerated() {
-                guard let lat = stop.lat, let lng = stop.lng else { continue }
-                pins.append(.init(id: "s\(i)-\(n)", coordinate: .init(latitude: lat, longitude: lng), title: stop.name, kind: .stop(ring: ring)))
-            }
-        }
-        for (i, leg) in legs.enumerated() where leg.isRide {
-            if let lat = leg.from.lat, let lng = leg.from.lng, let line = leg.line {
-                let look = LineLook(hex: leg.color ?? "#00768B")
-                pins.append(.init(id: "b\(i)", coordinate: .init(latitude: lat, longitude: lng), title: line, kind: .badge(text: line, fill: UIColor(look.base), ink: UIColor(look.ink))))
-            }
+        // Drawn as every trip map is (WayDrawing): the same lines, stops, badges and flag as the trip screen.
+        let legs = option?.journey.tripLegs ?? []
+        let lines = WayDrawing.lines(legs, prefix: "r\(option?.index ?? 0)-")
+        var pins = WayDrawing.pins(legs, to: planner.destination?.name ?? "")
+        // Before a route is drawn, the place it's for.
+        if legs.isEmpty, let to = planner.destination {
+            pins.append(.init(id: "to", coordinate: .init(latitude: to.lat, longitude: to.lng), title: to.name, kind: .destination))
         }
         let fit = lines.flatMap(\.points) + pins.map(\.coordinate)
         return CityMap(lines: lines, pins: pins, fit: fit, padding: UIEdgeInsets(top: 190, left: 44, bottom: bottom, right: 44),
@@ -418,9 +400,9 @@ private struct RouteRow: View {
                     // With earlier lines for the same connection, each says when it comes: "16 at 19:37 or 18 at 19:44".
                     if let also = journey.firstRideAlso, !also.isEmpty {
                         Text((also.map { "\($0.line) at \($0.departTime)" } + ["\(first.line ?? "") at \(first.departTime)"]).joined(separator: " or ")
-                             + " from \(JourneySteps.short(first.from.name ?? ""))").lineLimit(1).minimumScaleFactor(0.85)
+                             + " from \(StopName.short(first.from.name ?? ""))").lineLimit(1).minimumScaleFactor(0.85)
                     } else {
-                        Text("\(first.departTime) from \(JourneySteps.short(first.from.name ?? ""))").lineLimit(1)
+                        Text("\(first.departTime) from \(StopName.short(first.from.name ?? ""))").lineLimit(1)
                     }
                     Text(journey.transfers > 0 ? "· \(journey.transfers) change\(journey.transfers == 1 ? "" : "s")" : "· direct").lineLimit(1)
                 } else {
@@ -554,7 +536,8 @@ private struct RouteDetail: View {
             .padding(.horizontal, 16).padding(.bottom, 10)
             Divider()
             ScrollView {
-                JourneySteps(journey: journey, to: planner.destination?.name ?? "")
+                // The same step list as the trip screen, Today and Composer (Show stops, live lateness).
+                StepList(steps: TodayPage.Step.of(journey.tripLegs, to: planner.destination?.name ?? "", start: nil), legs: journey.tripLegs)
                     .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 12)
             }
             .scrollIndicators(.hidden)
@@ -595,9 +578,9 @@ struct RideLine: View {
                 .padding(.horizontal, 6).frame(minWidth: 30).frame(height: 22)
                 .background(look.base, in: .rect(cornerRadius: 6))
             VStack(alignment: .leading, spacing: 0) {
-                Text(leg.headsign.map { "towards \(JourneySteps.short($0))" } ?? (leg.mode == "bus" ? "Bus" : "Tram"))
+                Text(leg.headsign.map { "towards \(StopName.short($0))" } ?? (leg.mode == "bus" ? "Bus" : "Tram"))
                     .font(.geist(14, .semibold)).lineLimit(1)
-                Text("from \(JourneySteps.short(leg.from.name ?? "")) at \(leg.departTime)" + (leg.stops.map { " · \($0) stop\($0 == 1 ? "" : "s")" } ?? ""))
+                Text("from \(StopName.short(leg.from.name ?? "")) at \(leg.departTime)" + (leg.stops.map { " · \($0) stop\($0 == 1 ? "" : "s")" } ?? ""))
                     .font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -707,7 +690,7 @@ private struct TicketView: View {
                     Text("A ride on this route is cancelled · Not offered").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
                 }
                 if open {
-                    ScrollView { JourneySteps(journey: journey, to: planner.destination?.name ?? "") }
+                    ScrollView { StepList(steps: TodayPage.Step.of(journey.tripLegs, to: planner.destination?.name ?? "", start: nil), legs: journey.tripLegs) }
                         .frame(maxHeight: 220)
                         .scrollBounceBehavior(.basedOnSize)
                         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -809,82 +792,6 @@ nonisolated private struct Perforation: Shape {
         path.move(to: CGPoint(x: 0, y: rect.midY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
         return path
-    }
-}
-
-/// A journey's steps: walk to the stop, each ride with its stops, changes, and you're there.
-struct JourneySteps: View {
-    let journey: TripPlan.Journey
-    let to: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(journey.legs.enumerated()), id: \.offset) { i, leg in
-                step(colour: leg.isRide ? LineLook(hex: leg.color ?? "#00768B").base : Palette.textSoft,
-                     dashed: !leg.isRide, title: title(i), sub: sub(i), at: leg.departTime)
-            }
-            step(colour: Palette.action, dashed: false, title: "You’re there", sub: to, at: journey.arriveTime, last: true)
-            Text("Live times where the feed has them.").font(.geist(12)).foregroundStyle(Palette.textSoft).padding(.top, 6)
-        }
-    }
-
-    /// What a step says: a walk between two rides is a change; the last walk goes to the destination.
-    private func title(_ i: Int) -> String {
-        let legs = journey.legs, leg = legs[i]
-        let place = Self.short(leg.to.name ?? "")
-        switch leg.mode {
-        case "walk":
-            let afterRide = i > 0 && legs[i - 1].isRide, beforeRide = i < legs.count - 1 && legs[i + 1].isRide
-            if afterRide && beforeRide { return "Change at \(Self.short(leg.from.name ?? place))" }
-            if i == legs.count - 1 { return "Walk to \(Self.short(to))" }
-            return place.isEmpty ? "Walk" : "Walk to \(place)"
-        case "bike": return "Cycle to \(place.isEmpty ? Self.short(to) : place)"
-        default:
-            let what = leg.mode == "bus" ? "Bus" : "Tram"
-            return "\(what) \(leg.line ?? "") to \(place)"
-        }
-    }
-
-    private func sub(_ i: Int) -> String {
-        let legs = journey.legs, leg = legs[i]
-        if leg.isRide {
-            var parts: [String] = []
-            if let from = leg.from.name { parts.append("From \(Self.short(from))") }
-            if let headsign = leg.headsign { parts.append("towards \(Self.short(headsign))") }
-            if let stops = leg.stops { parts.append("\(stops) stop\(stops == 1 ? "" : "s")") }
-            if let delay = leg.delayMin, delay >= 2, leg.realtime == true { parts.append("\(delay) min late") }
-            if leg.cancelled == true { parts.append("Cancelled") }
-            return parts.joined(separator: " · ")
-        }
-        // A change says which line it walks to; any walk, its metres when there are enough to matter.
-        let next = i < legs.count - 1 && i > 0 && legs[i - 1].isRide && legs[i + 1].isRide ? legs[i + 1] : nil
-        let towards = next.map { " to \($0.mode == "bus" ? "Bus" : "Tram") \($0.line ?? "")" } ?? ""
-        return "\(leg.durationMin) min walk" + towards + (leg.distanceM.flatMap { $0 >= 50 ? " · \($0) m" : nil } ?? "")
-    }
-
-    private func step(colour: Color, dashed: Bool, title: String, sub: String, at: String, last: Bool = false) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            ZStack(alignment: .top) {
-                if !last {
-                    Rectangle().fill(colour).frame(width: 4).mask { if dashed { VStack(spacing: 3) { ForEach(0..<12, id: \.self) { _ in Rectangle().frame(height: 3) } } } else { Rectangle() } }
-                        .padding(.top, 10)
-                }
-                Circle().fill(Palette.surface).overlay { Circle().strokeBorder(colour, lineWidth: 3.5) }.frame(width: 16, height: 16).padding(.top, 2)
-            }
-            .frame(width: 16)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.geist(14.5, .semibold))
-                if !sub.isEmpty { Text(sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft) }
-            }
-            .padding(.bottom, 12)
-            Spacer(minLength: 0)
-            Text(at).font(.geist(13.5, .semibold)).monospacedDigit()
-        }
-    }
-
-    static func short(_ name: String) -> String {
-        for prefix in ["Köln ", "Koeln "] where name.hasPrefix(prefix) { return String(name.dropFirst(prefix.count)) }
-        return name
     }
 }
 
@@ -1065,3 +972,30 @@ struct UndoToast: View {
 }
 
 extension PlannedTrip: @retroactive Identifiable {}
+
+extension TripPlan.Journey {
+    /// A planned route as a trip's legs: one shape for the step list, the map and the trip card, wherever
+    /// the route came from.
+    var tripLegs: [TodayPage.Trip.Leg] {
+        legs.compactMap { leg in
+            guard let depart = TodayPage.parse(leg.departAt), let arrive = TodayPage.parse(leg.arriveAt) else { return nil }
+            return TodayPage.Trip.Leg(
+                mode: leg.mode, line: leg.line, color: leg.color, headsign: leg.headsign.map(StopName.short),
+                from: StopName.short(leg.from.name ?? ""), to: StopName.short(leg.to.name ?? ""),
+                departAt: depart, arriveAt: arrive, departTime: leg.departTime, arriveTime: leg.arriveTime,
+                minutes: leg.durationMin, stops: leg.stops, polyline: leg.polyline,
+                stopsOnTheWay: (leg.intermediateStops ?? []).map {
+                    TodayPage.Trip.Leg.Stop(name: StopName.short($0.name), time: $0.arriveTime ?? "", latitude: $0.lat, longitude: $0.lng)
+                },
+                delayMin: leg.delayMin, cancelled: leg.cancelled ?? false)
+        }
+    }
+}
+
+/// Stop names as the signs show them: "Köln Neumarkt" is "Neumarkt".
+enum StopName {
+    static func short(_ name: String) -> String {
+        for prefix in ["Köln ", "Koeln "] where name.hasPrefix(prefix) { return String(name.dropFirst(prefix.count)) }
+        return name
+    }
+}

@@ -18,6 +18,7 @@ struct EventDetail: View {
     /// Back to the list that pushed it.
     let back: () -> Void
     @Environment(Session.self) private var session
+    @Environment(TripPlanner.self) private var planner
     @Environment(TodayModel.self) private var today
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The title in a bar once the poster has scrolled away (.wd.bar).
@@ -105,8 +106,15 @@ struct EventDetail: View {
         .overlay(alignment: .bottom) { foot }
         .toolbar { buttons }
         .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+        // Getting there: Travel's own routes (map, list, detail, Start trip), to the event, arriving five
+        // minutes before it starts. Starting a trip closes What's on, so the trip screen shows.
         .navigationDestination(isPresented: $going) {
-            GettingThere(listing: listing, day: day, plan: $plan, problem: $planProblem, replan: replan)
+            TripRoutesView(planner: planner, back: { going = false }, close: { planner.closeRoutes(); going = false })
+                .toolbar(.hidden, for: .navigationBar)
+                .task {
+                    guard let latitude = listing.latitude, let longitude = listing.longitude else { return }
+                    await planner.routes(to: TripPoint(name: idea.place ?? idea.title, lat: latitude, lng: longitude), startsAt: idea.aimFor(), session.api)
+                }
         }
         .task { if plan == nil { await replan() } }
         .sheet(isPresented: $listingOpen) { if let source = listing.source { SafariView(url: source).ignoresSafeArea() } }

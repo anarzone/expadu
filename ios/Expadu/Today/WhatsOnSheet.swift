@@ -11,6 +11,7 @@ struct WhatsOnSheet: View {
     var open: String?
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
+    @Environment(TripPlanner.self) private var planner
     @Environment(\.dismiss) private var dismiss
     @Environment(\.shell) private var shell
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -69,6 +70,8 @@ struct WhatsOnSheet: View {
         .presentationBackground(Palette.canvas)
         .task(id: date) { await load() }
         .onChange(of: searching) { _, on in if on { withAnimation(Motion.ios(0.44)) { finding = true } } }
+        // A trip started from an event's Getting there: What's on makes way for the trip screen.
+        .onChange(of: planner.showTrip) { _, on in if on { dismiss() } }
     }
 
     private var list: some View {
