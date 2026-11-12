@@ -255,10 +255,8 @@ struct TripPlanView: View {
                     heading("Direct from \(station?.name ?? "here")")
                     group {
                         ForEach(direct, id: \.dep.id) { row in
-                            let look = LineLook(hex: row.dep.line.color ?? "#4A4A4A")
                             HStack(spacing: 12) {
-                                Text(row.dep.line.line).font(.geist(14, .bold)).foregroundStyle(look.ink)
-                                    .frame(minWidth: 36, minHeight: 28).background(look.base, in: .rect(cornerRadius: 7))
+                                LineBadge(line: row.dep.line.line, color: row.dep.line.color ?? "#4A4A4A", height: 28)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(row.dep.dir.dest).font(.geist(16, .semibold)).lineLimit(1)
                                     Text(row.sub).font(.geist(13)).foregroundStyle(Palette.textSoft).lineLimit(1)

@@ -181,9 +181,7 @@ struct TripCard: View {
     @ViewBuilder
     private func badge(_ ride: TodayPage.Step?, look: LineLook) -> some View {
         if let ride, let line = trip.badge(ride) {
-            Text(line).font(.geist(17, .bold)).monospacedDigit().foregroundStyle(look.ink)
-                .frame(minWidth: 40, minHeight: 40).padding(.horizontal, 2)
-                .background(look.base, in: .rect(cornerRadius: 10))
+            LineBadge(line: line, color: ride.color, height: 40)
         } else {
             Image(systemName: "figure.walk").font(.system(size: 17, weight: .semibold))
                 .frame(width: 40, height: 40).background(Palette.quiet, in: .rect(cornerRadius: 10))

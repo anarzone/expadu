@@ -398,24 +398,12 @@ struct LegStrip: View {
                 // The first ride's other lines that make the same connection, before it: "16 / 18".
                 if i == firstRide, let also = journey.firstRideAlso, !also.isEmpty {
                     ForEach(Array(Set(also.map(\.line))).sorted(), id: \.self) { line in
-                        let look = LineLook(hex: also.first { $0.line == line }?.color ?? "#00768B")
-                        Text(line).font(.geist(13.5, .bold)).monospacedDigit().foregroundStyle(look.ink)
-                            .padding(.horizontal, 7).frame(height: 24)
-                            .background(look.base, in: .rect(cornerRadius: 6))
-                            .fixedSize()
+                        LineBadge(line: line, color: also.first { $0.line == line }?.color, height: 24)
                         Text("/").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
                     }
                 }
                 if leg.isRide {
-                    let look = LineLook(hex: leg.color ?? "#00768B")
-                    HStack(spacing: 3) {
-                        Image(systemName: leg.mode == "bus" ? "bus.fill" : "tram.fill").font(.system(size: 11, weight: .bold))
-                        Text(leg.line ?? "").font(.geist(13.5, .bold)).monospacedDigit()
-                    }
-                    .foregroundStyle(look.ink)
-                    .padding(.horizontal, 7).frame(height: 24)
-                    .background(look.base, in: .rect(cornerRadius: 6))
-                    .fixedSize()
+                    LineBadge(line: leg.line ?? "", color: leg.color, height: 24, mode: leg.mode, icon: true)
                 } else {
                     HStack(spacing: 2) {
                         Image(systemName: leg.mode == "bike" ? "bicycle" : "figure.walk").font(.system(size: 13, weight: .semibold))
