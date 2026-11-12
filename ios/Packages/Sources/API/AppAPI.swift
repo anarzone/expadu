@@ -273,7 +273,8 @@ public struct AppAPI: Sendable {
                                                   departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
                                                   stops: leg.stops, polyline: leg.polyline,
                                               turns: leg.turns.map { TodayPage.Turn(direction: $0.direction, street: $0.street, metres: $0.metres, polyline: $0.polyline, levelChange: $0.levelChange) },
-                                              stopsOnTheWay: leg.stopsOnTheWay.map { TodayPage.Trip.Leg.Stop(name: $0.name, time: $0.time, latitude: $0.lat, longitude: $0.lng) })
+                                              stopsOnTheWay: leg.stopsOnTheWay.map { TodayPage.Trip.Leg.Stop(name: $0.name, time: $0.time, latitude: $0.lat, longitude: $0.lng) },
+                                              delayMin: leg.delayMin, cancelled: leg.cancelled)
                     }
                     return mapped
                 },
@@ -1048,7 +1049,8 @@ public struct AppAPI: Sendable {
                                               departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
                                               stops: leg.stops, polyline: leg.polyline,
                                               turns: leg.turns.map { TodayPage.Turn(direction: $0.direction, street: $0.street, metres: $0.metres, polyline: $0.polyline, levelChange: $0.levelChange) },
-                                              stopsOnTheWay: leg.stopsOnTheWay.map { TodayPage.Trip.Leg.Stop(name: $0.name, time: $0.time, latitude: $0.lat, longitude: $0.lng) })
+                                              stopsOnTheWay: leg.stopsOnTheWay.map { TodayPage.Trip.Leg.Stop(name: $0.name, time: $0.time, latitude: $0.lat, longitude: $0.lng) },
+                                              delayMin: leg.delayMin, cancelled: leg.cancelled)
                 }
                 return mapped
             } ?? []
@@ -1059,7 +1061,8 @@ public struct AppAPI: Sendable {
                                               departAt: departAt, arriveAt: arriveAt, departTime: leg.departTime, arriveTime: leg.arriveTime, minutes: leg.minutes,
                                               stops: leg.stops, polyline: leg.polyline,
                                               turns: leg.turns.map { TodayPage.Turn(direction: $0.direction, street: $0.street, metres: $0.metres, polyline: $0.polyline, levelChange: $0.levelChange) },
-                                              stopsOnTheWay: leg.stopsOnTheWay.map { TodayPage.Trip.Leg.Stop(name: $0.name, time: $0.time, latitude: $0.lat, longitude: $0.lng) })
+                                              stopsOnTheWay: leg.stopsOnTheWay.map { TodayPage.Trip.Leg.Stop(name: $0.name, time: $0.time, latitude: $0.lat, longitude: $0.lng) },
+                                              delayMin: leg.delayMin, cancelled: leg.cancelled)
                 })
             }
             page.welcome = today.welcome

@@ -4522,6 +4522,8 @@ public enum Operations {
                             public var links: Operations.Composer_day.Output.Ok.Body.JsonPayload.DayPayload.LinksPayload
                             /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/next_trip`.
                             public var nextTrip: Swift.String
+                            /// The same trip every screen sees: a finished one is gone (Composer reads it this way too).
+                            ///
                             /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/active_trip`.
                             public struct ActiveTripPayload: Codable, Hashable, Sendable {
                                 /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/active_trip/journey`.
@@ -4573,6 +4575,8 @@ public enum Operations {
                                     case city
                                 }
                             }
+                            /// The same trip every screen sees: a finished one is gone (Composer reads it this way too).
+                            ///
                             /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/active_trip`.
                             public var activeTrip: Operations.Composer_day.Output.Ok.Body.JsonPayload.DayPayload.ActiveTripPayload?
                             /// - Remark: Generated from `#/paths/composer/day/GET/responses/200/content/json/day/home`.
@@ -4629,7 +4633,7 @@ public enum Operations {
                             ///   - items:
                             ///   - links:
                             ///   - nextTrip:
-                            ///   - activeTrip:
+                            ///   - activeTrip: The same trip every screen sees: a finished one is gone (Composer reads it this way too).
                             ///   - home:
                             ///   - refreshAt:
                             public init(
