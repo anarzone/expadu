@@ -333,7 +333,12 @@ struct TripPlanView: View {
 
     /// Recent destinations, without Home and Work (they're in Favourites just above).
     private var recents: [TravelPlaces.Recent] {
-        planner.places.recentDestinations.filter { !["home", "work", "zuhause", "arbeit"].contains($0.name.lowercased()) }
+        // One row per place as it reads: "Köln Neumarkt" and "Neumarkt" are the same Neumarkt.
+        var seen = Set<String>()
+        return planner.places.recentDestinations.filter { recent in
+            let name = StopName.short(recent.name).lowercased()
+            return !["home", "work", "zuhause", "arbeit"].contains(name) && seen.insert(name).inserted
+        }
     }
 
     private func go(_ end: TripPoint, target: TravelPlaces.Plan? = nil) async {
