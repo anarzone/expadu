@@ -78,11 +78,15 @@ public struct CityMap: UIViewRepresentable {
     let fitID: Int
     /// How far up from the bottom the map's credit (i) sits, clear of whatever lies over the map there.
     let creditInset: CGFloat
+    /// Parts of the map covered by something laid over it (a list at the bottom): the map's centre, its
+    /// fits and following the phone all keep clear of them, and a change moves the map smoothly.
+    let viewInset: UIEdgeInsets
 
     public init(lines: [Line], pins: [Pin], fit: [CLLocationCoordinate2D], padding: UIEdgeInsets = UIEdgeInsets(top: 40, left: 40, bottom: 40, right: 40),
-                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0, creditInset: CGFloat = 8) {
+                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0, creditInset: CGFloat = 8, viewInset: UIEdgeInsets = .zero) {
         self.fitID = fitID
         self.creditInset = creditInset
+        self.viewInset = viewInset
         self.lines = lines
         self.pins = pins
         self.fit = fit
@@ -131,6 +135,12 @@ public struct CityMap: UIViewRepresentable {
         map.isScrollEnabled = interactive
         map.isZoomEnabled = interactive
         map.attributionButtonMargins = CGPoint(x: 8, y: creditInset)
+        // Only a map that is given an inset takes it over from the system's automatic one.
+        if viewInset != .zero || context.coordinator.insetSet, map.contentInset != viewInset {
+            context.coordinator.insetSet = true
+            map.automaticallyAdjustsContentInset = false
+            map.setContentInset(viewInset, animated: true, completionHandler: nil)
+        }
         context.coordinator.apply(self)
     }
 
@@ -138,6 +148,8 @@ public struct CityMap: UIViewRepresentable {
     public final class Coordinator: NSObject, MLNMapViewDelegate {
         weak var map: MLNMapView?
         var dark = false
+        /// The map was given a viewInset once; it keeps managing its own from then on.
+        var insetSet = false
         private var spec: CityMap?
         private var drawnLines: [Line] = []
         private var drawnPins: [Pin] = []

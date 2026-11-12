@@ -22,10 +22,8 @@ struct TravelTrip: View {
     /// On the map: the camera follows the phone; off, it shows the whole way.
     @State private var followMe = false
     @State private var fitTick = 0
-    /// On the map: the step card in view; its part of the route is drawn strong and fitted.
-    @State private var mapStep: Int?
-    /// On the map: the whole route fitted (on opening, and after Whole route), no step singled out.
-    @State private var wholeRoute = true
+    /// On the map: the steps in the lower left, over the map (the map moves up to keep you in sight).
+    @State private var stepsOpen = false
     @State private var asking = false
     @State private var problem: String?
     @State private var working = false
@@ -41,7 +39,7 @@ struct TravelTrip: View {
             ZStack(alignment: .top) {
                 if mapOn {
                     // The map view: the whole screen is the map, the step you're on in a band on top.
-                    fullMap(step: step, index: shown, count: steps.count, now: now, look: look)
+                    fullMap(step: step, index: shown, current: current, count: steps.count, now: now, look: look)
                         .transition(.opacity)
                 } else {
                     look.fill.ignoresSafeArea()
@@ -230,34 +228,24 @@ struct TravelTrip: View {
     }
 
     /// The map view: the route and where you are on the whole screen, the step you're on in a band on
-    /// top, and every step as a card along the bottom (as Citymapper and Apple Maps do): swipe or tap a
-    /// card and the map shows that part of the route; Whole route goes back to all of it.
-    private func fullMap(step: TodayPage.Step?, index: Int, count: Int, now: Date, look: LineLook) -> some View {
-        let focusLeg = wholeRoute ? nil : mapStep.flatMap(leg(of:))
-        let focused = focusLeg.map { WayDrawing.points(trip.legs[$0]) } ?? []
-        let lines = WayDrawing.lines(trip.legs).enumerated().map { i, line in
-            focusLeg == nil ? line : CityMap.Line(id: line.id, points: line.points, color: line.color, width: line.width, dashed: line.dashed, faint: i != focusLeg)
-        }
-        return ZStack(alignment: .top) {
-            CityMap(lines: lines, pins: WayDrawing.pins(trip.legs, to: trip.to), fit: focused.count > 1 ? focused : WayDrawing.all(trip.legs),
-                    padding: UIEdgeInsets(top: 250, left: 40, bottom: 250, right: 40), follow: followMe, showsUser: true,
-                    fitID: fitTick * 100 + (focusLeg ?? -1) + 1, creditInset: 196)
+    /// top. Steps lays the steps over the lower left of the map, the one you're on at the bottom and
+    /// the next ones above it fading out (as live comments do), and moves the map up so you stay in sight.
+    private func fullMap(step: TodayPage.Step?, index: Int, current: Int, count: Int, now: Date, look: LineLook) -> some View {
+        ZStack(alignment: .top) {
+            CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
+                    padding: UIEdgeInsets(top: stepsOpen ? 225 : 250, left: 40, bottom: stepsOpen ? 16 : 130, right: 40), follow: followMe, showsUser: true,
+                    fitID: fitTick * 10 + (stepsOpen ? 1 : 0), creditInset: stepsOpen ? 8 : 70,
+                    // The list's top fades out, so the map only keeps clear of its solid lower part.
+                    viewInset: UIEdgeInsets(top: 0, left: 0, bottom: stepsOpen ? Self.feedHeight * 0.7 + 64 : 0, right: 0))
                 .ignoresSafeArea()
             band(step: step, index: index, count: count, now: now, look: look)
         }
-        .overlay(alignment: .bottom) { mapControls(current: index) }
+        .overlay(alignment: .bottomLeading) { mapControls(current: current) }
         .sensoryFeedback(.selection, trigger: followMe)
-        .sensoryFeedback(.selection, trigger: mapStep)
-        .animation(.smooth(duration: 0.35), value: wholeRoute)
+        .sensoryFeedback(.selection, trigger: stepsOpen)
     }
 
-    /// The leg a step's part of the route is: its own, or (getting off) the ride before it.
-    private func leg(of index: Int) -> Int? {
-        let steps = trip.steps
-        guard steps.indices.contains(index) else { return nil }
-        let leg = steps[index].leg ?? (index > 0 ? steps[index - 1].leg : nil)
-        return leg.flatMap { trip.legs.indices.contains($0) ? $0 : nil }
-    }
+    private static let feedHeight: CGFloat = 300
 
     /// The step you're on, in the line's colour, over the top of the map.
     private func band(step: TodayPage.Step?, index: Int, count: Int, now: Date, look: LineLook) -> some View {
@@ -294,105 +282,45 @@ struct TravelTrip: View {
         }
     }
 
-    /// Steps (back to the list), Whole route when one part is shown, follow me; the step cards under them.
+    /// Steps (the list over the map) at the lower left, with the list above it when open; the step
+    /// list view and follow-me at the lower right.
     private func mapControls(current: Int) -> some View {
-        VStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
+            if stepsOpen {
+                StepsFeed(steps: trip.steps, current: current)
+                    .frame(height: Self.feedHeight)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
             HStack(spacing: 8) {
-                Button { mapOn = false } label: {
-                    Label("Steps", systemImage: "list.bullet").font(.geist(15, .semibold)).padding(.horizontal, 16).frame(height: 46)
+                Button { withAnimation(.smooth(duration: 0.35)) { stepsOpen.toggle() } } label: {
+                    Label(stepsOpen ? "Hide steps" : "Steps", systemImage: stepsOpen ? "chevron.down" : "list.bullet")
+                        .font(.geist(15, .semibold)).padding(.horizontal, 16).frame(height: 46)
+                        .contentTransition(.opacity)
                 }
                 .buttonStyle(PressStyle())
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
                 Spacer(minLength: 0)
-                if !wholeRoute && !followMe {
-                    Button { withAnimation(.smooth) { wholeRoute = true; fitTick += 1 } } label: {
-                        Label("Whole route", systemImage: "arrow.up.left.and.arrow.down.right").font(.geist(15, .semibold))
-                            .padding(.horizontal, 14).frame(height: 46)
-                    }
-                    .buttonStyle(PressStyle())
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                Button { mapOn = false } label: {
+                    Image(systemName: "list.bullet.rectangle.portrait").font(.system(size: 18, weight: .semibold)).frame(width: 46, height: 46)
                 }
+                .buttonStyle(PressStyle())
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
+                .accessibilityLabel("Back to the step list")
                 Button {
                     withAnimation(.smooth) {
                         followMe.toggle()
-                        if !followMe { wholeRoute = true; fitTick += 1 }
+                        if !followMe { fitTick += 1 }
                     }
                 } label: {
                     Image(systemName: followMe ? "location.fill" : "location").font(.system(size: 18, weight: .semibold)).frame(width: 46, height: 46)
                 }
                 .buttonStyle(PressStyle())
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
-                .accessibilityLabel(followMe ? "Stop following me" : "Follow me")
+                .accessibilityLabel(followMe ? "Show the whole route" : "Follow me")
             }
-            .padding(.horizontal, 16)
-            stepCards(current: current)
         }
         .foregroundStyle(Palette.text)
-        .padding(.bottom, 6)
-    }
-
-    private func stepCards(current: Int) -> some View {
-        ScrollView(.horizontal) {
-            LazyHStack(spacing: 10) {
-                ForEach(Array(trip.steps.enumerated()), id: \.offset) { i, step in
-                    stepCard(step, index: i, current: current)
-                        .containerRelativeFrame(.horizontal) { width, _ in width - 64 }
-                        .id(i)
-                        .onTapGesture {
-                            withAnimation(.smooth(duration: 0.35)) { followMe = false; mapStep = i; wholeRoute = false }
-                        }
-                }
-            }
-            .scrollTargetLayout()
-        }
-        .scrollTargetBehavior(.viewAligned)
-        .scrollPosition(id: $mapStep)
-        .contentMargins(.horizontal, 16, for: .scrollContent)
-        .scrollIndicators(.hidden)
-        .scrollClipDisabled()
-        // A horizontal scroll takes all the height it's offered: the row is as tall as a card.
-        .frame(height: 124)
-        // A swipe singles out the card it lands on; opening the map shows the whole route at the step you're on.
-        .onScrollPhaseChange { _, phase in
-            if phase == .interacting { withAnimation(.smooth) { followMe = false; wholeRoute = false } }
-        }
-        .onAppear { mapStep = current }
-    }
-
-    private func stepCard(_ step: TodayPage.Step, index: Int, current: Int) -> some View {
-        let on = !wholeRoute && mapStep == index
-        return VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                Text(step.time).font(.geist(13, .bold)).monospacedDigit()
-                if index == current {
-                    Text("Now").font(.geist(11.5, .bold)).foregroundStyle(Palette.onAction)
-                        .padding(.horizontal, 6).frame(height: 18).background(Palette.action, in: .rect(cornerRadius: 5))
-                }
-                Spacer(minLength: 4)
-                Text("\(index + 1) of \(trip.steps.count)").font(.geist(12)).foregroundStyle(Palette.textSoft)
-            }
-            HStack(spacing: 8) {
-                if step.kind == .ride, let line = step.name.split(separator: " ").last {
-                    let colours = LineLook(hex: step.color ?? "#00768B")
-                    Text(String(line)).font(.geist(13, .bold)).foregroundStyle(colours.ink)
-                        .padding(.horizontal, 6).frame(minWidth: 28).frame(height: 22)
-                        .background(colours.base, in: .rect(cornerRadius: 6))
-                }
-                Text(step.title).font(.geist(16, .bold)).lineLimit(1).minimumScaleFactor(0.85)
-            }
-            if !step.sub.isEmpty { Text(step.sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(2) }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 112, maxHeight: 112, alignment: .topLeading)
-        .background(Palette.surface, in: .rect(cornerRadius: 18))
-        .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(on ? Palette.navTeal : .clear, lineWidth: 2) }
-        .shadow(color: .black.opacity(0.15), radius: 10, y: 3)
-        .foregroundStyle(Palette.text)
-        .opacity(index < current ? 0.6 : 1)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Shows this part on the map")
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .padding(.horizontal, 16).padding(.bottom, 8)
     }
 
     /// The minutes the countdown shows: until the step starts, or until the next one once on it.
@@ -439,5 +367,77 @@ extension TripPlanner {
 
     func stopFollowing() {
         if following { follower.stop(); following = false }
+    }
+}
+
+/// The steps over the map's lower left, as live comments sit over a video: the one you're on at the
+/// bottom, the next ones above it fading out towards the top, the ones done below it (scroll down).
+/// It scrolls, and moves on by itself as the trip does.
+private struct StepsFeed: View {
+    let steps: [TodayPage.Step]
+    let current: Int
+
+    var body: some View {
+        ScrollViewReader { reader in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(steps.enumerated().reversed()), id: \.offset) { index, step in
+                        row(step, index: index).id(index)
+                    }
+                }
+                .padding(.top, 120).padding(.bottom, 4)
+            }
+            .scrollIndicators(.hidden)
+            .defaultScrollAnchor(.bottom)
+            .mask {
+                LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black.opacity(0.35), location: 0.25),
+                                       .init(color: .black, location: 0.55), .init(color: .black, location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+            .onAppear { reader.scrollTo(current, anchor: .bottom) }
+            .onChange(of: current) { _, now in withAnimation(.smooth(duration: 0.6)) { reader.scrollTo(now, anchor: .bottom) } }
+        }
+        .frame(maxWidth: 290, alignment: .leading)
+    }
+
+    private func row(_ step: TodayPage.Step, index: Int) -> some View {
+        let now = index == current
+        return HStack(alignment: .top, spacing: 8) {
+            mark(step)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 5) {
+                    Text(step.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                    if now {
+                        Text("Now").font(.geist(10.5, .bold)).foregroundStyle(Palette.onAction)
+                            .padding(.horizontal, 5).frame(height: 16).background(Palette.action, in: .rect(cornerRadius: 4))
+                    }
+                }
+                Text(step.title).font(.geist(now ? 15 : 14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                if index >= current, !step.sub.isEmpty {
+                    Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(now ? 2 : 1)
+                }
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .overlay { if now { RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.action.opacity(0.8), lineWidth: 1.5) } }
+        .foregroundStyle(Palette.text)
+        .opacity(index < current ? 0.55 : 1)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(now ? .isSelected : [])
+    }
+
+    @ViewBuilder
+    private func mark(_ step: TodayPage.Step) -> some View {
+        if step.kind == .ride, let line = step.name.split(separator: " ").last {
+            let colours = LineLook(hex: step.color ?? "#00768B")
+            Text(String(line)).font(.geist(12, .bold)).foregroundStyle(colours.ink)
+                .padding(.horizontal, 5).frame(minWidth: 26).frame(height: 20)
+                .background(colours.base, in: .rect(cornerRadius: 5))
+        } else {
+            Image(systemName: step.kind == .there ? "flag.fill" : step.kind == .getOff ? "arrow.down.right" : "figure.walk")
+                .font(.system(size: 12, weight: .bold)).frame(width: 26, height: 20)
+                .foregroundStyle(step.kind == .there ? Palette.action : Palette.textSoft)
+        }
     }
 }
