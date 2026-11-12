@@ -464,9 +464,14 @@ public struct TodayPage: Equatable, Sendable {
                 } else if last, let before, before.rides {
                     steps.append(Step(kind: .getOff, title: "Get off at \(before.to)", sub: "\(leg.minutes) min walk to \(to)", at: before.arriveAt, time: before.arriveTime, color: before.color, name: before.name,
                                       leg: index))
+                } else if let before, before.rides, !last, legs[index + 1].rides {
+                    // A walk between two rides is a change: where, and to which line.
+                    let next = legs[index + 1]
+                    steps.append(Step(kind: .walk, title: "Change at \(before.to)", sub: "\(leg.minutes) min walk to \(next.name)", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
+                                      leg: index))
                 } else {
                     let place = last || leg.to.isEmpty ? to : leg.to
-                    steps.append(Step(kind: .walk, title: leg.mode == "bike" ? "Cycle to \(place)" : "Walk to \(place)", sub: "\(leg.minutes) min", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
+                    steps.append(Step(kind: .walk, title: leg.mode == "bike" ? "Cycle to \(place)" : "Walk to \(place)", sub: "\(leg.minutes) min \(leg.mode == "bike" ? "by bike" : "walk")", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
                                       leg: index))
                 }
             }

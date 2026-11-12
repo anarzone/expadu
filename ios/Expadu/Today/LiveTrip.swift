@@ -59,7 +59,7 @@ struct LiveTrip: View {
                     HStack(spacing: 5) {
                         Circle().fill(Motion.green).frame(width: 7, height: 7)
                             .background { Circle().fill(Motion.green.opacity(0.25)).scaleEffect(pulse ? 2.4 : 1).opacity(pulse ? 0 : 1) }
-                        Text(live.waiting ? "Trip set" : "On your way · live").font(.geist(13.5, .bold)).lineLimit(1)
+                        Text(live.waiting ? "Trip set" : "Live trip").font(.geist(13.5, .bold)).lineLimit(1)
                     }
                     .foregroundStyle(Motion.green)
                     Spacer(minLength: 0)
@@ -309,7 +309,7 @@ struct StepList: View {
                 let isLast = index == steps.count - 1
                 HStack(alignment: .top, spacing: 12) {
                     Circle().strokeBorder(step.kind == .walk ? Palette.textSoft : colour, lineWidth: 3)
-                        .background(Circle().fill(Palette.surface))
+                        .background(Circle().fill(index == current ? (step.kind == .walk ? Palette.text : colour) : Palette.surface))
                         .frame(width: 17, height: 17)
                         .padding(.top, 1)
                         .background(alignment: .top) {
@@ -319,7 +319,9 @@ struct StepList: View {
                             }
                         }
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(step.title).font(.geist(14, .semibold)).foregroundStyle(index == current ? colour : Palette.text)
+                        // The step you're on stands out: bolder, in its line's colour (a walk's grey would fade it).
+                        Text(step.title).font(.geist(index == current ? 15 : 14, index == current ? .bold : .semibold))
+                            .foregroundStyle(index == current && step.kind != .walk ? colour : Palette.text)
                         if !step.sub.isEmpty { Text(step.sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft) }
                     }
                     Spacer(minLength: 8)
@@ -388,7 +390,7 @@ struct OtherWaysSheet: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Other ways").font(.posterGrotesque(28)).tracking(-0.4).foregroundStyle(Palette.text)
+                        Text("Other routes").font(.posterGrotesque(28)).tracking(-0.4).foregroundStyle(Palette.text)
                         Text("To \(leave.to)" + (leave.start.map { " · be there by \($0)" } ?? "")).font(.geist(13.5)).foregroundStyle(Palette.textSoft)
                     }
                     Spacer()
@@ -435,7 +437,7 @@ struct OtherWaysSheet: View {
                 }
                 Group {
                     if mine {
-                        Label("Your way", systemImage: "checkmark").labelStyle(Tight())
+                        Label("Your route", systemImage: "checkmark").labelStyle(Tight())
                             .font(.geist(15, .semibold)).foregroundStyle(Palette.text)
                             .frame(maxWidth: .infinity).frame(height: 44)
                             .background(Palette.quiet, in: .rect(cornerRadius: 12, style: .continuous))
@@ -452,7 +454,7 @@ struct OtherWaysSheet: View {
                             }
                         } label: {
                             Group {
-                                if busy == way.id { ProgressView().tint(.white) } else { Text("Use this") }
+                                if busy == way.id { ProgressView().tint(.white) } else { Text("Take this route") }
                             }
                             .font(.geist(15, .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 44)
@@ -504,7 +506,7 @@ struct TicketTop: View {
         let ink = look.ink
         VStack(alignment: .leading, spacing: 0) {
             if mine {
-                Text("YOUR WAY").font(.posterMarker(15)).foregroundStyle(Motion.ink)
+                Text("YOUR ROUTE").font(.posterMarker(15)).foregroundStyle(Motion.ink)
                     .padding(.horizontal, 10).padding(.top, 3).padding(.bottom, 2)
                     .background(Color(hex: 0xFFE363))
                     .rotationEffect(.degrees(-2))
