@@ -76,10 +76,13 @@ public struct CityMap: UIViewRepresentable {
     let showsUser: Bool
     /// A new value fits the camera again even when `fit` is the same (Show the whole way after panning).
     let fitID: Int
+    /// How far up from the bottom the map's credit (i) sits, clear of whatever lies over the map there.
+    let creditInset: CGFloat
 
     public init(lines: [Line], pins: [Pin], fit: [CLLocationCoordinate2D], padding: UIEdgeInsets = UIEdgeInsets(top: 40, left: 40, bottom: 40, right: 40),
-                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0) {
+                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0, creditInset: CGFloat = 8) {
         self.fitID = fitID
+        self.creditInset = creditInset
         self.lines = lines
         self.pins = pins
         self.fit = fit
@@ -127,6 +130,7 @@ public struct CityMap: UIViewRepresentable {
         }
         map.isScrollEnabled = interactive
         map.isZoomEnabled = interactive
+        map.attributionButtonMargins = CGPoint(x: 8, y: creditInset)
         context.coordinator.apply(self)
     }
 

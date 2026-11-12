@@ -22,6 +22,10 @@ struct TravelTrip: View {
     /// On the map: the camera follows the phone; off, it shows the whole way.
     @State private var followMe = false
     @State private var fitTick = 0
+    /// On the map: the step card in view; its part of the route is drawn strong and fitted.
+    @State private var mapStep: Int?
+    /// On the map: the whole route fitted (on opening, and after Whole route), no step singled out.
+    @State private var wholeRoute = true
     @State private var asking = false
     @State private var problem: String?
     @State private var working = false
@@ -225,70 +229,170 @@ struct TravelTrip: View {
         .padding(.bottom, 6)
     }
 
-    /// The map view: the way and where you are on the whole screen; the step you're on stays in a band
-    /// on top in the line's colour. Steps goes back; the location button follows you or shows the whole way.
+    /// The map view: the route and where you are on the whole screen, the step you're on in a band on
+    /// top, and every step as a card along the bottom (as Citymapper and Apple Maps do): swipe or tap a
+    /// card and the map shows that part of the route; Whole route goes back to all of it.
     private func fullMap(step: TodayPage.Step?, index: Int, count: Int, now: Date, look: LineLook) -> some View {
-        ZStack(alignment: .top) {
-            CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
-                    padding: UIEdgeInsets(top: 250, left: 40, bottom: 130, right: 40), follow: followMe, showsUser: true, fitID: fitTick)
+        let focusLeg = wholeRoute ? nil : mapStep.flatMap(leg(of:))
+        let focused = focusLeg.map { WayDrawing.points(trip.legs[$0]) } ?? []
+        let lines = WayDrawing.lines(trip.legs).enumerated().map { i, line in
+            focusLeg == nil ? line : CityMap.Line(id: line.id, points: line.points, color: line.color, width: line.width, dashed: line.dashed, faint: i != focusLeg)
+        }
+        return ZStack(alignment: .top) {
+            CityMap(lines: lines, pins: WayDrawing.pins(trip.legs, to: trip.to), fit: focused.count > 1 ? focused : WayDrawing.all(trip.legs),
+                    padding: UIEdgeInsets(top: 250, left: 40, bottom: 250, right: 40), follow: followMe, showsUser: true,
+                    fitID: fitTick * 100 + (focusLeg ?? -1) + 1, creditInset: 196)
                 .ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 12) {
-                head(look)
-                if let step {
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(step.title).font(.posterGrotesque(24)).lineLimit(2).minimumScaleFactor(0.8)
-                            if !step.sub.isEmpty { Text(step.sub).font(.geist(13.5, .medium)).opacity(0.9).lineLimit(1) }
-                        }
-                        Spacer(minLength: 6)
-                        if index < count - 1 {
-                            VStack(alignment: .trailing, spacing: 0) {
-                                Text(countdownLabel(step, index: index, now: now)).font(.geist(12.5, .semibold)).opacity(0.9)
-                                HStack(alignment: .lastTextBaseline, spacing: 3) {
-                                    Text("\(minutesLeft(step, index: index, now: now))").font(.posterGrotesque(32)).monospacedDigit()
-                                        .contentTransition(.numericText())
-                                    Text("min").font(.geist(14, .semibold))
-                                }
+            band(step: step, index: index, count: count, now: now, look: look)
+        }
+        .overlay(alignment: .bottom) { mapControls(current: index) }
+        .sensoryFeedback(.selection, trigger: followMe)
+        .sensoryFeedback(.selection, trigger: mapStep)
+        .animation(.smooth(duration: 0.35), value: wholeRoute)
+    }
+
+    /// The leg a step's part of the route is: its own, or (getting off) the ride before it.
+    private func leg(of index: Int) -> Int? {
+        let steps = trip.steps
+        guard steps.indices.contains(index) else { return nil }
+        let leg = steps[index].leg ?? (index > 0 ? steps[index - 1].leg : nil)
+        return leg.flatMap { trip.legs.indices.contains($0) ? $0 : nil }
+    }
+
+    /// The step you're on, in the line's colour, over the top of the map.
+    private func band(step: TodayPage.Step?, index: Int, count: Int, now: Date, look: LineLook) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            head(look)
+            if let step {
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(step.title).font(.posterGrotesque(24)).lineLimit(2).minimumScaleFactor(0.8)
+                        if !step.sub.isEmpty { Text(step.sub).font(.geist(13.5, .medium)).opacity(0.9).lineLimit(1) }
+                    }
+                    Spacer(minLength: 6)
+                    if index < count - 1 {
+                        VStack(alignment: .trailing, spacing: 0) {
+                            Text(countdownLabel(step, index: index, now: now)).font(.geist(12.5, .semibold)).opacity(0.9)
+                            HStack(alignment: .lastTextBaseline, spacing: 3) {
+                                Text("\(minutesLeft(step, index: index, now: now))").font(.posterGrotesque(32)).monospacedDigit()
+                                    .contentTransition(.numericText())
+                                Text("min").font(.geist(14, .semibold))
                             }
                         }
                     }
-                    .contentTransition(.opacity)
                 }
-            }
-            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 16)
-            .foregroundStyle(look.ink)
-            .background {
-                UnevenRoundedRectangle(bottomLeadingRadius: 26, bottomTrailingRadius: 26)
-                    .fill(look.fill)
-                    .shadow(color: .black.opacity(0.2), radius: 14, y: 4)
-                    .ignoresSafeArea(edges: .top)
+                .contentTransition(.opacity)
             }
         }
-        .overlay(alignment: .bottom) {
-            // Steps in the middle, clear of the map's credit (i) at the left.
-            ZStack(alignment: .trailing) {
+        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 16)
+        .foregroundStyle(look.ink)
+        .background {
+            UnevenRoundedRectangle(bottomLeadingRadius: 26, bottomTrailingRadius: 26)
+                .fill(look.fill)
+                .shadow(color: .black.opacity(0.2), radius: 14, y: 4)
+                .ignoresSafeArea(edges: .top)
+        }
+    }
+
+    /// Steps (back to the list), Whole route when one part is shown, follow me; the step cards under them.
+    private func mapControls(current: Int) -> some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Button { mapOn = false } label: {
-                    Label("Steps", systemImage: "list.bullet").font(.geist(15, .semibold)).padding(.horizontal, 18).frame(height: 50)
+                    Label("Steps", systemImage: "list.bullet").font(.geist(15, .semibold)).padding(.horizontal, 16).frame(height: 46)
                 }
                 .buttonStyle(PressStyle())
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
-                .frame(maxWidth: .infinity)
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
+                Spacer(minLength: 0)
+                if !wholeRoute && !followMe {
+                    Button { withAnimation(.smooth) { wholeRoute = true; fitTick += 1 } } label: {
+                        Label("Whole route", systemImage: "arrow.up.left.and.arrow.down.right").font(.geist(15, .semibold))
+                            .padding(.horizontal, 14).frame(height: 46)
+                    }
+                    .buttonStyle(PressStyle())
+                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
                 Button {
                     withAnimation(.smooth) {
                         followMe.toggle()
-                        if !followMe { fitTick += 1 }
+                        if !followMe { wholeRoute = true; fitTick += 1 }
                     }
                 } label: {
-                    Image(systemName: followMe ? "location.fill" : "location").font(.system(size: 18, weight: .semibold)).frame(width: 50, height: 50)
+                    Image(systemName: followMe ? "location.fill" : "location").font(.system(size: 18, weight: .semibold)).frame(width: 46, height: 46)
                 }
                 .buttonStyle(PressStyle())
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
-                .accessibilityLabel(followMe ? "Show the whole way" : "Follow me")
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
+                .accessibilityLabel(followMe ? "Stop following me" : "Follow me")
             }
-            .foregroundStyle(Palette.text)
-            .padding(.horizontal, 16).padding(.bottom, 8)
+            .padding(.horizontal, 16)
+            stepCards(current: current)
         }
-        .sensoryFeedback(.selection, trigger: followMe)
+        .foregroundStyle(Palette.text)
+        .padding(.bottom, 6)
+    }
+
+    private func stepCards(current: Int) -> some View {
+        ScrollView(.horizontal) {
+            LazyHStack(spacing: 10) {
+                ForEach(Array(trip.steps.enumerated()), id: \.offset) { i, step in
+                    stepCard(step, index: i, current: current)
+                        .containerRelativeFrame(.horizontal) { width, _ in width - 64 }
+                        .id(i)
+                        .onTapGesture {
+                            withAnimation(.smooth(duration: 0.35)) { followMe = false; mapStep = i; wholeRoute = false }
+                        }
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: $mapStep)
+        .contentMargins(.horizontal, 16, for: .scrollContent)
+        .scrollIndicators(.hidden)
+        .scrollClipDisabled()
+        // A horizontal scroll takes all the height it's offered: the row is as tall as a card.
+        .frame(height: 124)
+        // A swipe singles out the card it lands on; opening the map shows the whole route at the step you're on.
+        .onScrollPhaseChange { _, phase in
+            if phase == .interacting { withAnimation(.smooth) { followMe = false; wholeRoute = false } }
+        }
+        .onAppear { mapStep = current }
+    }
+
+    private func stepCard(_ step: TodayPage.Step, index: Int, current: Int) -> some View {
+        let on = !wholeRoute && mapStep == index
+        return VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
+                Text(step.time).font(.geist(13, .bold)).monospacedDigit()
+                if index == current {
+                    Text("Now").font(.geist(11.5, .bold)).foregroundStyle(Palette.onAction)
+                        .padding(.horizontal, 6).frame(height: 18).background(Palette.action, in: .rect(cornerRadius: 5))
+                }
+                Spacer(minLength: 4)
+                Text("\(index + 1) of \(trip.steps.count)").font(.geist(12)).foregroundStyle(Palette.textSoft)
+            }
+            HStack(spacing: 8) {
+                if step.kind == .ride, let line = step.name.split(separator: " ").last {
+                    let colours = LineLook(hex: step.color ?? "#00768B")
+                    Text(String(line)).font(.geist(13, .bold)).foregroundStyle(colours.ink)
+                        .padding(.horizontal, 6).frame(minWidth: 28).frame(height: 22)
+                        .background(colours.base, in: .rect(cornerRadius: 6))
+                }
+                Text(step.title).font(.geist(16, .bold)).lineLimit(1).minimumScaleFactor(0.85)
+            }
+            if !step.sub.isEmpty { Text(step.sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(2) }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 112, maxHeight: 112, alignment: .topLeading)
+        .background(Palette.surface, in: .rect(cornerRadius: 18))
+        .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(on ? Palette.navTeal : .clear, lineWidth: 2) }
+        .shadow(color: .black.opacity(0.15), radius: 10, y: 3)
+        .foregroundStyle(Palette.text)
+        .opacity(index < current ? 0.6 : 1)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Shows this part on the map")
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     /// The minutes the countdown shows: until the step starts, or until the next one once on it.
