@@ -99,7 +99,13 @@ struct CologneToday: View {
             .clipShape(.rect(cornerRadius: 22))
             .card(radius: 22)
         }
-        .task(id: open) { if open, model.board == nil { await model.loadBoard(session.api) } }
+        // Live while open, as Travel's board: read again every 30 s.
+        .task(id: open) {
+            while open, !Task.isCancelled {
+                await model.loadBoard(session.api)
+                try? await Task.sleep(for: .seconds(30))
+            }
+        }
     }
 }
 
