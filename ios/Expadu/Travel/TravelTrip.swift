@@ -117,6 +117,8 @@ struct TravelTrip: View {
             planner.follow(trip)
             if planner.tripOnMap { mapOn = true; planner.tripOnMap = false }
         }
+        // A new route (re-planned here or on Today) is the one followed from now on.
+        .onChange(of: trip) { planner.follow(trip) }
     }
 
     private func head(_ look: LineLook) -> some View {
@@ -195,8 +197,8 @@ struct TravelTrip: View {
             }
             if !step.sub.isEmpty {
                 HStack(spacing: 8) {
-                    if step.kind == .ride, let line = step.name.split(separator: " ").last {
-                        Label(String(line), systemImage: "tram.fill").font(.geist(13, .bold))
+                    if step.kind == .ride, let line = trip.badge(step) {
+                        Label(line, systemImage: "tram.fill").font(.geist(13, .bold))
                             .padding(.horizontal, 7).frame(height: 24).background(.white, in: .rect(cornerRadius: 6)).foregroundStyle(Palette.text)
                     }
                     Text(step.sub).font(.geist(15, .medium))
@@ -345,7 +347,7 @@ struct TravelTrip: View {
     private func mapControls(current: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             if stepsOpen {
-                StepsFeed(steps: trip.steps, current: current)
+                StepsFeed(trip: trip, current: current)
                     .frame(height: Self.feedHeight)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
@@ -406,6 +408,15 @@ struct TravelTrip: View {
 }
 
 extension TodayPage.Trip {
+    /// The line badge for a step ("12", "RE 1"), from its ride's own line, never parsed from the step's
+    /// words ("RE1 (RRX)" read "(RRX)"). Getting off keeps the ride's line; walks have none.
+    func badge(_ step: TodayPage.Step) -> String? {
+        guard let at = steps.firstIndex(of: step) else { return nil }
+        let ride = step.kind == .ride ? step : step.kind == .getOff ? steps[..<at].last { $0.kind == .ride } : nil
+        guard let leg = ride?.leg, legs.indices.contains(leg), let line = legs[leg].line, !line.isEmpty else { return nil }
+        return Board.badge(line)
+    }
+
     /// Where a trip goes, said as a person would: "Going home", "Going to work", "Going to Neumarkt".
     static func going(_ to: String) -> String {
         switch to.lowercased() {
@@ -432,8 +443,9 @@ extension TripPlanner {
 /// bottom, the next ones above it fading out towards the top, the ones done below it (scroll down).
 /// It scrolls, and moves on by itself as the trip does.
 private struct StepsFeed: View {
-    let steps: [TodayPage.Step]
+    let trip: TodayPage.Trip
     let current: Int
+    private var steps: [TodayPage.Step] { trip.steps }
 
     var body: some View {
         ScrollViewReader { reader in
@@ -487,9 +499,9 @@ private struct StepsFeed: View {
 
     @ViewBuilder
     private func mark(_ step: TodayPage.Step) -> some View {
-        if step.kind == .ride, let line = step.name.split(separator: " ").last {
+        if step.kind == .ride, let line = trip.badge(step) {
             let colours = LineLook(hex: step.color ?? "#00768B")
-            Text(String(line)).font(.geist(12, .bold)).foregroundStyle(colours.ink)
+            Text(line).font(.geist(12, .bold)).foregroundStyle(colours.ink)
                 .padding(.horizontal, 5).frame(minWidth: 26).frame(height: 20)
                 .background(colours.base, in: .rect(cornerRadius: 5))
         } else {

@@ -364,9 +364,22 @@ struct Band: View {
                     .font(.geist(12, .medium)).opacity(0.92)
                 }
                 Spacer(minLength: 4)
-                HStack(spacing: 2) {
-                    ForEach(Array(String(format: "%02d", min(run.minutes(from: now), 99)).enumerated()), id: \.offset) { _, digit in
-                        FlapDigit(character: digit, grey: grey || run.cancelled)
+                // Minutes on the flaps; an hour or more away, its clock time (a capped "99" said nothing).
+                if run.minutes(from: now) >= 60 {
+                    HStack(spacing: 1.5) {
+                        ForEach(Array(run.time.enumerated()), id: \.offset) { _, ch in
+                            if ch == ":" {
+                                Text(":").font(.geist(18, .bold))
+                            } else {
+                                FlapDigit(character: ch, grey: grey || run.cancelled, width: 19, height: 30, size: 20)
+                            }
+                        }
+                    }
+                } else {
+                    HStack(spacing: 2) {
+                        ForEach(Array(String(format: "%02d", run.minutes(from: now)).enumerated()), id: \.offset) { _, digit in
+                            FlapDigit(character: digit, grey: grey || run.cancelled)
+                        }
                     }
                 }
             }
@@ -409,7 +422,7 @@ struct Band: View {
 
     private var spoken: String {
         let minutes = run.minutes(from: now)
-        var text = "Line \(departure.line.line) to \(departure.dir.dest), " + (minutes == 0 ? "now" : "in \(minutes) minutes")
+        var text = "Line \(departure.line.line) to \(departure.dir.dest), " + (minutes == 0 ? "now" : minutes >= 60 ? "at \(run.time)" : "in \(minutes) minutes")
         if run.cancelled { text += ", cancelled" } else if let late { text += ", \(late) minutes late" }
         if grey { text += ", timetable time" }
         return text
@@ -496,7 +509,7 @@ private struct NextTripRow: View {
     private var sub: String {
         var parts = ["To \(leave.to)"]
         if let start = leave.start { parts.append(start) }
-        if let line = leave.line { parts.append("tram \(line)") }
+        if let line = leave.line { parts.append("line \(Board.badge(line))") }
         return parts.joined(separator: " · ")
     }
 }
@@ -605,8 +618,8 @@ private struct OnYourWayRow: View {
 
     @ViewBuilder
     private func badge(_ ride: TodayPage.Step?, look: LineLook) -> some View {
-        if let ride, let line = ride.name.split(separator: " ").last {
-            Text(String(line)).font(.geist(17, .bold)).monospacedDigit().foregroundStyle(look.ink)
+        if let ride, let line = trip.badge(ride) {
+            Text(line).font(.geist(17, .bold)).monospacedDigit().foregroundStyle(look.ink)
                 .frame(minWidth: 40, minHeight: 40).padding(.horizontal, 2)
                 .background(look.base, in: .rect(cornerRadius: 10))
         } else {

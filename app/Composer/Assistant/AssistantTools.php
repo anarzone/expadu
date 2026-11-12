@@ -45,6 +45,7 @@ use App\Places\PlaceDisplayName;
 use App\Places\PlaceWorkAnswers;
 use App\Privacy\ProcessingPurpose;
 use App\Services\DisruptionService;
+use App\Services\KvbLineColors;
 use App\Services\LocationContext;
 use App\Services\NearbyStopService;
 use App\Services\OpeningHoursParser;
@@ -554,7 +555,10 @@ final class AssistantTools
                 }
             }
         }
-        $this->cards[$id] = ['type' => 'departures', 'board' => array_intersect_key($board, array_flip(['name', 'station', 'time_basis', 'is_stale', 'observed_at', 'areas', 'lines', 'lifts', 'notices']))];
+        $card = array_intersect_key($board, array_flip(['name', 'station', 'time_basis', 'is_stale', 'observed_at', 'areas', 'lines', 'lifts', 'notices']));
+        // Each line in its colour, as Travel's board draws it.
+        $card['lines'] = array_map(fn (array $line): array => $line + ['color' => KvbLineColors::for((string) $line['line'], $line['mode'] ?? null)], $card['lines'] ?? []);
+        $this->cards[$id] = ['type' => 'departures', 'board' => $card];
 
         return $this->line($id, "Departures at {$name} ({$basis}):\n".implode("\n", array_slice($rows, 0, 12)));
     }

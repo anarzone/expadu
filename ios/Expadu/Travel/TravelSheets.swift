@@ -302,6 +302,23 @@ struct LeaveSheet: View {
     @Environment(TripPlanner.self) private var planner
     @Environment(\.dismiss) private var dismiss
     @State private var starting = false
+    /// Another trip is running: asked before this one replaces it.
+    @State private var replacing = false
+
+    /// Start trip: true from the model means another trip runs (ask first); once started, the trip opens.
+    private func start(replace: Bool) {
+        guard let way = leave.ways.first else { return }
+        starting = true
+        Task {
+            if await today.startTrip(session.api, way: way, replace: replace) {
+                replacing = true
+            } else if today.page?.trip != nil {
+                dismiss()
+                planner.showTrip = true
+            }
+            starting = false
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -310,7 +327,7 @@ struct LeaveSheet: View {
                     .frame(width: 44, height: 44).background(LineLook(hex: leave.color ?? "#A01E5A").fill, in: .rect(cornerRadius: 11))
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Leave at \(leave.leaveTime ?? "")").font(.geist(19, .bold))
-                    Text(["To \(leave.to)", leave.start, leave.line.map { "tram \($0)" }].compactMap { $0 }.joined(separator: " · "))
+                    Text(["To \(leave.to)", leave.start, leave.line.map { "line \(Board.badge($0))" }].compactMap { $0 }.joined(separator: " · "))
                         .font(.geist(13)).foregroundStyle(Palette.textSoft).lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -321,17 +338,7 @@ struct LeaveSheet: View {
                 tile("There", leave.arriveTime ?? "–")
                 tile("Spare", leave.spareMinutes.map { "\($0) min" } ?? "–")
             }
-            Button {
-                guard let way = leave.ways.first else { return }
-                starting = true
-                Task {
-                    if await today.startTrip(session.api, way: way, replace: false) {
-                        dismiss()
-                        planner.showTrip = true
-                    }
-                    starting = false
-                }
-            } label: {
+            Button { start(replace: false) } label: {
                 Label(starting ? "Starting…" : "Start trip", systemImage: "figure.walk")
                     .font(.geist(17, .semibold)).frame(maxWidth: .infinity).frame(height: 52)
             }
@@ -339,6 +346,10 @@ struct LeaveSheet: View {
             .buttonFace(Palette.action, radius: 14)
             .foregroundStyle(Palette.onAction)
             .disabled(starting || leave.ways.isEmpty)
+            .alert("Replace the trip you’re on?", isPresented: $replacing) {
+                Button("Keep", role: .cancel) {}
+                Button("Replace") { start(replace: true) }
+            } message: { Text("You can only follow one trip at a time.") }
             Button(action: otherWays) {
                 Label("Other routes", systemImage: "arrow.triangle.branch").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
             }

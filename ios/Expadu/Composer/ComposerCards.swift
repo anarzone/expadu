@@ -94,61 +94,92 @@ private struct WhereCard: View {
 /// A stop's next departures, as Travel's own rows.
 private struct DeparturesCard: View {
     let station: ComposerBlock.Station
+    @Environment(Session.self) private var session
+    /// The stop's board read again while the card is in sight: the same live times as Travel's board.
+    @State private var live: Station?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Label(station.name, systemImage: "tram.fill").labelStyle(Tight()).font(.geist(16, .bold)).foregroundStyle(Palette.text)
-                Spacer()
-                if station.timeBasis == "realtime" {
-                    Text("Live").font(.geist(12.5, .bold)).foregroundStyle(Color(hex: 0x17603A))
-                } else if station.timeBasis == "scheduled" {
-                    Text("Timetable").font(.geist(12.5, .semibold)).foregroundStyle(Palette.textSoft)
+        TimelineView(.periodic(from: .now, by: 15)) { timeline in
+            let rows = rows(at: timeline.date)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Label(station.name, systemImage: "tram.fill").labelStyle(Tight()).font(.geist(16, .bold)).foregroundStyle(Palette.text)
+                    Spacer()
+                    Text(basis).font(.geist(12.5, basis == "Live" ? .bold : .semibold))
+                        .foregroundStyle(basis == "Live" ? Color(hex: 0x17603A) : Palette.textSoft)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                ForEach(rows, id: \.id) { row in
+                    PaperworkDivider()
+                    HStack(spacing: 12) {
+                        LineBadge(line: row.line, color: row.color)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(row.dest).font(.geist(15.5, .semibold)).foregroundStyle(row.cancelled ? Palette.textSoft : Palette.text)
+                                .strikethrough(row.cancelled)
+                            if let via = row.via { Text("via \(via)").font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1) }
+                        }
+                        Spacer(minLength: 4)
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text(row.minutes <= 0 ? "now" : row.minutes >= 60 ? row.time : "\(row.minutes) min").font(.posterGrotesque(19)).monospacedDigit().foregroundStyle(Palette.text)
+                                .contentTransition(.numericText(countsDown: true))
+                            // Late as Travel's board says it: from 2 min.
+                            if row.delay >= 2 { Text("+\(row.delay) late").font(.geist(12, .bold)).foregroundStyle(Palette.conflictText) }
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 9)
                 }
             }
-            .padding(.horizontal, 14).padding(.vertical, 12)
-            ForEach(rows, id: \.id) { row in
-                PaperworkDivider()
-                HStack(spacing: 12) {
-                    LineBadge(line: row.line, color: nil)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(row.dest).font(.geist(15.5, .semibold)).foregroundStyle(row.cancelled ? Palette.textSoft : Palette.text)
-                            .strikethrough(row.cancelled)
-                        if let via = row.via { Text("via \(via)").font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1) }
-                    }
-                    Spacer(minLength: 4)
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text(row.minutes <= 0 ? "now" : "\(row.minutes) min").font(.posterGrotesque(19)).monospacedDigit().foregroundStyle(Palette.text)
-                        if row.delay > 0 { Text("+\(row.delay) late").font(.geist(12, .bold)).foregroundStyle(Palette.conflictText) }
-                    }
-                }
-                .padding(.horizontal, 14).padding(.vertical, 9)
-            }
+            .animation(.smooth(duration: 0.3), value: rows.map(\.id))
         }
         .card(radius: 22)
+        .task {
+            // Live while it's on screen, as the board is: read again every 30 s.
+            while !Task.isCancelled {
+                if let reply = try? await session.api.station(named: station.name), let fresh = reply.station { live = fresh }
+                try? await Task.sleep(for: .seconds(30))
+            }
+        }
+    }
+
+    private var basis: String {
+        if let live { return live.timeBasis == .realtime && !live.isStale ? "Live" : live.timeBasis == .scheduled ? "Timetable" : "Not live" }
+        return station.timeBasis == "realtime" ? "Live" : station.timeBasis == "scheduled" ? "Timetable" : ""
     }
 
     private struct Row {
         let id: String
         let line: String
+        let color: String?
         let dest: String
         let via: String?
         let minutes: Int
+        let time: String
         let delay: Int
         let cancelled: Bool
     }
 
-    /// The next run each way, soonest first.
-    private var rows: [Row] {
-        station.lines.flatMap { line in
+    /// The next run each way that hasn't left, soonest first, counted from now (never the minutes the answer was written with).
+    private func rows(at now: Date) -> [Row] {
+        if let live {
+            return live.lines.flatMap { line in
+                line.dirs.compactMap { dir -> Row? in
+                    guard let run = dir.runs.first(where: { ($0.date ?? .distantFuture) >= now.addingTimeInterval(-30) }) else { return nil }
+                    return Row(id: dir.id, line: line.line, color: line.color, dest: dir.dest, via: dir.via.prefix(2).joined(separator: " · "),
+                               minutes: run.minutes(from: now), time: run.time, delay: run.delay ?? 0, cancelled: run.cancelled || dir.cancelled)
+                }
+            }
+            .sorted { $0.minutes < $1.minutes }
+        }
+        return station.lines.flatMap { line in
             line.dirs.compactMap { dir -> Row? in
-                guard let next = dir.next else { return nil }
-                return Row(id: dir.id, line: line.line, dest: dir.dest, via: dir.via?.prefix(2).joined(separator: " · "),
-                           minutes: next.minutes, delay: next.delay ?? 0, cancelled: next.cancelled ?? dir.cancelled ?? false)
+                let runs = [dir.next].compactMap { $0 } + (dir.later ?? [])
+                guard let run = runs.first(where: { ($0.date ?? .distantFuture) >= now.addingTimeInterval(-30) }) else { return nil }
+                let minutes = run.date.map { max(0, Int(($0.timeIntervalSince(now) / 60).rounded(.down))) } ?? run.minutes
+                return Row(id: dir.id, line: line.line, color: line.color, dest: dir.dest, via: dir.via?.prefix(2).joined(separator: " · "),
+                           minutes: minutes, time: run.time, delay: run.delay ?? 0, cancelled: run.cancelled ?? dir.cancelled ?? false)
             }
         }
         .sorted { $0.minutes < $1.minutes }
-        .prefix(6).map { $0 }
     }
 }
 

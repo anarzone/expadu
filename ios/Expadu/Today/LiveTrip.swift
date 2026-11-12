@@ -14,6 +14,7 @@ struct LiveTrip: View {
     @State private var picked: Int?
     @State private var steps = false
     @State private var ending = false
+    @State private var askEnd = false
     @State private var mapOpen = false
     @State private var pulse = false
     /// Our own navigation: the phone's GPS on the trip's lines (Guide).
@@ -134,8 +135,13 @@ struct LiveTrip: View {
                 HStack(spacing: 8) {
                     action("Map", symbol: "map", grow: true) { mapOpen = true }
                     action(steps ? "Hide steps" : "Steps", symbol: "list.bullet", grow: true) { withAnimation(Motion.ios(0.35)) { steps.toggle() } }
-                    action("End", symbol: "stop.circle", grow: true) { end(arrived: false) }
+                    // Ending asks first, as the trip screen's x does: a stray tap mustn't end the trip.
+                    action("End", symbol: "stop.circle", grow: true) { askEnd = true }
                         .disabled(ending)
+                        .alert("End this trip?", isPresented: $askEnd) {
+                            Button("Keep", role: .cancel) {}
+                            Button("End trip", role: .destructive) { end(arrived: false) }
+                        } message: { Text("The live steps stop. The trip stays on your day.") }
                 }
                 .padding(.top, 10)
                 Text("Swipe for other steps · hold for more")
