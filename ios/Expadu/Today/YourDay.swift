@@ -467,21 +467,6 @@ struct CardSay: View {
 /// clock in its line's colour, every step when asked, the way on a map, and End. It turns live in
 /// place: the card settles in, its parts rise one after another, the dot pulses.
 
-struct WhyLines: View {
-    let way: TodayPage.Way
-    let start: String?
-
-    var body: some View {
-        let lines: [(String, String)] = [
-            way.lines.isEmpty ? nil : ("checkmark", way.transfers == 0 ? "No change" : way.transfers == 1 ? "1 change" : "\(way.transfers) changes"),
-            way.walkMinutes > 0 ? ("figure.walk", "\(way.walkMinutes) min walking") : nil,
-            way.spareMinutes < 0 ? ("exclamationmark.triangle.fill", "\(-way.spareMinutes) min after your \(start ?? "start")")
-                : way.spareMinutes <= 2 ? ("exclamationmark.triangle.fill", "Only \(way.spareMinutes) min before your \(start ?? "start")") : nil,
-        ].compactMap { $0 }
-        FlowLines(lines: lines)
-    }
-}
-
 struct FlowLines: View {
     let lines: [(String, String)]
 

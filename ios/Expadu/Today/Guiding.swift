@@ -203,40 +203,6 @@ struct TurnRow: View {
     }
 }
 
-/// A walking way's turns, as our router gives them (Getting there's steps on foot).
-struct TurnList: View {
-    let turns: [TodayPage.Turn]
-    let to: String
-
-    var body: some View {
-        let shown = turns.filter { $0.direction != "continue" || !$0.street.isEmpty }
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(shown.enumerated()), id: \.offset) { index, turn in
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(spacing: 0) {
-                        Image(systemName: turn.symbol).font(.system(size: 11, weight: .bold)).foregroundStyle(StepColour.walk)
-                            .frame(width: 22, height: 22)
-                            .overlay { Circle().strokeBorder(StepColour.walk, lineWidth: 2.5) }
-                        Rectangle().fill(StepColour.walk.opacity(0.5)).frame(width: 2).frame(maxHeight: .infinity)
-                    }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(turn.words).font(.geist(15, .semibold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
-                        if turn.metres >= 10 { Text(TurnRow.distance(turn.metres)).font(.geist(13)).foregroundStyle(Palette.textSoft) }
-                    }
-                    .padding(.bottom, 12)
-                    Spacer(minLength: 0)
-                }
-            }
-            HStack(spacing: 12) {
-                Image(systemName: "flag.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(Color(hex: 0xE6421F))
-                    .frame(width: 22, height: 22)
-                    .overlay { Circle().strokeBorder(Color(hex: 0xE6421F), lineWidth: 2.5) }
-                Text("You’re at \(to)").font(.geist(15, .semibold)).foregroundStyle(Palette.text)
-            }
-        }
-    }
-}
-
 /// When the trip has gone wrong: off the way, or the ride left. One tap plans again from here.
 struct TripTrouble: View {
     let text: String

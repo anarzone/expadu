@@ -418,3 +418,30 @@ struct RouteBar: View {
         .opacity(dim ? 0.35 : 1)
     }
 }
+
+
+/// A Good to know row: a coloured tile, its line and a note.
+struct KnowRow: View {
+    struct Row {
+        let symbol: String
+        let tint: Color
+        let title: String
+        let note: String
+    }
+
+    let row: Row
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 13) {
+            Image(systemName: row.symbol).font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                .frame(width: 32, height: 32).background(row.tint, in: .rect(cornerRadius: 9))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.title).font(.geist(15.5, .semibold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+                Text(row.note).font(.geist(13.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .accessibilityElement(children: .combine)
+    }
+}

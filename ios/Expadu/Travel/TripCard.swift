@@ -112,6 +112,10 @@ struct TripCard: View {
                 .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: swipedLeft ? 40 : -40)),
                                         removal: .opacity.combined(with: .offset(x: swipedLeft ? -40 : 40))))
             progress(Self.done(trip, at: date), colour: colours.base)
+            // What just changed (a new route, a missed tram), said where the trip is.
+            if let note = today.cardNote {
+                CardSay(note: note).transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .offset(x: drag)
         .tripCard(dim: dim)
