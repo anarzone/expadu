@@ -76,12 +76,12 @@ test('MOTIS serves as the primary provider and the result is cached', function (
 
     expect($first->source)->toBe('motis');
     expect($second->source)->toBe('motis');
-    // One uncached plan() = five MOTIS calls (transit, the less-walking and no-change
-    // alternatives, a direct bike and a direct walk bucket); the second plan() is served
-    // entirely from cache, so the total stays at 5. (The fixture's best way doesn't change,
-    // so there are no ways on from its first tram to ask; no rail station is seeded, so the
-    // rail-rescue gate stays shut: no extra call.)
-    Http::assertSentCount(5);
+    // One uncached plan() = seven MOTIS calls (transit, its main ride's run for the ways in
+    // to it, the short-start, short-end and no-change alternatives, a direct bike and a direct
+    // walk bucket); the second plan() is served entirely from cache, so the total stays at 7.
+    // (The fixture's run names no stops to go via; its best way doesn't change, so there are no
+    // ways on; no rail station is seeded, so the rail-rescue gate stays shut.)
+    Http::assertSentCount(7);
 });
 
 test('falls back to Transitous when MOTIS fails', function () {
