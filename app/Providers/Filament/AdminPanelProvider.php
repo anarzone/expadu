@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\FortifyAppAuthentication;
 use App\Support\AdminPanelLoading;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -28,6 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->path(AdminPanelLoading::PATH)
             ->authGuard('admin')
             ->login()
+            // Admins sign in with a code from their authenticator app too, the
+            // same one as the app's two-step sign-in; one without it sets it up
+            // first (plan C, 13 Nov 2026).
+            ->multiFactorAuthentication([FortifyAppAuthentication::make()->recoverable()], isRequired: true)
             ->brandName('Expadu Admin')
             ->colors([
                 'primary' => Color::Blue,
