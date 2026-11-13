@@ -12,7 +12,8 @@ use Carbon\CarbonImmutable;
  * reads the direct runs once, then gives each ride:
  *
  * - `also`: other lines on that stretch that make the same connection, soonest first: they leave once
- *   the rider can be at the stop and get there no later (the last ride: up to two minutes later);
+ *   the rider can be at the stop and get there in time to walk to the next ride (the 1 or the 7 one
+ *   stop to Rudolfplatz as well as the 146, all before the 12), the last ride up to two minutes later;
  * - `change` (every ride after the first): the minutes to spare for the change, and when that's a
  *   minute or less, the next run on the stretch, how much later it makes them, and on the last ride
  *   when it gets them there.
@@ -86,7 +87,7 @@ class RideChoices
                 }
                 $last = $k === count($rideIndexes) - 1;
                 $ready = $this->ready($legs, $i, $k === 0, $now);
-                $legs[$i]['also'] = $this->also($legs[$i], $runs, $ready, $last);
+                $legs[$i]['also'] = $this->also($legs[$i], $runs, $ready, $this->latest($legs, $i, $last ? null : $rideIndexes[$k + 1]));
                 if ($k > 0) {
                     $legs[$i]['change'] = $this->change($legs[$i], $runs, $ready, $last ? $journey : null);
                 }
@@ -118,14 +119,32 @@ class RideChoices
     }
 
     /**
+     * The latest another line may get to a ride's stop and still make the way: in time to walk on to
+     * the next ride, or for the last ride, a couple of minutes after it.
+     *
+     * @param  array<int, array<string, mixed>>  $legs
+     */
+    private function latest(array $legs, int $ride, ?int $next): CarbonImmutable
+    {
+        if ($next === null) {
+            return CarbonImmutable::parse($legs[$ride]['arrive_at'])->addMinutes(self::LAST_RIDE_SLACK_MINUTES);
+        }
+        $walk = 0;
+        for ($i = $ride + 1; $i < $next; $i++) {
+            $walk += (int) ($legs[$i]['duration_min'] ?? 0);
+        }
+
+        return CarbonImmutable::parse($legs[$next]['depart_at'])->subMinutes($walk);
+    }
+
+    /**
      * @param  array<string, mixed>  $leg
      * @param  list<array<string, mixed>>  $runs
      * @return list<array{line: string, color: string|null, depart_at: string, depart_time: string, arrive_time: string}>
      */
-    private function also(array $leg, array $runs, CarbonImmutable $ready, bool $last): array
+    private function also(array $leg, array $runs, CarbonImmutable $ready, CarbonImmutable $arrives): array
     {
         $leaves = CarbonImmutable::parse($leg['depart_at']);
-        $arrives = CarbonImmutable::parse($leg['arrive_at'])->addMinutes($last ? self::LAST_RIDE_SLACK_MINUTES : 0);
         $own = (string) ($leg['line'] ?? '');
 
         return collect($runs)
