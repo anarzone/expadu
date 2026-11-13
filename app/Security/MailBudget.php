@@ -3,6 +3,7 @@
 namespace App\Security;
 
 use App\Bureaucracy\Verification\Escalations;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -94,9 +95,15 @@ final class MailBudget
         return $kind.':'.sha1(mb_strtolower(trim($address)));
     }
 
-    private function count(string $name): int
+    /** Emails admitted on a UTC day (today unless given), all kinds or one kind's. */
+    public function sent(?string $kind = null, ?CarbonInterface $day = null): int
     {
-        return (int) Cache::get($this->key($name), 0);
+        return $this->count($kind ?? 'total', $day);
+    }
+
+    private function count(string $name, ?CarbonInterface $day = null): int
+    {
+        return (int) Cache::get($this->key($name, $day), 0);
     }
 
     private function increment(string $name): int
@@ -106,8 +113,8 @@ final class MailBudget
         return (int) Cache::increment($this->key($name));
     }
 
-    private function key(string $name): string
+    private function key(string $name, ?CarbonInterface $day = null): string
     {
-        return 'mail-budget:'.now('UTC')->toDateString().':'.$name;
+        return 'mail-budget:'.($day ?? now())->copy()->utc()->toDateString().':'.$name;
     }
 }
