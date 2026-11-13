@@ -201,6 +201,14 @@ class TransitousAdapter implements RouteService
         );
 
         $itineraries = $this->withAlternatives($from, $to, $departAt, $timeExtra, $itineraries);
+        // The boards asked beside the main answer are settled either way (a plan without a ride to
+        // go around never reads them): no request left running past the plan.
+        try {
+            $this->boardsAround?->wait();
+        } catch (\Throwable) {
+            // Only ever a help.
+        }
+        $this->boardsAround = null;
 
         // Rail rescue: when the set has no *clean* rail option (rail + short
         // walk, no bus feeder/egress), yet a station sits within walking reach
