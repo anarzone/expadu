@@ -85,13 +85,20 @@ class TransitousAdapter implements RouteService
      */
     private const ALTERNATIVES = [
         // A short walk to the first stop: a tram one stop rather than eleven minutes on foot to the 12.
-        'short_start' => ['maxPreTransitTime' => 300],
+        // The limit follows the main answer ({@see shortWalkSeconds}).
+        'short_start' => ['maxPreTransitTime' => self::SHORT_WALK_SECONDS],
         // A short walk from the last stop (12 then 3 to the door). Apart from the start's: one ask for
         // both found nothing whenever home is six minutes from its stop, and returned nonsense instead.
-        'short_end' => ['maxPostTransitTime' => 300],
+        'short_end' => ['maxPostTransitTime' => self::SHORT_WALK_SECONDS],
         // No change ({@see directOnly}).
         'no_change' => [],
     ];
+
+    /** The walk the short-walk asks allow at least: five minutes. */
+    private const SHORT_WALK_SECONDS = 300;
+
+    /** How much shorter than every walk of the main answer the short-walk asks look for. */
+    private const SHORTER_WALK_MINUTES = 3;
 
     /** Runs kept of each route the alternatives add: the next one and the one after. */
     private const ALTERNATIVE_RUNS = 2;
@@ -429,6 +436,11 @@ class TransitousAdapter implements RouteService
         }
 
         $asks = self::ALTERNATIVES;
+        // Measured on the ways the list keeps: at 18:30 the main answer's 7 from Porz Markt leaves at
+        // 20:25, past the list's window, and its 10-minute walk hid the 18:39 one.
+        $shown = $this->pruneAbsurd($itineraries, isset($timeExtra['arriveBy']));
+        $asks['short_start'] = ['maxPreTransitTime' => $this->shortWalkSeconds($shown, start: true)];
+        $asks['short_end'] = ['maxPostTransitTime' => $this->shortWalkSeconds($shown, start: false)];
         $asks['no_change'] = $this->directOnly();
         $asks += array_map(fn (array $via) => $via['ask'], $vias);
 
@@ -447,7 +459,8 @@ class TransitousAdapter implements RouteService
             return $itineraries;
         }
 
-        $known = array_fill_keys(array_map($this->route(...), $itineraries), true);
+        // Known: what the list keeps, so the 18:39 7 isn't taken for the 20:25 one the window drops.
+        $known = array_fill_keys(array_map($this->route(...), $shown), true);
         $added = [];
         $onward = [];
         $latest = $best?->arriveAt->addMinutes(self::CONTINUATION_SLACK_MINUTES);
@@ -469,9 +482,16 @@ class TransitousAdapter implements RouteService
             }
         }
 
-        foreach ($added as $runs) {
+        $main = $itineraries;
+        foreach ($added as $route => $runs) {
             ksort($runs);
-            array_push($itineraries, ...array_slice(array_values($runs), 0, self::ALTERNATIVE_RUNS));
+            $runs = array_values($runs);
+            if ($this->onlyAddsARide($runs[0], $main)) {
+                unset($added[$route]);
+
+                continue;
+            }
+            array_push($itineraries, ...array_slice($runs, 0, self::ALTERNATIVE_RUNS));
         }
         foreach ($onward as $route => $journey) {
             if (! isset($added[$route])) {
@@ -491,13 +511,14 @@ class TransitousAdapter implements RouteService
      * - ways in: the stops its main ride (the longest) passes after its boarding stop, nearest the
      *   start and within {@see WAYS_IN_KM}, each with a minute's stay so the way changes there; kept
      *   when another ride brings them onto that line there ("16 / 18 to Ebertplatz, then the 12", not
-     *   an eleven-minute walk to Rudolfplatz);
+     *   an eleven-minute walk to Rudolfplatz), and the stop the soonest way walks more than five
+     *   minutes to, kept when it walks less (the 7 or 9 one stop to Rudolfplatz, then the 12);
      * - ways out: the other stops near the destination, each with a minute's stay so the way gets off
      *   there; kept when it needs no more rides than the best (the 1/7/9 to Deutzer Freiheit beside
      *   the 3/4 to Suevenstr.).
      *
      * @param  list<Journey>  $itineraries
-     * @return array{0: Journey|null, 1: array<string, array{ask: array<string, mixed>, kind: string, run: string|null, line: string|null, stop: string, rides?: int}>}
+     * @return array{0: Journey|null, 1: array<string, array{ask: array<string, mixed>, kind: string, run: string|null, line: string|null, stop: string, rides?: int, walk?: int}>}
      */
     private function viaAsks(GeoPoint $from, GeoPoint $to, array $itineraries): array
     {
@@ -525,6 +546,21 @@ class TransitousAdapter implements RouteService
         $interchanges = array_values(array_filter($candidates, fn (array $stop) => ($lines[$stop['name']] ?? self::INTERCHANGE_LINES) >= self::INTERCHANGE_LINES));
         foreach (array_slice($interchanges, 0, self::WAYS_IN_STOPS) as $n => $stop) {
             $vias["in{$n}"] = ['ask' => ['via' => $stop['id'], 'viaMinimumStay' => 1], 'kind' => 'in', 'run' => null, 'line' => $main->lineName, 'stop' => $stop['name']];
+        }
+
+        // A ride to the stop a way walks long to (the 7 or 9 one stop to Rudolfplatz for the 12, which
+        // Google lists first, not ten minutes on foot); kept as a way in that walks less.
+        $walked = collect($itineraries)
+            ->filter(fn (Journey $journey) => ($journey->legs[0] ?? null)?->mode === 'walk'
+                && $journey->legs[0]->durationMin > self::WAYS_IN_START_WALK_MIN
+                && $this->firstRide($journey)?->from->stopId !== null)
+            ->sortBy(fn (Journey $journey) => $journey->arriveAt->getTimestamp())
+            ->first();
+        $board = $walked === null ? null : $this->firstRide($walked);
+        if ($board !== null && ! in_array($board->from->name, array_column($vias, 'stop'), true)) {
+            // A short walk to the first stop, or the router walks to the via and stays a minute.
+            $ask = ['via' => $board->from->stopId, 'viaMinimumStay' => 1, 'maxPreTransitTime' => self::WAYS_IN_START_WALK_MIN * 60];
+            $vias['board'] = ['ask' => $ask, 'kind' => 'in', 'run' => null, 'line' => $board->lineName, 'stop' => $board->from->name, 'walk' => $this->walkMinutes($walked)];
         }
 
         // Ways out: the other stops near the destination, getting off there (the 1/7/9 to Deutzer
@@ -590,7 +626,7 @@ class TransitousAdapter implements RouteService
     /**
      * Whether a way a `via` ask found is the alternative it was asked for.
      *
-     * @param  array{kind: string, run: string|null, line: string|null, stop: string, rides?: int}  $via
+     * @param  array{kind: string, run: string|null, line: string|null, stop: string, rides?: int, walk?: int}  $via
      */
     private function keeps(array $via, Journey $journey): bool
     {
@@ -615,7 +651,9 @@ class TransitousAdapter implements RouteService
         return count($rides) >= 2
             && $rides[1]->lineName === $via['line'] && $rides[1]->from->name === $via['stop']
             && ! in_array($rides[0]->from->name, $passes, true)
-            && ($start === null || $start->isTransit() || $start->durationMin <= self::WAYS_IN_START_WALK_MIN);
+            && ($start === null || $start->isTransit() || $start->durationMin <= self::WAYS_IN_START_WALK_MIN)
+            // A ride in place of a walk: only when it walks less than the way that walked there.
+            && (! isset($via['walk']) || $this->walkMinutes($journey) < $via['walk']);
     }
 
     /**
@@ -661,6 +699,63 @@ class TransitousAdapter implements RouteService
         $lines = $journey->lines();
 
         return count($lines) !== count(array_unique($lines));
+    }
+
+    /**
+     * The walk a short-walk ask allows, in seconds: five minutes, or, when the simplest ways of the main
+     * answer (fewest rides) all walk longer to their first stop (or from their last), three minutes
+     * less than the shortest of those walks. From the Rhine in Porz the S12 and RE9 walk 14 minutes to
+     * Bf Porz, and the 7 from Porz Markt, 10 minutes away, is the way Google lists third. A way with a
+     * bus to the station doesn't count: it is a change more, not a closer start.
+     *
+     * @param  list<Journey>  $itineraries
+     */
+    private function shortWalkSeconds(array $itineraries, bool $start): int
+    {
+        $walks = [];
+        foreach ($itineraries as $journey) {
+            $rides = count($journey->lines());
+            if ($rides === 0) {
+                continue;
+            }
+            $leg = $start ? ($journey->legs[0] ?? null) : ($journey->legs[array_key_last($journey->legs)] ?? null);
+            $walks[$rides][] = $leg !== null && $leg->mode === 'walk' ? $leg->durationMin : 0;
+        }
+        if ($walks === []) {
+            return self::SHORT_WALK_SECONDS;
+        }
+
+        return max(self::SHORT_WALK_SECONDS, (min($walks[min(array_keys($walks))]) - self::SHORTER_WALK_MINUTES) * 60);
+    }
+
+    /**
+     * A way the main answer has with a ride added before or after it (the 162 to Bf Porz for the RE9,
+     * the 101 from Alter Militärring after the 1) that walks no less and gets there no sooner than the
+     * main answer's soonest: a change more for nothing.
+     *
+     * @param  list<Journey>  $itineraries
+     */
+    private function onlyAddsARide(Journey $journey, array $itineraries): bool
+    {
+        $rides = array_filter($itineraries, fn (Journey $known) => $known->lines() !== []);
+        if ($rides === [] || $journey->arriveAt->lt(min(array_map(fn (Journey $known) => $known->arriveAt, $rides)))) {
+            return false;
+        }
+        $lines = $journey->lines();
+        foreach ($rides as $known) {
+            $knownLines = $known->lines();
+            if (count($knownLines) < count($lines) && array_diff($knownLines, $lines) === []
+                && $this->walkMinutes($journey) >= $this->walkMinutes($known)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function walkMinutes(Journey $journey): int
+    {
+        return array_sum(array_map(fn (Leg $leg) => $leg->mode === 'walk' ? $leg->durationMin : 0, $journey->legs));
     }
 
     private function firstRide(Journey $journey): ?Leg
