@@ -150,9 +150,21 @@ struct TravelTrip: View {
                     } label: { Label("I’m there", systemImage: "checkmark") }
                 }
             } label: {
-                Text(working ? "Finding…" : "Re-plan").font(.geist(14, .semibold)).padding(.horizontal, 14).frame(height: 42)
+                // The trip's options (a missed tram, somewhere else, speak turns, I'm there): "Re-plan"
+                // read as a new plan on offer (the owner, 13 Nov). iOS's "more" sign, the size of its neighbours.
+                Group {
+                    if working {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "ellipsis").font(.system(size: 17, weight: .bold))
+                    }
+                }
+                .frame(width: 42, height: 42).contentShape(.circle)
             }
-            .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 14))
+            .accessibilityLabel(working ? "Finding a new way" : "Trip options")
+            // Not interactive glass: a menu holds its button pressed while it opens and stays open, and
+            // the press light turned the button a blank white the whole time (the owner, 13 Nov).
+            .glassEffect(.clear, in: .circle)
             // Ending the trip is always in sight; it asks first, so a stray tap can't end it.
             Button { asking = true } label: {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).frame(width: 42, height: 42).contentShape(.circle)
