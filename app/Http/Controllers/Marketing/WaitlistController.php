@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\WaitlistConfirmation;
 use App\Marketing\WaitlistGuard;
 use App\Models\WaitlistSignup;
+use App\Rules\NotDisposableEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,7 @@ class WaitlistController extends Controller
     public function store(Request $request, WaitlistGuard $guard): JsonResponse
     {
         $validated = $request->validate([
-            'email' => ['required', 'string', 'email:rfc', 'max:255'],
+            'email' => ['required', 'string', 'email:rfc', 'max:255', new NotDisposableEmail],
             // A city, not an ad: scripts paste links and markup in here.
             'city' => ['required', 'string', 'max:120', 'not_regex:/https?:|www\.|[<>]/i'],
             'source' => ['nullable', 'string', 'max:60'],
@@ -54,7 +55,7 @@ class WaitlistController extends Controller
         }
 
         if (! $guard->mailsLeftToday()) {
-            Log::warning('waitlist.daily_mail_cap', ['cap' => WaitlistGuard::DailyMailCap]);
+            Log::warning('waitlist.daily_mail_cap', ['cap' => WaitlistGuard::dailyMailCap()]);
 
             return response()->json([
                 'message' => 'We can’t send more confirmation emails today. Please try again tomorrow.',
@@ -81,7 +82,26 @@ class WaitlistController extends Controller
     }
 
     /**
-     * Complete the double opt-in via the signed link from the mail.
+     * The signed link from the mail: a page whose button confirms. Opening
+     * the link confirms nothing, because company mail scanners open every
+     * link in a message within seconds (Nov 2026: corporate inboxes
+     * "confirmed" signups no person had made).
+     */
+    public function showConfirm(Request $request, WaitlistSignup $signup): View
+    {
+        if ($signup->isConfirmed()) {
+            return view('marketing.waitlist-confirmed', ['signup' => $signup]);
+        }
+
+        return view('marketing.waitlist-confirm', [
+            'signup' => $signup,
+            'action' => $request->fullUrl(),
+        ]);
+    }
+
+    /**
+     * Complete the double opt-in: the confirm page's button, posted to the
+     * same signed link.
      */
     public function confirm(WaitlistSignup $signup): View
     {

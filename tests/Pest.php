@@ -6,9 +6,11 @@ use App\Composer\AppointmentRepository;
 use App\Composer\Constraints;
 use App\Composer\PrivatePlanCache;
 use App\Models\User;
+use App\Security\FormTraps;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\HtmlString;
@@ -167,4 +169,18 @@ function storeComposerPlan(User $user, array $plan): array
 function storedComposerPlan(User $user): ?array
 {
     return app(PrivatePlanCache::class)->get($user, 'plan');
+}
+
+/**
+ * A form drawn $secondsAgo, as a person's browser posts it: FormTraps'
+ * empty hidden field and a valid stamp.
+ *
+ * @return array<string, string>
+ */
+function formDrawn(int $secondsAgo = 30): array
+{
+    return [
+        FormTraps::Trap => '',
+        FormTraps::Stamp => Crypt::encryptString((string) now()->subSeconds($secondsAgo)->getTimestamp()),
+    ];
 }

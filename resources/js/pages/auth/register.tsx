@@ -6,6 +6,7 @@ import {
     AccountField,
     AccountPassword,
     AccountSocial,
+    AccountTrap,
 } from '@/components/account/account-parts';
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
@@ -15,15 +16,23 @@ type Props = {
     socialProviders: string[];
     /** The marketing site's privacy policy. */
     privacyUrl: string;
+    /** When the form was drawn, sealed (FormTraps). */
+    drawn: string;
 };
 
 /** Create an account (the mock's #create): one password with Show, sent as
     its own confirmation too. */
-export default function Register({ socialProviders, privacyUrl }: Props) {
+export default function Register({
+    socialProviders,
+    privacyUrl,
+    drawn,
+}: Props) {
     const form = useForm({
         name: '',
         email: '',
         password: '',
+        website: '',
+        drawn,
     });
 
     function submit(e: FormEvent) {
@@ -68,6 +77,10 @@ export default function Register({ socialProviders, privacyUrl }: Props) {
                     value={form.data.email}
                     onChange={(v) => form.setData('email', v)}
                     error={form.errors.email}
+                />
+                <AccountTrap
+                    value={form.data.website}
+                    onChange={(v) => form.setData('website', v)}
                 />
                 <AccountPassword
                     id="password"

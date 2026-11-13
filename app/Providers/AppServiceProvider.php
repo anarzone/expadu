@@ -23,6 +23,7 @@ use App\Jobs\ValidateMediaAssetJob;
 use App\Models\User;
 use App\Observers\BureaucracyAccountObserver;
 use App\Observers\PersonalisationAccountObserver;
+use App\Security\DisposableEmail;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Support\Ssr\SsrGateway;
@@ -56,6 +57,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // The throwaway-domain list is read once per process.
+        $this->app->singleton(DisposableEmail::class);
 
         $this->app->singleton(
             RouteService::class,
