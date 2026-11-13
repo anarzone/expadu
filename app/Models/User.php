@@ -8,6 +8,8 @@ use App\Enums\Situation;
 use App\Enums\TransportMode;
 use App\Places\PlaceWorkAnswers;
 use Database\Factories\UserFactory;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -19,13 +21,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\Fortify;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
 #[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'has_deutschlandticket', 'transport_mode', 'needs_step_free', 'bureaucracy_path', 'profile_attributes', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'needs_step_free'])]
-class User extends Authenticatable implements FilamentUser, MustVerifyEmail
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
@@ -48,6 +51,46 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function canAccessPanel(Panel $panel): bool
     {
         return (bool) $this->is_admin;
+    }
+
+    /*
+     * The admin panel's two-step sign-in (FortifyAppAuthentication) uses the
+     * same authenticator secret as the app's own (Fortify), so a person has
+     * one entry in their authenticator app for both.
+     */
+
+    public function getAppAuthenticationSecret(): ?string
+    {
+        return $this->hasEnabledTwoFactorAuthentication()
+            ? Fortify::currentEncrypter()->decrypt($this->two_factor_secret)
+            : null;
+    }
+
+    public function saveAppAuthenticationSecret(?string $secret): void
+    {
+        $this->forceFill([
+            'two_factor_secret' => $secret === null ? null : Fortify::currentEncrypter()->encrypt($secret),
+            'two_factor_confirmed_at' => $secret === null ? null : now(),
+        ])->save();
+    }
+
+    public function getAppAuthenticationHolderName(): string
+    {
+        return (string) $this->email;
+    }
+
+    /** @return array<string>|null Fortify's recovery codes, as the person wrote them down. */
+    public function getAppAuthenticationRecoveryCodes(): ?array
+    {
+        return $this->two_factor_recovery_codes === null ? null : $this->recoveryCodes();
+    }
+
+    /** @param  array<string>|null  $codes */
+    public function saveAppAuthenticationRecoveryCodes(?array $codes): void
+    {
+        $this->forceFill([
+            'two_factor_recovery_codes' => $codes === null ? null : Fortify::currentEncrypter()->encrypt(json_encode(array_values($codes))),
+        ])->save();
     }
 
     /**

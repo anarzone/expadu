@@ -14,10 +14,13 @@ use App\Models\WaitlistSignup;
 use App\Security\SecurityStats;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
+use PragmaRX\Google2FA\Google2FA;
 
 beforeEach(function () {
     Filament::setCurrentPanel('admin');
     $this->admin = User::factory()->create(['is_admin' => true]);
+    // The panel opens only for admins with two-step sign-in (AdminTwoFactorTest).
+    $this->admin->saveAppAuthenticationSecret(app(Google2FA::class)->generateSecretKey());
 });
 
 function securityEvent(string $type, array $more = []): SecurityEvent
