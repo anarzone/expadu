@@ -14602,6 +14602,1198 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `POST /travel/trip/ride/check`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/check/post(appTripRide.check)`.
+    public enum AppTripRide_check {
+        public static let id: Swift.String = "appTripRide.check"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_check.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_check.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppTripRide_check.Input.Headers
+            /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/requestBody/json/leg`.
+                    public var leg: Swift.Int
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/requestBody/json/from`.
+                    public var from: Swift.String?
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/requestBody/json/at`.
+                    public var at: Foundation.Date?
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/requestBody/json/left_at`.
+                    public var leftAt: Foundation.Date
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - leg:
+                    ///   - from:
+                    ///   - at:
+                    ///   - leftAt:
+                    public init(
+                        leg: Swift.Int,
+                        from: Swift.String? = nil,
+                        at: Foundation.Date? = nil,
+                        leftAt: Foundation.Date
+                    ) {
+                        self.leg = leg
+                        self.from = from
+                        self.at = at
+                        self.leftAt = leftAt
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case leg
+                        case from
+                        case at
+                        case leftAt = "left_at"
+                    }
+                }
+                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/requestBody/content/application\/json`.
+                case json(Operations.AppTripRide_check.Input.Body.JsonPayload)
+            }
+            public var body: Operations.AppTripRide_check.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.AppTripRide_check.Input.Headers = .init(),
+                body: Operations.AppTripRide_check.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1`.
+                        public struct Value1Payload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/planned`.
+                            public var planned: Swift.Bool
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure`.
+                            public struct SurePayload: Codable, Hashable, Sendable {
+                                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure/line`.
+                                public var line: Swift.String
+                                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure/headsign`.
+                                public var headsign: Swift.String
+                                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure/color`.
+                                public var color: Swift.String
+                                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure/depart_at`.
+                                public var departAt: Swift.String
+                                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure/depart_time`.
+                                public var departTime: Swift.String
+                                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure/arrive_time`.
+                                public var arriveTime: Swift.String
+                                /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure/trip`.
+                                public var trip: Swift.String
+                                /// Creates a new `SurePayload`.
+                                ///
+                                /// - Parameters:
+                                ///   - line:
+                                ///   - headsign:
+                                ///   - color:
+                                ///   - departAt:
+                                ///   - departTime:
+                                ///   - arriveTime:
+                                ///   - trip:
+                                public init(
+                                    line: Swift.String,
+                                    headsign: Swift.String,
+                                    color: Swift.String,
+                                    departAt: Swift.String,
+                                    departTime: Swift.String,
+                                    arriveTime: Swift.String,
+                                    trip: Swift.String
+                                ) {
+                                    self.line = line
+                                    self.headsign = headsign
+                                    self.color = color
+                                    self.departAt = departAt
+                                    self.departTime = departTime
+                                    self.arriveTime = arriveTime
+                                    self.trip = trip
+                                }
+                                public enum CodingKeys: String, CodingKey {
+                                    case line
+                                    case headsign
+                                    case color
+                                    case departAt = "depart_at"
+                                    case departTime = "depart_time"
+                                    case arriveTime = "arrive_time"
+                                    case trip
+                                }
+                            }
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/sure`.
+                            public var sure: Operations.AppTripRide_check.Output.Ok.Body.JsonPayload.Value1Payload.SurePayload?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1/runs`.
+                            public var runs: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// Creates a new `Value1Payload`.
+                            ///
+                            /// - Parameters:
+                            ///   - planned:
+                            ///   - sure:
+                            ///   - runs:
+                            public init(
+                                planned: Swift.Bool,
+                                sure: Operations.AppTripRide_check.Output.Ok.Body.JsonPayload.Value1Payload.SurePayload? = nil,
+                                runs: [OpenAPIRuntime.OpenAPIValueContainer]
+                            ) {
+                                self.planned = planned
+                                self.sure = sure
+                                self.runs = runs
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case planned
+                                case sure
+                                case runs
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value1`.
+                        public var value1: Operations.AppTripRide_check.Output.Ok.Body.JsonPayload.Value1Payload?
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value2`.
+                        public struct Value2Payload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value2/planned`.
+                            public var planned: Swift.Bool
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value2/runs`.
+                            public var runs: [Swift.String]
+                            /// Creates a new `Value2Payload`.
+                            ///
+                            /// - Parameters:
+                            ///   - planned:
+                            ///   - runs:
+                            public init(
+                                planned: Swift.Bool,
+                                runs: [Swift.String]
+                            ) {
+                                self.planned = planned
+                                self.runs = runs
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case planned
+                                case runs
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/json/value2`.
+                        public var value2: Operations.AppTripRide_check.Output.Ok.Body.JsonPayload.Value2Payload?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - value1:
+                        ///   - value2:
+                        public init(
+                            value1: Operations.AppTripRide_check.Output.Ok.Body.JsonPayload.Value1Payload? = nil,
+                            value2: Operations.AppTripRide_check.Output.Ok.Body.JsonPayload.Value2Payload? = nil
+                        ) {
+                            self.value1 = value1
+                            self.value2 = value2
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            var errors: [any Swift.Error] = []
+                            do {
+                                self.value1 = try .init(from: decoder)
+                            } catch {
+                                errors.append(error)
+                            }
+                            do {
+                                self.value2 = try .init(from: decoder)
+                            } catch {
+                                errors.append(error)
+                            }
+                            try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                                [
+                                    self.value1,
+                                    self.value2
+                                ],
+                                type: Self.self,
+                                codingPath: decoder.codingPath,
+                                errors: errors
+                            )
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            try self.value1?.encode(to: encoder)
+                            try self.value2?.encode(to: encoder)
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/check/POST/responses/200/content/application\/json`.
+                    case json(Operations.AppTripRide_check.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppTripRide_check.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppTripRide_check.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppTripRide_check.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/check/post(appTripRide.check)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppTripRide_check.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppTripRide_check.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/check/post(appTripRide.check)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/check/post(appTripRide.check)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /travel/trip/ride`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/post(appTripRide.switch)`.
+    public enum AppTripRide_switch {
+        public static let id: Swift.String = "appTripRide.switch"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/travel/trip/ride/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_switch.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_switch.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppTripRide_switch.Input.Headers
+            /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody/json/leg`.
+                    public var leg: Swift.Int
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody/json/from`.
+                    public var from: Swift.String?
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody/json/at`.
+                    public var at: Foundation.Date?
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody/json/line`.
+                    public var line: Swift.String
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody/json/depart_at`.
+                    public var departAt: Foundation.Date
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody/json/trip`.
+                    public var trip: Swift.String?
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - leg:
+                    ///   - from:
+                    ///   - at:
+                    ///   - line:
+                    ///   - departAt:
+                    ///   - trip:
+                    public init(
+                        leg: Swift.Int,
+                        from: Swift.String? = nil,
+                        at: Foundation.Date? = nil,
+                        line: Swift.String,
+                        departAt: Foundation.Date,
+                        trip: Swift.String? = nil
+                    ) {
+                        self.leg = leg
+                        self.from = from
+                        self.at = at
+                        self.line = line
+                        self.departAt = departAt
+                        self.trip = trip
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case leg
+                        case from
+                        case at
+                        case line
+                        case departAt = "depart_at"
+                        case trip
+                    }
+                }
+                /// - Remark: Generated from `#/paths/travel/trip/ride/POST/requestBody/content/application\/json`.
+                case json(Operations.AppTripRide_switch.Input.Body.JsonPayload)
+            }
+            public var body: Operations.AppTripRide_switch.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.AppTripRide_switch.Input.Headers = .init(),
+                body: Operations.AppTripRide_switch.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json/trip`.
+                        public struct TripPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json/trip/journey`.
+                            public var journey: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json/trip/origin`.
+                            public var origin: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json/trip/destination`.
+                            public var destination: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// The plan it's for, when it was started for one (its start, for "12 min spare").
+                            ///
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json/trip/target`.
+                            public var target: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json/trip/started_at`.
+                            public var startedAt: Swift.String
+                            /// Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            ///
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json/trip/city`.
+                            public var city: Swift.String
+                            /// Creates a new `TripPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - journey:
+                            ///   - origin:
+                            ///   - destination:
+                            ///   - target: The plan it's for, when it was started for one (its start, for "12 min spare").
+                            ///   - startedAt:
+                            ///   - city: Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            public init(
+                                journey: [OpenAPIRuntime.OpenAPIValueContainer],
+                                origin: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                destination: [OpenAPIRuntime.OpenAPIValueContainer],
+                                target: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                startedAt: Swift.String,
+                                city: Swift.String
+                            ) {
+                                self.journey = journey
+                                self.origin = origin
+                                self.destination = destination
+                                self.target = target
+                                self.startedAt = startedAt
+                                self.city = city
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case journey
+                                case origin
+                                case destination
+                                case target
+                                case startedAt = "started_at"
+                                case city
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/json/trip`.
+                        public var trip: Operations.AppTripRide_switch.Output.Ok.Body.JsonPayload.TripPayload?
+                        /// A container of undocumented properties.
+                        public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - trip:
+                        ///   - additionalProperties: A container of undocumented properties.
+                        public init(
+                            trip: Operations.AppTripRide_switch.Output.Ok.Body.JsonPayload.TripPayload? = nil,
+                            additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()
+                        ) {
+                            self.trip = trip
+                            self.additionalProperties = additionalProperties
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case trip
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            let container = try decoder.container(keyedBy: CodingKeys.self)
+                            self.trip = try container.decodeIfPresent(
+                                Operations.AppTripRide_switch.Output.Ok.Body.JsonPayload.TripPayload.self,
+                                forKey: .trip
+                            )
+                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                                "trip"
+                            ])
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            var container = encoder.container(keyedBy: CodingKeys.self)
+                            try container.encodeIfPresent(
+                                self.trip,
+                                forKey: .trip
+                            )
+                            try encoder.encodeAdditionalProperties(additionalProperties)
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/POST/responses/200/content/application\/json`.
+                    case json(Operations.AppTripRide_switch.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppTripRide_switch.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppTripRide_switch.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppTripRide_switch.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/post(appTripRide.switch)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppTripRide_switch.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppTripRide_switch.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/post(appTripRide.switch)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/post(appTripRide.switch)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// A change a delay broke: the next tram they can catch there, switched to (with Undo)
+    ///
+    /// - Remark: HTTP `POST /travel/trip/ride/next`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/next/post(appTripRide.next)`.
+    public enum AppTripRide_next {
+        public static let id: Swift.String = "appTripRide.next"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_next.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_next.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppTripRide_next.Input.Headers
+            /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/requestBody/json/leg`.
+                    public var leg: Swift.Int
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/requestBody/json/from`.
+                    public var from: Swift.String?
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/requestBody/json/at`.
+                    public var at: Foundation.Date?
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/requestBody/json/ready_at`.
+                    public var readyAt: Foundation.Date
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - leg:
+                    ///   - from:
+                    ///   - at:
+                    ///   - readyAt:
+                    public init(
+                        leg: Swift.Int,
+                        from: Swift.String? = nil,
+                        at: Foundation.Date? = nil,
+                        readyAt: Foundation.Date
+                    ) {
+                        self.leg = leg
+                        self.from = from
+                        self.at = at
+                        self.readyAt = readyAt
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case leg
+                        case from
+                        case at
+                        case readyAt = "ready_at"
+                    }
+                }
+                /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/requestBody/content/application\/json`.
+                case json(Operations.AppTripRide_next.Input.Body.JsonPayload)
+            }
+            public var body: Operations.AppTripRide_next.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.AppTripRide_next.Input.Headers = .init(),
+                body: Operations.AppTripRide_next.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json/trip`.
+                        public struct TripPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json/trip/journey`.
+                            public var journey: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json/trip/origin`.
+                            public var origin: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json/trip/destination`.
+                            public var destination: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// The plan it's for, when it was started for one (its start, for "12 min spare").
+                            ///
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json/trip/target`.
+                            public var target: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json/trip/started_at`.
+                            public var startedAt: Swift.String
+                            /// Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            ///
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json/trip/city`.
+                            public var city: Swift.String
+                            /// Creates a new `TripPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - journey:
+                            ///   - origin:
+                            ///   - destination:
+                            ///   - target: The plan it's for, when it was started for one (its start, for "12 min spare").
+                            ///   - startedAt:
+                            ///   - city: Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            public init(
+                                journey: [OpenAPIRuntime.OpenAPIValueContainer],
+                                origin: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                destination: [OpenAPIRuntime.OpenAPIValueContainer],
+                                target: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                startedAt: Swift.String,
+                                city: Swift.String
+                            ) {
+                                self.journey = journey
+                                self.origin = origin
+                                self.destination = destination
+                                self.target = target
+                                self.startedAt = startedAt
+                                self.city = city
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case journey
+                                case origin
+                                case destination
+                                case target
+                                case startedAt = "started_at"
+                                case city
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/json/trip`.
+                        public var trip: Operations.AppTripRide_next.Output.Ok.Body.JsonPayload.TripPayload?
+                        /// A container of undocumented properties.
+                        public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - trip:
+                        ///   - additionalProperties: A container of undocumented properties.
+                        public init(
+                            trip: Operations.AppTripRide_next.Output.Ok.Body.JsonPayload.TripPayload? = nil,
+                            additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()
+                        ) {
+                            self.trip = trip
+                            self.additionalProperties = additionalProperties
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case trip
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            let container = try decoder.container(keyedBy: CodingKeys.self)
+                            self.trip = try container.decodeIfPresent(
+                                Operations.AppTripRide_next.Output.Ok.Body.JsonPayload.TripPayload.self,
+                                forKey: .trip
+                            )
+                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                                "trip"
+                            ])
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            var container = encoder.container(keyedBy: CodingKeys.self)
+                            try container.encodeIfPresent(
+                                self.trip,
+                                forKey: .trip
+                            )
+                            try encoder.encodeAdditionalProperties(additionalProperties)
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/next/POST/responses/200/content/application\/json`.
+                    case json(Operations.AppTripRide_next.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppTripRide_next.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppTripRide_next.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppTripRide_next.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/next/post(appTripRide.next)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppTripRide_next.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppTripRide_next.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/next/post(appTripRide.next)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/next/post(appTripRide.next)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /travel/trip/ride/undo`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/undo/post(appTripRide.undo)`.
+    public enum AppTripRide_undo {
+        public static let id: Swift.String = "appTripRide.undo"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_undo.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_undo.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppTripRide_undo.Input.Headers
+            /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/requestBody/json/undo`.
+                    public var undo: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - undo:
+                    public init(undo: Swift.String) {
+                        self.undo = undo
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case undo
+                    }
+                }
+                /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/requestBody/content/application\/json`.
+                case json(Operations.AppTripRide_undo.Input.Body.JsonPayload)
+            }
+            public var body: Operations.AppTripRide_undo.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.AppTripRide_undo.Input.Headers = .init(),
+                body: Operations.AppTripRide_undo.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json/trip`.
+                        public struct TripPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json/trip/journey`.
+                            public var journey: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json/trip/origin`.
+                            public var origin: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json/trip/destination`.
+                            public var destination: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// The plan it's for, when it was started for one (its start, for "12 min spare").
+                            ///
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json/trip/target`.
+                            public var target: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json/trip/started_at`.
+                            public var startedAt: Swift.String
+                            /// Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            ///
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json/trip/city`.
+                            public var city: Swift.String
+                            /// Creates a new `TripPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - journey:
+                            ///   - origin:
+                            ///   - destination:
+                            ///   - target: The plan it's for, when it was started for one (its start, for "12 min spare").
+                            ///   - startedAt:
+                            ///   - city: Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            public init(
+                                journey: [OpenAPIRuntime.OpenAPIValueContainer],
+                                origin: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                destination: [OpenAPIRuntime.OpenAPIValueContainer],
+                                target: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                startedAt: Swift.String,
+                                city: Swift.String
+                            ) {
+                                self.journey = journey
+                                self.origin = origin
+                                self.destination = destination
+                                self.target = target
+                                self.startedAt = startedAt
+                                self.city = city
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case journey
+                                case origin
+                                case destination
+                                case target
+                                case startedAt = "started_at"
+                                case city
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/json/trip`.
+                        public var trip: Operations.AppTripRide_undo.Output.Ok.Body.JsonPayload.TripPayload?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - trip:
+                        public init(trip: Operations.AppTripRide_undo.Output.Ok.Body.JsonPayload.TripPayload? = nil) {
+                            self.trip = trip
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case trip
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/undo/POST/responses/200/content/application\/json`.
+                    case json(Operations.AppTripRide_undo.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppTripRide_undo.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppTripRide_undo.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppTripRide_undo.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/undo/post(appTripRide.undo)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppTripRide_undo.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppTripRide_undo.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/undo/post(appTripRide.undo)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/undo/post(appTripRide.undo)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
     /// go in comes back 422 with why, and nothing changes

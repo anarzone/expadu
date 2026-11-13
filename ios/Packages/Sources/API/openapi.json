@@ -5242,6 +5242,494 @@
                 }
             }
         },
+        "/travel/trip/ride/check": {
+            "post": {
+                "operationId": "appTripRide.check",
+                "tags": [
+                    "AppTripRide"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "leg": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 40
+                                    },
+                                    "from": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 200
+                                    },
+                                    "at": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date-time"
+                                    },
+                                    "left_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    }
+                                },
+                                "required": [
+                                    "leg",
+                                    "left_at"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "planned": {
+                                                    "type": "boolean"
+                                                },
+                                                "sure": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "line": {
+                                                            "type": "string"
+                                                        },
+                                                        "headsign": {
+                                                            "type": "string"
+                                                        },
+                                                        "color": {
+                                                            "type": "string"
+                                                        },
+                                                        "depart_at": {
+                                                            "type": "string"
+                                                        },
+                                                        "depart_time": {
+                                                            "type": "string"
+                                                        },
+                                                        "arrive_time": {
+                                                            "type": "string"
+                                                        },
+                                                        "trip": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "line",
+                                                        "headsign",
+                                                        "color",
+                                                        "depart_at",
+                                                        "depart_time",
+                                                        "arrive_time",
+                                                        "trip"
+                                                    ]
+                                                },
+                                                "runs": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                }
+                                            },
+                                            "required": [
+                                                "planned",
+                                                "sure",
+                                                "runs"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "planned": {
+                                                    "type": "boolean"
+                                                },
+                                                "sure": {
+                                                    "type": "null"
+                                                },
+                                                "runs": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "minItems": 0,
+                                                    "maxItems": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "planned",
+                                                "sure",
+                                                "runs"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/trip/ride": {
+            "post": {
+                "operationId": "appTripRide.switch",
+                "tags": [
+                    "AppTripRide"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "leg": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 40
+                                    },
+                                    "from": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 200
+                                    },
+                                    "at": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date-time"
+                                    },
+                                    "line": {
+                                        "type": "string",
+                                        "maxLength": 20
+                                    },
+                                    "depart_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "trip": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 300
+                                    }
+                                },
+                                "required": [
+                                    "leg",
+                                    "line",
+                                    "depart_at"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "trip": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "journey": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "origin": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                },
+                                                "destination": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "target": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
+                                                    "items": {}
+                                                },
+                                                "started_at": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string",
+                                                    "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                }
+                                            },
+                                            "required": [
+                                                "journey",
+                                                "origin",
+                                                "destination",
+                                                "target",
+                                                "started_at",
+                                                "city"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "trip"
+                                    ],
+                                    "additionalProperties": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/trip/ride/next": {
+            "post": {
+                "operationId": "appTripRide.next",
+                "summary": "A change a delay broke: the next tram they can catch there, switched to (with Undo)",
+                "tags": [
+                    "AppTripRide"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "leg": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 40
+                                    },
+                                    "from": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 200
+                                    },
+                                    "at": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date-time"
+                                    },
+                                    "ready_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    }
+                                },
+                                "required": [
+                                    "leg",
+                                    "ready_at"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "trip": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "journey": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "origin": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                },
+                                                "destination": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "target": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
+                                                    "items": {}
+                                                },
+                                                "started_at": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string",
+                                                    "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                }
+                                            },
+                                            "required": [
+                                                "journey",
+                                                "origin",
+                                                "destination",
+                                                "target",
+                                                "started_at",
+                                                "city"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "trip"
+                                    ],
+                                    "additionalProperties": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/trip/ride/undo": {
+            "post": {
+                "operationId": "appTripRide.undo",
+                "tags": [
+                    "AppTripRide"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "undo": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "undo"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "trip": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "journey": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "origin": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                },
+                                                "destination": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "target": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
+                                                    "items": {}
+                                                },
+                                                "started_at": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string",
+                                                    "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                }
+                                            },
+                                            "required": [
+                                                "journey",
+                                                "origin",
+                                                "destination",
+                                                "target",
+                                                "started_at",
+                                                "city"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "trip"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/day/command": {
             "post": {
                 "operationId": "day.command",

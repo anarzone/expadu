@@ -238,6 +238,20 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `DELETE /travel/trip`.
     /// - Remark: Generated from `#/paths//travel/trip/delete(appTrip.end)`.
     func appTrip_end(_ input: Operations.AppTrip_end.Input) async throws -> Operations.AppTrip_end.Output
+    /// - Remark: HTTP `POST /travel/trip/ride/check`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/check/post(appTripRide.check)`.
+    func appTripRide_check(_ input: Operations.AppTripRide_check.Input) async throws -> Operations.AppTripRide_check.Output
+    /// - Remark: HTTP `POST /travel/trip/ride`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/post(appTripRide.switch)`.
+    func appTripRide_switch(_ input: Operations.AppTripRide_switch.Input) async throws -> Operations.AppTripRide_switch.Output
+    /// A change a delay broke: the next tram they can catch there, switched to (with Undo)
+    ///
+    /// - Remark: HTTP `POST /travel/trip/ride/next`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/next/post(appTripRide.next)`.
+    func appTripRide_next(_ input: Operations.AppTripRide_next.Input) async throws -> Operations.AppTripRide_next.Output
+    /// - Remark: HTTP `POST /travel/trip/ride/undo`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/undo/post(appTripRide.undo)`.
+    func appTripRide_undo(_ input: Operations.AppTripRide_undo.Input) async throws -> Operations.AppTripRide_undo.Output
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
     /// go in comes back 422 with why, and nothing changes
@@ -1078,6 +1092,52 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//travel/trip/delete(appTrip.end)`.
     public func appTrip_end(headers: Operations.AppTrip_end.Input.Headers = .init()) async throws -> Operations.AppTrip_end.Output {
         try await appTrip_end(Operations.AppTrip_end.Input(headers: headers))
+    }
+    /// - Remark: HTTP `POST /travel/trip/ride/check`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/check/post(appTripRide.check)`.
+    public func appTripRide_check(
+        headers: Operations.AppTripRide_check.Input.Headers = .init(),
+        body: Operations.AppTripRide_check.Input.Body
+    ) async throws -> Operations.AppTripRide_check.Output {
+        try await appTripRide_check(Operations.AppTripRide_check.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /travel/trip/ride`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/post(appTripRide.switch)`.
+    public func appTripRide_switch(
+        headers: Operations.AppTripRide_switch.Input.Headers = .init(),
+        body: Operations.AppTripRide_switch.Input.Body
+    ) async throws -> Operations.AppTripRide_switch.Output {
+        try await appTripRide_switch(Operations.AppTripRide_switch.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// A change a delay broke: the next tram they can catch there, switched to (with Undo)
+    ///
+    /// - Remark: HTTP `POST /travel/trip/ride/next`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/next/post(appTripRide.next)`.
+    public func appTripRide_next(
+        headers: Operations.AppTripRide_next.Input.Headers = .init(),
+        body: Operations.AppTripRide_next.Input.Body
+    ) async throws -> Operations.AppTripRide_next.Output {
+        try await appTripRide_next(Operations.AppTripRide_next.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /travel/trip/ride/undo`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/undo/post(appTripRide.undo)`.
+    public func appTripRide_undo(
+        headers: Operations.AppTripRide_undo.Input.Headers = .init(),
+        body: Operations.AppTripRide_undo.Input.Body
+    ) async throws -> Operations.AppTripRide_undo.Output {
+        try await appTripRide_undo(Operations.AppTripRide_undo.Input(
+            headers: headers,
+            body: body
+        ))
     }
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
