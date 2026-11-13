@@ -20,18 +20,14 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     private(set) var offSince: Date?
     /// The trip being guided; set by the live card.
     var trip: TodayPage.Trip? {
-        didSet { if trip?.legs != oldValue?.legs { reached = 0; offSince = nil; here = nil; atStop = nil; pulledAway = []; broken = [] } }
+        didSet { if trip?.legs != oldValue?.legs { reached = 0; offSince = nil; here = nil; pulledAway = []; broken = [] } }
     }
     /// Trip sync: a ride pulled away from its stop at another time than planned (which tram is it?).
     @ObservationIgnored var departed: ((TodayPage.Trip.Leg, Int, Date) -> Void)?
     /// Trip sync: a late ride gets them to the next ride's stop after it leaves (when they can be there).
     @ObservationIgnored var changeBroken: ((TodayPage.Trip.Leg, Int, Date) -> Void)?
-    /// The last moment the phone was at a ride's stop, waiting for it.
-    @ObservationIgnored private var atStop: (leg: Int, at: Date)?
     @ObservationIgnored private var pulledAway: Set<Int> = []
     @ObservationIgnored private var broken: Set<Int> = []
-    /// A tram in the city, metres a second: how long ago it left a stop it is this far from.
-    private static let rideSpeed = 7.0
     /// Trip sync's own trail (Console, category tripsync): what the phone saw and asked.
     static let log = Logger(subsystem: "com.expadu.app", category: "tripsync")
     @ObservationIgnored private var reached = 0
@@ -45,7 +41,8 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
-        manager.distanceFilter = 5
+        // Every fix, even standing still: a tram stuck between stops is late, not on its way.
+        manager.distanceFilter = kCLDistanceFilterNone
         manager.activityType = .otherNavigation
         manager.pausesLocationUpdatesAutomatically = false
     }
@@ -87,25 +84,29 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let last = locations.last, last.horizontalAccuracy >= 0, last.horizontalAccuracy < 80 else { return }
+        // Rough fixes too (a station's walls): with their accuracy, they say "at the stop" but never a turn.
+        guard let last = locations.last, last.horizontalAccuracy >= 0, last.horizontalAccuracy < 100 else { return }
         let point = TodayPage.Point(latitude: last.coordinate.latitude, longitude: last.coordinate.longitude)
         let at = last.timestamp
-        Task { @MainActor in self.moved(to: point, at: at) }
+        let accuracy = last.horizontalAccuracy
+        Task { @MainActor in self.moved(to: point, at: at, accuracy: accuracy) }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {}
 
-    private func moved(to point: TodayPage.Point, at date: Date) {
+    private func moved(to point: TodayPage.Point, at date: Date, accuracy: Double) {
         self.point = point
         at = date
-        guard let trip, let here = Guide(trip: trip).position(of: point, at: date, after: reached) else { return }
+        guard let trip, let here = Guide(trip: trip).position(of: point, at: date, after: reached, accuracy: accuracy) else { return }
         self.here = here
-        reached = max(reached, here.leg)
+        // A rough fix never moves them on to a later leg (nor back): only a good one does.
+        if accuracy <= Guide.trustMetres { reached = max(reached, here.leg) }
         offSince = here.offRoute ? (offSince ?? date) : nil
-        rideCheck(trip, here, at: date)
+        rideCheck(trip, here, accuracy: accuracy, at: date)
         island(at: date)
         // Said aloud, each once: the turn as it comes close, being off the way, arriving.
-        guard UserDefaults.standard.bool(forKey: "speakTurns") else { return }
+        // Nothing said aloud from a fix too rough to go by.
+        guard UserDefaults.standard.bool(forKey: "speakTurns"), accuracy <= Guide.trustMetres else { return }
         let key = trip.arriveTime ?? trip.to
         if let turn = here.turn, let metres = here.metresToTurn, metres <= 30 {
             TurnVoice.shared.say(turn.words, once: "\(key):\(here.leg):\(turn.words)")
@@ -119,40 +120,40 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
         if here.arrived { TurnVoice.shared.say("You’re there.", once: "\(key):there") }
     }
 
-    /// Trip sync: waiting at a ride's stop, then pulling away on it. Left more than two minutes off the
-    /// plan: another run, or another line on the stretch, for the server to name.
-    private func rideCheck(_ trip: TodayPage.Trip, _ here: Guide.Position, at date: Date) {
-        Self.log.debug("fix leg \(here.leg, privacy: .public) along \(Int(here.along), privacy: .public) m, off \(here.offRoute, privacy: .public)")
-        guard !here.offRoute else { return }
+    /// Trip sync: on the first good fix on a ride (the phone moving with it), when it left their stop,
+    /// by how late it runs where the phone is. Two minutes or more off the plan, and not the delay the
+    /// board already has for it: another run, or the planned one later still, for the server to tell
+    /// (it has the live times). Once a ride.
+    private func rideCheck(_ trip: TodayPage.Trip, _ here: Guide.Position, accuracy: Double, at date: Date) {
+        guard accuracy <= Guide.trustMetres, !here.offRoute, let ride = here.ride, ride.onBoard,
+              trip.legs.indices.contains(here.leg), !pulledAway.contains(here.leg) else { return }
+        pulledAway.insert(here.leg)
         let leg = trip.legs[here.leg]
-        if leg.rides {
-            if here.along <= 40 {
-                atStop = (here.leg, date)
-            } else if here.along >= 150, !pulledAway.contains(here.leg) {
-                pulledAway.insert(here.leg)
-                // When it left: by how far it has come (through a tunnel, no fixes), never before the last
-                // moment the phone was still at the stop.
-                let byDistance = date.addingTimeInterval(-here.along / Self.rideSpeed)
-                let waited = atStop.flatMap { $0.leg == here.leg && date.timeIntervalSince($0.at) < 900 ? $0.at : nil }
-                let left = max(byDistance, waited ?? byDistance)
-                Self.log.info("pulled away on leg \(here.leg, privacy: .public): left \(left.formatted(date: .omitted, time: .standard), privacy: .public), planned \(leg.departTime, privacy: .public)")
-                if abs(left.timeIntervalSince(leg.departAt)) >= 120 { departed?(leg, here.leg, left) }
-            }
-        } else if here.leg + 1 < trip.legs.count, trip.legs[here.leg + 1].rides, here.metresLeft <= 40 {
-            atStop = (here.leg + 1, date)
-        }
+        let left = leg.departAt.addingTimeInterval(ride.late)
+        let known = TimeInterval(max(0, leg.delayMin ?? 0) * 60)
+        Self.log.info("on leg \(here.leg, privacy: .public): left \(left.formatted(date: .omitted, time: .standard), privacy: .public), planned \(leg.departTime, privacy: .public), \(Int(ride.late), privacy: .public) s off, board \(Int(known), privacy: .public) s")
+        if abs(ride.late) >= 120, abs(ride.late - known) >= 90 { departed?(leg, here.leg, left) }
     }
 
-    /// Trip sync: on a ride, by the live times the trip has, can they still make the next one? When the
-    /// ride gets in, plus the walk across, after the next one leaves: the next tram there, once.
+    /// Trip sync: on a ride, as late as it runs (measured on board), can they still make the next one?
+    /// Getting in plus the change, after the next one leaves (as late as the board says it runs): the
+    /// next tram there, once.
     private func changeCheck(at date: Date) {
-        guard let trip, let on = here?.leg, trip.legs.indices.contains(on), trip.legs[on].rides,
-              let next = trip.legs.indices.dropFirst(on + 1).first(where: { trip.legs[$0].rides }), !broken.contains(next) else { return }
-        let walk = trip.legs[(on + 1)..<next].reduce(0) { $0 + $1.minutes }
-        let ready = trip.legs[on].arriveAt.addingTimeInterval(Double(walk) * 60)
-        guard ready.timeIntervalSince(trip.legs[next].departAt) > 60, trip.legs[next].departAt > date.addingTimeInterval(-600) else { return }
+        guard let trip, let here, here.ride?.onBoard == true, trip.legs.indices.contains(here.leg), trip.legs[here.leg].rides,
+              let next = trip.legs.indices.dropFirst(here.leg + 1).first(where: { trip.legs[$0].rides }), !broken.contains(next) else { return }
+        let late = trip.late(here: here, at: date)
+        let change = trip.legs[(here.leg + 1)..<next].reduce(0) { $0 + $1.minutes }
+        let ready = trip.legs[here.leg].arriveAt.addingTimeInterval(late + Double(change) * 60)
+        let leaves = trip.legs[next].departAt.addingTimeInterval(TimeInterval(max(0, trip.legs[next].delayMin ?? 0) * 60))
+        guard ready.timeIntervalSince(leaves) > 60, leaves > date.addingTimeInterval(-600) else { return }
         broken.insert(next)
+        Self.log.info("change to leg \(next, privacy: .public) broken: ready \(ready.formatted(date: .omitted, time: .standard), privacy: .public), it leaves \(leaves.formatted(date: .omitted, time: .standard), privacy: .public)")
         changeBroken?(trip.legs[next], next, ready)
+    }
+
+    /// Where they are, while the phone knows it: a fix in the last minute, good enough to go by.
+    func trusted(at now: Date = .now) -> Guide.Position? {
+        here.flatMap { $0.trusted(at: now) ? $0 : nil }
     }
 
     /// A new way started: guide it from its start.

@@ -85,7 +85,7 @@ struct TripCard: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
-            card(trip.live(at: timeline.date, picked: picked, guided: planner.follower.here?.step), at: timeline.date)
+            card(trip.live(at: timeline.date, picked: picked, here: planner.follower.here), at: timeline.date)
         }
         .alert("End this trip?", isPresented: $askEnd) {
             Button("Keep", role: .cancel) {}
@@ -219,7 +219,7 @@ struct TripCard: View {
         Button(action: replan) { Label("New route from here", systemImage: "arrow.triangle.turn.up.right.diamond") }
         Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
         Divider()
-        if planner.follower.here?.arrived == true || trip.live(at: .now).current >= trip.steps.count - 2 {
+        if planner.follower.trusted()?.arrived == true || trip.live(at: .now, here: planner.follower.here).current >= trip.steps.count - 2 {
             Button { Task { await today.endTrip(session.api, arrived: true); planner.stopFollowing() } } label: { Label("I’m there", systemImage: "checkmark") }
         }
         Button(role: .destructive, action: end) { Label("End trip", systemImage: "xmark") }
@@ -227,7 +227,7 @@ struct TripCard: View {
 
     /// What went wrong, as the phone sees it: off the route, or the ride gone. Hold for a new route.
     private var trouble: String? {
-        guard let here = planner.follower.here else { return nil }
+        guard let here = planner.follower.trusted() else { return nil }
         if let missed = here.missed { return "\(missed.name) has left · hold for a new route" }
         if here.offRoute, let since = planner.follower.offSince, Date.now.timeIntervalSince(since) > 15 { return "Off the route · hold for a new route" }
         return nil

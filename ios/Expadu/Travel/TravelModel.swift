@@ -28,6 +28,9 @@ final class TravelModel {
 
     private(set) var reply: StationReply?
     private(set) var phase = Phase.finding
+    /// The last read didn't get through (underground the signal comes and goes): the board stays up,
+    /// its minutes counting down, and is asked again sooner. Never swapped for an error.
+    private(set) var unreached = false
     /// The line the rail filters by; nil shows them all.
     var line: String?
     var open: Open?
@@ -35,6 +38,8 @@ final class TravelModel {
     var picker = false
     var notice: Station.Notice?
     private(set) var now = Date()
+    /// When the board was last read.
+    private var readAt = Date()
     private(set) var place: CLLocationCoordinate2D?
     /// The board's stop came from a rough fix; it may not be the stop they're at.
     private(set) var placeRough = false
@@ -82,11 +87,15 @@ final class TravelModel {
     /// "Closest · Live times", "Scheduled · not live", or where the times stand.
     var subLine: String {
         guard let station else { return "" }
-        let basis: String = switch station.timeBasis {
-        case .realtime where !station.isStale: "Live times"
-        case .stale, .realtime: "Not live · last times " + (station.observedAt.flatMap(Self.clock) ?? "")
-        case .scheduled: "Scheduled · not live"
-        case .unavailable: "Times unavailable right now"
+        let basis: String = if unreached {
+            "No signal · times from " + (station.observedAt.flatMap(Self.clock) ?? Self.clock(at: readAt))
+        } else {
+            switch station.timeBasis {
+            case .realtime where !station.isStale: "Live times"
+            case .stale, .realtime: "Not live · last times " + (station.observedAt.flatMap(Self.clock) ?? "")
+            case .scheduled: "Scheduled · not live"
+            case .unavailable: "Times unavailable right now"
+            }
         }
         if line != nil || map { return basis }
         if picked == nil, placeRough { return "Location rough · tap the name to pick your stop" }
@@ -95,6 +104,9 @@ final class TravelModel {
     }
 
     var live: Bool { station?.timeBasis == .realtime && station?.isStale == false }
+
+    /// The board's problem is the connection (nothing read yet), not the stop.
+    var signalLost: Bool { phase == .problem("No signal right now") }
 
     /// Each line's next run from here, for the rail.
     func nextMinutes(_ line: String) -> Int? {
@@ -114,7 +126,8 @@ final class TravelModel {
                 guard let self, !Task.isCancelled else { return }
                 self.now = .now
                 tick += 1
-                if tick % 2 == 0 { await self.load(api, quietly: true) }
+                // Every other tick; every tick while the last read didn't get through.
+                if tick % 2 == 0 || self.unreached || self.reply == nil { await self.load(api, quietly: true) }
             }
         }
     }
@@ -153,14 +166,24 @@ final class TravelModel {
         do throws(APIFailure) {
             let next = try await fetch()
             now = .now
+            readAt = now
             withAnimation(.snappy) {
+                unreached = false
                 reply = next
                 if let line, next.station?.lines.contains(where: { $0.line == line }) != true { self.line = nil }
                 phase = next.station == nil ? (picked == nil ? .problem("No KVB stop near you") : .problem("No departures from \(picked ?? "") in the feed")) : .ready
             }
         } catch {
-            if reply == nil || !quietly {
-                phase = .problem(error == .signedOut ? "You’ve been signed out." : "Times unavailable right now")
+            now = .now
+            if error == .signedOut {
+                phase = .problem("You’ve been signed out.")
+            } else if reply?.station != nil {
+                // A board is up (a pull to refresh, Try again, the timer): it stays, and says it's not
+                // been reached; the times it has still count down.
+                withAnimation(.snappy) { unreached = true }
+            } else if reply == nil || !quietly {
+                // Nothing to show yet: say why plainly, and keep asking (every tick, see start).
+                phase = .problem("No signal right now")
             }
         }
     }
@@ -311,5 +334,9 @@ final class TravelModel {
         let f = ISO8601DateFormatter()
         guard let date = f.date(from: iso) else { return nil }
         return date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
+    }
+
+    static func clock(at date: Date) -> String {
+        date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
     }
 }
