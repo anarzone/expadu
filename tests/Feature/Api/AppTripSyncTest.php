@@ -134,6 +134,29 @@ test('a change a delay broke takes the next tram there, the earliest to arrive',
     expect(ActiveTrip::query()->where('user_id', $this->person->id)->value('journey')['legs'][1]['line'])->toBe('18');
 });
 
+test('the next tram at a broken change leaves the ride they are on as it is', function () {
+    // The 12 from Merkenich to Ebertplatz (17:05–17:30), four minutes to change, the 16 at 17:36.
+    $merkenich = ['name' => 'Köln Merkenich Mitte', 'lat' => 51.0244, 'lng' => 6.9530, 'stop_id' => 'vrs-gtfs_416'];
+    $legs = $this->journey['legs'];
+    $twelve = [...$legs[1], 'line' => '12', 'from' => $merkenich, 'to' => $this->ebertplatz, 'trip_id' => 'run-12-1705',
+        'depart_at' => ($this->at)('17:05'), 'arrive_at' => ($this->at)('17:30'), 'depart_time' => '17:05', 'arrive_time' => '17:30'];
+    $change = [...$legs[0], 'from' => $this->ebertplatz, 'to' => $this->ebertplatz,
+        'depart_at' => ($this->at)('17:30'), 'arrive_at' => ($this->at)('17:34'), 'depart_time' => '17:30', 'arrive_time' => '17:34'];
+    $walk = [...$legs[0], 'to' => $merkenich, 'depart_at' => ($this->at)('17:00'), 'arrive_at' => ($this->at)('17:05'), 'depart_time' => '17:00', 'arrive_time' => '17:05'];
+    $this->person->activeTrip()->update(['journey' => [...$this->journey, 'legs' => [$walk, $twelve, $change, $legs[1], $legs[2]]]]);
+    fakeRuns([['16', '2026-11-16T16:36:00Z', '2026-11-16T16:42:00Z', 'run-16-1736'], ['18', '2026-11-16T16:42:00Z', '2026-11-16T16:48:00Z', 'run-18-1742']]);
+
+    // The 12 late, ready at Ebertplatz 17:38: the 18 at 17:42.
+    $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/next', ['leg' => 3, 'ready_at' => ($this->at)('17:38')])
+        ->assertOk()->assertJson(['line' => '18', 'depart_time' => '17:42']);
+    $journey = ActiveTrip::query()->where('user_id', $this->person->id)->value('journey');
+    // The walk and the 12 as they were (not moved six minutes on), the 18 after the change.
+    expect($journey['legs'][0]['depart_time'])->toBe('17:00')
+        ->and($journey['legs'][1]['line'])->toBe('12')
+        ->and($journey['legs'][1]['depart_time'])->toBe('17:05')
+        ->and($journey['legs'][3]['line'])->toBe('18');
+});
+
 test('a tram the router has no way on from is said so, and the trip stays', function () {
     fakeRuns([['16', '2026-11-16T16:36:00Z', '2026-11-16T16:42:00Z', 'run-16-1736']]);
 
