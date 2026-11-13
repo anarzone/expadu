@@ -32,6 +32,15 @@ class VrsRealtimeService
     /** Set while the feed is being read, so the warmer runs only then. */
     private const WANTED_KEY = 'vrs_gtfsrt:wanted';
 
+    /** The feed as VRS sends it, for our router (MOTIS) to read through the relay. */
+    private const RAW_KEY = 'vrs_gtfsrt_raw_v1';
+
+    /** Seconds the relay serves a kept feed before fetching a fresh one itself. */
+    public const RAW_FRESH_SECONDS = 45;
+
+    /** Set while the router polls the relay: the warmer then keeps the raw feed fresh, unparsed. */
+    private const RELAY_WANTED_KEY = 'vrs_gtfsrt:relay_wanted';
+
     /** @var array<string, array<string, mixed>>|null the feed, as last read */
     private ?array $feed = null;
 
@@ -93,6 +102,66 @@ class VrsRealtimeService
     public function wanted(): bool
     {
         return (bool) Cache::get(self::WANTED_KEY);
+    }
+
+    /** Our router polled the relay: keep the raw feed fresh. */
+    public function markRelayWanted(): void
+    {
+        Cache::add(self::RELAY_WANTED_KEY, true, self::STALE_SECONDS);
+    }
+
+    /** Whether our router has polled the relay in the last ten minutes. */
+    public function relayWanted(): bool
+    {
+        return (bool) Cache::get(self::RELAY_WANTED_KEY);
+    }
+
+    /**
+     * The token our router sends to read the relay: set, or derived from the app key so the box's
+     * router config can be written without a new secret. Null without either: the relay stays shut.
+     */
+    public function relayToken(): ?string
+    {
+        $set = config('services.vrs.relay_token');
+        if (is_string($set) && $set !== '') {
+            return $set;
+        }
+        $key = config('app.key');
+
+        return is_string($key) && $key !== '' ? hash_hmac('sha256', 'motis-gtfsrt-relay', $key) : null;
+    }
+
+    /**
+     * The feed as VRS last sent it, and when it was fetched.
+     *
+     * @return array{body: string, fetched_at: int}|null
+     */
+    public function raw(): ?array
+    {
+        $raw = Cache::get(self::RAW_KEY);
+
+        return is_array($raw) && is_string($raw['body'] ?? null) && is_int($raw['fetched_at'] ?? null) ? $raw : null;
+    }
+
+    /**
+     * Fetches the feed and keeps it as VRS sends it, without reading it (the router reads it; reading
+     * it here takes seconds and ~135 MB). Null when VRS can't be read or another fetch is running.
+     */
+    public function refreshRaw(): ?string
+    {
+        if (! config('services.vrs.enabled')) {
+            return null;
+        }
+
+        $lock = Cache::lock('vrs_gtfsrt:fetch', 15);
+        if (! self::onRealClock(fn () => $lock->get())) {
+            return null;
+        }
+        try {
+            return $this->fetchBody();
+        } finally {
+            $lock->release();
+        }
     }
 
     /**
@@ -224,6 +293,25 @@ class VrsRealtimeService
      */
     private function fetchAndParse(): array
     {
+        $body = $this->fetchBody();
+        if ($body === null) {
+            return [];
+        }
+
+        try {
+            return $this->parseProtobuf($body);
+        } catch (\Throwable $e) {
+            Log::warning('VRS GTFS-RT error', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /** The feed's bytes from VRS, kept as they came for the relay; null when it can't be read. */
+    private function fetchBody(): ?string
+    {
         try {
             $url = config('services.vrs.gtfsrt_url');
 
@@ -236,22 +324,25 @@ class VrsRealtimeService
 
             $response = Http::withOptions($options)->get($url);
 
-            if (! $response->successful()) {
+            if (! $response->successful() || $response->body() === '') {
                 Log::warning('VRS GTFS-RT fetch failed', [
                     'status' => $response->status(),
                     'url' => $url,
                 ]);
 
-                return [];
+                return null;
             }
 
-            return $this->parseProtobuf($response->body());
+            // The real clock: the relay's freshness must not follow a faked one (the mock clock).
+            Cache::put(self::RAW_KEY, ['body' => $response->body(), 'fetched_at' => time()], self::STALE_SECONDS);
+
+            return $response->body();
         } catch (\Throwable $e) {
             Log::warning('VRS GTFS-RT error', [
                 'message' => $e->getMessage(),
             ]);
 
-            return [];
+            return null;
         }
     }
 
