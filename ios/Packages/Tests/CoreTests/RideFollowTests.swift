@@ -84,4 +84,55 @@ struct RideFollowTests {
         #expect(phase.kind == .wait)
         #expect(phase.short == "2′")
     }
+
+    // MARK: Without knowing where they are, nothing is said from it
+
+    @Test func anOldFixFromTheStreetNeverSaysWalkToTheStation() throws {
+        let guide = Guide(trip: Self.trip)
+        // 20:09 on the street, 200 m short of Scheibenstr.; then nothing (down in the station).
+        let street = try #require(guide.position(of: TodayPage.Point(latitude: 50.9982, longitude: 6.95), at: Self.at("20:09"), after: 0))
+        #expect(street.step == 0)
+        // At 20:14, five minutes on, the 12 has come: the clock says ride, not "walk to Scheibenstr.".
+        let live = Self.trip.live(at: Self.at("20:14"), here: street)
+        #expect(Self.trip.steps[live.current].kind == .ride)
+        let phase = TripPhase.of(Self.trip, here: street, offFor: 0, at: Self.at("20:14"))
+        #expect(phase.kind == .ride)
+    }
+
+    @Test func aRoughFixAtTheStopIsAtTheStop() throws {
+        let guide = Guide(trip: Self.trip)
+        // 20:10, a fix 55 m short of the stop but only good to 60 m (a station's walls): at the stop,
+        // waiting, not walking.
+        let here = try #require(guide.position(of: TodayPage.Point(latitude: 50.9995, longitude: 6.95), at: Self.at("20:10"), after: 0, accuracy: 60))
+        #expect(here.atEnd)
+        let phase = TripPhase.of(Self.trip, here: here, offFor: 0, at: Self.at("20:10"))
+        #expect(phase.kind == .wait)
+        // Nor any metres to a turn from a fix that rough.
+        #expect(here.turn == nil)
+    }
+
+    @Test func aFixTooRoughToGoByIsNotGoneBy() throws {
+        let guide = Guide(trip: Self.trip)
+        let here = try #require(guide.position(of: TodayPage.Point(latitude: 50.9982, longitude: 6.95), at: Self.at("20:13"), after: 0, accuracy: 90))
+        #expect(!here.trusted(at: Self.at("20:13")))
+        // Off the way only beyond what the fix may be off by.
+        let far = try #require(guide.position(of: TodayPage.Point(latitude: 50.9982, longitude: 6.9513), at: Self.at("20:09"), after: 0, accuracy: 50))
+        #expect(!far.offRoute)
+    }
+
+    @Test func aChangeWithinOneStopSaysWhichTramNotAWalk() {
+        let at = Self.at
+        let twelve = TodayPage.Trip.Leg(mode: "tram", line: "12", color: "#8CB437", headsign: "Zollstock", from: "Merkenich Mitte", to: "Ebertplatz", departAt: at("21:51"), arriveAt: at("22:12"),
+                                        departTime: "21:51", arriveTime: "22:12", minutes: 21, stops: 12, polyline: Polyline.encode([(51.02, 6.95), (50.95, 6.96)]))
+        let change = TodayPage.Trip.Leg(mode: "walk", line: nil, color: nil, headsign: nil, from: "Ebertplatz", to: "Ebertplatz", departAt: at("22:12"), arriveAt: at("22:18"),
+                                        departTime: "22:12", arriveTime: "22:18", minutes: 6, stops: nil, polyline: Polyline.encode([(50.95, 6.96), (50.95, 6.96)]))
+        let eighteen = TodayPage.Trip.Leg(mode: "tram", line: "18", color: "#1D92D1", headsign: "Klettenberg", from: "Ebertplatz", to: "Appellhofplatz", departAt: at("22:19"), arriveAt: at("22:25"),
+                                          departTime: "22:19", arriveTime: "22:25", minutes: 6, stops: 3, polyline: Polyline.encode([(50.95, 6.96), (50.94, 6.95)]))
+        let trip = TodayPage.Trip(to: "Cafe Nova", arriveTime: "22:25", startTime: nil, legs: [twelve, change, eighteen])
+        let step = trip.steps[1]
+        #expect(step.title == "Change at Ebertplatz")
+        #expect(step.sub == "In the station · Tram 18 at 22:19")
+        // No path to follow there: the guide has no line for it.
+        #expect(!Guide(trip: trip).lines.contains { $0.leg == 1 })
+    }
 }

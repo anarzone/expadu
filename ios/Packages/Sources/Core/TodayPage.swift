@@ -426,6 +426,12 @@ public struct TodayPage: Equatable, Sendable {
             return TimeInterval(max(0, legs[leg].delayMin ?? 0) * 60)
         }
 
+        /// The live card as the phone and the clock say it together: the phone's step only while it
+        /// knows where they are ({@see Guide.Position.trusted}), the clock as late as the ride runs.
+        public func live(at date: Date, picked: Int? = nil, here: Guide.Position?) -> Live {
+            live(at: date, picked: picked, guided: here.flatMap { $0.trusted(at: date) ? $0.step : nil }, late: late(here: here, at: date))
+        }
+
         /// The live card at this moment: the step they're on by the clock, or the one tapped. `late`:
         /// how far behind its timetable the trip runs (`late(here:at:)`); the clock goes by the
         /// timetable that far back.
@@ -515,9 +521,12 @@ public struct TodayPage: Equatable, Sendable {
                     steps.append(Step(kind: .getOff, title: "Get off at \(before.to)", sub: "\(leg.minutes) min walk to \(to)", at: before.arriveAt, time: before.arriveTime, color: before.color, name: before.name,
                                       leg: index))
                 } else if let before, before.rides, !last, legs[index + 1].rides {
-                    // A walk between two rides is a change: where, and to which line.
+                    // A walk between two rides is a change: where, and to which line. Within one stop (the
+                    // 12 on the Ring to the 18 below at Ebertplatz) the timetable gives a change time, not a
+                    // walk: no path, no metres, so it says which tram and when, never "6 min walk".
                     let next = legs[index + 1]
-                    steps.append(Step(kind: .walk, title: "Change at \(before.to)", sub: "\(leg.minutes) min walk to \(next.name)", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
+                    let sub = leg.from == leg.to ? "In the station · \(next.name) at \(next.departTime)" : "\(leg.minutes) min walk to \(next.name)"
+                    steps.append(Step(kind: .walk, title: "Change at \(before.to)", sub: sub, at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
                                       leg: index))
                 } else {
                     let place = last || leg.to.isEmpty ? to : leg.to

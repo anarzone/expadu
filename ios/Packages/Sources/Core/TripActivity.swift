@@ -61,7 +61,9 @@ public struct TripPhase: Codable, Hashable, Sendable {
     public static func of(_ trip: TodayPage.Trip, here: Guide.Position?, offFor: TimeInterval, at now: Date) -> TripPhase {
         // As late as the ride runs: measured by the phone on board, else the live board's delay.
         let behind = trip.late(here: here, at: now)
-        let live = trip.live(at: now, guided: here?.step, late: behind)
+        // Where they are only while the phone knows it; else nothing is said from it.
+        let fresh = here.flatMap { $0.trusted(at: now) ? $0 : nil }
+        let live = trip.live(at: now, here: here)
         let steps = trip.steps
         let step = live.step
         // There as late as it runs ("There 20:32", not the plan's 20:29 behind a late tram).
@@ -79,7 +81,7 @@ public struct TripPhase: Codable, Hashable, Sendable {
                       steps: steps.count, current: live.current, arrive: arrive, delay: late)
         }
 
-        if live.current == steps.count - 1 || here?.arrived == true {
+        if live.current == steps.count - 1 || fresh?.arrived == true {
             let early = trip.startTime.flatMap { start in TodayPage.minutes(from: arrive, to: start) }
             return make(.arrived, symbol: "checkmark", short: "There", title: "You’re there",
                         detail: early.map { $0 > 0 ? "\($0) min early" : "Enjoy it" } ?? "Enjoy it")
@@ -88,11 +90,11 @@ public struct TripPhase: Codable, Hashable, Sendable {
             return make(.trouble, symbol: "exclamationmark.triangle.fill", short: "Off", title: "\(ride.name) is cancelled",
                         detail: "Open Expadu for a new route from here")
         }
-        if let missed = here?.missed {
+        if let missed = fresh?.missed {
             return make(.trouble, symbol: "exclamationmark.triangle.fill", short: "Gone", title: "\(missed.name) has left",
                         detail: "Open Expadu for a new way from here")
         }
-        if let here, here.offRoute, offFor > 15 {
+        if let here = fresh, here.offRoute, offFor > 15 {
             return make(.trouble, symbol: "exclamationmark.triangle.fill", short: "Off", title: "You’re off the way",
                         detail: "\(Int(here.offBy)) m from it · a new way from here")
         }
@@ -100,13 +102,13 @@ public struct TripPhase: Codable, Hashable, Sendable {
         switch step.kind {
         case .walk:
             // Close to the stop with the ride still to come: waiting for it.
-            if let next, next.kind == .ride, let ride = next.leg.map({ trip.legs[$0] }), (here?.metresLeft ?? .infinity) < 40 || now >= step.at.addingTimeInterval(TimeInterval((leg?.minutes ?? 0) * 60)) {
+            if let next, next.kind == .ride, let ride = next.leg.map({ trip.legs[$0] }), fresh?.atEnd == true || now >= step.at.addingTimeInterval(TimeInterval((leg?.minutes ?? 0) * 60)) {
                 // When it comes, as late as the board says.
                 let leaves = ride.departAt.addingTimeInterval(behind)
                 return make(.wait, badge: ride.line, color: ride.color, symbol: "tram.fill", short: "\(minutes(until: leaves, from: now))′",
                             until: leaves, title: "\(ride.name) to \(ride.to) at \(ride.departTime)", detail: ride.headsign.map { "Towards \($0) · from \(ride.from)" } ?? "From \(ride.from)")
             }
-            if let turn = here?.turn, let metres = here?.metresToTurn {
+            if let turn = fresh?.turn, let metres = fresh?.metresToTurn {
                 return make(.walk, symbol: turn.symbol, short: Self.distance(metres), title: turn.words,
                             detail: next.map { $0.kind == .ride ? "\($0.name) at \($0.time)" : "There at \(arrive)" } ?? "There at \(arrive)")
             }

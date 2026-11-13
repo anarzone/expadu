@@ -16,6 +16,14 @@ public struct Guide: Sendable {
     public static let onBoardMetres = 120.0
     /// Within this of a stop on a ride's line: at it (passed once beyond).
     public static let atStopMetres = 25.0
+    /// Within this of where a walk ends (or within the fix's own uncertainty): at the stop.
+    public static let nearStopMetres = 40.0
+    /// The phone is gone by after this long without a fix (underground, indoors): the clock goes on.
+    public static let freshSeconds = 60.0
+    /// A fix rougher than this doesn't say which step they're on.
+    public static let trustMetres = 65.0
+    /// Turns, and metres to them, only from a fix this good.
+    public static let turnMetres = 30.0
 
     struct Line: Sendable {
         let leg: Int
@@ -43,6 +51,8 @@ public struct Guide: Sendable {
             guard points.count > 1 else { return nil }
             var along = [0.0]
             for i in 1..<points.count { along.append(along[i - 1] + Self.metres(points[i - 1], points[i])) }
+            // A change within one stop has no path (0 m): nothing to follow, nothing to snap the phone to.
+            guard (along.last ?? 0) >= 10 else { return nil }
             return Line(leg: index, points: points, along: along)
         }
         var marks: [Int: [Mark]] = [:]
@@ -82,6 +92,19 @@ public struct Guide: Sendable {
         public let missed: TodayPage.Trip.Leg?
         /// On a ride: how it's going, by the phone.
         public var ride: Ride?
+        /// When the fix was, and how far off it may be (metres).
+        public var at: Date = .distantPast
+        public var accuracy: Double = 0
+
+        /// The phone knows where they are: a fix in the last minute, good enough to go by. Without one
+        /// nothing is said from where they are (no "walk to the stop", no metres): the clock goes on.
+        public func trusted(at now: Date) -> Bool {
+            now.timeIntervalSince(at) <= Guide.freshSeconds && accuracy <= Guide.trustMetres
+        }
+
+        /// At the end of the leg they're on (the stop they walk to): within 40 m, or within the fix's
+        /// own uncertainty, so a rough fix in a station never says "walk to the station".
+        public var atEnd: Bool { metresLeft <= max(Guide.nearStopMetres, accuracy) }
 
         /// A ride as the phone sees it: where it is against its timetable. Late is measured where the
         /// phone is; between fixes (underground, standing still) the ride goes on at its timetable's
@@ -97,7 +120,7 @@ public struct Guide: Sendable {
     }
 
     /// Where `point` is on the way at `date`, never going back before the leg they were on (`after`).
-    public func position(of point: TodayPage.Point, at date: Date, after: Int = 0) -> Position? {
+    public func position(of point: TodayPage.Point, at date: Date, after: Int = 0, accuracy: Double = 10) -> Position? {
         guard !lines.isEmpty else { return nil }
         // The nearest line from the leg they were on; at a stop where two lines meet, the earlier
         // one, until the next has clearly taken over (15 m).
@@ -117,7 +140,7 @@ public struct Guide: Sendable {
         // On foot: the first turn that starts ahead of them.
         var turn: TodayPage.Turn?
         var toTurn: Int?
-        if !leg.rides, !leg.turns.isEmpty {
+        if !leg.rides, !leg.turns.isEmpty, accuracy <= Self.turnMetres {
             var start = 0.0
             for candidate in leg.turns {
                 if start > best.along + 5 {
@@ -135,7 +158,7 @@ public struct Guide: Sendable {
         if !leg.rides, best.line.leg + 1 < trip.legs.count {
             let ride = trip.legs[best.line.leg + 1]
             let gone = date.timeIntervalSince(ride.departAt)
-            if ride.rides, gone > 60, total - best.along > 40 || gone > Self.leftStopSeconds { missed = ride }
+            if ride.rides, gone > 60, total - best.along > max(Self.nearStopMetres, accuracy) || gone > Self.leftStopSeconds { missed = ride }
         }
 
         // On a ride: how late it runs where the phone is, against the ride's own stop times.
@@ -149,9 +172,10 @@ public struct Guide: Sendable {
 
         // Still getting to where the way starts (the router begins on the nearest path, not the doorstep).
         let starting = lines.first.flatMap { first in first.points.first.map { Self.metres(point, $0) <= Self.startMetres && best.line.leg == first.leg } } ?? false
+        // Off the way only beyond what the fix itself may be off by.
         return Position(leg: best.line.leg, step: step, offBy: best.offBy, metresLeft: max(0, total - best.along),
-                        offRoute: best.offBy > Self.offRouteMetres && !arrived && !starting, arrived: arrived,
-                        turn: turn, metresToTurn: toTurn, missed: missed, ride: ride)
+                        offRoute: best.offBy - accuracy > Self.offRouteMetres && !arrived && !starting, arrived: arrived,
+                        turn: turn, metresToTurn: toTurn, missed: missed, ride: ride, at: date, accuracy: accuracy)
     }
 
     /// When the ride is due at a point of its line: between two stops, as far on in time as in metres.
