@@ -7,6 +7,7 @@ use App\Mail\WaitlistConfirmation;
 use App\Marketing\WaitlistGuard;
 use App\Models\WaitlistSignup;
 use App\Rules\NotDisposableEmail;
+use App\Security\SecurityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +37,7 @@ class WaitlistController extends Controller
 
         if ($suspicion !== null) {
             Log::info('waitlist.blocked', ['reason' => $suspicion, 'source' => $validated['source'] ?? null]);
+            app(SecurityLog::class)->record(SecurityLog::Blocked, email: $validated['email'], reason: $suspicion, channel: 'waitlist');
 
             return $this->checkYourInbox();
         }
@@ -56,6 +58,7 @@ class WaitlistController extends Controller
 
         if (! $guard->mailsLeftToday()) {
             Log::warning('waitlist.daily_mail_cap', ['cap' => WaitlistGuard::dailyMailCap()]);
+            app(SecurityLog::class)->record(SecurityLog::Blocked, email: $validated['email'], reason: 'mail_cap', channel: 'waitlist');
 
             return response()->json([
                 'message' => 'We can’t send more confirmation emails today. Please try again tomorrow.',
@@ -66,6 +69,9 @@ class WaitlistController extends Controller
             'city' => $validated['city'],
             'source' => $validated['source'] ?? null,
         ])->save();
+        if ($signup->wasRecentlyCreated) {
+            app(SecurityLog::class)->record(SecurityLog::Signup, email: $signup->email, channel: 'waitlist');
+        }
 
         if ($guard->claimMail($signup->email)) {
             Mail::to($signup->email)->send(new WaitlistConfirmation($signup));

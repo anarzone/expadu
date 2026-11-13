@@ -33,7 +33,7 @@ final class AccountData
     public function files(User $user): array
     {
         $areas = [
-            'account.json' => ['Your account and situation profile, and changes to it.', fn () => $this->account($user)],
+            'account.json' => ['Your account and situation profile, changes to it, and your sign-ins and other security log entries.', fn () => $this->account($user)],
             'settings.json' => ['Your settings, notification choices, needs (step-free) and push devices.', fn () => $this->settings($user)],
             'consents.json' => ['What you agreed Expadu may process, and when.', fn () => $this->consents($user)],
             'paperwork.json' => ['Your Paperwork record for each person you manage, and your Paperwork tasks.', fn () => $this->paperwork($user)],
@@ -75,6 +75,9 @@ final class AccountData
             'profile_changes' => $this->rows('profile_attribute_changes', 'user_id', $user->id),
             'sessions' => array_map(fn (array $s) => array_intersect_key($s, array_flip(['ip_address', 'user_agent', 'last_activity'])),
                 $this->rows('sessions', 'user_id', $user->id)),
+            // The security log's entries for this account (last 90 days).
+            'security_log' => array_map(fn (array $e) => array_intersect_key($e, array_flip(['type', 'channel', 'reason', 'ip', 'user_agent', 'created_at'])),
+                $this->rows('security_events', 'user_id', $user->id)),
         ];
     }
 

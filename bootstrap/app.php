@@ -8,6 +8,7 @@ use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCacheHeaders;
 use App\Http\Middleware\StartSessionKeepingPrivateQueries;
+use App\Security\SecurityLog;
 use App\Support\MockClock;
 use App\Support\MockScenario;
 use App\Support\TrustedProxies;
@@ -103,6 +104,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // the user back with a plain flash toast instead; bots and plain
         // HTTP clients keep the default 429 + Retry-After response.
         $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            app(SecurityLog::class)->throttled($request);
+
             if ($request->header('X-Inertia') && ! $request->isMethodSafe()) {
                 $seconds = (int) ($e->getHeaders()['Retry-After'] ?? 60);
 
