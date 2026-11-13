@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Security\MailBudget;
+use App\Security\SecurityLog;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Mime\Address;
@@ -23,6 +24,7 @@ class EnforceMailBudget
         }
 
         Log::warning('mail.held', ['kind' => $kind, 'reason' => $held]);
+        app(SecurityLog::class)->record(SecurityLog::MailHeld, email: $recipients[0] ?? null, reason: "{$kind}:{$held}", channel: 'mail');
 
         return false;
     }

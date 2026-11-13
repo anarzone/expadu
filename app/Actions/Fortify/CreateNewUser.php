@@ -6,6 +6,7 @@ use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use App\Security\FormTraps;
+use App\Security\SecurityLog;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -30,6 +31,7 @@ class CreateNewUser implements CreatesNewUsers
         $request = request();
         if ($request->routeIs('register.store') && ($suspicion = $this->traps->suspicion($request)) !== null) {
             Log::info('signup.blocked', ['form' => 'register', 'reason' => $suspicion]);
+            app(SecurityLog::class)->record(SecurityLog::Blocked, email: is_string($input['email'] ?? null) ? $input['email'] : null, reason: $suspicion);
 
             throw ValidationException::withMessages([
                 'email' => 'We couldn’t create your account just now. Please try again.',

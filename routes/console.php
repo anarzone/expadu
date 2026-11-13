@@ -171,3 +171,8 @@ Schedule::command('account-exports:prune')->hourly()->withoutOverlapping()->onOn
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
 // The list of throwaway email domains the sign-up forms turn away.
 Schedule::command('security:refresh-disposable-domains')->monthlyOn(1, '04:40')->withoutOverlapping()->onOneServer();
+
+// Security watch: alert the admins on a flood (every ten minutes, once per rule a day),
+// and a morning summary of the last 24 hours (App\Security\SecurityWatch).
+Schedule::command('security:watch')->everyTenMinutes()->withoutOverlapping(5)->onOneServer();
+Schedule::command('security:daily-summary')->timezone('Europe/Berlin')->dailyAt('08:00')->withoutOverlapping()->onOneServer();
