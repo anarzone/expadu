@@ -7,6 +7,7 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Auth\AppSignIn;
 use App\Http\Controllers\SocialLoginController;
 use App\Http\Responses\PasswordResetLinkFailedResponse;
+use App\Security\FormTraps;
 use App\Support\ReturnPath;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -88,6 +89,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/forgot-password', [
             'status' => $request->session()->get('status'),
+            'drawn' => FormTraps::stamp(),
         ]));
 
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/verify-email', [
@@ -96,6 +98,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::registerView(fn () => Inertia::render('auth/register', [
             'socialProviders' => $socialProviders,
+            'drawn' => FormTraps::stamp(),
             // The privacy policy lives on the marketing site (its own domain
             // in production).
             'privacyUrl' => route('datenschutz'),

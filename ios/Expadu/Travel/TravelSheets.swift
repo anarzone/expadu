@@ -620,7 +620,7 @@ struct TravelMap: View {
                 let key = "\(stop.name)|\(Int(stop.lat * 2000))|\(Int(stop.lng * 2000))"
                 guard seen.insert(key).inserted else { return nil }
                 return CityMap.Pin(id: "stop-\(key)", coordinate: CLLocationCoordinate2D(latitude: stop.lat, longitude: stop.lng), title: stop.name,
-                                   kind: .stop(ring: UIColor(model.look(line.line).deep)))
+                                   kind: .stop(ring: UIColor(model.look(line.line).deep), symbol: LineBadge.symbol(line.mode)))
             } }
         }
         let ends: [CityMap.Pin] = shown.flatMap { line in
@@ -631,8 +631,9 @@ struct TravelMap: View {
         }
         let pins = (map.map { [CityMap.Pin(id: "station", coordinate: CLLocationCoordinate2D(latitude: $0.station.lat, longitude: $0.station.lng), title: $0.station.name, kind: .place(symbol: "tram.fill"))] } ?? [])
             + stops + ends
-        // All lines: the station and the next few stops each way. One line: all of it.
-        let fit: [CLLocationCoordinate2D] = focus == nil
+        // All lines: the station and the next few stops each way. One line: all of it. Before the
+        // lines come, where they are (never the whole world).
+        let fit: [CLLocationCoordinate2D] = map == nil ? [model.place].compactMap { $0 } : focus == nil
             ? [station].compactMap { $0 } + (map?.lines ?? []).flatMap { $0.ways.flatMap { $0.stops.prefix(3) } }.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
             : lines.filter { !$0.faint }.flatMap(\.points)
         ZStack(alignment: .bottom) {

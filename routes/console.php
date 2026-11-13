@@ -169,3 +169,5 @@ Schedule::command('account-exports:prune')->hourly()->withoutOverlapping()->onOn
 
 // Expired app tokens already fail; this removes the rows a day later.
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
+// The list of throwaway email domains the sign-up forms turn away.
+Schedule::command('security:refresh-disposable-domains')->monthlyOn(1, '04:40')->withoutOverlapping()->onOneServer();

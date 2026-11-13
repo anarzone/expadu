@@ -5,6 +5,7 @@ import {
     AccountLabel,
     AccountField,
     AccountMessage,
+    AccountTrap,
 } from '@/components/account/account-parts';
 import AuthLayout from '@/layouts/auth-layout';
 import { login, register } from '@/routes';
@@ -12,8 +13,15 @@ import { email as sendLink } from '@/routes/password';
 
 /** Reset your password (the mock's #forgot, then #sent once the link is on
     its way). */
-export default function ForgotPassword({ status }: { status?: string }) {
-    const form = useForm({ email: '' });
+export default function ForgotPassword({
+    status,
+    drawn,
+}: {
+    status?: string;
+    /** When the form was drawn, sealed (FormTraps). */
+    drawn: string;
+}) {
+    const form = useForm({ email: '', website: '', drawn });
     const sent = !!status && !form.errors.email;
 
     function submit(e?: FormEvent) {
@@ -78,6 +86,10 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         value={form.data.email}
                         onChange={(v) => form.setData('email', v)}
                         error={form.errors.email}
+                    />
+                    <AccountTrap
+                        value={form.data.website}
+                        onChange={(v) => form.setData('website', v)}
                     />
                     <button
                         className="account-primary"

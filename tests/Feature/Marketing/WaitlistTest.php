@@ -106,7 +106,7 @@ test('scripted posts get the usual reply but are not saved and mail no one', fun
 ]);
 
 test('the waitlist stops mailing at the daily cap, so account mails keep their quota', function () {
-    foreach (range(1, WaitlistGuard::DailyMailCap) as $i) {
+    foreach (range(1, WaitlistGuard::dailyMailCap()) as $i) {
         $this->withServerVariables(['REMOTE_ADDR' => "10.0.{$i}.1"])
             ->postJson('/waitlist', ['email' => "p{$i}@example.com", 'city' => 'Cologne', ...waitlistFormDrawn()])
             ->assertCreated();
@@ -116,7 +116,7 @@ test('the waitlist stops mailing at the daily cap, so account mails keep their q
         ->postJson('/waitlist', ['email' => 'one-too-many@example.com', 'city' => 'Cologne', ...waitlistFormDrawn()])
         ->assertTooManyRequests();
 
-    Mail::assertQueued(WaitlistConfirmation::class, WaitlistGuard::DailyMailCap);
+    Mail::assertQueued(WaitlistConfirmation::class, WaitlistGuard::dailyMailCap());
     expect(WaitlistSignup::query()->where('email', 'one-too-many@example.com')->exists())->toBeFalse();
 });
 
@@ -146,21 +146,31 @@ test('both waitlist forms carry the traps', function () {
     }
 });
 
-test('the signed confirmation link confirms the signup once', function () {
+test('opening the confirmation link only shows the button: a mail scanner confirms nothing', function () {
     $signup = WaitlistSignup::factory()->create();
 
     $url = URL::temporarySignedRoute('waitlist.confirm', now()->addDays(7), ['signup' => $signup->id]);
 
-    $response = $this->get($url);
+    $this->get($url)->assertOk()->assertSee('Yes, add me to the list');
+    $this->get($url)->assertOk();
 
-    $response->assertOk();
-    $response->assertSee('You’re on the list.');
+    expect($signup->fresh()->isConfirmed())->toBeFalse();
+});
+
+test('pressing the button on the signed link confirms the signup once', function () {
+    $signup = WaitlistSignup::factory()->create();
+
+    $url = URL::temporarySignedRoute('waitlist.confirm', now()->addDays(7), ['signup' => $signup->id]);
+
+    $this->post($url)->assertOk()->assertSee('You’re on the list.');
     expect($signup->fresh()->isConfirmed())->toBeTrue();
 
-    // Idempotent: the timestamp does not move on a second visit.
+    // Idempotent: the timestamp does not move on a second press, and the
+    // link then shows the confirmed page.
     $first = $signup->fresh()->confirmed_at;
     $this->travel(1)->hours();
-    $this->get($url)->assertOk();
+    $this->post($url)->assertOk();
+    $this->get($url)->assertOk()->assertSee('You’re on the list.');
     expect($signup->fresh()->confirmed_at->equalTo($first))->toBeTrue();
 });
 
@@ -168,6 +178,17 @@ test('an unsigned or tampered confirmation link is rejected', function () {
     $signup = WaitlistSignup::factory()->create();
 
     $this->get("/waitlist/confirm/{$signup->id}")->assertForbidden();
+    $this->post("/waitlist/confirm/{$signup->id}")->assertForbidden();
 
     expect($signup->fresh()->isConfirmed())->toBeFalse();
+});
+
+test('a throwaway inbox is turned away and mails no one', function () {
+    $this->postJson('/waitlist', ['email' => 'someone@mailinator.com', 'city' => 'Köln', ...waitlistFormDrawn()])
+        ->assertUnprocessable()->assertJsonValidationErrors('email');
+    $this->postJson('/waitlist', ['email' => 'someone@inbox.mailinator.com', 'city' => 'Köln', ...waitlistFormDrawn()])
+        ->assertUnprocessable()->assertJsonValidationErrors('email');
+
+    expect(WaitlistSignup::query()->count())->toBe(0);
+    Mail::assertNothingQueued();
 });

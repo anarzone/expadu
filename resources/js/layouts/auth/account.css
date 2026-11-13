@@ -194,6 +194,14 @@ html:has(.account-page) {
 .account-poster h1:focus {
     outline: none;
 }
+/* FormTraps' field: off-screen, never seen or filled by people. */
+.account-trap {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
 .account-lead {
     margin: 0 0 4px;
     color: #4a4335;
