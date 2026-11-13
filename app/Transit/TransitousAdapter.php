@@ -1595,7 +1595,7 @@ class TransitousAdapter implements RouteService
      * out of time comes back empty.
      *
      * @param  list<array{from: GeoPoint, to: GeoPoint, at: CarbonImmutable}>  $stretches
-     * @return list<list<array{line: string, headsign: string|null, color: string|null, depart_at: string, arrive_at: string, cancelled: bool}>>
+     * @return list<list<array{line: string, headsign: string|null, color: string|null, depart_at: string, arrive_at: string, cancelled: bool, trip: string|null}>>
      */
     public function directRides(array $stretches): array
     {
@@ -1643,11 +1643,45 @@ class TransitousAdapter implements RouteService
                     'depart_at' => CarbonImmutable::parse($legs[0]['startTime'])->setTimezone(config('app.timezone'))->toIso8601String(),
                     'arrive_at' => CarbonImmutable::parse($legs[0]['endTime'])->setTimezone(config('app.timezone'))->toIso8601String(),
                     'cancelled' => (bool) ($legs[0]['cancelled'] ?? false),
+                    // The run itself: the planned one late, or another (trip sync tells them apart).
+                    'trip' => isset($legs[0]['tripId']) ? (string) $legs[0]['tripId'] : null,
                 ];
             }
 
             return $rides;
         }, array_keys(array_values($stretches)));
+    }
+
+    /**
+     * The way on from a stop on one run: the rest of a trip planned again from the tram the rider is
+     * really on (trip sync), that run's line leaving the stop at that minute, or that very run. Null
+     * when the router has no way on from it.
+     */
+    public function wayOnRun(GeoPoint $stop, ?string $stopId, GeoPoint $to, CarbonImmutable $departAt, string $line, ?string $tripId = null): ?Journey
+    {
+        $timeout = $this->callTimeout(6.0) ?? throw new \RuntimeException('journey time budget spent');
+        try {
+            $journeys = $this->fetchBucket($stop, $to, $departAt->subMinute(), 6, $stopId !== null ? ['fromPlace' => $stopId] : [], 'itineraries', $timeout);
+        } catch (\Throwable $e) {
+            // A stop id this router doesn't know (a trip another router planned, on failover): from the
+            // stop's place instead.
+            if ($stopId === null || ($timeout = $this->callTimeout(6.0)) === null) {
+                throw $e;
+            }
+            $journeys = $this->fetchBucket($stop, $to, $departAt->subMinute(), 6, [], 'itineraries', $timeout);
+        }
+        foreach ($journeys as $journey) {
+            $ride = $this->firstRide($journey);
+            if ($ride === null) {
+                continue;
+            }
+            if (($tripId !== null && $ride->tripId === $tripId)
+                || ($ride->lineName === $line && abs($ride->departAt->getTimestamp() - $departAt->getTimestamp()) <= 90)) {
+                return $journey;
+            }
+        }
+
+        return null;
     }
 
     /**

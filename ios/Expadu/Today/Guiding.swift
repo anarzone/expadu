@@ -1,4 +1,6 @@
+import API
 import AVFoundation
+import OSLog
 import Core
 import CoreLocation
 import DesignSystem
@@ -18,8 +20,16 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     private(set) var offSince: Date?
     /// The trip being guided; set by the live card.
     var trip: TodayPage.Trip? {
-        didSet { if trip?.legs != oldValue?.legs { reached = 0; offSince = nil; here = nil } }
+        didSet { if trip?.legs != oldValue?.legs { reached = 0; offSince = nil; here = nil; pulledAway = []; broken = [] } }
     }
+    /// Trip sync: a ride pulled away from its stop at another time than planned (which tram is it?).
+    @ObservationIgnored var departed: ((TodayPage.Trip.Leg, Int, Date) -> Void)?
+    /// Trip sync: a late ride gets them to the next ride's stop after it leaves (when they can be there).
+    @ObservationIgnored var changeBroken: ((TodayPage.Trip.Leg, Int, Date) -> Void)?
+    @ObservationIgnored private var pulledAway: Set<Int> = []
+    @ObservationIgnored private var broken: Set<Int> = []
+    /// Trip sync's own trail (Console, category tripsync): what the phone saw and asked.
+    static let log = Logger(subsystem: "com.expadu.app", category: "tripsync")
     @ObservationIgnored private var reached = 0
     @ObservationIgnored private let manager = CLLocationManager()
     @ObservationIgnored private var users = 0
@@ -68,6 +78,7 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
 
     /// The Lock Screen and the Dynamic Island, from where they are now.
     private func island(at date: Date = .now) {
+        changeCheck(at: date)
         guard let trip else { return }
         TripActivity.shared.sync(trip, here: here, offFor: offSince.map { date.timeIntervalSince($0) } ?? 0, at: date)
     }
@@ -91,6 +102,7 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
         // A rough fix never moves them on to a later leg (nor back): only a good one does.
         if accuracy <= Guide.trustMetres { reached = max(reached, here.leg) }
         offSince = here.offRoute ? (offSince ?? date) : nil
+        rideCheck(trip, here, accuracy: accuracy, at: date)
         island(at: date)
         // Said aloud, each once: the turn as it comes close, being off the way, arriving.
         // Nothing said aloud from a fix too rough to go by.
@@ -106,6 +118,37 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
             TurnVoice.shared.say("\(missed.name) has left. Open Expadu for a new way.", once: "\(key):missed:\(missed.departTime)")
         }
         if here.arrived { TurnVoice.shared.say("You’re there.", once: "\(key):there") }
+    }
+
+    /// Trip sync: on the first good fix on a ride (the phone moving with it), when it left their stop,
+    /// by how late it runs where the phone is. Two minutes or more off the plan, and not the delay the
+    /// board already has for it: another run, or the planned one later still, for the server to tell
+    /// (it has the live times). Once a ride.
+    private func rideCheck(_ trip: TodayPage.Trip, _ here: Guide.Position, accuracy: Double, at date: Date) {
+        guard accuracy <= Guide.trustMetres, !here.offRoute, let ride = here.ride, ride.onBoard,
+              trip.legs.indices.contains(here.leg), !pulledAway.contains(here.leg) else { return }
+        pulledAway.insert(here.leg)
+        let leg = trip.legs[here.leg]
+        let left = leg.departAt.addingTimeInterval(ride.late)
+        let known = TimeInterval(max(0, leg.delayMin ?? 0) * 60)
+        Self.log.info("on leg \(here.leg, privacy: .public): left \(left.formatted(date: .omitted, time: .standard), privacy: .public), planned \(leg.departTime, privacy: .public), \(Int(ride.late), privacy: .public) s off, board \(Int(known), privacy: .public) s")
+        if abs(ride.late) >= 120, abs(ride.late - known) >= 90 { departed?(leg, here.leg, left) }
+    }
+
+    /// Trip sync: on a ride, as late as it runs (measured on board), can they still make the next one?
+    /// Getting in plus the change, after the next one leaves (as late as the board says it runs): the
+    /// next tram there, once.
+    private func changeCheck(at date: Date) {
+        guard let trip, let here, here.ride?.onBoard == true, trip.legs.indices.contains(here.leg), trip.legs[here.leg].rides,
+              let next = trip.legs.indices.dropFirst(here.leg + 1).first(where: { trip.legs[$0].rides }), !broken.contains(next) else { return }
+        let late = trip.late(here: here, at: date)
+        let change = trip.legs[(here.leg + 1)..<next].reduce(0) { $0 + $1.minutes }
+        let ready = trip.legs[here.leg].arriveAt.addingTimeInterval(late + Double(change) * 60)
+        let leaves = trip.legs[next].departAt.addingTimeInterval(TimeInterval(max(0, trip.legs[next].delayMin ?? 0) * 60))
+        guard ready.timeIntervalSince(leaves) > 60, leaves > date.addingTimeInterval(-600) else { return }
+        broken.insert(next)
+        Self.log.info("change to leg \(next, privacy: .public) broken: ready \(ready.formatted(date: .omitted, time: .standard), privacy: .public), it leaves \(leaves.formatted(date: .omitted, time: .standard), privacy: .public)")
+        changeBroken?(trip.legs[next], next, ready)
     }
 
     /// Where they are, while the phone knows it: a fix in the last minute, good enough to go by.
@@ -237,5 +280,47 @@ struct TripTrouble: View {
         }
         .padding(12)
         .background(Palette.warnBackground, in: .rect(cornerRadius: 14))
+    }
+}
+
+/// Trip sync, unsure which tram they're on (the 16 and the 18 a minute apart at Ebertplatz): asked in
+/// place, where the trip is, one tap each; the trip then follows that one. "Neither" leaves it be.
+struct RideChooser: View {
+    let choice: TodayModel.RideChoice
+    @Environment(Session.self) private var session
+    @Environment(TodayModel.self) private var today
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(choice.bus ? "Which bus are you on?" : "Which tram are you on?", systemImage: choice.bus ? "bus.fill" : "tram.fill")
+                .font(.geist(14.5, .semibold))
+            HStack(spacing: 8) {
+                ForEach(choice.rides, id: \.self) { ride in
+                    Button {
+                        Task { await today.takeRide(session.api, ride, index: choice.index, from: choice.from, at: choice.at) }
+                    } label: {
+                        VStack(spacing: 4) {
+                            LineBadge(line: ride.line, color: ride.color, height: 24)
+                            Text(ride.departTime).font(.geist(13, .semibold)).monospacedDigit()
+                        }
+                        .frame(maxWidth: .infinity).frame(height: 62)
+                        .background(Palette.quiet, in: .rect(cornerRadius: 12))
+                        .contentShape(.rect(cornerRadius: 12))
+                    }
+                    .buttonStyle(PressStyle())
+                    .accessibilityLabel("The \(ride.line) at \(ride.departTime)")
+                }
+                Button { today.dismissRideChoice() } label: {
+                    Text("Neither").font(.geist(13.5, .semibold))
+                        .frame(maxWidth: .infinity).frame(height: 62)
+                        .background(Palette.quiet, in: .rect(cornerRadius: 12))
+                        .contentShape(.rect(cornerRadius: 12))
+                }
+                .buttonStyle(PressStyle())
+            }
+        }
+        .padding(12)
+        .foregroundStyle(Palette.text)
+        .background(Palette.surface, in: .rect(cornerRadius: 16))
     }
 }

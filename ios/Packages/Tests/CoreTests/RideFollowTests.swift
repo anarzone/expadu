@@ -135,4 +135,16 @@ struct RideFollowTests {
         // No path to follow there: the guide has no line for it.
         #expect(!Guide(trip: trip).lines.contains { $0.leg == 1 })
     }
+
+    @Test func anEarlierTramIsMeasuredAsEarly() throws {
+        let guide = Guide(trip: Self.trip)
+        // The plan's 12 leaves Scheibenstr. at 20:12; at 20:07 the phone is already past Fordwerke Süd
+        // (due 20:14): an earlier 12, seven minutes ahead, for trip sync to name.
+        let here = try #require(guide.position(of: Self.onTheTram(1.0), at: Self.at("20:07"), after: 1))
+        let ride = try #require(here.ride)
+        #expect(ride.onBoard)
+        #expect(ride.late == -7 * 60)
+        // When it left their stop: the plan's time that far ahead.
+        #expect(Self.trip.legs[1].departAt.addingTimeInterval(ride.late) == Self.at("20:05"))
+    }
 }

@@ -247,6 +247,14 @@ struct TravelTrip: View {
                     .padding(10).background(Palette.surface, in: .rect(cornerRadius: 16)).foregroundStyle(Palette.text)
                     .transition(.opacity)
             }
+            // Trip sync: the tram they're really on, followed (Undo), or which one, asked in place.
+            if index == current(now), let note = today.cardNote {
+                CardSay(note: note).padding(10).background(Palette.surface, in: .rect(cornerRadius: 16))
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            if index == current(now), let choice = today.rideChoice {
+                RideChooser(choice: choice).transition(.opacity.combined(with: .move(edge: .top)))
+            }
             // Gone wrong: off the route for a while, or the ride left without them. A new route in one tap.
             if let trouble {
                 TripTrouble(text: trouble) { planner.newRoutes = true }
