@@ -167,7 +167,8 @@ public struct Guide: Sendable {
             let onBoard = best.along > Self.onBoardMetres
             // Waiting at the stop past the time: at least that late (the board says by how much more).
             let late = onBoard ? date.timeIntervalSince(Self.due(best.along, stops)) : max(0, date.timeIntervalSince(leg.departAt))
-            ride = Position.Ride(onBoard: onBoard, late: min(max(late, -300), 3600), at: date)
+            // Up to 20 minutes ahead of the plan (an earlier tram, which trip sync then names) or an hour behind.
+            ride = Position.Ride(onBoard: onBoard, late: min(max(late, -1200), 3600), at: date)
         }
 
         // Still getting to where the way starts (the router begins on the nearest path, not the doorstep).

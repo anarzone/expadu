@@ -112,6 +112,10 @@ struct TripCard: View {
             if let note = today.cardNote {
                 CardSay(note: note).transition(.opacity.combined(with: .move(edge: .top)))
             }
+            // Trip sync, unsure which tram: asked here too, where the trip is.
+            if let choice = today.rideChoice {
+                RideChooser(choice: choice).transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .offset(x: drag)
         .tripCard(dim: dim)

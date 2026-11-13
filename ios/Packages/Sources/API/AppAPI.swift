@@ -886,6 +886,95 @@ public struct AppAPI: Sendable {
         guard (200..<300).contains(reply.status) else { throw .unreachable }
     }
 
+    // MARK: Trip sync: the tram they're really on
+
+    /// A run of a ride's stretch: "18 at 17:42".
+    public struct TripRide: Equatable, Hashable, Sendable {
+        public let line: String
+        public let color: String?
+        public let departAt: String
+        public let departTime: String
+        public let arriveTime: String
+        public let trip: String?
+
+        init?(_ json: [String: Any]) {
+            guard let line = json["line"] as? String, let departAt = json["depart_at"] as? String,
+                  let departTime = json["depart_time"] as? String, let arriveTime = json["arrive_time"] as? String else { return nil }
+            self.line = line
+            color = json["color"] as? String
+            self.departAt = departAt
+            self.departTime = departTime
+            self.arriveTime = arriveTime
+            trip = json["trip"] as? String
+        }
+    }
+
+    /// Which run the phone left a ride's stop on: the planned one, one for sure, or a choice.
+    public enum TripRideCheck: Equatable, Sendable { case planned, sure(TripRide), choose([TripRide]), unknown }
+
+    /// A trip switched to another run, and the token that puts it back.
+    public struct TripRideSwitch: Equatable, Sendable {
+        public let undo: String
+        public let line: String
+        public let departTime: String
+        public let arriveTime: String
+    }
+
+    /// The ride, named as the trip has it (its stop, when it was to leave) and where it is in the trip.
+    private func ride(_ leg: Int, from: String, at: Date) -> [String: Any] {
+        ["leg": leg, "from": from, "at": ISO8601DateFormatter().string(from: at)]
+    }
+
+    public func tripRideCheck(leg: Int, from: String, at: Date, leftAt: Date) async throws(APIFailure) -> TripRideCheck {
+        var body = ride(leg, from: from, at: at)
+        body["left_at"] = ISO8601DateFormatter().string(from: leftAt)
+        // Only a question (it changes nothing): asked again when the connection drops, as reads are.
+        let reply = try await composer("POST", "travel/trip/ride/check", body, retry: true)
+        guard reply.status == 200, let json = try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any] else { throw .unreachable }
+        if json["planned"] as? Bool == true { return .planned }
+        if let sure = (json["sure"] as? [String: Any]).flatMap(TripRide.init) { return .sure(sure) }
+        let runs = ((json["runs"] as? [[String: Any]]) ?? []).compactMap(TripRide.init)
+        return runs.count > 1 ? .choose(runs) : .unknown
+    }
+
+    public func tripRideSwitch(leg: Int, from: String, at: Date, to ride: TripRide) async throws(APIFailure) -> TripRideSwitch {
+        var body = self.ride(leg, from: from, at: at)
+        body["line"] = ride.line
+        body["depart_at"] = ride.departAt
+        if let trip = ride.trip { body["trip"] = trip }
+        let reply = try await composer("POST", "travel/trip/ride", body)
+        return try switched(reply)
+    }
+
+    /// A change a delay broke: the next tram there once they can be at its stop.
+    public func tripRideNext(leg: Int, from: String, at: Date, readyAt: Date) async throws(APIFailure) -> TripRideSwitch {
+        var body = ride(leg, from: from, at: at)
+        body["ready_at"] = ISO8601DateFormatter().string(from: readyAt)
+        let reply = try await composer("POST", "travel/trip/ride/next", body)
+        return try switched(reply)
+    }
+
+    public func tripRideUndo(_ undo: String) async throws(APIFailure) {
+        let reply = try await composer("POST", "travel/trip/ride/undo", ["undo": undo])
+        if reply.status == 422 { throw .refused(Self.reason(reply.data) ?? "That can’t be undone any more.") }
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
+    }
+
+    private func switched(_ reply: Raw) throws(APIFailure) -> TripRideSwitch {
+        if reply.status == 422 { throw .refused(Self.reason(reply.data) ?? "That tram can’t be followed from here.") }
+        if reply.status == 429 { throw .tooManyTries }
+        guard reply.status == 200, let json = try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any],
+              let undo = json["undo"] as? String, let line = json["line"] as? String,
+              let departTime = json["depart_time"] as? String, let arriveTime = json["arrive_time"] as? String else { throw .unreachable }
+        return TripRideSwitch(undo: undo, line: line, departTime: departTime, arriveTime: arriveTime)
+    }
+
+    /// A 422's reason in the server's words.
+    private static func reason(_ data: Data) -> String? {
+        let json = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        return (json["errors"] as? [String: [String]])?.values.first?.first ?? json["message"] as? String
+    }
+
     private struct Raw: Sendable {
         let status: Int
         let data: Data
