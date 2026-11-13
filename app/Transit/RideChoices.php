@@ -207,6 +207,9 @@ class RideChoices
                 'color' => $next['color'],
                 'depart_time' => $this->time($next['depart_at']),
                 'arrive_time' => $this->time($next['arrive_at']),
+                // To switch to it in one tap (trip sync).
+                'depart_at' => $next['depart_at'],
+                'trip' => $next['trip'] ?? null,
             ],
             'there_time' => $there,
             'later_min' => $later,

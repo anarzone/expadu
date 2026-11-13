@@ -75,6 +75,17 @@ test('the planned tram, a minute late, is no change', function () {
         ->assertOk()->assertJson(['planned' => true, 'sure' => null]);
 });
 
+test('the ride is found by its stop and time, as the phone names them, whatever its index', function () {
+    fakeRuns([['16', '2026-11-16T16:37:00Z', '2026-11-16T16:43:00Z', 'run-16-1736']]);
+
+    // Index 0 is the walk; "Ebertplatz" without the city, at the planned 17:36: the 16, as planned.
+    $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/check', ['leg' => 0, 'from' => 'Ebertplatz', 'at' => ($this->at)('17:36'), 'left_at' => ($this->at)('17:37')])
+        ->assertOk()->assertJson(['planned' => true]);
+    // A ride not on this trip: said so.
+    $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/check', ['leg' => 0, 'from' => 'Neumarkt', 'at' => ($this->at)('17:36'), 'left_at' => ($this->at)('17:37')])
+        ->assertUnprocessable();
+});
+
 test('another line leaving alone is sure; two a minute apart are a choice', function () {
     fakeRuns([['16', '2026-11-16T16:36:00Z', '2026-11-16T16:42:00Z', 'run-16-1736'], ['18', '2026-11-16T16:42:00Z', '2026-11-16T16:48:00Z', 'run-18-1742']]);
     $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/check', ['leg' => 1, 'left_at' => ($this->at)('17:42')])

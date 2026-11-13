@@ -179,6 +179,29 @@ final class TripSync
     }
 
     /**
+     * Which leg of the trip is the ride the phone means: the one leaving that stop at that time (names
+     * come to the phone without the city: "Ebertplatz"), else the index it sent when that is a ride.
+     */
+    public function rideIndex(ActiveTrip $trip, int $hint, ?string $from, ?CarbonImmutable $at): ?int
+    {
+        $name = fn (?string $stop) => mb_strtolower(trim((string) preg_replace('/^(Köln|Koeln)\s+/u', '', (string) $stop)));
+        if ($from !== null && $at !== null) {
+            foreach ($trip->journey['legs'] ?? [] as $i => $leg) {
+                if ($this->ride($trip, $i) === null || $name($leg['from']['name'] ?? null) !== $name($from)) {
+                    continue;
+                }
+                foreach (array_filter([$leg['depart_at'] ?? null, $leg['scheduled_depart_at'] ?? null]) as $planned) {
+                    if (abs(CarbonImmutable::parse($planned)->getTimestamp() - $at->getTimestamp()) <= 120) {
+                        return $i;
+                    }
+                }
+            }
+        }
+
+        return $this->ride($trip, $hint) !== null ? $hint : null;
+    }
+
+    /**
      * The trip's leg at that index when it is a ride with its stops placed.
      *
      * @return array<string, mixed>|null
