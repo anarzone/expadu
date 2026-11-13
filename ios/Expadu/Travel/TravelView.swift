@@ -162,7 +162,7 @@ struct TravelView: View {
             }
         case let .problem(text):
             BoardState(title: text) {
-                Text("Try a stop nearby, or plan the whole way below.").font(.geist(16))
+                Text(model.signalLost ? "We keep trying by ourselves; the board comes up as soon as we get through." : "Try a stop nearby, or plan the whole way below.").font(.geist(16))
                 Button { Task { await model.load(session.api) } } label: {
                     Text("Try again").font(.geist(15, .semibold)).padding(.horizontal, 16).frame(height: 44)
                 }
