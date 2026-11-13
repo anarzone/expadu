@@ -147,4 +147,77 @@ struct RideFollowTests {
         // When it left their stop: the plan's time that far ahead.
         #expect(Self.trip.legs[1].departAt.addingTimeInterval(ride.late) == Self.at("20:05"))
     }
+
+    // MARK: Trip sync: a late ride breaks the change
+
+    /// The 12 from Scheibenstr. to Ebertplatz (due 20:25), three minutes to change, the 16 at 20:30.
+    static func changing(nextLate: Int? = nil) -> TodayPage.Trip {
+        let ride = (0...5).map { (51.0 + Double($0) * 0.004, 6.95) }
+        let names = ["Scheibenstr.", "A", "B", "C", "D", "Ebertplatz"]
+        let times = ["20:12", "20:14", "20:16", "20:19", "20:22", "20:25"]
+        let stops = (1...4).map { TodayPage.Trip.Leg.Stop(name: names[$0], time: times[$0], latitude: ride[$0].0, longitude: ride[$0].1) }
+        let twelve = TodayPage.Trip.Leg(mode: "tram", line: "12", color: "#8CB437", headsign: "Zollstock", from: "Scheibenstr.", to: "Ebertplatz", departAt: at("20:12"), arriveAt: at("20:25"),
+                                        departTime: "20:12", arriveTime: "20:25", minutes: 13, stops: 5, polyline: Polyline.encode(ride), stopsOnTheWay: stops)
+        let change = TodayPage.Trip.Leg(mode: "walk", line: nil, color: nil, headsign: nil, from: "Ebertplatz", to: "Ebertplatz", departAt: at("20:25"), arriveAt: at("20:28"),
+                                        departTime: "20:25", arriveTime: "20:28", minutes: 3, stops: nil)
+        var sixteen = TodayPage.Trip.Leg(mode: "tram", line: "16", color: "#06ADA5", headsign: "Bonn", from: "Ebertplatz", to: "Neumarkt", departAt: at("20:30"), arriveAt: at("20:40"),
+                                         departTime: "20:30", arriveTime: "20:40", minutes: 10, stops: 4, polyline: Polyline.encode([ride[5], (51.03, 6.96)]))
+        sixteen.delayMin = nextLate
+        return TodayPage.Trip(to: "Neumarkt", arriveTime: "20:40", startTime: nil, legs: [twelve, change, sixteen])
+    }
+
+    /// On the 12 at stop C (due 20:19), `late` minutes behind.
+    static func onTheTwelve(_ trip: TodayPage.Trip, late: Int) throws -> (Guide.Position, Date) {
+        let at = Self.at("20:19").addingTimeInterval(TimeInterval(late * 60))
+        let here = try #require(Guide(trip: trip).position(of: onTheTram(3.0), at: at, after: 0))
+        return (here, at)
+    }
+
+    @Test func onTimeTheChangeHolds() throws {
+        let trip = Self.changing()
+        let (here, at) = try Self.onTheTwelve(trip, late: 0)
+        #expect(trip.brokenChange(here: here, at: at) == nil)
+    }
+
+    @Test func aLittleLateItStillHolds() throws {
+        // In 20:28 + 3: ready 20:31, the 16 at 20:30 — a minute is what the change can lose.
+        let trip = Self.changing()
+        let (here, at) = try Self.onTheTwelve(trip, late: 3)
+        #expect(trip.brokenChange(here: here, at: at) == nil)
+    }
+
+    @Test func fiveMinutesLateTheChangeBreaks() throws {
+        let trip = Self.changing()
+        let (here, at) = try Self.onTheTwelve(trip, late: 5)
+        let broken = try #require(trip.brokenChange(here: here, at: at))
+        #expect(broken.leg == 2)
+        // Ready at Ebertplatz 20:25 + 5 late + 3 to change.
+        #expect(broken.ready == Self.at("20:33"))
+    }
+
+    @Test func theNextOneLateTooStillMeetsIt() throws {
+        // The board has the 16 four minutes late: it leaves 20:34, they're ready 20:33.
+        let trip = Self.changing(nextLate: 4)
+        let (here, at) = try Self.onTheTwelve(trip, late: 5)
+        #expect(trip.brokenChange(here: here, at: at) == nil)
+    }
+
+    @Test func notOnBoardNothingIsBroken() throws {
+        let trip = Self.changing()
+        // Still at Scheibenstr., 20:20: waiting, not riding.
+        let here = try #require(Guide(trip: trip).position(of: Self.onTheTram(0), at: Self.at("20:20"), after: 0))
+        #expect(trip.brokenChange(here: here, at: Self.at("20:20")) == nil)
+    }
+
+    @Test func onAnEarlierTramItIsTheRideNotLeaveAt() throws {
+        // 19:55, already riding a 12 seventeen minutes ahead of the plan's 20:12, just past Fordwerke Süd.
+        let guide = Guide(trip: Self.trip)
+        let here = try #require(guide.position(of: Self.onTheTram(1.05), at: Self.at("19:55"), after: 0))
+        let live = Self.trip.live(at: Self.at("19:55"), here: here)
+        #expect(!live.waiting)
+        #expect(Self.trip.steps[live.current].kind == .ride)
+        // Standing still on the line that early is still "leave at".
+        let standing = try #require(guide.position(of: Self.onTheTram(0), at: Self.at("19:55"), after: 0))
+        #expect(Self.trip.live(at: Self.at("19:55"), here: standing).waiting)
+    }
 }

@@ -426,22 +426,39 @@ public struct TodayPage: Equatable, Sendable {
             return TimeInterval(max(0, legs[leg].delayMin ?? 0) * 60)
         }
 
+        /// Trip sync: on a ride (the phone moving with it), as late as it runs, the next ride it changes to
+        /// can't be caught: getting in plus the change comes more than a minute after that one leaves (as
+        /// late as the board says it runs), and it hasn't long gone. Which ride, and when they'll be ready
+        /// at its stop (for the next tram there).
+        public func brokenChange(here: Guide.Position, at date: Date) -> (leg: Int, ready: Date)? {
+            guard here.ride?.onBoard == true, legs.indices.contains(here.leg), legs[here.leg].rides,
+                  let next = legs.indices.dropFirst(here.leg + 1).first(where: { legs[$0].rides }) else { return nil }
+            let late = late(here: here, at: date)
+            let change = legs[(here.leg + 1)..<next].reduce(0) { $0 + $1.minutes }
+            let ready = legs[here.leg].arriveAt.addingTimeInterval(late + Double(change) * 60)
+            let leaves = legs[next].departAt.addingTimeInterval(TimeInterval(max(0, legs[next].delayMin ?? 0) * 60))
+            guard ready.timeIntervalSince(leaves) > 60, leaves > date.addingTimeInterval(-600) else { return nil }
+            return (next, ready)
+        }
+
         /// The live card as the phone and the clock say it together: the phone's step only while it
         /// knows where they are ({@see Guide.Position.trusted}), the clock as late as the ride runs.
         public func live(at date: Date, picked: Int? = nil, here: Guide.Position?) -> Live {
-            live(at: date, picked: picked, guided: here.flatMap { $0.trusted(at: date) ? $0.step : nil }, late: late(here: here, at: date))
+            let trusted = here.flatMap { $0.trusted(at: date) ? $0 : nil }
+            return live(at: date, picked: picked, guided: trusted?.step, late: late(here: here, at: date), riding: trusted?.ride?.onBoard == true)
         }
 
         /// The live card at this moment: the step they're on by the clock, or the one tapped. `late`:
         /// how far behind its timetable the trip runs (`late(here:at:)`); the clock goes by the
         /// timetable that far back.
-        public func live(at date: Date, picked: Int? = nil, guided: Int? = nil, late: TimeInterval = 0) -> Live {
+        public func live(at date: Date, picked: Int? = nil, guided: Int? = nil, late: TimeInterval = 0, riding: Bool = false) -> Live {
             let steps = steps
             // Started well before leaving (from an event's Getting there): the card waits for the
             // leave time instead of saying "walk now" hours early.
             // The phone's place doesn't count yet either: standing on a later ride's line (its last tram
             // passes here) isn't being on that step. Within 5 minutes of leaving, it does.
-            if picked == nil, let first = steps.first, first.at.timeIntervalSince(date) > ((guided ?? 0) == 0 ? 60 : 300) {
+            // Moving with a ride (on an earlier tram than planned) is never "leave at".
+            if picked == nil, !riding, let first = steps.first, first.at.timeIntervalSince(date) > ((guided ?? 0) == 0 ? 60 : 300) {
                 let ride = steps.first { $0.kind == .ride }
                 return Live(index: 0, current: 0, label: "Leave at \(first.time)", step: first,
                             big: Self.span(first.at.timeIntervalSince(date)),

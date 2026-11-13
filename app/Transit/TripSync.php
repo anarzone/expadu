@@ -112,9 +112,15 @@ final class TripSync
             return null;
         }
         $old = $trip->journey;
-        // What came before (the walk to the stop) happened that much earlier or later too.
-        $shift = $on[0]->departAt->getTimestamp() - CarbonImmutable::parse($old['legs'][$legIndex]['depart_at'])->getTimestamp();
-        $before = array_map(fn (array $l) => $this->shifted($l, $shift), array_slice($old['legs'], 0, $legIndex));
+        // What came before: the walk to the stop happened that much earlier or later too, when this is the
+        // first ride. After a ride (the next tram at a change a late one broke), what came before is the
+        // ride they're on: it stays as it is (moved, it read as a tram leaving later than the one they took).
+        $before = array_slice($old['legs'], 0, $legIndex);
+        $ridden = collect($before)->contains(fn (array $l) => ! in_array($l['mode'], ['walk', 'bike'], true));
+        if (! $ridden) {
+            $shift = $on[0]->departAt->getTimestamp() - CarbonImmutable::parse($old['legs'][$legIndex]['depart_at'])->getTimestamp();
+            $before = array_map(fn (array $l) => $this->shifted($l, $shift), $before);
+        }
         $legs = [...$before, ...array_map(fn (Leg $l) => $l->toArray(), $on)];
         $rides = array_values(array_filter($legs, fn (array $l) => ! in_array($l['mode'], ['walk', 'bike'], true)));
         $departs = CarbonImmutable::parse($legs[0]['depart_at']);
