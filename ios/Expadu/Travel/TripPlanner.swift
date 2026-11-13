@@ -90,6 +90,11 @@ final class TripPlanner {
     var ask: Option?
     var deutschlandticket = false
     var startingProblem: String?
+    /// The server turned Start trip down for this way (its run has left): OK brings fresh routes.
+    var refreshAfterProblem = false
+    /// New routes from where they are, chosen from the list over the trip screen (a missed tram, off the
+    /// way): starting one replaces the trip without asking, as that is what was asked for.
+    var newRoutes = false
     /// The way being added or started right now, so its ticket can say so.
     private(set) var busy: Int?
 
@@ -237,8 +242,11 @@ final class TripPlanner {
     /// The ways as the boards run them (on time, late, cancelled, or timetable only), the board Travel
     /// shows: swapped in when they come, as long as the same plan is still on screen.
     private func live(_ plan: TripPlan, _ api: AppAPI) async {
-        guard let id = plan.checks, let journeys = try? await api.tripChecks(id), answer?.checks == id, let answer else { return }
-        withAnimation(.smooth(duration: 0.35)) { self.answer = answer.live(journeys) }
+        guard let id = plan.checks, let checked = try? await api.tripChecks(id), answer?.checks == id, let answer else { return }
+        withAnimation(.smooth(duration: 0.35)) { self.answer = answer.live(checked.journeys) }
+        // Start trip and Add to my day send the way as shown: with a late tram the timetable's run has
+        // "left" already, and the server turned the start down (13 Nov, the 12 at Merkenich Mitte).
+        if let raw, let shown = TripPlan.rawWithLive(raw, live: checked.raw) { self.raw = shown }
     }
 
     func showMore(_ api: AppAPI) async {
@@ -367,6 +375,7 @@ final class TripPlanner {
             case .started:
                 await today.load(api, quietly: true)
                 withAnimation(.smooth(duration: 0.45)) {
+                    newRoutes = false
                     shown = false
                     self.destination = nil
                     answer = nil
@@ -378,7 +387,14 @@ final class TripPlanner {
                 return false
             }
         } catch {
-            startingProblem = "Couldn’t start the trip. Try again in a moment."
+            switch error {
+            case let .refused(reason):
+                // The run has left or the way is over: say so; OK goes back to fresh routes.
+                startingProblem = reason
+                refreshAfterProblem = true
+            case .tooManyTries: startingProblem = "Too many tries in a minute. Try again in a moment."
+            default: startingProblem = "Couldn’t start the trip. Try again in a moment."
+            }
             return false
         }
     }

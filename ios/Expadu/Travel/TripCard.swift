@@ -56,7 +56,6 @@ struct TripCard: View {
     @Environment(TripPlanner.self) private var planner
     @AppStorage("speakTurns") private var speak = false
     @State private var askEnd = false
-    @State private var problem: String?
     @State private var picked: Int?
     @State private var swipedLeft = true
     @State private var drag: CGFloat = 0
@@ -66,10 +65,10 @@ struct TripCard: View {
     private func map() { planner.tripOnMap = true; planner.showTrip = true }
     private func end() { askEnd = true }
 
-    /// A new route from where the phone is now, to the same place; nil while it hasn't said where it is.
-    private var replan: (() -> Void)? {
-        guard let point = planner.follower.point else { return nil }
-        return { Task { problem = await today.newWay(session.api, trip: trip, from: point) } }
+    /// The routes from where the phone is now to the same place, over the trip screen, to pick one.
+    private func replan() {
+        planner.newRoutes = true
+        planner.showTrip = true
     }
 
     private func look(by delta: Int, from index: Int, current: Int) {
@@ -97,9 +96,6 @@ struct TripCard: View {
                 }
             }
         } message: { Text("The live steps stop. The trip stays on your day.") }
-        .alert("No new route", isPresented: Binding(get: { problem != nil }, set: { if !$0 { problem = nil } })) {
-            Button("OK", role: .cancel) { problem = nil }
-        } message: { Text(problem ?? "") }
     }
 
     private func card(_ live: TodayPage.Live, at date: Date) -> some View {
@@ -216,7 +212,7 @@ struct TripCard: View {
     private var menu: some View {
         Button(action: open) { Label("Open steps", systemImage: "list.bullet") }
         Button(action: map) { Label("Show on the map", systemImage: "map") }
-        if let replan { Button(action: replan) { Label("New route from here", systemImage: "arrow.triangle.turn.up.right.diamond") } }
+        Button(action: replan) { Label("New route from here", systemImage: "arrow.triangle.turn.up.right.diamond") }
         Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
         Divider()
         if planner.follower.here?.arrived == true || trip.live(at: .now).current >= trip.steps.count - 2 {
