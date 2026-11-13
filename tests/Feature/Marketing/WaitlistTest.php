@@ -106,7 +106,7 @@ test('scripted posts get the usual reply but are not saved and mail no one', fun
 ]);
 
 test('the waitlist stops mailing at the daily cap, so account mails keep their quota', function () {
-    foreach (range(1, WaitlistGuard::DailyMailCap) as $i) {
+    foreach (range(1, WaitlistGuard::dailyMailCap()) as $i) {
         $this->withServerVariables(['REMOTE_ADDR' => "10.0.{$i}.1"])
             ->postJson('/waitlist', ['email' => "p{$i}@example.com", 'city' => 'Cologne', ...waitlistFormDrawn()])
             ->assertCreated();
@@ -116,7 +116,7 @@ test('the waitlist stops mailing at the daily cap, so account mails keep their q
         ->postJson('/waitlist', ['email' => 'one-too-many@example.com', 'city' => 'Cologne', ...waitlistFormDrawn()])
         ->assertTooManyRequests();
 
-    Mail::assertQueued(WaitlistConfirmation::class, WaitlistGuard::DailyMailCap);
+    Mail::assertQueued(WaitlistConfirmation::class, WaitlistGuard::dailyMailCap());
     expect(WaitlistSignup::query()->where('email', 'one-too-many@example.com')->exists())->toBeFalse();
 });
 

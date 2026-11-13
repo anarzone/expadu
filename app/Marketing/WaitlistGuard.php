@@ -3,6 +3,7 @@
 namespace App\Marketing;
 
 use App\Security\FormTraps;
+use App\Security\MailBudget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
@@ -19,21 +20,24 @@ use Illuminate\Support\Facades\RateLimiter;
  */
 final class WaitlistGuard
 {
-    /**
-     * Confirmation mails the waitlist may send in a day, all addresses
-     * together. Resend's free plan sends 100 a day for everything, so the
-     * waitlist can never use up what account mails (verification, password
-     * reset, codes) need. Real signups run at a few a day.
-     */
-    public const DailyMailCap = 40;
-
     private const MailsTodayKey = 'waitlist:mails-today';
 
     public const Trap = FormTraps::Trap;
 
     public const Stamp = FormTraps::Stamp;
 
-    public function __construct(private readonly FormTraps $traps) {}
+    public function __construct(private readonly FormTraps $traps, private readonly MailBudget $budget) {}
+
+    /**
+     * Confirmation mails the waitlist may send in a day, all addresses
+     * together: its share of the email budget (config/mail_budget.php), so
+     * it can never use up what account mails need. Real signups run at a
+     * few a day.
+     */
+    public static function dailyMailCap(): int
+    {
+        return (int) config('mail_budget.kinds.waitlist.daily');
+    }
 
     /** When the form was drawn, sealed so it can't be forged or reused later. */
     public static function stamp(): string
@@ -72,9 +76,13 @@ final class WaitlistGuard
         return true;
     }
 
-    /** Whether today's confirmation mails are under DailyMailCap. */
+    /**
+     * Whether another confirmation mail fits today: the waitlist's claims so
+     * far (counted as they're queued) and the day's whole email budget.
+     */
     public function mailsLeftToday(): bool
     {
-        return ! RateLimiter::tooManyAttempts(self::MailsTodayKey, self::DailyMailCap);
+        return ! RateLimiter::tooManyAttempts(self::MailsTodayKey, self::dailyMailCap())
+            && $this->budget->hasRoom('waitlist');
     }
 }
