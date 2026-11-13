@@ -16,10 +16,11 @@ use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\FareAdvisor;
-use App\Transit\FirstRideChoices;
 use App\Transit\JourneyRanker;
+use App\Transit\RideChoices;
 use App\Transit\TripConditions;
 use App\Transit\TripDisruptions;
+use App\Transit\TripLive;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -88,8 +89,7 @@ class TakeMeThereController extends Controller
             // arrival ("arrive by") rather than the departure ("depart at").
             'depart_at' => ['nullable', 'date'],
             'arrive_by' => ['nullable', 'boolean'],
-            // "Show more options": also route via the city's interchanges to
-            // surface alternative line combinations the Pareto set drops.
+            // "Show later routes": more runs of each way.
             'more' => ['nullable', 'boolean'],
             // Plan a trip: the ways now, the boarding stops' live runs in a
             // second request (JourneyChecksController).
@@ -207,17 +207,25 @@ class TakeMeThereController extends Controller
         // while there's time left; asked for later, they come with the
         // second request and the ways answer at once.
         $later = (bool) ($validated['checks_later'] ?? false);
-        $trip = $tripDisruptions->for(
-            $ranked,
-            $from,
-            $to,
-            boards: ! $later && $this->secondsLeft($deadline) >= self::BOARDS_MIN_SECONDS,
-        );
-        $checks = $later ? JourneyChecksController::keep($user->id, array_map(fn (Journey $j) => $j->toArray(), $ranked), $from, $to) : null;
+        $boards = ! $later && $this->secondsLeft($deadline) >= self::BOARDS_MIN_SECONDS;
+        $trip = $tripDisruptions->for($ranked, $from, $to, boards: $boards);
 
-        // Leaving now: the earlier trams that make the same first connection (the 16 the router drops for the 18).
-        if ($departAt === null && ! $arriveBy) {
-            $journeys = app(FirstRideChoices::class)->add($journeys, min(3.0, $this->secondsLeft($deadline)));
+        // What each ride can be (the 16 or the 18) and how tight each change is.
+        if (! $arriveBy) {
+            $journeys = app(RideChoices::class)->add($journeys, min(3.0, $this->secondsLeft($deadline)));
+        }
+
+        // Live means what the boards say, on every screen: read now with the boards, or with the
+        // second request, the router's own claim set aside until then.
+        if ($later) {
+            $journeys = array_map(TripLive::unconfirmed(...), $journeys);
+            $checks = JourneyChecksController::keep($user->id, $journeys, $from, $to);
+        } else {
+            $checks = null;
+            if ($boards) {
+                $live = app(TripLive::class);
+                $journeys = array_map(fn (array $journey) => $live->confirm($journey), $journeys);
+            }
         }
 
         $this->learn($user, $validated, $from, $to, $journeys);

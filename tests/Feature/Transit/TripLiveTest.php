@@ -75,3 +75,16 @@ test('aboard, the delay is read where they get off, and the arrival moves with i
         ->and($live['legs'][3]['arrive_time'])->toBe('20:27')
         ->and($live['arrive_time'])->toBe('20:27');
 });
+
+test('a planned way is live only where a board says so, and a delay only the router knew of is set aside', function () {
+    $boards = boardsWith(['Appellhofplatz' => ['18', liveRun('2026-11-12T19:44:00+01:00', delay: 2)]]);
+    $journey = liveJourney();
+    // The router thought the 12 at Ebertplatz was 2 minutes late; its board isn't read.
+    $journey['legs'][2] = array_merge($journey['legs'][2], ['realtime' => true, 'delay_min' => 2,
+        'depart_at' => '2026-11-12T19:57:00+01:00', 'depart_time' => '19:57']);
+
+    $live = (new TripLive($boards))->confirm($journey, CarbonImmutable::parse('2026-11-12T19:40:00+01:00'));
+
+    expect($live['legs'][0])->toMatchArray(['realtime' => true, 'delay_min' => 2, 'depart_time' => '19:46'])
+        ->and($live['legs'][2])->toMatchArray(['realtime' => false, 'delay_min' => null, 'depart_time' => '19:55']);
+});

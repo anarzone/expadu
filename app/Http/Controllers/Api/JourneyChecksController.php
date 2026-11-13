@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\TripDisruptions;
+use App\Transit\TripLive;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -13,8 +14,9 @@ use Illuminate\Support\Str;
 
 /**
  * Plan a trip's second request: the live runs at the stops its ways board
- * (lines in trouble, cancelled runs), read from the boards after the ways
- * are on screen, so the ways never wait for them. The ways are kept here by
+ * (lines in trouble, cancelled runs) and each way as the boards run it (on
+ * time, late, cancelled, or timetable only), read from the boards after the
+ * ways are on screen, so the ways never wait for them. The ways are kept here by
  * an id for ten minutes, for the account that planned them only.
  */
 class JourneyChecksController extends Controller
@@ -37,7 +39,7 @@ class JourneyChecksController extends Controller
         return $id;
     }
 
-    public function __invoke(Request $request, TripDisruptions $disruptions): JsonResponse
+    public function __invoke(Request $request, TripDisruptions $disruptions, TripLive $live): JsonResponse
     {
         $validated = $request->validate(['checks' => ['required', 'uuid']]);
         $kept = Cache::get(self::key($validated['checks']));
@@ -51,7 +53,12 @@ class JourneyChecksController extends Controller
             new GeoPoint(...$kept['to']),
         );
 
-        return response()->json(['trouble' => $trip['trouble'], 'gone' => $trip['gone']]);
+        return response()->json([
+            'trouble' => $trip['trouble'],
+            'gone' => $trip['gone'],
+            // The ways in the plan's order, each ride's live state and times as its board says.
+            'live' => array_map(fn (array $journey) => $live->confirm($journey), $kept['journeys']),
+        ]);
     }
 
     private static function key(string $id): string
