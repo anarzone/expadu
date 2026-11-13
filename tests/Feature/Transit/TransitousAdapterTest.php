@@ -288,10 +288,11 @@ function fakeItinerary(array $legs, int $transfers, int $durationSec): array
 test('adds the routes a less-walking or no-change ask finds, once each, beside the main answer', function () {
     // Main answer: tram 12 then a long walk. Less walking: 12 then 3 to the door (new), and 12
     // again (known, skipped). No change: 12 only (known, skipped).
-    $direct = fakeItinerary([fakeLeg('TRAM', ['routeShortName' => '12'])], 0, 2580);
+    $direct = fakeItinerary([fakeLeg('TRAM', ['routeShortName' => '12']), fakeLeg('WALK', ['duration' => 900])], 0, 2580);
     $change = fn (string $at) => array_merge(fakeItinerary([
         fakeLeg('TRAM', ['routeShortName' => '12', 'startTime' => $at]),
         fakeLeg('TRAM', ['routeShortName' => '3']),
+        fakeLeg('WALK', ['duration' => 120]),
     ], 1, 2700), ['startTime' => $at]);
 
     Http::fake(function ($request) use ($direct, $change) {
@@ -299,7 +300,7 @@ test('adds the routes a less-walking or no-change ask finds, once each, beside t
 
         return match (true) {
             str_contains($url, 'directModes=') => Http::response(['direct' => []]),
-            str_contains($url, 'maxPostTransitTime=300') => Http::response(['itineraries' => [
+            str_contains($url, 'maxPostTransitTime=720') => Http::response(['itineraries' => [
                 $change('2026-07-06T07:00:00Z'), $change('2026-07-06T07:10:00Z'), $change('2026-07-06T07:20:00Z'), $direct,
                 // The 12 to its end and back a stop, for a shorter walk: never a way.
                 fakeItinerary([fakeLeg('TRAM', ['routeShortName' => '12']), fakeLeg('TRAM', ['routeShortName' => '12'])], 1, 2900),
@@ -314,6 +315,86 @@ test('adds the routes a less-walking or no-change ask finds, once each, beside t
     // The main route once; the new one with its next two runs, not three.
     expect($routes)->toBe(['12' => 1, '12>3' => 2]);
     Http::assertSent(fn ($r) => str_contains(urldecode($r->url()), 'maxTransfers=0'));
+});
+
+test('when every way walks long to its first stop, the short-walk ask looks for a stop three minutes closer', function () {
+    // From the Rhine in Porz: every way walks 14 minutes to Bf Porz for the RE9. The 7 from Porz
+    // Markt, 10 minutes away, is past the usual five-minute ask; the ask follows the main answer.
+    $rail = fakeItinerary([
+        fakeLeg('WALK', ['duration' => 840]),
+        fakeLeg('REGIONAL_RAIL', ['routeShortName' => 'RE9']),
+        fakeLeg('WALK', ['duration' => 240]),
+    ], 0, 2520);
+    $tram = fakeItinerary([
+        fakeLeg('WALK', ['duration' => 600]),
+        fakeLeg('TRAM', ['routeShortName' => '7']),
+        fakeLeg('WALK', ['duration' => 240]),
+    ], 0, 2760);
+    // The 162 one stop to Bf Porz for the same RE9: a change more, a minute more on foot, no sooner.
+    $busToRail = fakeItinerary([
+        fakeLeg('WALK', ['duration' => 600]),
+        fakeLeg('BUS', ['routeShortName' => '162']),
+        fakeLeg('WALK', ['duration' => 300]),
+        fakeLeg('REGIONAL_RAIL', ['routeShortName' => 'RE9']),
+        fakeLeg('WALK', ['duration' => 240]),
+    ], 1, 2820);
+
+    Http::fake(function ($request) use ($rail, $tram, $busToRail) {
+        $url = urldecode($request->url());
+
+        return match (true) {
+            str_contains($url, 'directModes=') => Http::response(['direct' => []]),
+            str_contains($url, 'maxPreTransitTime=660') => Http::response(['itineraries' => [$busToRail, $tram, $rail]]),
+            default => Http::response(['itineraries' => [$rail]]),
+        };
+    });
+
+    $result = (new TransitousAdapter)->plan(new GeoPoint(50.8822, 7.0539), new GeoPoint(50.9413, 6.9583));
+
+    expect(collect($result->journeys)->map(fn ($j) => implode('>', $j->lines()))->unique()->values()->all())->toBe(['RE9', '7']);
+    // The end walk is four minutes: its ask stays at five.
+    Http::assertSent(fn ($r) => str_contains(urldecode($r->url()), 'maxPostTransitTime=300'));
+    Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'maxPreTransitTime=300'));
+});
+
+test('when the way walks long to its tram, a ride to that stop is asked for and kept when it walks less', function () {
+    // Neumarkt → Merkenich: ten minutes on foot to Rudolfplatz for the 12. Google lists the 7 one stop
+    // there first. Asked via Rudolfplatz with a short walk to the first stop, or the router walks there.
+    $rudolfplatz = ['name' => 'Köln Rudolfplatz', 'stopId' => 'vrs-gtfs_27', 'lat' => 50.9367, 'lon' => 6.9405];
+    $neumarkt = ['name' => 'Köln Neumarkt', 'stopId' => 'vrs-gtfs_2', 'lat' => 50.9358, 'lon' => 6.9477];
+    $walked = fakeItinerary([
+        fakeLeg('WALK', ['duration' => 600]),
+        fakeLeg('TRAM', ['routeShortName' => '12', 'tripId' => 't12', 'from' => $rudolfplatz]),
+        fakeLeg('WALK', ['duration' => 300]),
+    ], 0, 2580);
+    $ridden = fn (int $changeWalk) => fakeItinerary([
+        fakeLeg('WALK', ['duration' => 60]),
+        fakeLeg('TRAM', ['routeShortName' => '7', 'from' => $neumarkt, 'to' => $rudolfplatz]),
+        fakeLeg('WALK', ['duration' => $changeWalk]),
+        fakeLeg('TRAM', ['routeShortName' => '12', 'from' => $rudolfplatz]),
+        fakeLeg('WALK', ['duration' => 300]),
+    ], 1, 2700);
+
+    $answer = $ridden(120);
+    Http::fake(function ($request) use ($walked, &$answer) {
+        $url = urldecode($request->url());
+
+        return match (true) {
+            str_contains($url, 'directModes=') => Http::response(['direct' => []]),
+            str_contains($url, 'via=vrs-gtfs_27') && str_contains($url, 'maxPreTransitTime=300') => Http::response(['itineraries' => [$answer]]),
+            default => Http::response(['itineraries' => [$walked]]),
+        };
+    });
+
+    $lines = fn () => collect((new TransitousAdapter)->plan(new GeoPoint(50.93577, 6.947732), new GeoPoint(51.0227, 6.9491))->journeys)
+        ->map(fn ($j) => implode('>', $j->lines()))->unique()->values()->all();
+
+    expect($lines())->toBe(['12', '7>12']);
+
+    // A change at Rudolfplatz that walks as long as the walk there is no way in.
+    Cache::flush();
+    $answer = $ridden(840);
+    expect($lines())->toBe(['12']);
 });
 
 test('adds other ways on from the best way\'s first tram, asked via the stops it passes nearest the destination', function () {
