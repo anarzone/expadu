@@ -9,6 +9,8 @@
 #
 #   MOTIS_HOST=<ssh host> infra/motis/refresh.sh           # skips when the box runs this feed
 #   FORCE=1 MOTIS_HOST=<ssh host> infra/motis/refresh.sh   # rebuild and swap anyway
+#   NO_SWAP=1 …                                            # build and upload store.new only (an engine
+#                                                          # upgrade swaps store and image together by hand)
 #
 # Exits 2 when VRS's timetable runs out within MOTIS_WARN_DAYS days, so the run
 # fails and GitHub mails the owner: VRS publishes the next timetable year only
@@ -16,8 +18,10 @@
 
 set -euo pipefail
 
-# Same image as the box serves: a store only loads in the MOTIS version that built it.
-IMG="ghcr.io/motis-project/motis@sha256:f1757c12ddec0ed182e5b4efb57d4049508c3ec55e5fc98f83dac2678b20ef77"
+# Same image as the box serves: a store only loads in the MOTIS version that built it. MOTIS 2.11.4
+# (13 Nov 2026): walks along the streets between stops too (osr_footpath), 520 m / 7.7 min where the
+# June build walked 645 m / 12.2 min (Deutzer Freiheit).
+IMG="ghcr.io/motis-project/motis@sha256:594eff881d4319549387563a28dffb2ac48650df5422325a44a6c2f69f79e9b9"
 FEED="https://download.vrsinfo.de/gtfs/GTFS_VRS_mit_SPNV.zip"
 HOST="${MOTIS_HOST:?set MOTIS_HOST to the ssh host of the box}"
 WORK="${MOTIS_WORK:-$PWD/motis-build}"
@@ -55,7 +59,12 @@ if [ "$version" = "$live" ] && [ "${FORCE:-0}" != 1 ]; then
   exit "$status"
 fi
 
-scp -q "$HOST:/data/motis/inputs/nrw.osm.pbf" "$HOST:/data/motis/inputs/config.yml" .
+scp -q "$HOST:/data/motis/inputs/nrw.osm.pbf" .
+# The config comes from the image itself (its keys change between versions), with two changes:
+# walks between stops along the streets, and no map tiles (the app draws its own maps).
+docker run --rm --user "$(id -u):$(id -g)" -w /data -v "$WORK:/data" "$IMG" /motis config nrw.osm.pbf vrs-gtfs.zip > config.log 2>&1
+sed -i 's/^osr_footpath: false/osr_footpath: true/' config.yml
+awk 'BEGIN{skip=0} /^tiles:/{skip=1; next} skip && /^[^[:space:]]/{skip=0} !skip' config.yml > config.tmp && mv config.tmp config.yml
 # As this user: the image's own user (motis, uid 100) can't write to the work folder.
 docker run --name motis-import --user "$(id -u):$(id -g)" -w /data -v "$WORK:/data" "$IMG" /motis import > import.log 2>&1 || true
 code=$(docker inspect --format '{{.State.ExitCode}}' motis-import)
@@ -84,6 +93,10 @@ echo "Runner check: $found trips Dom → Rudolfplatz"
 
 echo "$version" > data/feed_version
 rsync -a --delete --exclude 'logs/' data/ "$HOST:/data/motis/store.new/"
+if [ "${NO_SWAP:-0}" = 1 ]; then
+  say notice "Built VRS $version and uploaded it to /data/motis/store.new; not swapped in"
+  exit "$status"
+fi
 if ! ssh "$HOST" 'bash -s' < "$HERE/swap.sh"; then
   say error "MOTIS planned no trips on the new store on the box; the previous store is back"
   exit 1
