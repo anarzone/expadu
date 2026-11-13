@@ -5,8 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
-use App\Privacy\ForgetAccount;
-use App\Services\LocationDataRetention;
+use App\Privacy\DeleteAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -53,16 +52,9 @@ class ProfileController extends Controller
     /**
      * Delete the user's profile.
      */
-    public function destroy(ProfileDeleteRequest $request, LocationDataRetention $retention, ForgetAccount $forget): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, DeleteAccount $deleteAccount): RedirectResponse
     {
-        $user = $request->user();
-
-        $retention->withUserLock($user->id, function () use ($user, $retention, $forget): void {
-            $retention->purgeUser($user->id);
-            $forget->forget($user);
-            Auth::logout();
-            $user->delete();
-        });
+        $deleteAccount->delete($request->user(), fn () => Auth::logout());
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
