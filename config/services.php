@@ -189,6 +189,8 @@ return [
         'client_cert_password' => env('VRS_CLIENT_CERT_PASSWORD'),
         'enabled' => env('VRS_REALTIME_ENABLED', false),
         'requestor_ref' => env('VRS_REQUESTOR_REF', 'expadu'),
+        // The token our router (MOTIS) sends to read the live feed relay; unset, it's derived from the app key.
+        'relay_token' => env('VRS_RELAY_TOKEN'),
     ],
 
 ];
