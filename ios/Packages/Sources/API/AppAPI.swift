@@ -811,11 +811,12 @@ public struct AppAPI: Sendable {
         do { return (try TripPlan.decode(reply.data), reply.data) } catch { throw .unreachable }
     }
 
-    /// Plan a trip's second request: each way as the boards at its stops run it, in the plan's order.
-    public func tripChecks(_ id: String) async throws(APIFailure) -> [TripPlan.Journey] {
+    /// Plan a trip's second request: each way as the boards at its stops run it, in the plan's order,
+    /// and the reply as it came (Start trip and Add to my day send the way back as shown).
+    public func tripChecks(_ id: String) async throws(APIFailure) -> (journeys: [TripPlan.Journey], raw: Data) {
         let reply = try await composer("POST", "travel/checks", ["checks": id])
         guard reply.status == 200 else { throw .unreachable }
-        do { return try TripPlan.liveJourneys(reply.data) } catch { throw .unreachable }
+        do { return (try TripPlan.liveJourneys(reply.data), reply.data) } catch { throw .unreachable }
     }
 
     /// Whether they hold a Deutschlandticket, for the fares.
@@ -866,6 +867,13 @@ public struct AppAPI: Sendable {
             let destination = trip?["destination"] as? [String: Any]
             return .busy(to: destination?["name"] as? String ?? "another place", arrive: trip?["arrive_time"] as? String)
         }
+        // Turned down (the run has left, the way is over): say why, in the server's words.
+        if reply.status == 422 {
+            let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
+            let reason = (json["errors"] as? [String: [String]])?.values.first?.first ?? json["message"] as? String
+            throw .refused(reason ?? "This route can’t be started now. Find a fresh route.")
+        }
+        if reply.status == 429 { throw .tooManyTries }
         guard (200..<300).contains(reply.status) else { throw .unreachable }
         return .started
     }

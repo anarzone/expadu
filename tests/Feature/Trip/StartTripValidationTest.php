@@ -41,6 +41,14 @@ test('an ended or already departed transit itinerary cannot start', function () 
     expect($this->user->activeTrip()->exists())->toBeFalse();
 });
 
+test('a run can still be started within its departure minute', function () {
+    $payload = datedTripPayload();
+    $this->travel(90)->seconds();
+
+    $this->postJson('/api/trip/start', $payload)->assertOk();
+    expect($this->user->activeTrip()->exists())->toBeTrue();
+});
+
 test('malformed or backwards leg times do not replace an existing active trip', function ($badTime) {
     $payload = datedTripPayload();
     $this->postJson('/api/trip/start', $payload)->assertSuccessful();
