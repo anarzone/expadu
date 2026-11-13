@@ -204,10 +204,9 @@ struct TurnRow: View {
     }
 }
 
-/// When the trip has gone wrong: off the way, or the ride left. One tap plans again from here.
+/// When the trip has gone wrong: off the way, or the ride left. One tap shows the routes from here.
 struct TripTrouble: View {
     let text: String
-    let busy: Bool
     let replan: () -> Void
 
     var body: some View {
@@ -217,7 +216,7 @@ struct TripTrouble: View {
                 .fixedSize(horizontal: false, vertical: true)
             Button(action: replan) {
                 HStack(spacing: 8) {
-                    if busy { ProgressView().tint(.white) } else { Image(systemName: "arrow.triangle.turn.up.right.diamond.fill") }
+                    Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
                     Text("New route from here")
                 }
                 .font(.geist(15, .semibold)).foregroundStyle(.white)
@@ -225,7 +224,6 @@ struct TripTrouble: View {
                 .buttonFace(Palette.action)
             }
             .buttonStyle(PressStyle())
-            .disabled(busy)
         }
         .padding(12)
         .background(Palette.warnBackground, in: .rect(cornerRadius: 14))

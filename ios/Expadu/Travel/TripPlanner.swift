@@ -92,6 +92,9 @@ final class TripPlanner {
     var startingProblem: String?
     /// The server turned Start trip down for this way (its run has left): OK brings fresh routes.
     var refreshAfterProblem = false
+    /// New routes from where they are, chosen from the list over the trip screen (a missed tram, off the
+    /// way): starting one replaces the trip without asking, as that is what was asked for.
+    var newRoutes = false
     /// The way being added or started right now, so its ticket can say so.
     private(set) var busy: Int?
 
@@ -372,6 +375,7 @@ final class TripPlanner {
             case .started:
                 await today.load(api, quietly: true)
                 withAnimation(.smooth(duration: 0.45)) {
+                    newRoutes = false
                     shown = false
                     self.destination = nil
                     answer = nil

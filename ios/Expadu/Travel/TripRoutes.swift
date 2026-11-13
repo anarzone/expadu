@@ -237,7 +237,7 @@ extension TripRoutesView {
                 RouteDetail(planner: planner, option: chosen, also: row?.also ?? [], lines: row?.lines ?? [],
                             kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
                             back: { withAnimation(.smooth(duration: 0.3)) { details = nil } },
-                            show: { Task { _ = await planner.start(chosen, replace: false, session.api, today: today) } },
+                            show: { Task { _ = await planner.start(chosen, replace: planner.newRoutes, session.api, today: today) } },
                             add: planner.target == nil ? nil : { Task { await planner.addToPlan(chosen, session.api) } })
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)).combined(with: .opacity))
             } else {
