@@ -412,8 +412,30 @@ public struct TodayPage: Equatable, Sendable {
         /// The canvas's steps for this trip: walk, ride, get off, you're there.
         public var steps: [Step] { Step.of(legs, to: to, start: startTime) }
 
-        /// The live card at this moment: the step they're on by the clock, or the one tapped.
-        public func live(at date: Date, picked: Int? = nil, guided: Int? = nil) -> Live {
+        /// How far behind its timetable the trip runs now, in seconds: what the phone measured on the
+        /// ride it's on (within 20 minutes of the fix), else the live delay of the ride on or next by
+        /// the clock. A late tram moves every step after it on, never "get off now" while still riding.
+        public func late(here: Guide.Position?, at date: Date) -> TimeInterval {
+            if let ride = here?.ride, ride.onBoard, date.timeIntervalSince(ride.at) < 20 * 60 { return ride.late }
+            let steps = steps
+            let clock = Self.current(steps, at: date)
+            guard steps.indices.contains(clock) else { return 0 }
+            // The ride on (its step is the clock's) or the next one.
+            let leg = steps[clock...].first(where: { $0.kind == .ride })?.leg
+            guard let leg, legs.indices.contains(leg), !legs[leg].cancelled else { return 0 }
+            return TimeInterval(max(0, legs[leg].delayMin ?? 0) * 60)
+        }
+
+        /// The live card as the phone and the clock say it together: the phone's step only while it
+        /// knows where they are ({@see Guide.Position.trusted}), the clock as late as the ride runs.
+        public func live(at date: Date, picked: Int? = nil, here: Guide.Position?) -> Live {
+            live(at: date, picked: picked, guided: here.flatMap { $0.trusted(at: date) ? $0.step : nil }, late: late(here: here, at: date))
+        }
+
+        /// The live card at this moment: the step they're on by the clock, or the one tapped. `late`:
+        /// how far behind its timetable the trip runs (`late(here:at:)`); the clock goes by the
+        /// timetable that far back.
+        public func live(at date: Date, picked: Int? = nil, guided: Int? = nil, late: TimeInterval = 0) -> Live {
             let steps = steps
             // Started well before leaving (from an event's Getting there): the card waits for the
             // leave time instead of saying "walk now" hours early.
@@ -426,14 +448,16 @@ public struct TodayPage: Equatable, Sendable {
                             bigNote: ride.map { "\($0.name) at \($0.time)" } ?? "there at \(steps[steps.count - 1].time)", waiting: true)
             }
             // On foot the phone says where they are (walking pace varies); on a ride the timetable
-            // does, unless the phone is already further on. Without the phone, the clock.
-            let clock = Self.current(steps, at: date)
+            // does, as late as the ride runs, unless the phone is already further on. Without the
+            // phone, the clock (as late as the live board says).
+            let timetable = date.addingTimeInterval(-late)
+            let clock = Self.current(steps, at: timetable)
             let current = guided.map { min($0, steps.count - 1) }.map { steps[$0].kind == .walk ? $0 : max($0, clock) } ?? clock
             let k = min(picked ?? current, steps.count - 1)
             let step = steps[k]
             let last = k == steps.count - 1
             let next = last ? nil : steps[k + 1]
-            let from = k == current ? max(date, step.at) : step.at
+            let from = k == current ? max(timetable, step.at) : step.at
             let minutes = next.map { max(1, Int(($0.at.timeIntervalSince(from) / 60).rounded(.up))) } ?? 0
             let note: String
             if last {
@@ -497,9 +521,12 @@ public struct TodayPage: Equatable, Sendable {
                     steps.append(Step(kind: .getOff, title: "Get off at \(before.to)", sub: "\(leg.minutes) min walk to \(to)", at: before.arriveAt, time: before.arriveTime, color: before.color, name: before.name,
                                       leg: index))
                 } else if let before, before.rides, !last, legs[index + 1].rides {
-                    // A walk between two rides is a change: where, and to which line.
+                    // A walk between two rides is a change: where, and to which line. Within one stop (the
+                    // 12 on the Ring to the 18 below at Ebertplatz) the timetable gives a change time, not a
+                    // walk: no path, no metres, so it says which tram and when, never "6 min walk".
                     let next = legs[index + 1]
-                    steps.append(Step(kind: .walk, title: "Change at \(before.to)", sub: "\(leg.minutes) min walk to \(next.name)", at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
+                    let sub = leg.from == leg.to ? "In the station · \(next.name) at \(next.departTime)" : "\(leg.minutes) min walk to \(next.name)"
+                    steps.append(Step(kind: .walk, title: "Change at \(before.to)", sub: sub, at: leg.departAt, time: leg.departTime, color: nil, name: leg.name,
                                       leg: index))
                 } else {
                     let place = last || leg.to.isEmpty ? to : leg.to

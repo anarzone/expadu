@@ -27,18 +27,18 @@ struct TravelTrip: View {
     @State private var asking = false
     @AppStorage("speakTurns") private var speak = false
     @State private var problem: String?
-    /// Where the line's colour ends on the map: the bottom of the band, measured.
-    @State private var bandBottom: CGFloat = 230
     /// Where the Map button sits on the screen, for the map to grow out of ("Grow").
     @State private var mapAnchor = UnitPoint(x: 0.85, y: 0.5)
-    @State private var screen = CGSize(width: 402, height: 874)
+    /// The line's colour, one shape between the whole screen and the band over the map.
+    @Namespace private var colourSpace
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
             let now = timeline.date
             let steps = trip.steps
-            // The step they're on: where the phone is when walking, the clock on a ride (one rule, the card's too).
-            let current = trip.live(at: now, guided: planner.follower.here?.step).current
+            // The step they're on: the phone while it knows where they are, else the clock, as late as
+            // the ride runs (one rule, the card's and the island's too).
+            let current = trip.live(at: now, here: planner.follower.here).current
             let shown = looking ?? current
             let step = steps.indices.contains(shown) ? steps[shown] : nil
             let look = LineLook(hex: trip.legs.first { $0.rides }?.color ?? "#00768B")
@@ -47,21 +47,6 @@ struct TravelTrip: View {
                     // The map view: the whole screen is the map, the step you're on in a band on top.
                     mapLayer(current: current)
                         .transition(mapTransition)
-                }
-                // The line's colour: the whole screen with the steps; on the map it gathers into the band.
-                UnevenRoundedRectangle(bottomLeadingRadius: mapOn ? 26 : 0, bottomTrailingRadius: mapOn ? 26 : 0)
-                    .fill(look.fill)
-                    .shadow(color: .black.opacity(mapOn ? 0.2 : 0), radius: 14, y: 4)
-                    .frame(height: mapOn ? bandBottom : nil)
-                    .frame(maxHeight: .infinity, alignment: .top)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-                if !mapOn, let line = trip.legs.first(where: \.rides)?.line {
-                    Text(line).font(.posterGrotesque(360)).tracking(-16)
-                        .foregroundStyle(look.ink.opacity(0.1)).lineLimit(1).fixedSize()
-                        .offset(x: -20, y: 40).frame(maxWidth: .infinity, alignment: .leading)
-                        .allowsHitTesting(false)
-                        .transition(.opacity)
                 }
                 VStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: mapOn ? 12 : 14) {
@@ -84,8 +69,11 @@ struct TravelTrip: View {
                     }
                     .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, mapOn ? 16 : 18)
                     .foregroundStyle(look.ink)
-                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { bottom in
-                        if mapOn { withAnimation(switchAnimation) { bandBottom = bottom } }
+                    // On the map, the line's colour is the band behind the step you're on: as tall as the
+                    // step by layout, never measured. A measured band fed its height back into the layout it
+                    // was measured from, and the screen froze on Minimise (iOS killed it, 13 Nov).
+                    .background {
+                        if mapOn { colour(look, band: true) }
                     }
                     if !mapOn {
                         way(steps: steps, current: current)
@@ -93,8 +81,23 @@ struct TravelTrip: View {
                     }
                     Spacer(minLength: 0)
                 }
+                // With the steps, the line's colour is the whole screen, its line large behind them; on the
+                // map it gathers into the band (the same shape, matched).
+                .background(alignment: .topLeading) {
+                    if !mapOn {
+                        ZStack(alignment: .topLeading) {
+                            colour(look, band: false)
+                            if let line = trip.legs.first(where: \.rides)?.line {
+                                Text(line).font(.posterGrotesque(360)).tracking(-16)
+                                    .foregroundStyle(look.ink.opacity(0.1)).lineLimit(1).fixedSize()
+                                    .offset(x: -20, y: 40)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                    }
+                }
             }
-            .onGeometryChange(for: CGSize.self) { $0.size } action: { screen = $0 }
+            .coordinateSpace(.named(Self.screenSpace))
             .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: shown)
             .onChange(of: MotionStore.shared.replays[.tripMapSwitch]) { switchMap(!mapOn) }
         }
@@ -127,6 +130,18 @@ struct TravelTrip: View {
         }
     }
 
+    private static let screenSpace = "trip.screen"
+
+    /// The line's colour: the whole screen, or the band over the map with its round lower corners.
+    private func colour(_ look: LineLook, band: Bool) -> some View {
+        UnevenRoundedRectangle(bottomLeadingRadius: band ? 26 : 0, bottomTrailingRadius: band ? 26 : 0)
+            .fill(look.fill)
+            .shadow(color: .black.opacity(band ? 0.2 : 0), radius: 14, y: 4)
+            .matchedGeometryEffect(id: "colour", in: colourSpace)
+            .ignoresSafeArea(edges: band ? .top : .all)
+            .allowsHitTesting(false)
+    }
+
     private func head(_ look: LineLook) -> some View {
         HStack(spacing: 10) {
             Button { dismiss() } label: {
@@ -148,7 +163,7 @@ struct TravelTrip: View {
                 Button { somewhereElse() } label: { Label("I’m somewhere else", systemImage: "location") }
                 Divider()
                 Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
-                if planner.follower.here?.arrived == true || trip.live(at: .now).current >= trip.steps.count - 2 {
+                if planner.follower.trusted()?.arrived == true || trip.live(at: .now, here: planner.follower.here).current >= trip.steps.count - 2 {
                     Button {
                         Task { await today.endTrip(session.api, arrived: true); planner.stopFollowing(); dismiss() }
                     } label: { Label("I’m there", systemImage: "checkmark") }
@@ -226,8 +241,8 @@ struct TravelTrip: View {
                 .glassEffect(.clear, in: .rect(cornerRadius: 14))
             }
             if let problem { Text(problem).font(.geist(14, .medium)).opacity(0.9) }
-            // Walking: the next turn, from where the phone is.
-            if index == current(now), step.kind == .walk, let here = planner.follower.here, let turn = here.turn, !here.offRoute {
+            // Walking: the next turn, from where the phone is; none when it doesn't know.
+            if index == current(now), step.kind == .walk, let here = planner.follower.trusted(at: now), let turn = here.turn, !here.offRoute {
                 TurnRow(turn: turn, metres: here.metresToTurn)
                     .padding(10).background(Palette.surface, in: .rect(cornerRadius: 16)).foregroundStyle(Palette.text)
                     .transition(.opacity)
@@ -243,11 +258,11 @@ struct TravelTrip: View {
     }
 
     /// The step they're on now (the phone when walking, else the clock).
-    private func current(_ now: Date) -> Int { trip.live(at: now, guided: planner.follower.here?.step).current }
+    private func current(_ now: Date) -> Int { trip.live(at: now, here: planner.follower.here).current }
 
     /// Off the route for 15 s, or the ride gone, as the follower sees it.
     private var trouble: String? {
-        guard let here = planner.follower.here else { return nil }
+        guard let here = planner.follower.trusted() else { return nil }
         if let missed = here.missed { return "\(missed.name) has left. A new route from here?" }
         if here.offRoute, let since = planner.follower.offSince, Date.now.timeIntervalSince(since) > 15 {
             return "You’re off the route, \(TurnRow.distance(Int(here.offBy))) from it."
@@ -257,7 +272,7 @@ struct TravelTrip: View {
 
     /// What the minutes count down to: leaving, the next tram, getting off, or being there.
     private func countdownLabel(_ step: TodayPage.Step, index: Int, now: Date) -> String {
-        if step.at > now { return index == 0 ? "Leave in" : "Starts in" }
+        if step.at > timetable(now) { return index == 0 ? "Leave in" : "Starts in" }
         guard trip.steps.indices.contains(index + 1) else { return "" }
         let next = trip.steps[index + 1]
         switch next.kind {
@@ -280,9 +295,13 @@ struct TravelTrip: View {
                     Label("Map", systemImage: "map").font(.geist(14, .semibold))
                         .padding(.horizontal, 12).frame(height: 38)
                 }
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-                    mapAnchor = UnitPoint(x: frame.midX / max(1, screen.width), y: frame.midY / max(1, screen.height))
-                }
+                // Where the button sits on the trip's screen, read with the screen's size in one go: nothing on
+                // the screen is laid out from it, so the read can't feed back into itself.
+                .onGeometryChange(for: UnitPoint.self) { proxy in
+                    let frame = proxy.frame(in: .named(Self.screenSpace))
+                    let size = proxy.bounds(of: .named(Self.screenSpace))?.size ?? .zero
+                    return UnitPoint(x: frame.midX / max(1, size.width), y: frame.midY / max(1, size.height))
+                } action: { mapAnchor = $0 }
                 .buttonStyle(PressStyle())
                 .background(Palette.quiet, in: .rect(cornerRadius: 12))
                 .accessibilityHint("Shows the way on a full-screen map")
@@ -430,9 +449,14 @@ struct TravelTrip: View {
     /// The minutes the countdown shows: until the step starts, or until the next one once on it.
     private func minutesLeft(_ step: TodayPage.Step, index: Int, now: Date) -> Int {
         let next = trip.steps.indices.contains(index + 1) ? trip.steps[index + 1].at : nil
+        // On the timetable as late as the ride runs: a late tram's minutes, not the plan's.
+        let now = timetable(now)
         let until = step.at > now ? step.at : (next ?? step.at)
         return max(0, Int((until.timeIntervalSince(now) / 60).rounded(.up)))
     }
+
+    /// Now on the trip's timetable: as far back as the ride runs late.
+    private func timetable(_ now: Date) -> Date { now.addingTimeInterval(-trip.late(here: planner.follower.here, at: now)) }
 
     /// The routes from where they are to the trip's place, to pick one from (never one taken for them).
     private func newRoutesFromHere() async {

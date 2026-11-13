@@ -368,12 +368,19 @@ final class TripPlanner {
         busy = option.index
         defer { busy = nil }
         let start = from ?? here.map { TripPoint(name: "Your location", lat: $0.latitude, lng: $0.longitude) }
+        let before = today.page?.trip
         do throws(APIFailure) {
             let result = try await api.startTravelTrip(journey: journey, to: destination, from: start,
                                                        plan: target.map { (Self.day($0.startDate ?? .now), $0.id) }, replace: replace)
             switch result {
             case .started:
                 await today.load(api, quietly: true)
+                // The trip opens from Today's answer. Without it (the connection dropped again), the routes
+                // stay with a plain note instead of closing onto nothing; Start again opens the same trip.
+                guard let started = today.page?.trip, !(replace && started == before) else {
+                    startingProblem = "Your trip has started, but it couldn’t be shown. Check your connection and tap Start trip again."
+                    return false
+                }
                 withAnimation(.smooth(duration: 0.45)) {
                     newRoutes = false
                     shown = false
@@ -393,7 +400,8 @@ final class TripPlanner {
                 startingProblem = reason
                 refreshAfterProblem = true
             case .tooManyTries: startingProblem = "Too many tries in a minute. Try again in a moment."
-            default: startingProblem = "Couldn’t start the trip. Try again in a moment."
+            // Only after the tries again (AppAPI): there is no connection to reach us now.
+            default: startingProblem = "Couldn’t reach Expadu to start the trip. Check your connection and try again."
             }
             return false
         }

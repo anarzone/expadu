@@ -65,7 +65,13 @@ function fakeTriasTrips(): void
 }
 
 test('MOTIS serves as the primary provider and the result is cached', function () {
-    Http::fake(['motis.test/api/v1/plan*' => Http::response(motisPlanFixture())]);
+    Http::fake([
+        'motis.test/api/v1/plan*' => Http::response(motisPlanFixture()),
+        // Every other call answered here too (a run, the stops, the boards), never by whatever
+        // motis.test resolves to (Herd sends *.test to this machine; CI can't resolve it).
+        'motis.test/api/v1/stoptimes*' => Http::response(['stopTimes' => []]),
+        'motis.test/*' => Http::response([]),
+    ]);
 
     $service = app(RouteService::class);
     $from = new GeoPoint(50.9513, 6.9185);
@@ -76,13 +82,13 @@ test('MOTIS serves as the primary provider and the result is cached', function (
 
     expect($first->source)->toBe('motis');
     expect($second->source)->toBe('motis');
-    // One uncached plan() = eight MOTIS calls (transit, its main ride's run for the ways in
-    // to it, the stops near the destination for the ways out, the short-start, short-end and
-    // no-change alternatives, a direct bike and a direct walk bucket); the second plan() is
-    // served entirely from cache, so the total stays at 8. (The fixture's run and stops name
-    // nothing to go via; its best way doesn't change, so there are no ways on; no rail station
-    // is seeded, so the rail-rescue gate stays shut.)
-    Http::assertSentCount(8);
+    // One uncached plan() = nine MOTIS calls (transit, its main ride's run for the ways in
+    // to it, the stops near the destination for the ways out and near the start for the first
+    // stretches, the short-start, short-end and no-change alternatives, a direct bike and a
+    // direct walk bucket); the second plan() is served entirely from cache, so the total stays
+    // at 9. (The fixture's run and stops name nothing to go via or board at; its best way doesn't
+    // change, so there are no ways on; no rail station is seeded, so the rail-rescue gate stays shut.)
+    Http::assertSentCount(9);
 });
 
 test('falls back to Transitous when MOTIS fails', function () {
