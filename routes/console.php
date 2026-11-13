@@ -176,3 +176,7 @@ Schedule::command('security:refresh-disposable-domains')->monthlyOn(1, '04:40')-
 // and a morning summary of the last 24 hours (App\Security\SecurityWatch).
 Schedule::command('security:watch')->everyTenMinutes()->withoutOverlapping(5)->onOneServer();
 Schedule::command('security:daily-summary')->timezone('Europe/Berlin')->dailyAt('08:00')->withoutOverlapping()->onOneServer();
+
+// Accounts never verified: a reminder a week before 30 days, then deleted (config/cleanup.php).
+// Unconfirmed waitlist entries go through model:prune (WaitlistSignup::prunable).
+Schedule::command('accounts:prune-unverified')->timezone('Europe/Berlin')->dailyAt('10:00')->withoutOverlapping()->onOneServer();

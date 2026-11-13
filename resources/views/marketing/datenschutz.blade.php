@@ -242,8 +242,10 @@
     <h2>7. Retention &amp; deletion</h2>
     <p>
         Account data is kept while your account exists and deleted when you delete your account or
-        ask us to. Waitlist entries are kept until you withdraw or until the launch notification
-        has been sent. Location data expires automatically as described above. Server
+        ask us to. An account whose e-mail address is never verified is deleted after 30 days; a
+        week before, we send one reminder to that address. Waitlist entries are kept until you
+        withdraw or until the launch notification has been sent; an entry that is never confirmed
+        is deleted after 7 days. Location data expires automatically as described above. Server
         logs rotate on a short schedule; the security log is kept for 90 days.
     </p>
 
