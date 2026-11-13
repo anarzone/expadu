@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CanonicalRedirects;
+use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LocalMockClock;
 use App\Http\Middleware\PerfTrackMiddleware;
@@ -68,10 +69,13 @@ return Application::configure(basePath: dirname(__DIR__))
             // Web-wide per-user/IP ceiling (see AppServiceProvider limiters);
             // sits after StartSession so the authenticated user is resolvable.
             'throttle:global',
+            // A suspended account is signed out here, whatever page it asks for.
+            EnsureAccountIsActive::class,
             // Local only: the mock's sample moment for tools/mock-compare.
             // Innermost, so session and CSRF cookies keep the real clock.
             LocalMockClock::class,
         ]);
+        $middleware->api(append: [EnsureAccountIsActive::class]);
         // `appearance` (System, Light or Dark) is written by the page and read by app.blade.php.
         $middleware->encryptCookies(except: [MockClock::COOKIE, MockScenario::COOKIE, 'appearance']);
     })
