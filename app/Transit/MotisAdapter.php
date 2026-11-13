@@ -9,7 +9,8 @@ namespace App\Transit;
  * itinerary/leg mapping (including decoded `legGeometry` polylines) and
  * geocoding are all inherited from {@see TransitousAdapter}. The only
  * deltas are the base URL, the plan endpoint version (v1 vs Transitous's
- * v3) and the `source` stamp.
+ * v3), how v1 counts `maxTransfers` (rides, not changes) and the `source`
+ * stamp.
  *
  * Failure handling (timeouts, circuit breaking, the NRW service-area guard
  * and the failover cascade) lives in {@see FailoverRouteService}; this
@@ -30,5 +31,11 @@ class MotisAdapter extends TransitousAdapter
     protected function source(): string
     {
         return 'motis';
+    }
+
+    /** The v1 plan API counts rides, not changes: one ride is no change (0 answers nothing). */
+    protected function directOnly(): array
+    {
+        return ['maxTransfers' => 1];
     }
 }

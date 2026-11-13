@@ -10,7 +10,7 @@
     <div class="wrap mk-hero__prose">
     <span class="eyebrow">Privacy</span>
     <h1><span lang="de">Datenschutzerklärung</span> / Privacy policy</h1>
-    <p class="meta">Last updated: 1 November 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
+    <p class="meta">Last updated: 13 November 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
     </div>
 @endsection
 
@@ -31,6 +31,19 @@
         are short-lived and not used to profile you. On our production domain, traffic is routed
         through Cloudflare, Inc. as a security/CDN layer; Cloudflare processes connection data as
         our processor under EU standard contractual clauses.
+    </p>
+
+    <h3>Security log</h3>
+    <p>
+        To protect accounts and our forms from abuse, we keep a security log of sign-ups (including
+        waitlist sign-ups), sign-ins and failed sign-ins, password-reset requests, e-mail
+        verifications, and form posts or e-mails our automatic checks held back. Each entry records
+        the time, what happened, your account if you have one, the part of the e-mail address after
+        the “@” (never the full address), your IP address and your browser’s user agent. We use it
+        only to detect and stop attacks such as automated sign-ups, password guessing and e-mail
+        flooding, and to alert us when one starts — legal basis: legitimate interest (Art. 6(1)(f)
+        GDPR). Entries are deleted automatically after 90 days. Your own entries are included when
+        you download your data.
     </p>
 
     <h2>3. Cookies</h2>
@@ -229,9 +242,11 @@
     <h2>7. Retention &amp; deletion</h2>
     <p>
         Account data is kept while your account exists and deleted when you delete your account or
-        ask us to. Waitlist entries are kept until you withdraw or until the launch notification
-        has been sent. Location data expires automatically as described above. Server
-        logs rotate on a short schedule.
+        ask us to. An account whose e-mail address is never verified is deleted after 30 days; a
+        week before, we send one reminder to that address. Waitlist entries are kept until you
+        withdraw or until the launch notification has been sent; an entry that is never confirmed
+        is deleted after 7 days. Location data expires automatically as described above. Server
+        logs rotate on a short schedule; the security log is kept for 90 days.
     </p>
 
     <h2>8. Your rights</h2>

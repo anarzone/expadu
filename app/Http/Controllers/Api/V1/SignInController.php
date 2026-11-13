@@ -8,6 +8,7 @@ use App\Auth\AppSignIn;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\SignInResource;
 use App\Models\User;
+use App\Security\SecurityLog;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class SignInController extends Controller
 {
-    public function __construct(private AppSignIn $signIn) {}
+    public function __construct(private AppSignIn $signIn, private SecurityLog $log) {}
 
     /** Email and password. An account with two-step sign-in gets a challenge, not a token. */
     public function token(Request $request): SignInResource
@@ -34,6 +35,8 @@ class SignInController extends Controller
         $provider = Auth::guard('web')->getProvider();
         $user = $provider->retrieveByCredentials(['email' => $data['email']]);
         if (! $user instanceof User || ! $provider->validateCredentials($user, ['password' => $data['password']])) {
+            $this->log->record(SecurityLog::LoginFailed, $user instanceof User ? $user : null, email: $data['email']);
+
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
@@ -49,10 +52,15 @@ class SignInController extends Controller
             'recovery_code' => ['nullable', 'string'],
         ]);
 
+        $challenged = $this->signIn->challengedUser($data['challenge']);
         $answer = $this->signIn->answer($data['challenge'], $data['code'] ?? null, $data['recovery_code'] ?? null);
         if ($answer === null) {
+            $this->log->record(SecurityLog::TwoFactorFailed, $challenged);
+
             throw ValidationException::withMessages(['code' => __('The provided two factor authentication code was invalid.')]);
         }
+
+        $this->log->record(SecurityLog::Login, $answer['user']);
 
         return new SignInResource($answer);
     }
@@ -110,7 +118,9 @@ class SignInController extends Controller
                 'apple_id' => $identity['sub'],
                 'email_verified_at' => $identity['email_verified'] ? now() : null,
             ])->save();
-            if (! $identity['email_verified']) {
+            if ($identity['email_verified']) {
+                $this->log->record(SecurityLog::Signup, $user, reason: 'apple');
+            } else {
                 event(new Registered($user));
             }
         }
@@ -172,6 +182,8 @@ class SignInController extends Controller
         if ($user->hasEnabledTwoFactorAuthentication()) {
             return new SignInResource(['challenge' => $this->signIn->challenge($user, $device, $remember)]);
         }
+
+        $this->log->record(SecurityLog::Login, $user);
 
         return new SignInResource(['user' => $user, ...$this->signIn->issue($user, $device, $remember)]);
     }

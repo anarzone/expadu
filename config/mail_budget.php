@@ -1,6 +1,7 @@
 <?php
 
 use App\Mail\ConfirmationCode;
+use App\Mail\UnverifiedAccountReminder;
 use App\Mail\WaitlistConfirmation;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -30,7 +31,7 @@ return [
         'account' => [
             'daily' => null,
             'per_address' => 5,
-            'classes' => [VerifyEmail::class, ResetPassword::class, ConfirmationCode::class],
+            'classes' => [VerifyEmail::class, ResetPassword::class, ConfirmationCode::class, UnverifiedAccountReminder::class],
         ],
         // Two per address: the website form mails once a day itself; the
         // Paperwork "tell me when it's covered" list may re-send once.

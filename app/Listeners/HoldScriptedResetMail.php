@@ -2,7 +2,9 @@
 
 namespace App\Listeners;
 
+use App\Models\User;
 use App\Security\FormTraps;
+use App\Security\SecurityLog;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Support\Facades\Log;
@@ -37,6 +39,8 @@ class HoldScriptedResetMail
         }
 
         Log::info('signup.blocked', ['form' => 'forgot-password', 'reason' => $suspicion]);
+        $request->attributes->set(SecurityLog::BlockedFlag, true);
+        app(SecurityLog::class)->record(SecurityLog::Blocked, $event->notifiable instanceof User ? $event->notifiable : null, reason: $suspicion);
 
         return false;
     }

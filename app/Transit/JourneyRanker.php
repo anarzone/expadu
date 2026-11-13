@@ -98,13 +98,51 @@ final class JourneyRanker
             + self::CHANGE_COST * $journey->transfers;
     }
 
-    /** Minutes on foot. A 0 m walk leg is the router's wait for a change, not walking. */
+    /**
+     * Minutes on foot. A 0 m walk at either end is the router's wait at the stop, not walking; between
+     * two rides it is the change from one platform to the other, which our MOTIS also gives as 0 m
+     * (six minutes from the S-Bahn to the tram at Hansaring). Counted as none, it put a way with two
+     * changes above the tram straight there.
+     */
     private function walkingMin(Journey $journey): int
     {
-        return array_sum(array_map(
-            fn (Leg $leg): int => $leg->mode === 'walk' && $leg->distanceM !== 0 ? $leg->durationMin : 0,
-            $journey->legs,
-        ));
+        $legs = array_values($journey->legs);
+        $minutes = 0;
+        foreach ($legs as $i => $leg) {
+            if ($leg->mode !== 'walk') {
+                continue;
+            }
+            $between = $this->ridesBefore($legs, $i) && $this->ridesAfter($legs, $i);
+            if ($leg->distanceM !== 0 || $between) {
+                $minutes += $leg->durationMin;
+            }
+        }
+
+        return $minutes;
+    }
+
+    /** @param  list<Leg>  $legs */
+    private function ridesBefore(array $legs, int $index): bool
+    {
+        for ($i = $index - 1; $i >= 0; $i--) {
+            if ($legs[$i]->isTransit()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @param  list<Leg>  $legs */
+    private function ridesAfter(array $legs, int $index): bool
+    {
+        for ($i = $index + 1; $i < count($legs); $i++) {
+            if ($legs[$i]->isTransit()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

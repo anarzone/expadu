@@ -500,8 +500,10 @@ public struct TripPlan: Sendable {
             /// How much later missing it makes them.
             public let laterMin: Int?
 
-            /// Worth saying on the route's row: missing it costs five minutes or more (or nobody knows how much).
-            public var worthWarning: Bool { tight && (laterMin ?? 99) >= 5 }
+            /// Worth saying on the route's row: no minute to spare at all, or missing it costs a quarter of an
+            /// hour (or nobody knows how much). The router plans most changes with a minute to spare; a row
+            /// for each of those would be noise. The steps say every tight change.
+            public var worthWarning: Bool { tight && (spareMin == 0 || (laterMin ?? 99) >= 15) }
         }
 
         public var isRide: Bool { !["walk", "bike", "car"].contains(mode) }
