@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Auth\AppSignIn;
 use App\Models\User;
+use App\Security\SecurityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
@@ -79,6 +80,7 @@ class SocialLoginController extends Controller
                 'social_id' => $socialUser->getId(),
                 'email_verified_at' => now(),
             ]);
+            app(SecurityLog::class)->record(SecurityLog::Signup, $user, reason: $provider, channel: is_string($native) ? 'app' : 'web');
         }
 
         if (is_string($native)) {
