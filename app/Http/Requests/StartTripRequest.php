@@ -88,7 +88,8 @@ class StartTripRequest extends FormRequest
                 }
                 if (! $boardingChecked && ! in_array($leg['mode'], ['walk', 'bike'], true)) {
                     $boardingChecked = true;
-                    if (! $same && $legDepart->lessThanOrEqualTo(now())) {
+                    // Times come by the minute: a 17:09 tram is still there at 17:09:30.
+                    if (! $same && $legDepart->addMinute()->lessThanOrEqualTo(now())) {
                         $validator->errors()->add('journey', 'This departure has passed. Find a fresh route before starting.');
 
                         return;

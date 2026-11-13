@@ -75,7 +75,14 @@ struct TripRoutesView: View {
             .presentationCornerRadius(32)
         }
         .alert("That didn’t work", isPresented: Binding(get: { planner.startingProblem != nil }, set: { if !$0 { planner.startingProblem = nil } })) {
-            Button("OK", role: .cancel) { planner.startingProblem = nil }
+            Button("OK", role: .cancel) {
+                planner.startingProblem = nil
+                if planner.refreshAfterProblem {
+                    planner.refreshAfterProblem = false
+                    withAnimation(.smooth(duration: 0.3)) { details = nil }
+                    Task { await planner.plan(session.api) }
+                }
+            }
         } message: { Text(planner.startingProblem ?? "") }
         .alert("Replace the trip you’re on?", isPresented: Binding(get: { planner.ask != nil }, set: { if !$0 { planner.ask = nil } })) {
             Button("Keep", role: .cancel) { planner.ask = nil }
@@ -230,7 +237,7 @@ extension TripRoutesView {
                 RouteDetail(planner: planner, option: chosen, also: row?.also ?? [], lines: row?.lines ?? [],
                             kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
                             back: { withAnimation(.smooth(duration: 0.3)) { details = nil } },
-                            show: { Task { _ = await planner.start(chosen, replace: false, session.api, today: today) } },
+                            show: { Task { _ = await planner.start(chosen, replace: planner.newRoutes, session.api, today: today) } },
                             add: planner.target == nil ? nil : { Task { await planner.addToPlan(chosen, session.api) } })
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)).combined(with: .opacity))
             } else {
@@ -570,8 +577,11 @@ private struct RouteDetail: View {
                     .background(Palette.quiet, in: .rect(cornerRadius: 14))
                 }
             }
-            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 30)
+            // Clear of the home indicator (34 pt): a tap reaching into it went to the system's swipe
+            // first, and Start trip took two (the owner, 13 Nov). Taps on this edge come here first.
+            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 44)
             .background(Palette.surface)
+            .defersSystemGestures(on: .bottom)
         }
         .foregroundStyle(Palette.text)
     }

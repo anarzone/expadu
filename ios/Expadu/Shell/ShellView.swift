@@ -110,8 +110,9 @@ struct ShellView: View {
                 }
             case .tripNewWay:
                 withAnimation(.snappy) { tab = .today }
-                if let trip = today.page?.trip, let place = today.place {
-                    Task { _ = await today.newWay(session.api, trip: trip, from: TodayPage.Point(latitude: place.latitude, longitude: place.longitude)) }
+                if today.page?.trip != nil {
+                    planner.newRoutes = true
+                    planner.showTrip = true
                 }
             case .today: withAnimation(.snappy) { tab = .today }
             case .travel: withAnimation(.snappy) { tab = .travel }

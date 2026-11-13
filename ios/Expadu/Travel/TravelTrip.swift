@@ -27,7 +27,6 @@ struct TravelTrip: View {
     @State private var asking = false
     @AppStorage("speakTurns") private var speak = false
     @State private var problem: String?
-    @State private var working = false
     /// Where the line's colour ends on the map: the bottom of the band, measured.
     @State private var bandBottom: CGFloat = 230
     /// Where the Map button sits on the screen, for the map to grow out of ("Grow").
@@ -121,6 +120,11 @@ struct TravelTrip: View {
         }
         // A new route (re-planned here or on Today) is the one followed from now on.
         .onChange(of: trip) { planner.follow(trip) }
+        // New routes from here (a missed tram, off the way): the list over the trip, to pick one.
+        .fullScreenCover(isPresented: Binding(get: { planner.newRoutes }, set: { if !$0 { closeNewRoutes() } })) {
+            TripRoutesView(planner: planner, back: closeNewRoutes, close: closeNewRoutes)
+                .task { await newRoutesFromHere() }
+        }
     }
 
     private func head(_ look: LineLook) -> some View {
@@ -139,7 +143,7 @@ struct TravelTrip: View {
             // A new route when the plan went wrong: a missed tram, or starting from somewhere else.
             Menu {
                 if let ride = trip.legs.first(where: \.rides) {
-                    Button { Task { await missed() } } label: { Label(ride.mode == "bus" ? "I missed the bus" : "I missed the tram", systemImage: "clock") }
+                    Button { planner.newRoutes = true } label: { Label(ride.mode == "bus" ? "I missed the bus" : "I missed the tram", systemImage: "clock") }
                 }
                 Button { somewhereElse() } label: { Label("I’m somewhere else", systemImage: "location") }
                 Divider()
@@ -150,9 +154,16 @@ struct TravelTrip: View {
                     } label: { Label("I’m there", systemImage: "checkmark") }
                 }
             } label: {
-                Text(working ? "Finding…" : "Re-plan").font(.geist(14, .semibold)).padding(.horizontal, 14).frame(height: 42)
+                // The trip's options (a missed tram, somewhere else, speak turns, I'm there): "Re-plan"
+                // read as a new plan on offer (the owner, 13 Nov). iOS's "more" sign, the size of its neighbours.
+                Image(systemName: "ellipsis").font(.system(size: 17, weight: .bold))
+                .frame(width: 42, height: 42)
+                // The glass is the label's own, not the menu's: on the menu, iOS morphed it into the menu
+                // and back, and it stood a blank white circle for a second after (the owner, 13 Nov).
+                .glassEffect(.clear, in: .circle)
+                .contentShape(.circle)
             }
-            .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 14))
+            .accessibilityLabel("Trip options")
             // Ending the trip is always in sight; it asks first, so a stray tap can't end it.
             Button { asking = true } label: {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).frame(width: 42, height: 42).contentShape(.circle)
@@ -223,7 +234,7 @@ struct TravelTrip: View {
             }
             // Gone wrong: off the route for a while, or the ride left without them. A new route in one tap.
             if let trouble {
-                TripTrouble(text: trouble, busy: working) { Task { await missed() } }
+                TripTrouble(text: trouble) { planner.newRoutes = true }
                     .padding(12).background(Palette.surface, in: .rect(cornerRadius: 16)).foregroundStyle(Palette.text)
                     .transition(.opacity)
             }
@@ -423,13 +434,17 @@ struct TravelTrip: View {
         return max(0, Int((until.timeIntervalSince(now) / 60).rounded(.up)))
     }
 
-    /// The next way from where they are now: the trip goes on with it.
-    private func missed() async {
-        working = true
-        defer { working = false }
+    /// The routes from where they are to the trip's place, to pick one from (never one taken for them).
+    private func newRoutesFromHere() async {
+        guard let end = trip.legs.last?.end else { return }
         let point = planner.follower.point ?? today.place.map { TodayPage.Point(latitude: $0.latitude, longitude: $0.longitude) }
-        guard let point else { problem = "Your phone hasn’t said where you are."; return }
-        problem = await today.newWay(session.api, trip: trip, from: point)
+        await planner.routes(to: TripPoint(name: trip.to, lat: end.latitude, lng: end.longitude), startsAt: nil,
+                             from: point.map { TripPoint(name: "Your location", lat: $0.latitude, lng: $0.longitude) }, session.api)
+    }
+
+    private func closeNewRoutes() {
+        planner.closeRoutes()
+        planner.newRoutes = false
     }
 
     /// Plan again from another starting point.
