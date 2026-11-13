@@ -182,3 +182,13 @@ test('an unsigned or tampered confirmation link is rejected', function () {
 
     expect($signup->fresh()->isConfirmed())->toBeFalse();
 });
+
+test('a throwaway inbox is turned away and mails no one', function () {
+    $this->postJson('/waitlist', ['email' => 'someone@mailinator.com', 'city' => 'Köln', ...waitlistFormDrawn()])
+        ->assertUnprocessable()->assertJsonValidationErrors('email');
+    $this->postJson('/waitlist', ['email' => 'someone@inbox.mailinator.com', 'city' => 'Köln', ...waitlistFormDrawn()])
+        ->assertUnprocessable()->assertJsonValidationErrors('email');
+
+    expect(WaitlistSignup::query()->count())->toBe(0);
+    Mail::assertNothingQueued();
+});

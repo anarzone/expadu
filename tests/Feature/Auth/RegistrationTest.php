@@ -39,3 +39,16 @@ test('registering with an already-taken email surfaces an error', function () {
     $this->assertGuest();
     $response->assertSessionHasErrors('email');
 });
+
+test('a throwaway inbox cannot register', function () {
+    $response = $this->from(route('register'))->post(route('register.store'), [
+        'name' => 'Test User',
+        'email' => 'someone@mailinator.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('email');
+    expect(User::query()->where('email', 'someone@mailinator.com')->exists())->toBeFalse();
+});

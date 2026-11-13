@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\WaitlistConfirmation;
 use App\Marketing\WaitlistGuard;
 use App\Models\WaitlistSignup;
+use App\Rules\NotDisposableEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,7 @@ class WaitlistController extends Controller
     public function store(Request $request, WaitlistGuard $guard): JsonResponse
     {
         $validated = $request->validate([
-            'email' => ['required', 'string', 'email:rfc', 'max:255'],
+            'email' => ['required', 'string', 'email:rfc', 'max:255', new NotDisposableEmail],
             // A city, not an ad: scripts paste links and markup in here.
             'city' => ['required', 'string', 'max:120', 'not_regex:/https?:|www\.|[<>]/i'],
             'source' => ['nullable', 'string', 'max:60'],
