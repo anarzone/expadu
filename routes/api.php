@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\Travel\AppStationLinesMapController;
 use App\Http\Controllers\Api\V1\Travel\AppStationSearchController;
 use App\Http\Controllers\Api\V1\Travel\AppTravelController;
 use App\Http\Controllers\Api\V1\Travel\AppTripController;
+use App\Http\Controllers\Api\V1\Travel\AppTripRideController;
 use App\Http\Controllers\Api\V1\TravelController;
 use App\Http\Controllers\TodayRankController;
 use Illuminate\Support\Facades\Route;
@@ -102,6 +103,10 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
             // I'm on my way on a way from Plan a trip, and stopping it.
             Route::post('trip', [AppTripController::class, 'start'])->middleware('throttle:journey');
             Route::delete('trip', [AppTripController::class, 'end']);
+            // The tram they're really on (trip sync): which run, switching to it, and Undo.
+            Route::post('trip/ride/check', [AppTripRideController::class, 'check'])->middleware('throttle:journey');
+            Route::post('trip/ride', [AppTripRideController::class, 'switch'])->middleware('throttle:journey');
+            Route::post('trip/ride/undo', [AppTripRideController::class, 'undo'])->middleware('throttle:journey');
         });
         // Getting there (an event's details): the ways, and I'm on my way on one of them.
         Route::post('journey/plan', [JourneyController::class, 'plan'])->middleware(['verified', 'throttle:journey']);
