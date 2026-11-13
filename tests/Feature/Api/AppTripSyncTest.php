@@ -125,6 +125,15 @@ test('switching rides the rest from that tram, moves the walk before it, and Und
     $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/undo', ['undo' => $switched->json('undo')])->assertUnprocessable();
 });
 
+test('a change a delay broke takes the next tram there, the earliest to arrive', function () {
+    fakeRuns([['16', '2026-11-16T16:36:00Z', '2026-11-16T16:42:00Z', 'run-16-1736'], ['18', '2026-11-16T16:42:00Z', '2026-11-16T16:48:00Z', 'run-18-1742'], ['16', '2026-11-16T16:46:00Z', '2026-11-16T16:52:00Z', 'run-16-1746']]);
+
+    // Ready at Ebertplatz 17:38: the 16 at 17:36 has gone; the 18 at 17:42 is next there.
+    $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/next', ['leg' => 1, 'ready_at' => ($this->at)('17:38')])
+        ->assertOk()->assertJson(['line' => '18', 'depart_time' => '17:42', 'arrive_time' => '17:52']);
+    expect(ActiveTrip::query()->where('user_id', $this->person->id)->value('journey')['legs'][1]['line'])->toBe('18');
+});
+
 test('a tram the router has no way on from is said so, and the trip stays', function () {
     fakeRuns([['16', '2026-11-16T16:36:00Z', '2026-11-16T16:42:00Z', 'run-16-1736']]);
 

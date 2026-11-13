@@ -106,6 +106,7 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
             // The tram they're really on (trip sync): which run, switching to it, and Undo.
             Route::post('trip/ride/check', [AppTripRideController::class, 'check'])->middleware('throttle:journey');
             Route::post('trip/ride', [AppTripRideController::class, 'switch'])->middleware('throttle:journey');
+            Route::post('trip/ride/next', [AppTripRideController::class, 'next'])->middleware('throttle:journey');
             Route::post('trip/ride/undo', [AppTripRideController::class, 'undo'])->middleware('throttle:journey');
         });
         // Getting there (an event's details): the ways, and I'm on my way on one of them.

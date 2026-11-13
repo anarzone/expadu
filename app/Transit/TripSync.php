@@ -166,6 +166,31 @@ final class TripSync
         return $leg;
     }
 
+    /**
+     * A change a delay broke: the first run of that ride's stretch (any line) leaving once they can be
+     * at its stop, and the trip switched to it. Null when none leaves within the hour.
+     *
+     * @return array{undo: string, line: string, depart_time: string, arrive_time: string}|null
+     */
+    public function catchNext(ActiveTrip $trip, int $legIndex, CarbonImmutable $readyAt): ?array
+    {
+        $leg = $this->ride($trip, $legIndex);
+        $engine = $this->engine();
+        if ($leg === null || $engine === null) {
+            return null;
+        }
+        $from = new GeoPoint((float) $leg['from']['lat'], (float) $leg['from']['lng']);
+        $to = new GeoPoint((float) $leg['to']['lat'], (float) $leg['to']['lng']);
+        $runs = $engine->withTimeBudget(4.0)->directRides([['from' => $from, 'to' => $to, 'at' => $readyAt->subMinutes(1)]])[0] ?? [];
+        $next = collect($runs)
+            ->filter(fn (array $run) => ! $run['cancelled'] && CarbonImmutable::parse($run['depart_at'])->gte($readyAt))
+            ->sortBy(fn (array $run) => CarbonImmutable::parse($run['arrive_at'])->getTimestamp())
+            ->first();
+
+        return $next === null ? null
+            : $this->switchTo($trip, $legIndex, $next['line'], CarbonImmutable::parse($next['depart_at']), $next['trip']);
+    }
+
     /** Puts back the trip a switch replaced; false when Undo has run out or isn't theirs. */
     public function undo(ActiveTrip $trip, string $undo): bool
     {

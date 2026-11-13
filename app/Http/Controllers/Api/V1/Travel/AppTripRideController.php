@@ -59,6 +59,29 @@ class AppTripRideController extends Controller
         return response()->json([...$switched, 'trip' => $trip->fresh()?->toShared()]);
     }
 
+    /** A change a delay broke: the next tram they can catch there, switched to (with Undo). */
+    public function next(Request $request, TripSync $sync): JsonResponse
+    {
+        $valid = $request->validate([
+            'leg' => ['required', 'integer', 'min:0', 'max:40'],
+            'from' => ['nullable', 'string', 'max:200'],
+            'at' => ['nullable', 'date'],
+            'ready_at' => ['required', 'date'],
+        ]);
+        $trip = $this->trip($request);
+        $readyAt = CarbonImmutable::parse($valid['ready_at']);
+        if ($readyAt->lt(now()->subMinutes(30)) || $readyAt->gt(now()->addHours(3))) {
+            return response()->json(['message' => 'That time is not this trip’s.'], 422);
+        }
+
+        $switched = $sync->catchNext($trip, $this->leg($sync, $trip, $valid), $readyAt);
+        if ($switched === null) {
+            return response()->json(['message' => 'No tram there in time. Try a new route.'], 422);
+        }
+
+        return response()->json([...$switched, 'trip' => $trip->fresh()?->toShared()]);
+    }
+
     public function undo(Request $request, TripSync $sync): JsonResponse
     {
         $valid = $request->validate(['undo' => ['required', 'uuid']]);
