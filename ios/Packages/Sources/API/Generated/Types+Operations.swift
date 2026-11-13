@@ -7463,21 +7463,29 @@ public enum Operations {
                         public var trouble: [OpenAPIRuntime.OpenAPIValueContainer]
                         /// - Remark: Generated from `#/paths/travel/checks/POST/responses/200/content/json/gone`.
                         public var gone: [OpenAPIRuntime.OpenAPIValueContainer]
+                        /// The ways in the plan's order, each ride's live state and times as its board says.
+                        ///
+                        /// - Remark: Generated from `#/paths/travel/checks/POST/responses/200/content/json/live`.
+                        public var live: [OpenAPIRuntime.OpenAPIValueContainer]
                         /// Creates a new `JsonPayload`.
                         ///
                         /// - Parameters:
                         ///   - trouble:
                         ///   - gone:
+                        ///   - live: The ways in the plan's order, each ride's live state and times as its board says.
                         public init(
                             trouble: [OpenAPIRuntime.OpenAPIValueContainer],
-                            gone: [OpenAPIRuntime.OpenAPIValueContainer]
+                            gone: [OpenAPIRuntime.OpenAPIValueContainer],
+                            live: [OpenAPIRuntime.OpenAPIValueContainer]
                         ) {
                             self.trouble = trouble
                             self.gone = gone
+                            self.live = live
                         }
                         public enum CodingKeys: String, CodingKey {
                             case trouble
                             case gone
+                            case live
                         }
                     }
                     /// - Remark: Generated from `#/paths/travel/checks/POST/responses/200/content/application\/json`.
@@ -7791,7 +7799,7 @@ public enum Operations {
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/source`.
                         public var source: Swift.String
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/journeys`.
-                        public var journeys: Swift.String
+                        public var journeys: [OpenAPIRuntime.OpenAPIValueContainer]
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/degraded`.
                         public struct DegradedPayload: Codable, Hashable, Sendable {
                             /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/degraded/departures`.
@@ -8423,10 +8431,6 @@ public enum Operations {
                         public var trouble: [OpenAPIRuntime.OpenAPIValueContainer]
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/gone`.
                         public var gone: [OpenAPIRuntime.OpenAPIValueContainer]
-                        /// The id the boarding stops' live runs are asked by; null when they're in.
-                        ///
-                        /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/checks`.
-                        public var checks: Swift.String?
                         /// Plan a trip's "We checked": the weather on the way, lifts out.
                         ///
                         /// - Remark: Generated from `#/paths/travel/plan/POST/responses/200/content/json/conditions`.
@@ -8630,12 +8634,11 @@ public enum Operations {
                         ///   - disruptions:
                         ///   - trouble:
                         ///   - gone:
-                        ///   - checks: The id the boarding stops' live runs are asked by; null when they're in.
                         ///   - conditions: Plan a trip's "We checked": the weather on the way, lifts out.
                         ///   - city: Stop names carry the city ("Köln Neumarkt"); Plan a trip shows
                         public init(
                             source: Swift.String,
-                            journeys: Swift.String,
+                            journeys: [OpenAPIRuntime.OpenAPIValueContainer],
                             degraded: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.DegradedPayload? = nil,
                             from: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.FromPayload,
                             to: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.ToPayload,
@@ -8643,7 +8646,6 @@ public enum Operations {
                             disruptions: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.DisruptionsPayload,
                             trouble: [OpenAPIRuntime.OpenAPIValueContainer],
                             gone: [OpenAPIRuntime.OpenAPIValueContainer],
-                            checks: Swift.String? = nil,
                             conditions: Operations.Travel_appJourneyPlan.Output.Ok.Body.JsonPayload.ConditionsPayload,
                             city: Swift.String
                         ) {
@@ -8656,7 +8658,6 @@ public enum Operations {
                             self.disruptions = disruptions
                             self.trouble = trouble
                             self.gone = gone
-                            self.checks = checks
                             self.conditions = conditions
                             self.city = city
                         }
@@ -8670,7 +8671,6 @@ public enum Operations {
                             case disruptions
                             case trouble
                             case gone
-                            case checks
                             case conditions
                             case city
                         }

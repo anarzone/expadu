@@ -25,6 +25,19 @@ struct StepList: View {
     var legs: [TodayPage.Trip.Leg] = []
     @State private var open: Set<Int> = []
 
+    /// The leg a ride step rides, when the way's legs came with the steps.
+    private func ride(_ step: TodayPage.Step) -> TodayPage.Trip.Leg? {
+        guard step.kind == .ride, let leg = step.leg, legs.indices.contains(leg) else { return nil }
+        return legs[leg]
+    }
+
+    /// "1 min to change. Miss it? The 4 at 12:06, there 12:16."
+    private func missed(_ change: TodayPage.Trip.Leg.Change) -> String {
+        let spare = change.spareMin == 0 ? "No minute to spare to change." : "\(change.spareMin) min to change."
+        guard let next = change.next else { return spare }
+        return "\(spare) Miss it? The \(next)" + (change.thereTime.map { ", there \($0)." } ?? ".")
+    }
+
     /// The stops a ride step passes between boarding and getting off; empty for any other step.
     private func stops(_ step: TodayPage.Step) -> [TodayPage.Trip.Leg.Stop] {
         guard step.kind == .ride, let leg = step.leg, legs.indices.contains(leg) else { return [] }
@@ -49,6 +62,17 @@ struct StepList: View {
                             Text(step.title).font(.geist(index == current ? 15 : 14, index == current ? .bold : .semibold))
                                 .foregroundStyle(index == current && step.kind != .walk ? colour : Palette.text)
                             if !step.sub.isEmpty { Text(step.sub).font(.geist(12.5)).foregroundStyle(Palette.textSoft) }
+                            if let leg = ride(step) {
+                                // Other lines that do the same job, and a change with a minute or less to spare.
+                                if !leg.also.isEmpty {
+                                    Text("Or the \(leg.also.joined(separator: " or the "))").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
+                                }
+                                if let change = leg.change, change.tight {
+                                    Label(missed(change), systemImage: "exclamationmark.triangle")
+                                        .font(.geist(12.5, .semibold)).foregroundStyle(Palette.warnText)
+                                        .padding(.top, 2)
+                                }
+                            }
                             if !passes.isEmpty {
                                 Button {
                                     withAnimation(.smooth(duration: 0.3)) {

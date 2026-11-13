@@ -470,6 +470,39 @@ public struct TripPlan: Sendable {
         public let cancelled: Bool?
         public let polyline: String?
         public let distanceM: Int?
+        /// Other lines on this stretch that make the same connection ("16 / 18"), soonest first.
+        public let also: [Also]?
+        /// The change onto this ride: the minutes to spare and, when that's a minute or less, the next run.
+        public let change: Change?
+
+        public struct Also: Decodable, Equatable, Sendable {
+            public let line: String
+            public let color: String?
+            public let departAt: String
+            public let departTime: String
+            public let arriveTime: String
+        }
+
+        public struct Change: Decodable, Equatable, Sendable {
+            public struct Next: Decodable, Equatable, Sendable {
+                public let line: String
+                public let color: String?
+                public let departTime: String
+                public let arriveTime: String
+            }
+
+            public let spareMin: Int
+            public let tight: Bool
+            /// Should it be missed: the next run on the stretch.
+            public let next: Next?
+            /// On the last ride, when that next run gets them there.
+            public let thereTime: String?
+            /// How much later missing it makes them.
+            public let laterMin: Int?
+
+            /// Worth saying on the route's row: missing it costs five minutes or more (or nobody knows how much).
+            public var worthWarning: Bool { tight && (laterMin ?? 99) >= 5 }
+        }
 
         public var isRide: Bool { !["walk", "bike", "car"].contains(mode) }
     }
@@ -485,15 +518,6 @@ public struct TripPlan: Sendable {
         public let lines: [String]
         public let legs: [Leg]
         public let tight: Bool?
-        /// Earlier trams of other lines that make the same first connection ("16 at 19:37" on an 18 route).
-        public let firstRideAlso: [Also]?
-
-        public struct Also: Decodable, Equatable, Sendable {
-            public let line: String
-            public let color: String?
-            public let departAt: String
-            public let departTime: String
-        }
 
         public var departDate: Date? { TravelJSON.date(departAt) }
         public var arriveDate: Date? { TravelJSON.date(arriveAt) }
@@ -574,6 +598,19 @@ public struct TripPlan: Sendable {
             checks: json["checks"] as? String,
             degraded: json["degraded"] as? Bool ?? false
         )
+    }
+
+    /// The same plan with its ways as the boards run them (the second request's `live`, in the plan's order).
+    public func live(_ journeys: [Journey]) -> TripPlan {
+        guard journeys.count == self.journeys.count else { return self }
+        return TripPlan(journeys: journeys, from: from, to: to, ticket: ticket, disruptions: disruptions,
+                        weather: weather, lifts: lifts, checks: checks, degraded: degraded)
+    }
+
+    /// The second request's ways, every one or none.
+    public static func liveJourneys(_ data: Data) throws -> [Journey] {
+        struct Reply: Decodable { let live: [Journey] }
+        return try TravelJSON.decoder.decode(Reply.self, from: data).live
     }
 
     /// The journey as the server stores it (Add to plan, I'm on my way): sent back as it came.

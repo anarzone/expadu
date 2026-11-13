@@ -21,7 +21,8 @@ struct TripRoutesView: View {
     @State private var details: Int?
     @State private var conditions = false
     @State private var whenOpen = false
-    /// A plain list (the default) or the tickets, as they last chose.
+    /// The Bike tab: the bike route on its own, as Google and Apple keep it.
+    @State private var byBike = false
     /// The list's panel pulled up to fill most of the screen.
     @State private var panelLarge = false
     @State private var panelDrag: CGFloat = 0
@@ -29,7 +30,7 @@ struct TripRoutesView: View {
     @State private var undo: PlannedTrip?
 
     var body: some View {
-        let options = planner.options
+        let options = shown(planner.options)
         let current = options.first { $0.index == picked } ?? options.first
         ZStack(alignment: .top) {
             map(current, bottom: mapBottom(options))
@@ -99,6 +100,16 @@ struct TripRoutesView: View {
         .onChange(of: planner.answer?.journeys.map(\.departAt)) { reset() }
         .onChange(of: planner.sort) { reset() }
         .onChange(of: planner.prefs) { reset() }
+        .onChange(of: byBike) { reset() }
+    }
+
+    /// Whether the answer has a bike route: then the panel has its Transit and Bike tabs.
+    private var hasBike: Bool { planner.options.contains { $0.journey.mode == "bike" } }
+
+    /// The ways the tab shows: by bike on the Bike tab, every other way (trams, trains, on foot) on Transit.
+    private func shown(_ options: [TripPlanner.Option]) -> [TripPlanner.Option] {
+        let bike = byBike && hasBike
+        return options.filter { ($0.journey.mode == "bike") == bike }
     }
 
     private func reset() {
@@ -205,6 +216,15 @@ extension TripRoutesView {
                 .onTapGesture { withAnimation(.smooth(duration: 0.35)) { panelLarge.toggle() } }
                 .accessibilityLabel(panelLarge ? "Show more map" : "Show more routes")
                 .accessibilityAddTraits(.isButton)
+            if hasBike, chosen == nil {
+                Picker("Travel by", selection: $byBike.animation(.smooth(duration: 0.3))) {
+                    Label("Transit", systemImage: "tram.fill").tag(false)
+                    Label("Bike", systemImage: "bicycle").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16).padding(.bottom, 6)
+                .sensoryFeedback(.selection, trigger: byBike)
+            }
             if let chosen {
                 RouteDetail(planner: planner, option: chosen, kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
                             back: { withAnimation(.smooth(duration: 0.3)) { details = nil } },
@@ -216,7 +236,7 @@ extension TripRoutesView {
                     LazyVStack(spacing: 0) {
                         let rows = listRows(options)
                         ForEach(Array(rows.routes.enumerated()), id: \.element.option.id) { i, row in
-                            routeButton(row.option, also: row.also, options: options)
+                            routeButton(row.option, also: row.also, lines: row.lines, options: options)
                             if i < rows.routes.count - 1 || !rows.later.isEmpty { Divider().padding(.leading, 16) }
                         }
                         if !rows.later.isEmpty {
@@ -224,16 +244,18 @@ extension TripRoutesView {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 2)
                             ForEach(Array(rows.later.enumerated()), id: \.element.id) { i, option in
-                                routeButton(option, also: [], options: options)
+                                routeButton(option, also: [], lines: [], options: options)
                                 if i < rows.later.count - 1 { Divider().padding(.leading, 16) }
                             }
                         }
+                        if !byBike {
                         Button { Task { await planner.showMore(session.api) } } label: {
                             Label(planner.more ? "Fewer routes" : "Show later routes", systemImage: planner.more ? "arrow.uturn.backward" : "plus")
                                 .font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 52)
                         }
                         .buttonStyle(PressStyle())
                         .foregroundStyle(Palette.navTeal)
+                        }
                     }
                     .padding(.bottom, 24)
                 }
@@ -262,22 +284,32 @@ extension TripRoutesView {
     }
 
     /// Best for you first, then the rest in the order they leave: a list that reads down the clock.
-    private func routeButton(_ option: TripPlanner.Option, also: [String], options: [TripPlanner.Option]) -> some View {
+    private func routeButton(_ option: TripPlanner.Option, also: [String], lines: [[LegStrip.Line]], options: [TripPlanner.Option]) -> some View {
         Button {
             withAnimation(.smooth(duration: 0.3)) { picked = option.index; details = option.index }
         } label: {
-            RouteRow(planner: planner, option: option, best: option.index == options.first?.index && planner.sort == .best,
-                     selected: picked == option.index, also: also)
+            RouteRow(planner: planner, option: option, best: !byBike && option.index == options.first?.index && planner.sort == .best,
+                     selected: picked == option.index, also: also, lines: lines)
         }
         .buttonStyle(PressStyle())
     }
 
+    /// One row of the list: a route, its later runs, and the other lines on each of its rides.
+    struct Row {
+        let option: TripPlanner.Option
+        /// Later runs: "12:07 · 12:27", or with their line when it differs: "1 at 11:54 · 7 at 11:58".
+        let also: [String]
+        /// Per ride, the other lines the row's runs take there ("7 / 1").
+        let lines: [[LegStrip.Line]]
+    }
+
     /// The list as Google and Apple set it: each different route once (the best first, then by when it
     /// leaves) with its later runs named on its row, so the alternatives share the first screen instead
-    /// of one route at ten-minute steps. The later runs follow under Later, still a tap away. Another
-    /// order (Earliest arrival, Least walking…) lists every run as it sorts them.
-    private func listRows(_ options: [TripPlanner.Option]) -> (routes: [(option: TripPlanner.Option, also: [String])], later: [TripPlanner.Option]) {
-        guard planner.sort == .best, let first = options.first else { return (options.map { ($0, []) }, []) }
+    /// of one route at ten-minute steps. A route is where it boards and gets off, so lines that do the
+    /// same job share a row ("7 / 1", "3 / 4"). The later runs follow under Later, still a tap away.
+    /// Another order (Earliest arrival, Least walking…) lists every run as it sorts them.
+    private func listRows(_ options: [TripPlanner.Option]) -> (routes: [Row], later: [TripPlanner.Option]) {
+        guard planner.sort == .best, let first = options.first else { return (options.map { Row(option: $0, also: [], lines: []) }, []) }
         let departs: (TripPlanner.Option, TripPlanner.Option) -> Bool = { ($0.journey.departDate ?? .distantFuture) < ($1.journey.departDate ?? .distantFuture) }
         var order: [String] = []
         var runs: [String: [TripPlanner.Option]] = [:]
@@ -292,14 +324,25 @@ extension TripRoutesView {
         let later = options.filter { !headIDs.contains($0.index) }.sorted(by: departs)
         return (routes.map { head in
             let others = (runs[Self.route(head.journey)] ?? []).filter { $0.index != head.index }.sorted(by: departs)
-            return (head, others.prefix(3).map(\.journey.leaveTime))
+            let mixed = others.contains { $0.journey.rides.map(\.line) != head.journey.rides.map(\.line) }
+            let also = others.prefix(3).compactMap { other -> String? in
+                guard let ride = other.journey.rides.first else { return other.journey.leaveTime }
+                return mixed ? "\(ride.line ?? "") at \(ride.departTime)" : ride.departTime
+            }
+            // Each ride's lines across the row's runs, its own first.
+            let lines = head.journey.rides.indices.map { i in
+                others.compactMap { $0.journey.rides.indices.contains(i) ? $0.journey.rides[i] : nil }
+                    .filter { $0.line != head.journey.rides[i].line }
+                    .map { LegStrip.Line(line: $0.line ?? "", color: $0.color) }
+            }
+            return Row(option: head, also: also, lines: lines)
         }, later)
     }
 
-    /// A route as a rider tells routes apart: the lines in order, or how it goes when it rides none.
+    /// A route as a rider tells routes apart: where each ride boards and gets off, or how it goes when it rides none.
     private static func route(_ journey: TripPlan.Journey) -> String {
-        let lines = journey.rides.map { $0.line ?? "?" }
-        return lines.isEmpty ? journey.mode : lines.joined(separator: ">")
+        let rides = journey.rides.map { "\(StopName.short($0.from.name ?? ""))>\(StopName.short($0.to.name ?? ""))" }
+        return rides.isEmpty ? journey.mode : rides.joined(separator: "|")
     }
 }
 
@@ -312,6 +355,8 @@ private struct RouteRow: View {
     let selected: Bool
     /// When the same route leaves later ("18:47", "18:57"), named on the row.
     var also: [String] = []
+    /// Per ride, the other lines the row's later runs take.
+    var lines: [[LegStrip.Line]] = []
 
     var body: some View {
         let journey = option.journey
@@ -327,12 +372,13 @@ private struct RouteRow: View {
                 Spacer(minLength: 4)
                 Text("\(journey.durationMin) min").font(.geist(17, .bold)).monospacedDigit()
             }
-            LegStrip(journey: journey)
+            LegStrip(journey: journey, extra: lines)
             HStack(spacing: 6) {
                 if let first {
-                    // With earlier lines for the same connection, each says when it comes: "16 at 19:37 or 18 at 19:44".
-                    if let also = journey.firstRideAlso, !also.isEmpty {
-                        Text((also.map { "\($0.line) at \($0.departTime)" } + ["\(first.line ?? "") at \(first.departTime)"]).joined(separator: " or ")
+                    // With other lines for the same connection, each says when it comes: "16 at 19:37 or 18 at 19:44".
+                    if let also = first.also, !also.isEmpty {
+                        let runs = ([(first.line ?? "", first.departTime)] + also.map { ($0.line, $0.departTime) }).sorted { $0.1 < $1.1 }
+                        Text(runs.map { "\($0.0) at \($0.1)" }.joined(separator: " or ")
                              + " from \(StopName.short(first.from.name ?? ""))").lineLimit(1).minimumScaleFactor(0.85)
                     } else {
                         Text("\(first.departTime) from \(StopName.short(first.from.name ?? ""))").lineLimit(1)
@@ -348,6 +394,13 @@ private struct RouteRow: View {
             if !also.isEmpty {
                 Label("Also " + also.joined(separator: " · "), systemImage: "arrow.clockwise")
                     .font(.geist(12.5, .medium)).foregroundStyle(Palette.textSoft).monospacedDigit()
+            }
+            // A change with a minute or less to spare, said where it is; the steps say what comes next if it's missed.
+            if let ride = journey.rides.first(where: { $0.change?.worthWarning == true }), let change = ride.change {
+                Label("\(change.spareMin == 0 ? "No minute" : "1 min") to change at \(StopName.short(ride.from.name ?? ""))",
+                      systemImage: "exclamationmark.triangle")
+                    .font(.geist(12.5, .semibold)).foregroundStyle(Palette.warnText)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
             if let spare = planner.spare(journey) {
                 Text(spare >= 0 ? "\(spare) min spare" : "\(-spare) min late").font(.geist(12.5, .bold))
@@ -378,7 +431,24 @@ private struct RouteRow: View {
 
 /// The legs in order: a walk as its minutes, a ride as its line's badge, small chevrons between.
 struct LegStrip: View {
+    /// A line a ride can be, with its colour.
+    struct Line: Equatable {
+        let line: String
+        let color: String?
+    }
+
     let journey: TripPlan.Journey
+    /// Per ride, other lines the list's later runs of this route take there.
+    var extra: [[Line]] = []
+
+    /// A ride's lines: its own, then the ones that make the same connection, then the later runs'.
+    private func lines(_ ride: TripPlan.Leg, at index: Int) -> [Line] {
+        var seen = Set<String>()
+        let all = [Line(line: ride.line ?? "", color: ride.color)]
+            + (ride.also ?? []).map { Line(line: $0.line, color: $0.color) }
+            + (extra.indices.contains(index) ? extra[index] : [])
+        return all.filter { seen.insert($0.line).inserted }
+    }
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -391,19 +461,20 @@ struct LegStrip: View {
 
     private func strip(walks: Bool) -> some View {
         let parts = journey.legs.filter { $0.isRide || (walks && $0.durationMin >= 2) || ($0.mode == "bike") }
-        let firstRide = parts.firstIndex { $0.isRide }
+        let rides = journey.rides
         return HStack(spacing: 5) {
             ForEach(Array(parts.enumerated()), id: \.offset) { i, leg in
                 if i > 0 { Image(systemName: "chevron.compact.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.textSoft) }
-                // The first ride's other lines that make the same connection, before it: "16 / 18".
-                if i == firstRide, let also = journey.firstRideAlso, !also.isEmpty {
-                    ForEach(Array(Set(also.map(\.line))).sorted(), id: \.self) { line in
-                        LineBadge(line: line, color: also.first { $0.line == line }?.color, height: 24)
-                        Text("/").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
-                    }
-                }
                 if leg.isRide {
-                    LineBadge(line: leg.line ?? "", color: leg.color, height: 24, mode: leg.mode, icon: true)
+                    // A ride's lines as one choice: "16 / 18", the mode's symbol once, after them.
+                    let index = rides.firstIndex(of: leg) ?? 0
+                    let choices = lines(leg, at: index)
+                    HStack(spacing: 3) {
+                        ForEach(Array(choices.enumerated()), id: \.offset) { n, choice in
+                            if n > 0 { Text("/").font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft) }
+                            LineBadge(line: choice.line, color: choice.color, height: 24, mode: leg.mode, icon: n == choices.count - 1)
+                        }
+                    }
                 } else {
                     HStack(spacing: 2) {
                         Image(systemName: leg.mode == "bike" ? "bicycle" : "figure.walk").font(.system(size: 13, weight: .semibold))
@@ -417,8 +488,11 @@ struct LegStrip: View {
     }
 
     private var spoken: String {
-        journey.legs.compactMap { leg in
-            leg.isRide ? "\(leg.mode == "bus" ? "bus" : "tram") \(leg.line ?? "")" : leg.durationMin >= 2 ? "\(leg.durationMin) minutes \(leg.mode == "bike" ? "by bike" : "walking")" : nil
+        let rides = journey.rides
+        return journey.legs.compactMap { leg in
+            guard leg.isRide else { return leg.durationMin >= 2 ? "\(leg.durationMin) minutes \(leg.mode == "bike" ? "by bike" : "walking")" : nil }
+            let names = lines(leg, at: rides.firstIndex(of: leg) ?? 0).map(\.line).joined(separator: " or ")
+            return "\(leg.mode == "bus" ? "bus" : "tram") \(names)"
         }.joined(separator: ", then ")
     }
 }
@@ -679,7 +753,12 @@ extension TripPlan.Journey {
                 stopsOnTheWay: (leg.intermediateStops ?? []).map {
                     TodayPage.Trip.Leg.Stop(name: StopName.short($0.name), time: $0.arriveTime ?? "", latitude: $0.lat, longitude: $0.lng)
                 },
-                delayMin: leg.delayMin, cancelled: leg.cancelled ?? false)
+                delayMin: leg.delayMin, cancelled: leg.cancelled ?? false,
+                also: (leg.also ?? []).map(\.line),
+                change: leg.change.map {
+                    TodayPage.Trip.Leg.Change(spareMin: $0.spareMin, tight: $0.tight,
+                                              next: $0.next.map { "\($0.line) at \($0.departTime)" }, thereTime: $0.thereTime)
+                })
         }
     }
 }

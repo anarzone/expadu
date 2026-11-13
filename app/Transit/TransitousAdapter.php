@@ -2,7 +2,6 @@
 
 namespace App\Transit;
 
-use App\Jobs\WarmTransitInterchanges;
 use App\Services\GtfsRailStations;
 use App\Services\KvbLineColors;
 use App\Support\PerfLogger;
@@ -91,6 +90,12 @@ class TransitousAdapter implements RouteService
     /** Runs kept of each route the alternatives add: the next one and the one after. */
     private const ALTERNATIVE_RUNS = 2;
 
+    /** Stops of the best way's first run asked as a `via`, the nearest the destination. */
+    private const CONTINUATION_STOPS = 4;
+
+    /** A way on from the same first run is kept when it gets there no later than the best plus this. */
+    private const CONTINUATION_SLACK_MINUTES = 10;
+
     /** Absolute wall-clock deadline (microtime) set by withTimeBudget(); null = per-call caps only. */
     private ?float $deadline = null;
 
@@ -101,32 +106,11 @@ class TransitousAdapter implements RouteService
         // prunes comparable transit and the transit option vanishes entirely.
         // Two separate calls keep both. (Verified against the live engine.)
         $timeExtra = $arriveBy ? ['arriveBy' => 'true'] : [];
+        // "Show later routes" asks for more runs of each way.
         $itineraries = $this->fetchBucket(
-            $from, $to, $departAt, $max, $timeExtra, 'itineraries',
+            $from, $to, $departAt, $variety ? $max + 6 : $max, $timeExtra, 'itineraries',
             $this->callTimeout($this->planTimeout) ?? throw new \RuntimeException('journey time budget spent'),
         );
-
-        // "Show more options": force routes through the city's interchanges so
-        // the list surfaces sensible-but-non-optimal combinations (e.g. change
-        // at Ebertplatz onto a different line) that the Pareto set drops.
-        if ($variety) {
-            foreach ($this->corridorVias($from, $to) as $viaId) {
-                $timeout = $this->callTimeout(3.0);
-                if ($timeout === null) {
-                    break;
-                }
-
-                try {
-                    $itineraries = array_merge($itineraries, $this->fetchBucket(
-                        $from, $to, $departAt, 3,
-                        $timeExtra + ['via' => $viaId],
-                        'itineraries', $timeout,
-                    ));
-                } catch (\Throwable) {
-                    // Best effort — a via that yields nothing must not fail the plan.
-                }
-            }
-        }
 
         $itineraries = $this->withAlternatives($from, $to, $departAt, $timeExtra, $itineraries);
 
@@ -274,93 +258,6 @@ class TransitousAdapter implements RouteService
     }
 
     /**
-     * Cologne's main interchange stops, geocoded to this engine's stop ids,
-     * used as `via` points to surface alternative line combinations.
-     *
-     * Read from the cache only: geocoding all eleven inside a journey request
-     * cost up to a minute on a cold cache. A miss queues
-     * {@see WarmTransitInterchanges} and plans without vias this time.
-     *
-     * @return list<array{id: string, lat: float, lng: float}>
-     */
-    private function interchanges(): array
-    {
-        $cached = Cache::get($this->interchangesKey());
-        if (is_array($cached) && $cached !== []) {
-            return $cached;
-        }
-
-        WarmTransitInterchanges::dispatch(static::class);
-
-        return [];
-    }
-
-    /**
-     * Geocode the interchange stops and cache them for 30 days. Runs in a
-     * queued job, never on a request. A run that finds none caches nothing,
-     * so the next miss retries instead of pinning an empty list.
-     *
-     * @return int how many interchanges were cached
-     */
-    public function warmInterchanges(): int
-    {
-        $names = [
-            'Köln Ebertplatz', 'Köln Neumarkt', 'Köln Appellhofplatz',
-            'Köln Friesenplatz', 'Köln Rudolfplatz', 'Köln Barbarossaplatz',
-            'Köln Heumarkt', 'Köln Hauptbahnhof', 'Köln Zülpicher Platz',
-            'Köln Poststr.', 'Köln Deutz',
-        ];
-
-        $out = [];
-        foreach ($names as $name) {
-            try {
-                $stop = collect($this->geocode($name))
-                    ->first(fn (Place $p) => $p->stopId !== null);
-            } catch (\Throwable) {
-                $stop = null;
-            }
-
-            if ($stop !== null && $stop->stopId !== null) {
-                $out[] = ['id' => $stop->stopId, 'lat' => $stop->point->lat, 'lng' => $stop->point->lng];
-            }
-        }
-
-        if ($out !== []) {
-            Cache::put($this->interchangesKey(), $out, now()->addDays(30));
-        }
-
-        return count($out);
-    }
-
-    /** Stop ids belong to one engine, so each source keeps its own list. */
-    private function interchangesKey(): string
-    {
-        return "{$this->source()}:interchanges";
-    }
-
-    /**
-     * Interchange stop ids within the trip's bounding box — so a `via` detours
-     * through a hub on the corridor, not clear across the city.
-     *
-     * @return list<string>
-     */
-    private function corridorVias(GeoPoint $from, GeoPoint $to): array
-    {
-        $minLat = min($from->lat, $to->lat) - 0.02;
-        $maxLat = max($from->lat, $to->lat) + 0.02;
-        $minLng = min($from->lng, $to->lng) - 0.02;
-        $maxLng = max($from->lng, $to->lng) + 0.02;
-
-        return collect($this->interchanges())
-            ->filter(fn (array $ic) => $ic['lat'] >= $minLat && $ic['lat'] <= $maxLat
-                && $ic['lng'] >= $minLng && $ic['lng'] <= $maxLng)
-            ->pluck('id')
-            ->take(6)
-            ->values()
-            ->all();
-    }
-
-    /**
      * True when a journey already offers a *clean* rail option: it rides rail,
      * makes at most one change, and uses no bus. A rail leg with a bus feeder or
      * egress (e.g. S19 -> bus -> walk) does NOT count — MOTIS falls back to that
@@ -482,8 +379,15 @@ class TransitousAdapter implements RouteService
     }
 
     /**
-     * The main answer plus the routes the narrower asks find that it lacks, asked at once. Best
-     * effort: an ask that fails or runs out of time leaves the answer as it was.
+     * The main answer plus what the narrower asks find that it lacks, all asked at once:
+     *
+     * - less walking and no change ({@see ALTERNATIVES}): routes the Pareto set dropped, two runs each;
+     * - other ways on from the best way's first tram, as Google lists them ("12 then 13", "12 then S19",
+     *   "12 then 5"): the router keeps one way per first run, so the stops that run passes nearest the
+     *   destination are each asked as a `via`, and a way on the same first run with lines the list lacks,
+     *   there within ten minutes of the best, is kept.
+     *
+     * Best effort: an ask that fails or runs out of time leaves the answer as it was.
      *
      * @param  array<string, mixed>  $timeExtra
      * @param  list<Journey>  $itineraries
@@ -491,9 +395,15 @@ class TransitousAdapter implements RouteService
      */
     private function withAlternatives(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, array $timeExtra, array $itineraries): array
     {
+        [$best, $vias] = $this->continuationVias($to, $itineraries);
         $timeout = $this->callTimeout(4.0);
         if ($timeout === null) {
             return $itineraries;
+        }
+
+        $asks = self::ALTERNATIVES;
+        foreach ($vias as $n => $via) {
+            $asks["via{$n}"] = ['via' => $via];
         }
 
         try {
@@ -503,9 +413,9 @@ class TransitousAdapter implements RouteService
                     ->timeout($timeout)
                     ->connectTimeout(min(3.0, $timeout))
                     ->withHeaders(['User-Agent' => 'expadu.com'])
-                    ->get($this->planPath(), $this->planQuery($from, $to, $departAt, 4, $timeExtra + $extra)),
-                array_keys(self::ALTERNATIVES),
-                array_values(self::ALTERNATIVES),
+                    ->get($this->planPath(), $this->planQuery($from, $to, $departAt, isset($extra['via']) ? 3 : 4, $timeExtra + $extra)),
+                array_keys($asks),
+                array_values($asks),
             )));
         } catch (\Throwable) {
             return $itineraries;
@@ -513,16 +423,24 @@ class TransitousAdapter implements RouteService
 
         $known = array_fill_keys(array_map($this->route(...), $itineraries), true);
         $added = [];
-        foreach ($responses as $response) {
+        $onward = [];
+        $latest = $best?->arriveAt->addMinutes(self::CONTINUATION_SLACK_MINUTES);
+        $run = $best === null ? null : $this->firstRide($best)?->tripId;
+        foreach ($responses as $name => $response) {
             if (! $response instanceof Response || ! $response->successful()) {
                 continue;
             }
+            $via = str_starts_with((string) $name, 'via');
             foreach ($response->json('itineraries', []) as $itinerary) {
                 $journey = $this->mapItinerary($itinerary);
                 if ($journey === null || isset($known[$this->route($journey)])) {
                     continue;
                 }
-                $added[$this->route($journey)][$journey->departAt->getTimestamp()] = $journey;
+                if (! $via) {
+                    $added[$this->route($journey)][$journey->departAt->getTimestamp()] = $journey;
+                } elseif ($this->firstRide($journey)?->tripId === $run && $journey->arriveAt->lte($latest) && ! $this->ridesALineTwice($journey)) {
+                    $onward[$this->route($journey)] ??= $journey;
+                }
             }
         }
 
@@ -530,8 +448,78 @@ class TransitousAdapter implements RouteService
             ksort($runs);
             array_push($itineraries, ...array_slice(array_values($runs), 0, self::ALTERNATIVE_RUNS));
         }
+        foreach ($onward as $route => $journey) {
+            if (! isset($added[$route])) {
+                $itineraries[] = $journey;
+            }
+        }
 
         return $itineraries;
+    }
+
+    /**
+     * The best way (soonest there, with a ride) and the stops its first run passes after boarding,
+     * not where it already changes, nearest the destination first: the `via` asks for other ways on.
+     *
+     * @param  list<Journey>  $itineraries
+     * @return array{0: Journey|null, 1: list<string>}
+     */
+    private function continuationVias(GeoPoint $to, array $itineraries): array
+    {
+        // Only a way that changes has other ways on; a straight ride is already the way.
+        $best = collect($itineraries)
+            ->filter(fn (Journey $journey) => $this->firstRide($journey)?->tripId !== null)
+            ->sortBy(fn (Journey $journey) => $journey->arriveAt->getTimestamp())
+            ->first();
+        $ride = $best === null || $best->transfers < 1 ? null : $this->firstRide($best);
+        if ($ride === null || $this->callTimeout(2.0) === null) {
+            return [null, []];
+        }
+
+        try {
+            $run = $this->withTimeBudget(min(2.0, $this->callTimeout(2.0) ?? 0.0))->tripPath((string) $ride->tripId);
+        } catch (\Throwable) {
+            return [null, []];
+        }
+
+        $boarded = false;
+        $stops = [];
+        foreach ($run['stops'] ?? [] as $stop) {
+            if (! $boarded) {
+                $boarded = $stop['name'] === $ride->from->name;
+
+                continue;
+            }
+            if ($stop['id'] !== null && $stop['name'] !== $ride->to->name) {
+                $stops[$stop['name']] = $stop;
+            }
+        }
+
+        return [$best, collect($stops)
+            ->sortBy(fn (array $stop) => $this->metresBetween(new GeoPoint($stop['lat'], $stop['lng']), $to))
+            ->take(self::CONTINUATION_STOPS)
+            ->pluck('id')
+            ->values()
+            ->all()];
+    }
+
+    /** Off a line and back on it (the 4 out to Koelnmesse and the 4 back): never a way on. */
+    private function ridesALineTwice(Journey $journey): bool
+    {
+        $lines = $journey->lines();
+
+        return count($lines) !== count(array_unique($lines));
+    }
+
+    private function firstRide(Journey $journey): ?Leg
+    {
+        foreach ($journey->legs as $leg) {
+            if ($leg->isTransit()) {
+                return $leg;
+            }
+        }
+
+        return null;
     }
 
     /** A route as a rider tells routes apart: its lines in order ("12>3"), or how it goes when it rides none. */
@@ -891,41 +879,63 @@ class TransitousAdapter implements RouteService
     }
 
     /**
-     * Every ride straight from one stop to another leaving from a time on: the lines that serve that
-     * stretch, each run with when it leaves and gets there. The router's own answer keeps only the
-     * last run that makes a connection; a rider at the stop wants the one coming now too.
+     * Every ride straight from one stop to another, for several stretches at once: the lines that
+     * serve each stretch, each run with when it leaves and gets there, from a time on for an hour.
+     * The router's own answer keeps only the run that makes a connection; a rider wants the line
+     * coming now too, and the next one should the change be missed. A stretch that fails or runs
+     * out of time comes back empty.
      *
-     * @return list<array{line: string, headsign: string|null, depart_at: string, arrive_at: string, cancelled: bool}>
+     * @param  list<array{from: GeoPoint, to: GeoPoint, at: CarbonImmutable}>  $stretches
+     * @return list<list<array{line: string, headsign: string|null, color: string|null, depart_at: string, arrive_at: string, cancelled: bool}>>
      */
-    public function directRides(GeoPoint $from, GeoPoint $to, CarbonImmutable $at, int $max = 8): array
+    public function directRides(array $stretches): array
     {
-        $timeout = $this->callTimeout(4.0) ?? throw new \RuntimeException('direct rides time budget spent');
-
-        $response = PerfLogger::measure("ext:{$this->source()}.direct", fn () => Http::baseUrl($this->baseUrl())
-            ->timeout($timeout)
-            ->connectTimeout(min(3.0, $timeout))
-            ->withHeaders(['User-Agent' => 'expadu.com'])
-            ->get($this->planPath(), $this->planQuery($from, $to, $at, $max, [
-                'maxTransfers' => 0, 'maxPreTransitTime' => 240, 'maxPostTransitTime' => 240, 'searchWindow' => 1800,
-            ]))
-            ->throw());
-
-        $rides = [];
-        foreach ($response->json('itineraries', []) as $itinerary) {
-            $legs = array_values(array_filter($itinerary['legs'] ?? [], fn (array $leg) => ($leg['mode'] ?? 'WALK') !== 'WALK'));
-            if (count($legs) !== 1 || ! isset($legs[0]['startTime'], $legs[0]['endTime'])) {
-                continue;
-            }
-            $rides[] = [
-                'line' => trim((string) ($legs[0]['routeShortName'] ?? '')),
-                'headsign' => $legs[0]['headsign'] ?? null,
-                'depart_at' => CarbonImmutable::parse($legs[0]['startTime'])->setTimezone(config('app.timezone'))->toIso8601String(),
-                'arrive_at' => CarbonImmutable::parse($legs[0]['endTime'])->setTimezone(config('app.timezone'))->toIso8601String(),
-                'cancelled' => (bool) ($legs[0]['cancelled'] ?? false),
-            ];
+        $timeout = $this->callTimeout(4.0);
+        if ($timeout === null || $stretches === []) {
+            return array_map(fn () => [], $stretches);
         }
 
-        return $rides;
+        try {
+            // Answers come keyed by ask, in the order they finish: read back by key.
+            $responses = PerfLogger::measure("ext:{$this->source()}.direct", fn () => Http::pool(fn (Pool $pool) => array_map(
+                fn (int $n, array $stretch) => $pool->as("stretch{$n}")->baseUrl($this->baseUrl())
+                    ->timeout($timeout)
+                    ->connectTimeout(min(3.0, $timeout))
+                    ->withHeaders(['User-Agent' => 'expadu.com'])
+                    ->get($this->planPath(), $this->planQuery($stretch['from'], $stretch['to'], $stretch['at'], 12, [
+                        'maxTransfers' => 0, 'maxPreTransitTime' => 240, 'maxPostTransitTime' => 240, 'searchWindow' => 3600,
+                    ])),
+                array_keys(array_values($stretches)),
+                array_values($stretches),
+            )));
+        } catch (\Throwable) {
+            return array_map(fn () => [], $stretches);
+        }
+
+        return array_map(function (int $n) use ($responses) {
+            $response = $responses["stretch{$n}"] ?? null;
+            if (! $response instanceof Response || ! $response->successful()) {
+                return [];
+            }
+            $rides = [];
+            foreach ($response->json('itineraries', []) as $itinerary) {
+                $legs = array_values(array_filter($itinerary['legs'] ?? [], fn (array $leg) => ($leg['mode'] ?? 'WALK') !== 'WALK'));
+                if (count($legs) !== 1 || ! isset($legs[0]['startTime'], $legs[0]['endTime'])) {
+                    continue;
+                }
+                $line = trim((string) ($legs[0]['routeShortName'] ?? ''));
+                $rides[] = [
+                    'line' => $line,
+                    'headsign' => $legs[0]['headsign'] ?? null,
+                    'color' => KvbLineColors::for($line),
+                    'depart_at' => CarbonImmutable::parse($legs[0]['startTime'])->setTimezone(config('app.timezone'))->toIso8601String(),
+                    'arrive_at' => CarbonImmutable::parse($legs[0]['endTime'])->setTimezone(config('app.timezone'))->toIso8601String(),
+                    'cancelled' => (bool) ($legs[0]['cancelled'] ?? false),
+                ];
+            }
+
+            return $rides;
+        }, array_keys(array_values($stretches)));
     }
 
     /**
@@ -960,7 +970,7 @@ class TransitousAdapter implements RouteService
     /**
      * One run from its first stop to its last: every stop, and the way it goes along the tracks.
      *
-     * @return array{stops: list<array{name: string, lat: float, lng: float}>, points: list<array{0: float, 1: float}>}|null
+     * @return array{stops: list<array{name: string, lat: float, lng: float, id: string|null}>, points: list<array{0: float, 1: float}>}|null
      */
     public function tripPath(string $tripId): ?array
     {
@@ -979,7 +989,7 @@ class TransitousAdapter implements RouteService
             $places = [$leg['from'] ?? null, ...($leg['intermediateStops'] ?? []), $leg['to'] ?? null];
             foreach ($places as $place) {
                 if (isset($place['name'], $place['lat'], $place['lon'])) {
-                    $stops[] = ['name' => (string) $place['name'], 'lat' => (float) $place['lat'], 'lng' => (float) $place['lon']];
+                    $stops[] = ['name' => (string) $place['name'], 'lat' => (float) $place['lat'], 'lng' => (float) $place['lon'], 'id' => $place['stopId'] ?? null];
                 }
             }
             $geometry = $leg['legGeometry'] ?? null;
