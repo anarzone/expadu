@@ -53,3 +53,13 @@ test('plan throws on http error so the failover can catch it', function () {
 
     (new MotisAdapter)->plan(new GeoPoint(50.95, 6.92), new GeoPoint(50.94, 6.96));
 })->throws(RequestException::class);
+
+test('asks our MOTIS (plan API v1, which counts rides) for no change with maxTransfers=1, never 0', function () {
+    Http::fake(['motis.test/*' => Http::response(['itineraries' => [], 'direct' => []])]);
+
+    (new MotisAdapter)->plan(new GeoPoint(50.9358, 6.9477), new GeoPoint(51.0227, 6.9491));
+    (new MotisAdapter)->directRides([['from' => new GeoPoint(50.9358, 6.9477), 'to' => new GeoPoint(50.9405, 6.9400), 'at' => now()->toImmutable()]]);
+
+    Http::assertSent(fn ($r) => str_contains($r->url(), 'maxTransfers=1'));
+    Http::assertNotSent(fn ($r) => str_contains($r->url(), 'maxTransfers=0'));
+});

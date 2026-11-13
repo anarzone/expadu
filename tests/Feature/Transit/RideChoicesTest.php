@@ -92,3 +92,27 @@ test('a change with a minute to spare is tight, and says the next run and when i
         ->and($change['there_time'])->toBe('12:16')
         ->and($change['later_min'])->toBe(10);
 });
+
+test('another line that gets there later but still in time for the next ride is named beside the first ride', function () {
+    // Neumarkt → Home: the 146 one stop to Rudolfplatz, three minutes on foot, the 12 at 13:46.
+    $journey = ['arrive_at' => '2026-11-13T14:20:00+01:00', 'legs' => [
+        choiceLeg('walk', null, '', 'Köln Neumarkt', '13:37', '13:40'),
+        choiceLeg('bus', '146', 'Köln Neumarkt', 'Köln Rudolfplatz', '13:40', '13:42'),
+        choiceLeg('walk', null, 'Köln Rudolfplatz', 'Köln Rudolfplatz', '13:42', '13:45'),
+        choiceLeg('tram', '12', 'Köln Rudolfplatz', 'Köln Merkenich Mitte', '13:46', '14:14'),
+        choiceLeg('walk', null, 'Köln Merkenich Mitte', '', '14:14', '14:20'),
+    ]];
+    $choices = choicesWith([
+        'köln neumarkt|köln rudolfplatz' => [
+            choiceRun('146', '13:40', '13:42'),
+            choiceRun('7', '13:41', '13:43'),
+            choiceRun('1', '13:44', '13:46'),
+        ],
+        'köln rudolfplatz|köln merkenich mitte' => [choiceRun('12', '13:46', '14:14')],
+    ]);
+
+    $legs = $choices->add([$journey], 3.0, CarbonImmutable::parse('2026-11-13T13:31:00+01:00'))[0]['legs'];
+
+    // The 7 gets there at 13:43, in time to walk to the 12; the 1 at 13:46 is too late.
+    expect(collect($legs[1]['also'])->pluck('line')->all())->toBe(['7']);
+});
