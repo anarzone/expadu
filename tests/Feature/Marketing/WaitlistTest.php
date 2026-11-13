@@ -146,21 +146,31 @@ test('both waitlist forms carry the traps', function () {
     }
 });
 
-test('the signed confirmation link confirms the signup once', function () {
+test('opening the confirmation link only shows the button: a mail scanner confirms nothing', function () {
     $signup = WaitlistSignup::factory()->create();
 
     $url = URL::temporarySignedRoute('waitlist.confirm', now()->addDays(7), ['signup' => $signup->id]);
 
-    $response = $this->get($url);
+    $this->get($url)->assertOk()->assertSee('Yes, add me to the list');
+    $this->get($url)->assertOk();
 
-    $response->assertOk();
-    $response->assertSee('You’re on the list.');
+    expect($signup->fresh()->isConfirmed())->toBeFalse();
+});
+
+test('pressing the button on the signed link confirms the signup once', function () {
+    $signup = WaitlistSignup::factory()->create();
+
+    $url = URL::temporarySignedRoute('waitlist.confirm', now()->addDays(7), ['signup' => $signup->id]);
+
+    $this->post($url)->assertOk()->assertSee('You’re on the list.');
     expect($signup->fresh()->isConfirmed())->toBeTrue();
 
-    // Idempotent: the timestamp does not move on a second visit.
+    // Idempotent: the timestamp does not move on a second press, and the
+    // link then shows the confirmed page.
     $first = $signup->fresh()->confirmed_at;
     $this->travel(1)->hours();
-    $this->get($url)->assertOk();
+    $this->post($url)->assertOk();
+    $this->get($url)->assertOk()->assertSee('You’re on the list.');
     expect($signup->fresh()->confirmed_at->equalTo($first))->toBeTrue();
 });
 
@@ -168,6 +178,7 @@ test('an unsigned or tampered confirmation link is rejected', function () {
     $signup = WaitlistSignup::factory()->create();
 
     $this->get("/waitlist/confirm/{$signup->id}")->assertForbidden();
+    $this->post("/waitlist/confirm/{$signup->id}")->assertForbidden();
 
     expect($signup->fresh()->isConfirmed())->toBeFalse();
 });

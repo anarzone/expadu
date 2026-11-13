@@ -49,8 +49,13 @@ $marketingRoutes = function () {
     // City waitlist — double opt-in: store sends a signed confirmation link.
     Route::post('waitlist', [WaitlistController::class, 'store'])
         ->middleware('throttle:waitlist')->name('waitlist.store');
-    Route::get('waitlist/confirm/{signup}', [WaitlistController::class, 'confirm'])
+    // The mail's link opens a page; its button confirms. Mail scanners open
+    // every link in a message, so a link that confirmed on opening was being
+    // confirmed by them.
+    Route::get('waitlist/confirm/{signup}', [WaitlistController::class, 'showConfirm'])
         ->middleware('signed')->name('waitlist.confirm');
+    Route::post('waitlist/confirm/{signup}', [WaitlistController::class, 'confirm'])
+        ->middleware(['signed', 'throttle:waitlist'])->name('waitlist.confirm.store');
 };
 
 // robots.txt answers on every host; what it allows depends on the host.

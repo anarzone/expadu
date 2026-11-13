@@ -81,7 +81,26 @@ class WaitlistController extends Controller
     }
 
     /**
-     * Complete the double opt-in via the signed link from the mail.
+     * The signed link from the mail: a page whose button confirms. Opening
+     * the link confirms nothing, because company mail scanners open every
+     * link in a message within seconds (Nov 2026: corporate inboxes
+     * "confirmed" signups no person had made).
+     */
+    public function showConfirm(Request $request, WaitlistSignup $signup): View
+    {
+        if ($signup->isConfirmed()) {
+            return view('marketing.waitlist-confirmed', ['signup' => $signup]);
+        }
+
+        return view('marketing.waitlist-confirm', [
+            'signup' => $signup,
+            'action' => $request->fullUrl(),
+        ]);
+    }
+
+    /**
+     * Complete the double opt-in: the confirm page's button, posted to the
+     * same signed link.
      */
     public function confirm(WaitlistSignup $signup): View
     {
