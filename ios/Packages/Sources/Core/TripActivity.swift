@@ -59,15 +59,20 @@ public struct TripPhase: Codable, Hashable, Sendable {
 
     /// On the way: walking with the next turn, waiting for the ride, riding, getting off, gone wrong, there.
     public static func of(_ trip: TodayPage.Trip, here: Guide.Position?, offFor: TimeInterval, at now: Date) -> TripPhase {
-        let live = trip.live(at: now, guided: here?.step)
+        // As late as the ride runs: measured by the phone on board, else the live board's delay.
+        let behind = trip.late(here: here, at: now)
+        let live = trip.live(at: now, guided: here?.step, late: behind)
         let steps = trip.steps
         let step = live.step
-        let arrive = trip.arriveTime ?? steps.last?.time ?? ""
+        // There as late as it runs ("There 20:32", not the plan's 20:29 behind a late tram).
+        let arrive = behind >= 60 ? trip.legs.last.map { TodayPage.clock($0.arriveAt.addingTimeInterval((behind / 60).rounded() * 60)) } ?? "" : trip.arriveTime ?? steps.last?.time ?? ""
         let leg = step.leg.map { trip.legs[$0] }
         // The ride this moment is about (the one on, or the one walked to), as the live board reads it.
         let upcoming = steps.dropFirst(live.current).first { $0.kind == .ride }
         let ride = (step.kind == .ride ? leg : nil) ?? upcoming?.leg.map { trip.legs[$0] }
-        let late = ride.flatMap { $0.cancelled ? nil : $0.delayMin }.flatMap { $0 >= 2 ? $0 : nil }
+        // Said as the phone measured it on board, else as the board says.
+        let measured = here?.ride?.onBoard == true && behind >= 120 ? Int((behind / 60).rounded()) : nil
+        let late = measured ?? ride.flatMap { $0.cancelled ? nil : $0.delayMin }.flatMap { $0 >= 2 ? $0 : nil }
         func make(_ kind: Kind, badge: String? = nil, color: String? = nil, symbol: String, short: String, until: Date? = nil, title: String, detail: String) -> TripPhase {
             TripPhase(kind: kind, badge: badge, color: color, symbol: symbol, short: short, until: until, title: title,
                       detail: late.map { "\($0) min late · " + detail } ?? detail,
@@ -96,8 +101,10 @@ public struct TripPhase: Codable, Hashable, Sendable {
         case .walk:
             // Close to the stop with the ride still to come: waiting for it.
             if let next, next.kind == .ride, let ride = next.leg.map({ trip.legs[$0] }), (here?.metresLeft ?? .infinity) < 40 || now >= step.at.addingTimeInterval(TimeInterval((leg?.minutes ?? 0) * 60)) {
-                return make(.wait, badge: ride.line, color: ride.color, symbol: "tram.fill", short: "\(minutes(until: ride.departAt, from: now))′",
-                            until: ride.departAt, title: "\(ride.name) to \(ride.to) at \(ride.departTime)", detail: ride.headsign.map { "Towards \($0) · from \(ride.from)" } ?? "From \(ride.from)")
+                // When it comes, as late as the board says.
+                let leaves = ride.departAt.addingTimeInterval(behind)
+                return make(.wait, badge: ride.line, color: ride.color, symbol: "tram.fill", short: "\(minutes(until: leaves, from: now))′",
+                            until: leaves, title: "\(ride.name) to \(ride.to) at \(ride.departTime)", detail: ride.headsign.map { "Towards \($0) · from \(ride.from)" } ?? "From \(ride.from)")
             }
             if let turn = here?.turn, let metres = here?.metresToTurn {
                 return make(.walk, symbol: turn.symbol, short: Self.distance(metres), title: turn.words,
@@ -106,22 +113,35 @@ public struct TripPhase: Codable, Hashable, Sendable {
             return make(.walk, symbol: leg?.mode == "bike" ? "bicycle" : "figure.walk", short: "\(live.big)", title: step.title,
                         detail: next.map { $0.kind == .ride ? "\($0.name) at \($0.time)" : "There at \(arrive)" } ?? "There at \(arrive)")
         case .ride:
-            guard let ride = leg else { fallthrough }
-            // At the stop before it leaves: waiting for it, counting down.
-            if now < ride.departAt {
-                return make(.wait, badge: ride.line, color: ride.color, symbol: "tram.fill", short: "\(minutes(until: ride.departAt, from: now))′",
-                            until: ride.departAt, title: "\(ride.name) to \(ride.to) at \(ride.departTime)", detail: ride.headsign.map { "Towards \($0) · from \(ride.from)" } ?? "From \(ride.from)")
+            guard let ride = leg, let index = step.leg else { fallthrough }
+            // The ride's times as it runs: late as the phone measured on board, or as the board says.
+            let leaves = ride.departAt.addingTimeInterval(behind)
+            let gets = ride.arriveAt.addingTimeInterval(behind)
+            // At the stop before it comes (the phone not yet moving with it): waiting for it, counting down.
+            if now < leaves, here?.ride?.onBoard != true {
+                return make(.wait, badge: ride.line, color: ride.color, symbol: "tram.fill", short: "\(minutes(until: leaves, from: now))′",
+                            until: leaves, title: "\(ride.name) to \(ride.to) at \(ride.departTime)", detail: ride.headsign.map { "Towards \($0) · from \(ride.from)" } ?? "From \(ride.from)")
             }
-            let left = ride.stops.map { stops in max(1, stops - Int((now.timeIntervalSince(ride.departAt) / max(ride.arriveAt.timeIntervalSince(ride.departAt), 60)) * Double(stops))) }
-            // A minute before getting off, the island says so.
-            if ride.arriveAt.timeIntervalSince(now) <= 60 {
+            // The stops still to come, from where the phone is (and on at the timetable's pace from there).
+            let left = Guide(trip: trip).rideLeft(leg: index, at: now, late: behind)
+            // Leaving the stop before theirs, the island says so: one stop before, as promised.
+            if let left, left.stops <= 1 {
+                return make(.getOff, badge: ride.line, color: ride.color, symbol: "figure.walk.departure", short: left.stops == 0 ? "Now" : "Next",
+                            until: gets, title: "Get off at \(ride.to)",
+                            detail: (left.stops == 0 ? "" : "Next stop · ") + (next.map { $0.kind == .ride ? "then \($0.name) at \($0.time)" : "then \($0.title.lowercased())" } ?? "there at \(arrive)"))
+            }
+            // Without every stop known: the time alone, a minute before getting off.
+            if left == nil, gets.timeIntervalSince(now) <= 60 {
                 return make(.getOff, badge: ride.line, color: ride.color, symbol: "figure.walk.departure", short: "Now",
                             title: "Get off at \(ride.to)", detail: next.map { $0.kind == .ride ? "Then \($0.name) at \($0.time)" : "Then \($0.title.lowercased())" } ?? "There at \(arrive)")
             }
+            let count = left?.stops ?? ride.stops.map { stops in
+                max(1, stops - Int((now.timeIntervalSince(leaves) / max(gets.timeIntervalSince(leaves), 60)) * Double(stops)))
+            }
             // The island's corner has room for minutes; the stops go with the words.
-            let stops = left.map { $0 == 1 ? "1 stop · " : "\($0) stops · " } ?? ""
-            return make(.ride, badge: ride.line, color: ride.color, symbol: "tram.fill", short: "\(minutes(until: ride.arriveAt, from: now))′",
-                        until: ride.arriveAt, title: "Get off at \(ride.to)", detail: "\(stops)\(ride.arriveTime)")
+            let stops = count.map { $0 == 1 ? "1 stop · " : "\($0) stops · " } ?? ""
+            return make(.ride, badge: ride.line, color: ride.color, symbol: "tram.fill", short: "\(minutes(until: gets, from: now))′",
+                        until: gets, title: "Get off at \(ride.to)", detail: "\(stops)\(TodayPage.clock(gets))")
         case .getOff:
             return make(.getOff, badge: leg?.line, color: leg?.color, symbol: "figure.walk.departure", short: "Now", title: step.title, detail: step.sub)
         case .there:

@@ -12,6 +12,10 @@ public struct Guide: Sendable {
     public static let startMetres = 150.0
     /// Still at the stop this long after the ride left: it left without them.
     public static let leftStopSeconds = 180.0
+    /// This far along a ride's line from where it boards: on it, not waiting at the stop.
+    public static let onBoardMetres = 120.0
+    /// Within this of a stop on a ride's line: at it (passed once beyond).
+    public static let atStopMetres = 25.0
 
     struct Line: Sendable {
         let leg: Int
@@ -20,8 +24,17 @@ public struct Guide: Sendable {
         let along: [Double]
     }
 
+    /// A stop of a ride: where it sits on the ride's line, and when the ride is due there.
+    struct Mark: Sendable {
+        let name: String
+        let along: Double
+        let at: Date
+    }
+
     let trip: TodayPage.Trip
     let lines: [Line]
+    /// Each ride's stops on its line, from where it boards to where they get off (by leg).
+    let marks: [Int: [Mark]]
 
     public init(trip: TodayPage.Trip) {
         self.trip = trip
@@ -32,6 +45,23 @@ public struct Guide: Sendable {
             for i in 1..<points.count { along.append(along[i - 1] + Self.metres(points[i - 1], points[i])) }
             return Line(leg: index, points: points, along: along)
         }
+        var marks: [Int: [Mark]] = [:]
+        for line in lines where trip.legs[line.leg].rides {
+            let leg = trip.legs[line.leg]
+            var stops = [Mark(name: leg.from, along: 0, at: leg.departAt)]
+            for stop in leg.stopsOnTheWay where stop.name != leg.from && stop.name != leg.to {
+                guard let latitude = stop.latitude, let longitude = stop.longitude, let last = stops.last,
+                      var at = TodayPage.today(stop.time, on: last.at) else { continue }
+                // Past midnight the clock starts again.
+                if at < last.at.addingTimeInterval(-60) { at = at.addingTimeInterval(86_400) }
+                let along = Self.snap(TodayPage.Point(latitude: latitude, longitude: longitude), onto: line).along
+                guard along > last.along, at >= last.at else { continue }
+                stops.append(Mark(name: stop.name, along: along, at: at))
+            }
+            stops.append(Mark(name: leg.to, along: max(line.along.last ?? 0, (stops.last?.along ?? 0) + 1), at: max(leg.arriveAt, stops.last?.at ?? leg.arriveAt)))
+            marks[line.leg] = stops
+        }
+        self.marks = marks
     }
 
     /// Where they are on the way.
@@ -50,6 +80,20 @@ public struct Guide: Sendable {
         public let metresToTurn: Int?
         /// The ride they were walking to has left without them.
         public let missed: TodayPage.Trip.Leg?
+        /// On a ride: how it's going, by the phone.
+        public var ride: Ride?
+
+        /// A ride as the phone sees it: where it is against its timetable. Late is measured where the
+        /// phone is; between fixes (underground, standing still) the ride goes on at its timetable's
+        /// pace from there, so the stops and minutes left keep counting, late as it was.
+        public struct Ride: Equatable, Sendable {
+            /// On it: moved off along its line from where it boards (not still waiting at the stop).
+            public let onBoard: Bool
+            /// Seconds behind its timetable where the phone was (negative: ahead).
+            public let late: TimeInterval
+            /// When the phone said so.
+            public let at: Date
+        }
     }
 
     /// Where `point` is on the way at `date`, never going back before the leg they were on (`after`).
@@ -94,11 +138,40 @@ public struct Guide: Sendable {
             if ride.rides, gone > 60, total - best.along > 40 || gone > Self.leftStopSeconds { missed = ride }
         }
 
+        // On a ride: how late it runs where the phone is, against the ride's own stop times.
+        var ride: Position.Ride?
+        if leg.rides, let stops = marks[best.line.leg], stops.count >= 2 {
+            let onBoard = best.along > Self.onBoardMetres
+            // Waiting at the stop past the time: at least that late (the board says by how much more).
+            let late = onBoard ? date.timeIntervalSince(Self.due(best.along, stops)) : max(0, date.timeIntervalSince(leg.departAt))
+            ride = Position.Ride(onBoard: onBoard, late: min(max(late, -300), 3600), at: date)
+        }
+
         // Still getting to where the way starts (the router begins on the nearest path, not the doorstep).
         let starting = lines.first.flatMap { first in first.points.first.map { Self.metres(point, $0) <= Self.startMetres && best.line.leg == first.leg } } ?? false
         return Position(leg: best.line.leg, step: step, offBy: best.offBy, metresLeft: max(0, total - best.along),
                         offRoute: best.offBy > Self.offRouteMetres && !arrived && !starting, arrived: arrived,
-                        turn: turn, metresToTurn: toTurn, missed: missed)
+                        turn: turn, metresToTurn: toTurn, missed: missed, ride: ride)
+    }
+
+    /// When the ride is due at a point of its line: between two stops, as far on in time as in metres.
+    static func due(_ along: Double, _ stops: [Mark]) -> Date {
+        guard let first = stops.first, along > first.along else { return stops.first?.at ?? .now }
+        for (a, b) in zip(stops, stops.dropFirst()) where along <= b.along {
+            let part = (along - a.along) / max(b.along - a.along, 1)
+            return a.at.addingTimeInterval(part * b.at.timeIntervalSince(a.at))
+        }
+        return stops.last!.at
+    }
+
+    /// A ride at `date`, running `late` behind its timetable: the stops still to come (the one to get
+    /// off at counted, so 1 is "get off at the next stop"), and the next one.
+    public func rideLeft(leg: Int, at date: Date, late: TimeInterval) -> (stops: Int, next: String?)? {
+        // Every stop known (with where it is): else the stops can't be counted, only the time.
+        guard let stops = marks[leg], stops.count >= 2, stops.count - 1 >= (trip.legs[leg].stops ?? 0) else { return nil }
+        let timetable = date.addingTimeInterval(-late)
+        let ahead = stops.dropFirst().filter { $0.at > timetable }
+        return (ahead.count, ahead.first?.name)
     }
 
     /// The nearest point of a line to `point`: how far off it is, and how far along the line.
