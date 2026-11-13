@@ -115,6 +115,9 @@ class TransitousAdapter implements RouteService
      */
     private const CHANGE_ON_THE_WAY_SLACK_MINUTES = 10;
 
+    /** Rides on from a change stop asked for: enough to reach past the stay's late one (the 16, then the 18). */
+    private const ON_FROM_THE_CHANGE_RUNS = 6;
+
     /** Stops of the best way's main ride asked as a `via` to change onto it, the nearest the start. */
     private const WAYS_IN_STOPS = 3;
 
@@ -464,7 +467,10 @@ class TransitousAdapter implements RouteService
                     ->timeout($timeout)
                     ->connectTimeout(min(3.0, $timeout))
                     ->withHeaders(['User-Agent' => 'expadu.com'])
-                    ->get($this->planPath(), $this->planQuery($from, $to, $departAt, isset($extra['via']) ? 2 : 4, $timeExtra + $extra)),
+                    ->get($this->planPath(), isset($vias[$name]['at'])
+                        // On from a change stop, from when the first run gets there (see withoutTheStay).
+                        ? $this->planQuery($from, $to, $vias[$name]['at'], self::ON_FROM_THE_CHANGE_RUNS, $extra)
+                        : $this->planQuery($from, $to, $departAt, isset($extra['via']) ? 2 : 4, $timeExtra + $extra)),
                 array_keys($asks),
                 array_values($asks),
             )));
@@ -477,6 +483,7 @@ class TransitousAdapter implements RouteService
         $added = [];
         $onward = [];
         $stayed = [];
+        $onFrom = [];
         $bestAt = $best?->arriveAt;
         foreach ($responses as $name => $response) {
             if (! $response instanceof Response || ! $response->successful()) {
@@ -485,6 +492,11 @@ class TransitousAdapter implements RouteService
             $via = $vias[$name] ?? null;
             foreach ($response->json('itineraries', []) as $itinerary) {
                 $journey = $this->mapItinerary($itinerary);
+                if ($journey !== null && $via !== null && $via['kind'] === 'next') {
+                    $onFrom[$via['stop']][] = $journey;
+
+                    continue;
+                }
                 if ($journey === null || isset($known[$this->route($journey)])) {
                     continue;
                 }
@@ -498,7 +510,7 @@ class TransitousAdapter implements RouteService
                 }
             }
         }
-        $onward = $this->withoutTheStay($to, $onward, $stayed);
+        $onward = $this->withoutTheStay($onward, $stayed, $onFrom);
 
         $main = $itineraries;
         foreach ($added as $route => $runs) {
@@ -537,7 +549,7 @@ class TransitousAdapter implements RouteService
      *   the 3/4 to Suevenstr.).
      *
      * @param  list<Journey>  $itineraries
-     * @return array{0: Journey|null, 1: array<string, array{ask: array<string, mixed>, kind: string, run: string|null, line: string|null, stop: string, rides?: int, walk?: int, slack?: int}>}
+     * @return array{0: Journey|null, 1: array<string, array{ask: array<string, mixed>, kind: string, run: string|null, line: string|null, stop: string, rides?: int, walk?: int, slack?: int, at?: CarbonImmutable}>}
      */
     private function viaAsks(GeoPoint $from, GeoPoint $to, array $itineraries): array
     {
@@ -559,6 +571,15 @@ class TransitousAdapter implements RouteService
                     'kind' => 'on', 'run' => $first->tripId, 'line' => null, 'stop' => $stop['name'],
                     'slack' => $stop['change'] ? self::CHANGE_ON_THE_WAY_SLACK_MINUTES : self::CONTINUATION_SLACK_MINUTES,
                 ];
+                // And on from there, from when the first run gets there: asked beside the rest, not
+                // after them, so a slow answer elsewhere can't leave the stay's late ride standing.
+                $there = collect($first->intermediateStops ?? [])->firstWhere('name', $stop['name'])['arrive_at'] ?? null;
+                if ($stop['change'] && $there !== null) {
+                    $vias["next{$n}"] = [
+                        'ask' => ['fromPlace' => $stop['id'], ...$this->directOnly()],
+                        'kind' => 'next', 'run' => null, 'line' => null, 'stop' => $stop['name'], 'at' => CarbonImmutable::parse($there),
+                    ];
+                }
             }
         }
 
@@ -605,70 +626,42 @@ class TransitousAdapter implements RouteService
     /**
      * A change on the way is asked with a minute's stay, so the walk across starts a minute late: the
      * 12 reaches Ebertplatz at 08:30, the walk across starts 08:31 and misses the 16 at 08:36 that
-     * Google takes. Each such way is asked on again from that stop, at the arrival plus the walk
-     * across, and what that finds replaces the rest of the way when it gets there sooner.
+     * Google takes. Beside it, the rides on from that stop were asked from when the 12 gets there; the
+     * first that leaves once the walk across is done, and gets there sooner, replaces the rest of the
+     * way.
      *
      * @param  array<string, Journey>  $onward  by route
      * @param  array<string, string>  $stayed  route => the stop its change was asked at
+     * @param  array<string, list<Journey>>  $onFrom  stop => the ways on from it
      * @return array<string, Journey>
      */
-    private function withoutTheStay(GeoPoint $to, array $onward, array $stayed): array
+    private function withoutTheStay(array $onward, array $stayed, array $onFrom): array
     {
-        $asks = [];
         foreach ($stayed as $route => $stop) {
-            $legs = $onward[$route]->legs;
+            $journey = $onward[$route] ?? null;
+            $legs = $journey?->legs ?? [];
+            $off = null;
             foreach ($legs as $i => $leg) {
-                $walk = $legs[$i + 1] ?? null;
-                $next = $legs[$i + 2] ?? null;
-                if (! $leg->isTransit() || $leg->to->name !== $stop) {
-                    continue;
+                if ($leg->isTransit() && $leg->to->name === $stop) {
+                    $off = $i;
+                    break;
                 }
-                if ($walk?->mode === 'walk' && $next?->isTransit() && $next->from->stopId !== null) {
-                    $ready = $leg->arriveAt->addMinutes($walk->durationMin);
-                    if ($next->departAt->gt($ready)) {
-                        $asks[$route] = ['off' => $i, 'ready' => $ready, 'stop' => $next->from->stopId];
-                    }
-                }
-                break;
             }
-        }
-        $timeout = $this->callTimeout(2.0);
-        if ($asks === [] || $timeout === null) {
-            return $onward;
-        }
-
-        try {
-            $responses = PerfLogger::measure("ext:{$this->source()}.change", fn () => Http::pool(fn (Pool $pool) => array_map(
-                fn (string $route, array $ask) => $pool->as($route)
-                    ->baseUrl($this->baseUrl())
-                    ->timeout($timeout)
-                    ->connectTimeout(min(2.0, $timeout))
-                    ->withHeaders(['User-Agent' => 'expadu.com'])
-                    ->get($this->planPath(), $this->planQuery($to, $to, $ask['ready'], 2, ['fromPlace' => $ask['stop'], ...$this->directOnly()])),
-                array_keys($asks),
-                array_values($asks),
-            )));
-        } catch (\Throwable) {
-            return $onward;
-        }
-
-        foreach ($asks as $route => $ask) {
-            $response = $responses[$route] ?? null;
-            if (! $response instanceof Response || ! $response->successful()) {
+            $walk = $off === null ? null : ($legs[$off + 1] ?? null);
+            if ($walk?->mode !== 'walk' || ! ($legs[$off + 2] ?? null)?->isTransit()) {
                 continue;
             }
-            $journey = $onward[$route];
-            $off = $journey->legs[$ask['off']];
+            $ready = $legs[$off]->arriveAt->addMinutes($walk->durationMin);
+
             $sooner = null;
-            foreach ($response->json('itineraries', []) as $itinerary) {
-                $on = $this->mapItinerary($itinerary);
-                $rest = $on === null ? [] : array_values(array_filter(
+            foreach ($onFrom[$stop] ?? [] as $on) {
+                $rest = array_values(array_filter(
                     $on->legs,
                     fn (Leg $leg, int $k) => ! ($k === 0 && $leg->mode === 'walk' && $leg->durationMin === 0),
                     ARRAY_FILTER_USE_BOTH,
                 ));
-                if ($rest === [] || ! $rest[0]->isTransit() || $rest[0]->lineName === $off->lineName
-                    || $on->arriveAt->gte($sooner?->arriveAt ?? $journey->arriveAt)) {
+                if ($rest === [] || ! $rest[0]->isTransit() || $rest[0]->lineName === $legs[$off]->lineName
+                    || $rest[0]->departAt->lt($ready) || $on->arriveAt->gte($sooner?->arriveAt ?? $journey->arriveAt)) {
                     continue;
                 }
                 $sooner = new Journey($rest, $on->departAt, $on->arriveAt, 0, 0);
@@ -677,13 +670,12 @@ class TransitousAdapter implements RouteService
                 continue;
             }
 
-            $walk = $journey->legs[$ask['off'] + 1];
             $across = new Leg(
-                mode: 'walk', from: $walk->from, to: $walk->to, departAt: $off->arriveAt, arriveAt: $ask['ready'],
+                mode: 'walk', from: $walk->from, to: $walk->to, departAt: $legs[$off]->arriveAt, arriveAt: $ready,
                 durationMin: $walk->durationMin, polyline: $walk->polyline, distanceM: $walk->distanceM, steps: $walk->steps,
             );
             $retimed = new Journey(
-                legs: [...array_slice($journey->legs, 0, $ask['off'] + 1), $across, ...$sooner->legs],
+                legs: [...array_slice($legs, 0, $off + 1), $across, ...$sooner->legs],
                 departAt: $journey->departAt,
                 arriveAt: $sooner->arriveAt,
                 durationMin: (int) round(($sooner->arriveAt->getTimestamp() - $journey->departAt->getTimestamp()) / 60),

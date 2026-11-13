@@ -420,11 +420,20 @@ test('ways on change where a line that reaches the destination stops, and catch 
     ]);
     $way = fn (array $legs, string $start, string $end) => array_merge(fakeItinerary($legs, 1, 2400), ['startTime' => $at($start), 'endTime' => $at($end)]);
 
-    $best = $way([$walk(5, '07:00', '07:05'), $ride('12', 'run-12', 'Merkenich', 'Friesenplatz', '07:05', '07:28'), $walk(3, '07:28', '07:31', 'Friesenplatz'),
+    // The best way's 12 passes Ebertplatz at 07:20: the rides on from there are asked from then.
+    $twelve = array_merge($ride('12', 'run-12', 'Merkenich', 'Friesenplatz', '07:05', '07:28'), ['intermediateStops' => [
+        ['name' => 'Ebertplatz', 'arrival' => $at('07:20'), 'lat' => 50.9497, 'lon' => 6.9573],
+        ['name' => 'Hansaring', 'arrival' => $at('07:23'), 'lat' => 50.9475, 'lon' => 6.9435],
+    ]]);
+    $best = $way([$walk(5, '07:00', '07:05'), $twelve, $walk(3, '07:28', '07:31', 'Friesenplatz'),
         $ride('3', 'run-3', 'Friesenplatz', 'Appellhofplatz', '07:32', '07:38'), $walk(4, '07:38', '07:42')], '07:00', '07:42');
     $viaEbertplatz = $way([$walk(5, '07:00', '07:05'), $ride('12', 'run-12', 'Merkenich', 'Ebertplatz', '07:05', '07:20'), $walk(6, '07:21', '07:27', 'Ebertplatz'),
         $ride('18', 'run-18', 'Ebertplatz', 'Appellhofplatz', '07:32', '07:38'), $walk(4, '07:38', '07:42')], '07:00', '07:42');
-    $onFromEbertplatz = $way([$ride('16', 'run-16', 'Ebertplatz', 'Appellhofplatz', '07:26', '07:32'), $walk(4, '07:32', '07:36')], '07:26', '07:36');
+    // On from Ebertplatz from 07:20: an 18 at 07:22 leaves before the six minutes across are done.
+    $onFromEbertplatz = [
+        $way([$ride('18', 'run-18-early', 'Ebertplatz', 'Appellhofplatz', '07:22', '07:28'), $walk(4, '07:28', '07:32')], '07:22', '07:32'),
+        $way([$ride('16', 'run-16', 'Ebertplatz', 'Appellhofplatz', '07:26', '07:32'), $walk(4, '07:32', '07:36')], '07:26', '07:36'),
+    ];
 
     app()->instance(StopLines::class, new class extends StopLines
     {
@@ -450,7 +459,7 @@ test('ways on change where a line that reaches the destination stops, and catch 
             ]]]),
             str_contains($url, '/api/v1/map/stops') => Http::response([$stop('Appellhofplatz')]),
             str_contains($url, 'via=id-Ebertplatz') && str_contains($url, 'viaMinimumStay=1') => Http::response(['itineraries' => [$viaEbertplatz]]),
-            str_contains($url, 'fromPlace=id-Ebertplatz') => Http::response(['itineraries' => [$onFromEbertplatz]]),
+            str_contains($url, 'fromPlace=id-Ebertplatz') && str_contains($url, 'time=2026-07-06T07:20:00Z') => Http::response(['itineraries' => $onFromEbertplatz]),
             str_contains($url, 'directModes=') => Http::response(['direct' => []]),
             default => Http::response(['itineraries' => [$best]]),
         };
