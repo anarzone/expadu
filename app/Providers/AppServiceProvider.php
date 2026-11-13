@@ -211,6 +211,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('journey', fn (Request $request): Limit => Limit::perMinute(30)
             ->by('journey:'.$userOrIp($request)));
 
+        // The launch waitlist mails whatever address is typed in: a person
+        // signs up once or twice, a script mailing strangers posts all day.
+        RateLimiter::for('waitlist', fn (Request $request): array => [
+            Limit::perMinute(3)->by('waitlist:'.$request->ip()),
+            Limit::perDay(20)->by('waitlist-day:'.$request->ip()),
+        ]);
+
         // OAuth redirect/callback — a human does this once or twice a visit.
         RateLimiter::for('social', fn (Request $request): Limit => Limit::perMinute(20)
             ->by('social:'.$request->ip()));

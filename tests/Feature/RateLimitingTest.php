@@ -47,7 +47,7 @@ test('expensive and abuse-prone routes carry their buckets', function () {
         'social.redirect' => 'throttle:social',
         'profile.update' => 'throttle:app-writes',
         'user-password.update' => 'throttle:6,1',
-        'waitlist.store' => 'throttle:10,1',
+        'waitlist.store' => 'throttle:waitlist',
     ];
 
     foreach ($expected as $name => $middleware) {
