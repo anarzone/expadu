@@ -470,6 +470,32 @@ test('ways on change where a line that reaches the destination stops, and catch 
     Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'via=id-Rudolfplatz'));
 });
 
+test('a slower ride on from the same change is no way; a change somewhere else is', function () {
+    // Merkenich → Cafe Nova: off the same 12 at Friesenplatz, the 172 gets there five minutes after the
+    // 3 on more walking. The 16 from Ebertplatz is a different change and stays.
+    $place = fn (string $name) => ['name' => $name, 'stopId' => "id-{$name}", 'lat' => 50.94, 'lon' => 6.95];
+    $leg = fn (string $mode, array $extra) => fakeLeg($mode, $extra);
+    $way = fn (string $off, string $line, int $walkOn, int $walkEnd, string $end) => array_merge(fakeItinerary([
+        $leg('WALK', ['duration' => 300]),
+        $leg('TRAM', ['routeShortName' => '12', 'tripId' => 'run-12', 'from' => $place('Merkenich'), 'to' => $place($off)]),
+        $leg('WALK', ['duration' => 60 * $walkOn, 'from' => $place($off), 'to' => $place($off)]),
+        $leg($line === '172' ? 'BUS' : 'TRAM', ['routeShortName' => $line, 'tripId' => "run-{$line}", 'from' => $place($off), 'to' => $place('Appellhofplatz')]),
+        $leg('WALK', ['duration' => 60 * $walkEnd]),
+    ], 1, 2600), ['endTime' => "2026-07-06T{$end}:00Z"]);
+
+    $three = $way('Friesenplatz', '3', 3, 4, '07:44');
+    $bus = $way('Friesenplatz', '172', 3, 5, '07:49');
+    $sixteen = $way('Ebertplatz', '16', 6, 4, '07:46');
+    Http::fake(fn ($request) => str_contains(urldecode($request->url()), 'directModes=')
+        ? Http::response(['direct' => []])
+        : Http::response(['itineraries' => [$three, $bus, $sixteen]]));
+
+    $routes = collect((new TransitousAdapter)->plan(new GeoPoint(51.0227, 6.9491), new GeoPoint(50.9390, 6.9490))->journeys)
+        ->map(fn ($j) => implode('>', $j->lines()))->unique()->values()->all();
+
+    expect($routes)->toContain('12>3', '12>16')->not->toContain('12>172');
+});
+
 test('adds other ways on from the best way\'s first tram, asked via the stops it passes nearest the destination', function () {
     $stop = fn (string $name, string $id, float $lat) => ['name' => $name, 'stopId' => $id, 'lat' => $lat, 'lon' => 6.95];
     $ride = fn (string $line, string $trip, string $from, string $to, string $end) => fakeLeg('TRAM', [

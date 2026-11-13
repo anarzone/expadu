@@ -262,6 +262,10 @@ class TransitousAdapter implements RouteService
         if (count($journeys) < 2) {
             return $journeys;
         }
+        // Nor a slower ride on from the same change: the 12 to Friesenplatz then the 172, when the 3
+        // from there gets to Cafe Nova five minutes sooner on less walking (Google lists no 172).
+        $all = $journeys;
+        $journeys = array_values(array_filter($journeys, fn (Journey $j) => ! $this->worseOnFromTheSameChange($j, $all)));
 
         $best = min(array_map(fn (Journey $j) => $j->durationMin, $journeys));
         $cap = max($best * 2, $best + 40);
@@ -834,6 +838,35 @@ class TransitousAdapter implements RouteService
         }
 
         return array_values($stops);
+    }
+
+    /**
+     * Another way rides the same first run, gets off it at the same stop, and from there gets there
+     * no later on no more walking and no more changes, and is better at one of them. A change somewhere
+     * else is a different way (the 12 then 16 at Ebertplatz stays beside the 12 then 3).
+     *
+     * @param  list<Journey>  $journeys
+     */
+    private function worseOnFromTheSameChange(Journey $journey, array $journeys): bool
+    {
+        $rides = array_values(array_filter($journey->legs, fn (Leg $leg) => $leg->isTransit()));
+        if (count($rides) < 2 || $rides[0]->tripId === null) {
+            return false;
+        }
+        foreach ($journeys as $other) {
+            $theirs = array_values(array_filter($other->legs, fn (Leg $leg) => $leg->isTransit()));
+            if ($other === $journey || count($theirs) < 2 || $other->lines() === $journey->lines()
+                || $theirs[0]->tripId !== $rides[0]->tripId || $theirs[0]->to->name !== $rides[0]->to->name) {
+                continue;
+            }
+            $walk = [$this->walkMinutes($other), $this->walkMinutes($journey)];
+            if ($other->arriveAt->lte($journey->arriveAt) && $walk[0] <= $walk[1] && $other->transfers <= $journey->transfers
+                && ($other->arriveAt->lt($journey->arriveAt) || $walk[0] < $walk[1] || $other->transfers < $journey->transfers)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Off a line and back on it (the 4 out to Koelnmesse and back, the 12 to its end and back a stop). */
