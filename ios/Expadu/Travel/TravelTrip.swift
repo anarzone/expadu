@@ -159,12 +159,13 @@ struct TravelTrip: View {
                         Image(systemName: "ellipsis").font(.system(size: 17, weight: .bold))
                     }
                 }
-                .frame(width: 42, height: 42).contentShape(.circle)
+                .frame(width: 42, height: 42)
+                // The glass is the label's own, not the menu's: on the menu, iOS morphed it into the menu
+                // and back, and it stood a blank white circle for a second after (the owner, 13 Nov).
+                .glassEffect(.clear, in: .circle)
+                .contentShape(.circle)
             }
             .accessibilityLabel(working ? "Finding a new way" : "Trip options")
-            // Not interactive glass: a menu holds its button pressed while it opens and stays open, and
-            // the press light turned the button a blank white the whole time (the owner, 13 Nov).
-            .glassEffect(.clear, in: .circle)
             // Ending the trip is always in sight; it asks first, so a stray tap can't end it.
             Button { asking = true } label: {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).frame(width: 42, height: 42).contentShape(.circle)
