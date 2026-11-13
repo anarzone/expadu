@@ -928,7 +928,8 @@ public struct AppAPI: Sendable {
     public func tripRideCheck(leg: Int, from: String, at: Date, leftAt: Date) async throws(APIFailure) -> TripRideCheck {
         var body = ride(leg, from: from, at: at)
         body["left_at"] = ISO8601DateFormatter().string(from: leftAt)
-        let reply = try await composer("POST", "travel/trip/ride/check", body)
+        // Only a question (it changes nothing): asked again when the connection drops, as reads are.
+        let reply = try await composer("POST", "travel/trip/ride/check", body, retry: true)
         guard reply.status == 200, let json = try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any] else { throw .unreachable }
         if json["planned"] as? Bool == true { return .planned }
         if let sure = (json["sure"] as? [String: Any]).flatMap(TripRide.init) { return .sure(sure) }
