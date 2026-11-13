@@ -25,6 +25,7 @@ class SecurityEventsTable
         SecurityLog::PasswordReset => ['Password reset', 'gray'],
         SecurityLog::EmailVerified => ['Verified', 'success'],
         SecurityLog::MailHeld => ['Mail held', 'gray'],
+        SecurityLog::AdminAction => ['Admin', 'info'],
     ];
 
     public static function configure(Table $table): Table

@@ -43,24 +43,29 @@ final class SecurityLog
     /** The email budget held a mail back. */
     public const MailHeld = 'mail_held';
 
+    /** An admin suspended, lifted, kept or deleted an account, or removed a waitlist entry (reason says which). */
+    public const AdminAction = 'admin_action';
+
     /** Set on a request whose post was turned away, so what follows isn't logged as a real request too. */
     public const BlockedFlag = 'security.blocked';
 
     /**
      * @param  ?string  $channel  web, app (the iPhone API), admin, waitlist or mail; null reads it from the request
      */
-    public function record(string $type, ?User $user = null, ?string $email = null, ?string $reason = null, ?string $channel = null): void
+    public function record(string $type, ?User $user = null, ?string $email = null, ?string $reason = null, ?string $channel = null, bool $withVisitor = true): void
     {
         try {
             $request = request();
+            // An admin's action is about the account, not about where the admin sat.
+            $withVisitor = $withVisitor && $type !== self::AdminAction;
             $row = [
                 'type' => $type,
                 'channel' => $channel ?? ($request->is('api/*') ? 'app' : 'web'),
                 'user_id' => $user?->getKey(),
                 'email_domain' => self::domainOf($email ?? $user?->email),
                 'reason' => $reason === null ? null : Str::limit($reason, 32, ''),
-                'ip' => $request->ip(),
-                'user_agent' => self::agent($request->userAgent()),
+                'ip' => $withVisitor ? $request->ip() : null,
+                'user_agent' => $withVisitor ? self::agent($request->userAgent()) : null,
                 'created_at' => now(),
             ];
 

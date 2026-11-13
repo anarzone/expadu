@@ -6,6 +6,7 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Auth\AppleIdentity;
 use App\Auth\AppSignIn;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Resources\Api\V1\SignInResource;
 use App\Models\User;
 use App\Security\SecurityLog;
@@ -179,6 +180,12 @@ class SignInController extends Controller
 
     private function signedIn(User $user, string $device, bool $remember): SignInResource
     {
+        if ($user->isSuspended()) {
+            $this->log->record(SecurityLog::Blocked, $user, reason: 'suspended');
+
+            throw ValidationException::withMessages(['email' => EnsureAccountIsActive::Message]);
+        }
+
         if ($user->hasEnabledTwoFactorAuthentication()) {
             return new SignInResource(['challenge' => $this->signIn->challenge($user, $device, $remember)]);
         }
