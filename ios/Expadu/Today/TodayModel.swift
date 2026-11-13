@@ -1,4 +1,5 @@
 import API
+import OSLog
 import Core
 import CoreLocation
 import Maps
@@ -64,7 +65,7 @@ final class TodayModel {
 
     /// What just changed, for the note; `undo` puts it back.
     struct Note: Equatable, Identifiable {
-        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea), way(String) }
+        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea), way(String), ride(String) }
 
         let id = UUID()
         let text: String
@@ -80,11 +81,11 @@ final class TodayModel {
     private(set) var cardFlips = 0
     private var cardTimer: Task<Void, Never>?
 
-    private func sayInCard(_ next: Note) {
+    private func sayInCard(_ next: Note, seconds: Int = 7) {
         withAnimation(Motion.spring) { cardNote = next }
         cardTimer?.cancel()
         cardTimer = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(7))
+            try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.3)) { self?.cardNote = nil }
         }
@@ -197,8 +198,97 @@ final class TodayModel {
         }
     }
 
-    /// Undo from the card's note: the way the plan had before.
+    // MARK: Trip sync: the tram they're really on
+
+    /// Unsure which tram they're on (the 16 and the 18 a minute apart): asked in place, one tap each.
+    struct RideChoice: Equatable {
+        let index: Int
+        let from: String
+        let at: Date
+        let bus: Bool
+        let rides: [AppAPI.TripRide]
+    }
+
+    private(set) var rideChoice: RideChoice?
+    /// Rides already settled this trip (switched, chosen, or waved off): never asked again.
+    private var settledRides: Set<String> = []
+
+    /// The phone left a ride's stop at another time than planned: which tram was it? Sure, the trip
+    /// follows it with Undo in the card's note; unsure, asked in place; the planned one late, nothing.
+    func rideLeft(_ api: AppAPI, leg: TodayPage.Trip.Leg, index: Int, at left: Date) async {
+        let key = "\(leg.from)|\(leg.departTime)"
+        guard !settledRides.contains(key) else { return }
+        do throws(APIFailure) {
+            let found = try await api.tripRideCheck(leg: index, from: leg.from, at: leg.departAt, leftAt: left)
+            PhoneFollow.log.info("which tram: \(String(describing: found), privacy: .public)")
+            switch found {
+            case .planned, .unknown:
+                settledRides.insert(key)
+            case let .sure(ride):
+                settledRides.insert(key)
+                await takeRide(api, ride, index: index, from: leg.from, at: leg.departAt)
+            case let .choose(rides):
+                withAnimation(Motion.spring) { rideChoice = RideChoice(index: index, from: leg.from, at: leg.departAt, bus: leg.mode == "bus", rides: rides) }
+            }
+        } catch {}
+    }
+
+    /// The trip follows that tram from its stop on: the rest planned again from it, with Undo.
+    func takeRide(_ api: AppAPI, _ ride: AppAPI.TripRide, index: Int, from: String, at: Date) async {
+        settledRides.insert("\(from)|\(Self.clock(at))")
+        withAnimation(.easeOut(duration: 0.2)) { rideChoice = nil }
+        do throws(APIFailure) {
+            let switched = try await api.tripRideSwitch(leg: index, from: from, at: at, to: ride)
+            await rideSwitched(api, switched, said: "You’re on the \(switched.line) at \(switched.departTime) · there \(switched.arriveTime)")
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
+    /// A change a delay broke: the next tram there, taken for them, with Undo.
+    func catchNext(_ api: AppAPI, leg: TodayPage.Trip.Leg, index: Int, readyAt: Date) async {
+        let key = "next|\(leg.from)|\(leg.departTime)"
+        guard !settledRides.contains(key) else { return }
+        settledRides.insert(key)
+        do throws(APIFailure) {
+            let switched = try await api.tripRideNext(leg: index, from: leg.from, at: leg.departAt, readyAt: readyAt)
+            await rideSwitched(api, switched, said: "The \(leg.line ?? "connection") goes before you get there: take the \(switched.line) at \(switched.departTime) · there \(switched.arriveTime)")
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
+    /// Not any of them: the trip stays as it is, and this ride isn't asked about again.
+    func dismissRideChoice() {
+        if let choice = rideChoice { settledRides.insert("\(choice.from)|\(Self.clock(choice.at))") }
+        withAnimation(.easeOut(duration: 0.2)) { rideChoice = nil }
+    }
+
+    private func rideSwitched(_ api: AppAPI, _ switched: AppAPI.TripRideSwitch, said: String) async {
+        await load(api, quietly: true)
+        cardFlips += 1
+        // Long enough to see on the way and undo; the steps themselves show the new times.
+        sayInCard(Note(text: said, symbol: "tram.fill", undo: .ride(switched.undo)), seconds: 45)
+    }
+
+    private static func clock(_ date: Date) -> String {
+        date.formatted(Date.FormatStyle().hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
+    }
+
+    /// Undo from the card's note: the way the plan had before, or the tram the trip had before.
     func undoCard(_ api: AppAPI) async {
+        if case let .ride(undo)? = cardNote?.undo {
+            withAnimation(.easeOut(duration: 0.2)) { cardNote = nil }
+            do throws(APIFailure) {
+                try await api.tripRideUndo(undo)
+                await load(api, quietly: true)
+                cardFlips += 1
+                sayInCard(Note(text: "Back to the tram you had.", symbol: "arrow.uturn.backward"))
+            } catch {
+                say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
+            return
+        }
         guard case let .way(undo)? = cardNote?.undo else { return }
         withAnimation(.easeOut(duration: 0.2)) { cardNote = nil }
         do throws(APIFailure) {
@@ -234,6 +324,14 @@ final class TodayModel {
             do throws(APIFailure) {
                 try await api.undoWay(undo)
                 say(Note(text: "Back to the way you had", symbol: "arrow.uturn.backward"))
+                await load(api, quietly: true)
+            } catch {
+                say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
+        case let .ride(undo):
+            do throws(APIFailure) {
+                try await api.tripRideUndo(undo)
+                say(Note(text: "Back to the tram you had", symbol: "arrow.uturn.backward"))
                 await load(api, quietly: true)
             } catch {
                 say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))

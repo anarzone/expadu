@@ -204,6 +204,12 @@ struct ShellView: View {
         .onChange(of: today.page?.trip, initial: true) { _, trip in
             if let trip { planner.follow(trip) } else { planner.stopFollowing() }
         }
+        // Trip sync: the tram they're really on, and the next one when a delay breaks a change.
+        .task {
+            let api = session.api
+            planner.follower.departed = { leg, index, left in Task { await today.rideLeft(api, leg: leg, index: index, at: left) } }
+            planner.follower.changeBroken = { leg, index, ready in Task { await today.catchNext(api, leg: leg, index: index, readyAt: ready) } }
+        }
     }
 
     /// Down hides the bar's words to a circle; up, or the top of the page, brings them back.

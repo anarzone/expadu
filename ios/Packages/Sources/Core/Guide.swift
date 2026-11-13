@@ -43,6 +43,8 @@ public struct Guide: Sendable {
         /// Metres from the line, and metres left on this leg.
         public let offBy: Double
         public let metresLeft: Double
+        /// Metres along this leg from its start (trip sync: a ride has pulled away from its stop).
+        public let along: Double
         public let offRoute: Bool
         public let arrived: Bool
         /// On foot: the next turn and how far it is.
@@ -96,7 +98,7 @@ public struct Guide: Sendable {
 
         // Still getting to where the way starts (the router begins on the nearest path, not the doorstep).
         let starting = lines.first.flatMap { first in first.points.first.map { Self.metres(point, $0) <= Self.startMetres && best.line.leg == first.leg } } ?? false
-        return Position(leg: best.line.leg, step: step, offBy: best.offBy, metresLeft: max(0, total - best.along),
+        return Position(leg: best.line.leg, step: step, offBy: best.offBy, metresLeft: max(0, total - best.along), along: best.along,
                         offRoute: best.offBy > Self.offRouteMetres && !arrived && !starting, arrived: arrived,
                         turn: turn, metresToTurn: toTurn, missed: missed)
     }
