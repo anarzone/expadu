@@ -4,6 +4,7 @@ namespace App\Security;
 
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -16,7 +17,9 @@ use Illuminate\Support\Facades\Crypt;
  *   without the stamp, didn't come from someone typing.
  *
  * What a caught post gets back is up to the form; the waitlist and the
- * reset form answer as if it worked, so the script learns nothing.
+ * reset forms answer as if it worked, so the script learns nothing. The
+ * iPhone app fetches its stamp from GET /api/v1/auth/form when its sign-in
+ * screen opens.
  */
 final class FormTraps
 {
@@ -54,6 +57,17 @@ final class FormTraps
         }
 
         return now()->getTimestamp() - $drawnAt < self::MinSeconds ? 'too_fast' : null;
+    }
+
+    /**
+     * Spends the post's stamp: true the first time it's used. A stamp makes
+     * one account, so a script can't fetch one and post a hundred times.
+     */
+    public function claim(Request $request): bool
+    {
+        $stamp = (string) $request->input(self::Stamp, '');
+
+        return $stamp !== '' && Cache::add('form-stamp:'.sha1($stamp), true, now()->addSeconds(self::MaxAgeSeconds + 60));
     }
 
     /** True when the form was drawn so long ago it should be reloaded first. */

@@ -8671,6 +8671,35 @@
                 }
             }
         },
+        "/auth/form": {
+            "get": {
+                "operationId": "signIn.form",
+                "summary": "When the sign-in screen opened, sealed: sign-up and the reset link carry\nit back (FormTraps), as the website's forms do. Fetch it when the screen\nopens and again after it's used; it works for a day",
+                "tags": [
+                    "SignIn"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "drawn": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "drawn"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/register": {
             "post": {
                 "operationId": "signIn.register",
@@ -8701,6 +8730,10 @@
                                     "device_name": {
                                         "type": "string",
                                         "maxLength": 255
+                                    },
+                                    "drawn": {
+                                        "type": "string",
+                                        "description": "From GET /auth/form, at least 3 seconds old (FormTraps)."
                                     }
                                 },
                                 "required": [
@@ -8708,7 +8741,8 @@
                                     "email",
                                     "password",
                                     "password_confirmation",
-                                    "device_name"
+                                    "device_name",
+                                    "drawn"
                                 ]
                             }
                         }
@@ -8734,7 +8768,7 @@
         "/auth/forgot-password": {
             "post": {
                 "operationId": "signIn.forgotPassword",
-                "summary": "Answers the same whether or not the address has an account",
+                "summary": "Answers the same whether or not the address has an account, and when\nthe request looks scripted (no stamp from GET /auth/form, or seconds\nold): then no mail goes out, as on the website",
                 "tags": [
                     "SignIn"
                 ],
@@ -8748,6 +8782,12 @@
                                     "email": {
                                         "type": "string",
                                         "format": "email"
+                                    },
+                                    "drawn": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
                                     }
                                 },
                                 "required": [
