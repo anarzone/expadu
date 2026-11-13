@@ -27540,6 +27540,133 @@ public enum Operations {
             }
         }
     }
+    /// When the sign-in screen opened, sealed: sign-up and the reset link carry
+    /// it back (FormTraps), as the website's forms do. Fetch it when the screen
+    /// opens and again after it's used; it works for a day
+    ///
+    /// - Remark: HTTP `GET /auth/form`.
+    /// - Remark: Generated from `#/paths//auth/form/get(signIn.form)`.
+    public enum SignIn_form {
+        public static let id: Swift.String = "signIn.form"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/auth/form/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignIn_form.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignIn_form.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.SignIn_form.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.SignIn_form.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/form/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/auth/form/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/auth/form/GET/responses/200/content/json/drawn`.
+                        public var drawn: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - drawn:
+                        public init(drawn: Swift.String) {
+                            self.drawn = drawn
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case drawn
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/auth/form/GET/responses/200/content/application\/json`.
+                    case json(Operations.SignIn_form.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.SignIn_form.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SignIn_form.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SignIn_form.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//auth/form/get(signIn.form)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.SignIn_form.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.SignIn_form.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// A new account, signed in, its verification link on the way (as the web's)
     ///
     /// - Remark: HTTP `POST /auth/register`.
@@ -27573,6 +27700,10 @@ public enum Operations {
                     public var passwordConfirmation: Swift.String
                     /// - Remark: Generated from `#/paths/auth/register/POST/requestBody/json/device_name`.
                     public var deviceName: Swift.String
+                    /// From GET /auth/form, at least 3 seconds old (FormTraps).
+                    ///
+                    /// - Remark: Generated from `#/paths/auth/register/POST/requestBody/json/drawn`.
+                    public var drawn: Swift.String
                     /// Creates a new `JsonPayload`.
                     ///
                     /// - Parameters:
@@ -27581,18 +27712,21 @@ public enum Operations {
                     ///   - password:
                     ///   - passwordConfirmation:
                     ///   - deviceName:
+                    ///   - drawn: From GET /auth/form, at least 3 seconds old (FormTraps).
                     public init(
                         name: Swift.String,
                         email: Swift.String,
                         password: Swift.String,
                         passwordConfirmation: Swift.String,
-                        deviceName: Swift.String
+                        deviceName: Swift.String,
+                        drawn: Swift.String
                     ) {
                         self.name = name
                         self.email = email
                         self.password = password
                         self.passwordConfirmation = passwordConfirmation
                         self.deviceName = deviceName
+                        self.drawn = drawn
                     }
                     public enum CodingKeys: String, CodingKey {
                         case name
@@ -27600,6 +27734,7 @@ public enum Operations {
                         case password
                         case passwordConfirmation = "password_confirmation"
                         case deviceName = "device_name"
+                        case drawn
                     }
                 }
                 /// - Remark: Generated from `#/paths/auth/register/POST/requestBody/content/application\/json`.
@@ -27725,7 +27860,9 @@ public enum Operations {
             }
         }
     }
-    /// Answers the same whether or not the address has an account
+    /// Answers the same whether or not the address has an account, and when
+    /// the request looks scripted (no stamp from GET /auth/form, or seconds
+    /// old): then no mail goes out, as on the website
     ///
     /// - Remark: HTTP `POST /auth/forgot-password`.
     /// - Remark: Generated from `#/paths//auth/forgot-password/post(signIn.forgotPassword)`.
@@ -27750,15 +27887,23 @@ public enum Operations {
                 public struct JsonPayload: Codable, Hashable, Sendable {
                     /// - Remark: Generated from `#/paths/auth/forgot-password/POST/requestBody/json/email`.
                     public var email: Swift.String
+                    /// - Remark: Generated from `#/paths/auth/forgot-password/POST/requestBody/json/drawn`.
+                    public var drawn: Swift.String?
                     /// Creates a new `JsonPayload`.
                     ///
                     /// - Parameters:
                     ///   - email:
-                    public init(email: Swift.String) {
+                    ///   - drawn:
+                    public init(
+                        email: Swift.String,
+                        drawn: Swift.String? = nil
+                    ) {
                         self.email = email
+                        self.drawn = drawn
                     }
                     public enum CodingKeys: String, CodingKey {
                         case email
+                        case drawn
                     }
                 }
                 /// - Remark: Generated from `#/paths/auth/forgot-password/POST/requestBody/content/application\/json`.

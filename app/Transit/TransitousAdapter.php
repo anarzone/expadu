@@ -103,8 +103,17 @@ class TransitousAdapter implements RouteService
     /** Runs kept of each route the alternatives add: the next one and the one after. */
     private const ALTERNATIVE_RUNS = 2;
 
-    /** Stops of the best way's first run asked as a `via`, the nearest the destination. */
+    /** Stops of the best way's first run asked as a `via` ({@see changeStops}). */
     private const CONTINUATION_STOPS = 3;
+
+    /** Stops of a run looked through for where to change: all of a city run. */
+    private const RUN_STOPS_SCANNED = 60;
+
+    /**
+     * How much later than the best a change on the way may get there: the 12 then 18 at Ebertplatz,
+     * eight minutes after the 12 then 3, is a way Google lists too (the 16 there rides as its "or").
+     */
+    private const CHANGE_ON_THE_WAY_SLACK_MINUTES = 10;
 
     /** Stops of the best way's main ride asked as a `via` to change onto it, the nearest the start. */
     private const WAYS_IN_STOPS = 3;
@@ -463,7 +472,8 @@ class TransitousAdapter implements RouteService
         $known = array_fill_keys(array_map($this->route(...), $shown), true);
         $added = [];
         $onward = [];
-        $latest = $best?->arriveAt->addMinutes(self::CONTINUATION_SLACK_MINUTES);
+        $stayed = [];
+        $bestAt = $best?->arriveAt;
         foreach ($responses as $name => $response) {
             if (! $response instanceof Response || ! $response->successful()) {
                 continue;
@@ -476,11 +486,15 @@ class TransitousAdapter implements RouteService
                 }
                 if ($via === null) {
                     $added[$this->route($journey)][$journey->departAt->getTimestamp()] = $journey;
-                } elseif ($journey->arriveAt->lte($latest) && $this->keeps($via, $journey)) {
+                } elseif ($journey->arriveAt->lte($bestAt?->addMinutes($via['slack'] ?? self::CONTINUATION_SLACK_MINUTES)) && $this->keeps($via, $journey)) {
                     $onward[$this->route($journey)] ??= $journey;
+                    if ($via['kind'] === 'on' && isset($via['ask']['viaMinimumStay'])) {
+                        $stayed[$this->route($journey)] = $via['stop'];
+                    }
                 }
             }
         }
+        $onward = $this->withoutTheStay($to, $onward, $stayed);
 
         $main = $itineraries;
         foreach ($added as $route => $runs) {
@@ -506,8 +520,9 @@ class TransitousAdapter implements RouteService
      * The `via` asks for other ways around the best one (soonest there, with a ride), as Google and
      * Apple list them; the router keeps one way per run, so these are asked for by name:
      *
-     * - ways on (when the best way changes): the stops its first run passes after boarding, nearest the
-     *   destination; kept when they ride that same first run ("12 then 13", "12 then S19");
+     * - ways on (when the best way changes): the stops its first run passes where a line serving the
+     *   destination stops too ({@see changeStops}); kept when they ride that same first run ("12 then
+     *   13", "12 then S19", "12 then 16" at Ebertplatz);
      * - ways in: the stops its main ride (the longest) passes after its boarding stop, nearest the
      *   start and within {@see WAYS_IN_KM}, each with a minute's stay so the way changes there; kept
      *   when another ride brings them onto that line there ("16 / 18 to Ebertplatz, then the 12", not
@@ -518,7 +533,7 @@ class TransitousAdapter implements RouteService
      *   the 3/4 to Suevenstr.).
      *
      * @param  list<Journey>  $itineraries
-     * @return array{0: Journey|null, 1: array<string, array{ask: array<string, mixed>, kind: string, run: string|null, line: string|null, stop: string, rides?: int, walk?: int}>}
+     * @return array{0: Journey|null, 1: array<string, array{ask: array<string, mixed>, kind: string, run: string|null, line: string|null, stop: string, rides?: int, walk?: int, slack?: int}>}
      */
     private function viaAsks(GeoPoint $from, GeoPoint $to, array $itineraries): array
     {
@@ -532,9 +547,14 @@ class TransitousAdapter implements RouteService
 
         $vias = [];
         $first = $this->firstRide($best);
+        $aroundTo = $this->stopsNear($to, self::WAYS_OUT_METRES);
         if ($best->transfers >= 1) {
-            foreach ($this->runStopsAfter($first, $to, self::CONTINUATION_STOPS, beforeOff: false) as $n => $stop) {
-                $vias["on{$n}"] = ['ask' => ['via' => $stop['id']], 'kind' => 'on', 'run' => $first->tripId, 'line' => null, 'stop' => $stop['name']];
+            foreach ($this->changeStops($first, $to, $aroundTo) as $n => $stop) {
+                $vias["on{$n}"] = [
+                    'ask' => ['via' => $stop['id']] + ($stop['change'] ? ['viaMinimumStay' => 1] : []),
+                    'kind' => 'on', 'run' => $first->tripId, 'line' => null, 'stop' => $stop['name'],
+                    'slack' => $stop['change'] ? self::CHANGE_ON_THE_WAY_SLACK_MINUTES : self::CONTINUATION_SLACK_MINUTES,
+                ];
             }
         }
 
@@ -566,7 +586,7 @@ class TransitousAdapter implements RouteService
         // Ways out: the other stops near the destination, getting off there (the 1/7/9 to Deutzer
         // Freiheit as well as the 3/4 to Suevenstr.); kept when no more changes get them there.
         $off = collect($best->legs)->filter(fn (Leg $leg) => $leg->isTransit())->last();
-        $nearby = collect($this->stopsNear($to, self::WAYS_OUT_METRES))
+        $nearby = collect($aroundTo)
             ->reject(fn (array $stop) => $stop['name'] === $off?->to->name)
             ->sortBy(fn (array $stop) => $this->metresBetween(new GeoPoint($stop['lat'], $stop['lng']), $to))
             ->take(self::WAYS_OUT_STOPS)
@@ -579,11 +599,132 @@ class TransitousAdapter implements RouteService
     }
 
     /**
+     * A change on the way is asked with a minute's stay, so the walk across starts a minute late: the
+     * 12 reaches Ebertplatz at 08:30, the walk across starts 08:31 and misses the 16 at 08:36 that
+     * Google takes. Each such way is asked on again from that stop, at the arrival plus the walk
+     * across, and what that finds replaces the rest of the way when it gets there sooner.
+     *
+     * @param  array<string, Journey>  $onward  by route
+     * @param  array<string, string>  $stayed  route => the stop its change was asked at
+     * @return array<string, Journey>
+     */
+    private function withoutTheStay(GeoPoint $to, array $onward, array $stayed): array
+    {
+        $asks = [];
+        foreach ($stayed as $route => $stop) {
+            $legs = $onward[$route]->legs;
+            foreach ($legs as $i => $leg) {
+                $walk = $legs[$i + 1] ?? null;
+                $next = $legs[$i + 2] ?? null;
+                if (! $leg->isTransit() || $leg->to->name !== $stop) {
+                    continue;
+                }
+                if ($walk?->mode === 'walk' && $next?->isTransit() && $next->from->stopId !== null) {
+                    $ready = $leg->arriveAt->addMinutes($walk->durationMin);
+                    if ($next->departAt->gt($ready)) {
+                        $asks[$route] = ['off' => $i, 'ready' => $ready, 'stop' => $next->from->stopId];
+                    }
+                }
+                break;
+            }
+        }
+        $timeout = $this->callTimeout(2.0);
+        if ($asks === [] || $timeout === null) {
+            return $onward;
+        }
+
+        try {
+            $responses = PerfLogger::measure("ext:{$this->source()}.change", fn () => Http::pool(fn (Pool $pool) => array_map(
+                fn (string $route, array $ask) => $pool->as($route)
+                    ->baseUrl($this->baseUrl())
+                    ->timeout($timeout)
+                    ->connectTimeout(min(2.0, $timeout))
+                    ->withHeaders(['User-Agent' => 'expadu.com'])
+                    ->get($this->planPath(), $this->planQuery($to, $to, $ask['ready'], 2, ['fromPlace' => $ask['stop'], ...$this->directOnly()])),
+                array_keys($asks),
+                array_values($asks),
+            )));
+        } catch (\Throwable) {
+            return $onward;
+        }
+
+        foreach ($asks as $route => $ask) {
+            $response = $responses[$route] ?? null;
+            if (! $response instanceof Response || ! $response->successful()) {
+                continue;
+            }
+            $journey = $onward[$route];
+            $off = $journey->legs[$ask['off']];
+            $sooner = null;
+            foreach ($response->json('itineraries', []) as $itinerary) {
+                $on = $this->mapItinerary($itinerary);
+                $rest = $on === null ? [] : array_values(array_filter(
+                    $on->legs,
+                    fn (Leg $leg, int $k) => ! ($k === 0 && $leg->mode === 'walk' && $leg->durationMin === 0),
+                    ARRAY_FILTER_USE_BOTH,
+                ));
+                if ($rest === [] || ! $rest[0]->isTransit() || $rest[0]->lineName === $off->lineName
+                    || $on->arriveAt->gte($sooner?->arriveAt ?? $journey->arriveAt)) {
+                    continue;
+                }
+                $sooner = new Journey($rest, $on->departAt, $on->arriveAt, 0, 0);
+            }
+            if ($sooner === null) {
+                continue;
+            }
+
+            $walk = $journey->legs[$ask['off'] + 1];
+            $across = new Leg(
+                mode: 'walk', from: $walk->from, to: $walk->to, departAt: $off->arriveAt, arriveAt: $ask['ready'],
+                durationMin: $walk->durationMin, polyline: $walk->polyline, distanceM: $walk->distanceM, steps: $walk->steps,
+            );
+            $retimed = new Journey(
+                legs: [...array_slice($journey->legs, 0, $ask['off'] + 1), $across, ...$sooner->legs],
+                departAt: $journey->departAt,
+                arriveAt: $sooner->arriveAt,
+                durationMin: (int) round(($sooner->arriveAt->getTimestamp() - $journey->departAt->getTimestamp()) / 60),
+                transfers: $journey->transfers,
+            );
+            unset($onward[$route]);
+            $onward[$this->route($retimed)] ??= $retimed;
+        }
+
+        return $onward;
+    }
+
+    /**
+     * Where the best way's first run is asked to change, for ways on: the stops it passes where a
+     * line that serves the stops around the destination stops too; those on the way, before the best
+     * way gets off, first; then the nearest the destination. The 12 from Merkenich passes Rudolfplatz
+     * and Hansaring nearer Cafe Nova, but only at Ebertplatz do the 16 and 18 to Appellhofplatz stop
+     * (Google's "12 then 16"). Without the timetable, or with no such stop: the nearest stops.
+     *
+     * @param  list<array{name: string, lat: float, lng: float, id: string}>  $aroundTo
+     * @return list<array{name: string, lat: float, lng: float, id: string, past: bool}>
+     */
+    private function changeStops(Leg $first, GeoPoint $to, array $aroundTo): array
+    {
+        $passed = $this->runStopsAfter($first, $to, self::RUN_STOPS_SCANNED, beforeOff: false);
+        $lines = app(StopLines::class)->lines([...array_column($passed, 'name'), ...array_column($aroundTo, 'name')]);
+        $reach = array_diff(array_merge(...array_map(fn (array $stop) => $lines[$stop['name']] ?? [], $aroundTo)), [$first->lineName]);
+        $changes = array_values(array_filter($passed, fn (array $stop) => array_intersect($lines[$stop['name']] ?? [], $reach) !== []));
+        if ($changes === []) {
+            return array_map(fn (array $stop) => $stop + ['change' => false], array_slice($passed, 0, self::CONTINUATION_STOPS));
+        }
+        // Stable: on the way first, each part still nearest the destination first.
+        usort($changes, fn (array $a, array $b) => $a['past'] <=> $b['past']);
+
+        // A change stop on the way is asked with a minute's stay: without one the router rides
+        // through it on the same tram and answers with the best way again.
+        return array_map(fn (array $stop) => $stop + ['change' => ! $stop['past']], array_slice($changes, 0, self::CONTINUATION_STOPS));
+    }
+
+    /**
      * The stops a ride's run passes after it boards, nearest a point: up to where the way gets off
-     * ($beforeOff), else all the way on but that stop.
+     * ($beforeOff), else all the way on but that stop. `past`: after the stop the way gets off.
      *
      * @param  (callable(array{name: string, lat: float, lng: float, id: string|null}): bool)|null  $only
-     * @return list<array{name: string, lat: float, lng: float, id: string}>
+     * @return list<array{name: string, lat: float, lng: float, id: string, past: bool}>
      */
     private function runStopsAfter(?Leg $ride, GeoPoint $nearest, int $take, bool $beforeOff, ?callable $only = null): array
     {
@@ -597,6 +738,7 @@ class TransitousAdapter implements RouteService
         }
 
         $boarded = false;
+        $past = false;
         $stops = [];
         foreach ($run['stops'] ?? [] as $stop) {
             if (! $boarded) {
@@ -608,11 +750,12 @@ class TransitousAdapter implements RouteService
                 if ($beforeOff) {
                     break;
                 }
+                $past = true;
 
                 continue;
             }
             if ($stop['id'] !== null && ($only === null || $only($stop))) {
-                $stops[$stop['name']] = $stop;
+                $stops[$stop['name']] = $stop + ['past' => $past];
             }
         }
 
@@ -626,7 +769,7 @@ class TransitousAdapter implements RouteService
     /**
      * Whether a way a `via` ask found is the alternative it was asked for.
      *
-     * @param  array{kind: string, run: string|null, line: string|null, stop: string, rides?: int, walk?: int}  $via
+     * @param  array{kind: string, run: string|null, line: string|null, stop: string, rides?: int, walk?: int, slack?: int}  $via
      */
     private function keeps(array $via, Journey $journey): bool
     {

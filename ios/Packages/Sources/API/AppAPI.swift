@@ -84,9 +84,19 @@ public struct AppAPI: Sendable {
         }
     }
 
-    public func register(name: String, email: String, password: String) async throws(APIFailure) -> SignInOutcome {
+    /// When the sign-in screen opened, sealed by the server. Sign-up and the reset link carry it back
+    /// a few seconds later, as the website's forms do, so a script can't post them blind.
+    public func formStamp() async throws(APIFailure) -> String {
+        let output = try await calling { try await client.signIn_form() }
+        switch output {
+        case let .ok(ok): return try body { try ok.body.json }.drawn
+        case let .undocumented(status, _): throw failure(status)
+        }
+    }
+
+    public func register(name: String, email: String, password: String, drawn: String) async throws(APIFailure) -> SignInOutcome {
         let output = try await calling {
-            try await client.signIn_register(body: .json(.init(name: name, email: email, password: password, passwordConfirmation: password, deviceName: device)))
+            try await client.signIn_register(body: .json(.init(name: name, email: email, password: password, passwordConfirmation: password, deviceName: device, drawn: drawn)))
         }
         switch output {
         case let .ok(ok): return try outcome(try body { try ok.body.json })
@@ -95,9 +105,9 @@ public struct AppAPI: Sendable {
         }
     }
 
-    public func forgotPassword(email: String) async throws(APIFailure) {
+    public func forgotPassword(email: String, drawn: String?) async throws(APIFailure) {
         let output = try await calling {
-            try await client.signIn_forgotPassword(body: .json(.init(email: email)))
+            try await client.signIn_forgotPassword(body: .json(.init(email: email, drawn: drawn)))
         }
         switch output {
         case .ok: return

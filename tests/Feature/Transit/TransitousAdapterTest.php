@@ -3,6 +3,7 @@
 use App\Services\GtfsRailStations;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Polyline;
+use App\Transit\StopLines;
 use App\Transit\TransitousAdapter;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
@@ -395,6 +396,78 @@ test('when the way walks long to its tram, a ride to that stop is asked for and 
     Cache::flush();
     $answer = $ridden(840);
     expect($lines())->toBe(['12']);
+});
+
+test('ways on change where a line that reaches the destination stops, and catch the first one there', function () {
+    // Merkenich → Cafe Nova: the best way is the 12 then the 3 at Friesenplatz. Rudolfplatz and
+    // Hansaring are nearer, but only at Ebertplatz do the 16 and 18 to Appellhofplatz stop (Google's
+    // "12 then 16"). Asked with a minute's stay the router takes the 18; asked on from Ebertplatz at
+    // the 12's arrival plus the walk across, the 16 four minutes earlier.
+    $stops = [
+        'Merkenich' => [51.02, 6.95], 'Ebertplatz' => [50.9497, 6.9573], 'Hansaring' => [50.9475, 6.9435],
+        'Friesenplatz' => [50.9405, 6.9389], 'Rudolfplatz' => [50.9367, 6.9405], 'Zollstock' => [50.90, 6.94],
+        'Appellhofplatz' => [50.9395, 6.9531],
+    ];
+    $stop = fn (string $name) => ['name' => $name, 'stopId' => "id-{$name}", 'lat' => $stops[$name][0], 'lon' => $stops[$name][1]];
+    $at = fn (string $hm) => "2026-07-06T{$hm}:00Z";
+    $ride = fn (string $line, string $trip, string $from, string $to, string $start, string $end) => fakeLeg('TRAM', [
+        'routeShortName' => $line, 'tripId' => $trip, 'from' => $stop($from), 'to' => $stop($to),
+        'startTime' => $at($start), 'endTime' => $at($end), 'duration' => 60 * ((int) substr($end, 3) - (int) substr($start, 3) + 60 * ((int) substr($end, 0, 2) - (int) substr($start, 0, 2))),
+    ]);
+    $walk = fn (int $minutes, string $start, string $end, ?string $where = null) => fakeLeg('WALK', [
+        'duration' => 60 * $minutes, 'startTime' => $at($start), 'endTime' => $at($end),
+        ...($where !== null ? ['from' => $stop($where), 'to' => $stop($where)] : []),
+    ]);
+    $way = fn (array $legs, string $start, string $end) => array_merge(fakeItinerary($legs, 1, 2400), ['startTime' => $at($start), 'endTime' => $at($end)]);
+
+    $best = $way([$walk(5, '07:00', '07:05'), $ride('12', 'run-12', 'Merkenich', 'Friesenplatz', '07:05', '07:28'), $walk(3, '07:28', '07:31', 'Friesenplatz'),
+        $ride('3', 'run-3', 'Friesenplatz', 'Appellhofplatz', '07:32', '07:38'), $walk(4, '07:38', '07:42')], '07:00', '07:42');
+    $viaEbertplatz = $way([$walk(5, '07:00', '07:05'), $ride('12', 'run-12', 'Merkenich', 'Ebertplatz', '07:05', '07:20'), $walk(6, '07:21', '07:27', 'Ebertplatz'),
+        $ride('18', 'run-18', 'Ebertplatz', 'Appellhofplatz', '07:32', '07:38'), $walk(4, '07:38', '07:42')], '07:00', '07:42');
+    $onFromEbertplatz = $way([$ride('16', 'run-16', 'Ebertplatz', 'Appellhofplatz', '07:26', '07:32'), $walk(4, '07:32', '07:36')], '07:26', '07:36');
+
+    app()->instance(StopLines::class, new class extends StopLines
+    {
+        public function lines(array $names): array
+        {
+            $lines = [
+                'Ebertplatz' => ['12', '15', '16', '18'], 'Hansaring' => ['12', '15'], 'Friesenplatz' => ['3', '4', '5', '12', '15'],
+                'Rudolfplatz' => ['1', '7', '12', '15'], 'Zollstock' => ['12'], 'Appellhofplatz' => ['3', '4', '5', '16', '18'],
+            ];
+
+            return array_combine($names, array_map(fn (string $name) => $lines[$name] ?? null, $names));
+        }
+    });
+
+    Http::fake(function ($request) use ($stop, $best, $viaEbertplatz, $onFromEbertplatz) {
+        $url = urldecode($request->url());
+
+        return match (true) {
+            str_contains($url, '/api/v1/trip') => Http::response(['legs' => [[
+                'from' => $stop('Merkenich'),
+                'intermediateStops' => [$stop('Ebertplatz'), $stop('Hansaring'), $stop('Friesenplatz'), $stop('Rudolfplatz')],
+                'to' => $stop('Zollstock'),
+            ]]]),
+            str_contains($url, '/api/v1/map/stops') => Http::response([$stop('Appellhofplatz')]),
+            str_contains($url, 'via=id-Ebertplatz') && str_contains($url, 'viaMinimumStay=1') => Http::response(['itineraries' => [$viaEbertplatz]]),
+            str_contains($url, 'fromPlace=id-Ebertplatz') => Http::response(['itineraries' => [$onFromEbertplatz]]),
+            str_contains($url, 'directModes=') => Http::response(['direct' => []]),
+            default => Http::response(['itineraries' => [$best]]),
+        };
+    });
+
+    $result = (new TransitousAdapter)->plan(new GeoPoint(51.0227, 6.9491), new GeoPoint(50.9390, 6.9490));
+    $routes = collect($result->journeys)->map(fn ($j) => implode('>', $j->lines()))->all();
+
+    expect($routes)->toContain('12>3', '12>16')->not->toContain('12>18');
+    $sixteen = collect($result->journeys)->first(fn ($j) => $j->lines() === ['12', '16']);
+    // Off the 12 at 07:20, six minutes across, on the 16 at 07:26: there at 07:36.
+    expect($sixteen->legs[2]->departAt->utc()->format('H:i'))->toBe('07:20')
+        ->and($sixteen->legs[2]->arriveAt->utc()->format('H:i'))->toBe('07:26')
+        ->and($sixteen->arriveAt->utc()->format('H:i'))->toBe('07:36');
+    // Not asked where no line to the destination stops (Hansaring, Rudolfplatz).
+    Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'via=id-Hansaring'));
+    Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'via=id-Rudolfplatz'));
 });
 
 test('adds other ways on from the best way\'s first tram, asked via the stops it passes nearest the destination', function () {

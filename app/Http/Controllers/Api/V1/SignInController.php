@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Resources\Api\V1\SignInResource;
 use App\Models\User;
+use App\Security\FormTraps;
 use App\Security\SecurityLog;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
@@ -129,6 +130,16 @@ class SignInController extends Controller
         return $this->signedIn($user, $data['device_name'], true);
     }
 
+    /**
+     * When the sign-in screen opened, sealed: sign-up and the reset link carry
+     * it back (FormTraps), as the website's forms do. Fetch it when the screen
+     * opens and again after it's used; it works for a day.
+     */
+    public function form(): JsonResponse
+    {
+        return response()->json(['drawn' => FormTraps::stamp()]);
+    }
+
     /** A new account, signed in, its verification link on the way (as the web's). */
     public function register(Request $request, CreateNewUser $creator): SignInResource
     {
@@ -138,6 +149,8 @@ class SignInController extends Controller
             'password' => ['required', 'string'],
             'password_confirmation' => ['required', 'string'],
             'device_name' => ['required', 'string', 'max:255'],
+            // From GET /auth/form, at least 3 seconds old (FormTraps).
+            'drawn' => ['required', 'string'],
         ]);
 
         $user = $creator->create($request->only(['name', 'email', 'password', 'password_confirmation']));
@@ -146,11 +159,24 @@ class SignInController extends Controller
         return new SignInResource(['user' => $user, ...$this->signIn->issue($user, $request->string('device_name')->value(), true)]);
     }
 
-    /** Answers the same whether or not the address has an account. */
-    public function forgotPassword(Request $request): JsonResponse
+    /**
+     * Answers the same whether or not the address has an account, and when
+     * the request looks scripted (no stamp from GET /auth/form, or seconds
+     * old): then no mail goes out, as on the website.
+     */
+    public function forgotPassword(Request $request, FormTraps $traps): JsonResponse
     {
-        $data = $request->validate(['email' => ['required', 'string', 'email']]);
-        Password::broker()->sendResetLink(['email' => $data['email']]);
+        $data = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'drawn' => ['nullable', 'string'],
+        ]);
+
+        $suspicion = $traps->suspicion($request) ?? ($traps->expired($request) ? 'expired' : null);
+        if ($suspicion !== null) {
+            $this->log->record(SecurityLog::Blocked, email: $data['email'], reason: $suspicion);
+        } else {
+            Password::broker()->sendResetLink(['email' => $data['email']]);
+        }
 
         return response()->json(['sent' => true]);
     }

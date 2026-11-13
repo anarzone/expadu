@@ -24,6 +24,8 @@ struct SignInView: View {
     @State private var challenge: String?
     @State private var code = ""
     @State private var appleNonce = ""
+    /// When this screen opened, sealed by the server: sign-up and the reset link carry it back (bot traps).
+    @State private var drawn: String?
     @FocusState private var focus: Field?
     @Environment(\.webAuthenticationSession) private var webAuth
 
@@ -69,6 +71,7 @@ struct SignInView: View {
                 step = .checkEmail
             }
         }
+        .task { await freshStamp() }
         .onChange(of: MotionStore.shared.replays[.posterPaste]) { paste() }
     }
 
@@ -167,10 +170,12 @@ struct SignInView: View {
             Text("At least 8 characters.").font(.geist(14)).foregroundStyle(Palette.textSoft).padding(.top, -6)
             primary(busy ? "Creating…" : "Create account") {
                 focus = nil
-                let (name, email, password) = (name, email, password)
+                let (name, email, password, drawn) = (name, email, password, drawn)
                 run { [api = session.api] () async throws(APIFailure) -> SignInOutcome in
-                    try await api.register(name: name, email: email, password: password)
+                    try await api.register(name: name, email: email, password: password, drawn: try await Self.stamp(drawn, api: api))
                 }
+                // A stamp makes one account: the next try takes a new one.
+                Task { await freshStamp() }
             }
             Text("We handle your details as our [privacy policy](https://app.expadu.com/datenschutz) describes.")
                 .font(.geist(14)).foregroundStyle(Palette.textSoft).tint(Palette.text)
@@ -316,8 +321,23 @@ struct SignInView: View {
 
     private func sendReset() {
         focus = nil
-        let email = email
-        attempt({ [api = session.api] () async throws(APIFailure) in try await api.forgotPassword(email: email) }) { step = .sent }
+        let (email, drawn) = (email, drawn)
+        attempt({ [api = session.api] () async throws(APIFailure) in
+            try await api.forgotPassword(email: email, drawn: try await Self.stamp(drawn, api: api))
+        }) { step = .sent }
+    }
+
+    private func freshStamp() async {
+        drawn = try? await session.api.formStamp()
+    }
+
+    /// The screen's stamp, or, if it couldn't be fetched when the screen opened, a new one
+    /// given the few seconds the server asks of a person.
+    private static func stamp(_ drawn: String?, api: AppAPI) async throws(APIFailure) -> String {
+        if let drawn { return drawn }
+        let fresh = try await api.formStamp()
+        try? await Task.sleep(for: .seconds(3.5))
+        return fresh
     }
 
     /// Google's own page in a sheet; its answer comes back as a one-time code only this app can use.
