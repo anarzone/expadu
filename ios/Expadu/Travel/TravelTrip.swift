@@ -207,8 +207,7 @@ struct TravelTrip: View {
             if !step.sub.isEmpty {
                 HStack(spacing: 8) {
                     if step.kind == .ride, let line = trip.badge(step) {
-                        Label(line, systemImage: "tram.fill").font(.geist(13, .bold))
-                            .padding(.horizontal, 7).frame(height: 24).background(.white, in: .rect(cornerRadius: 6)).foregroundStyle(Palette.text)
+                        LineBadge(line: line, color: step.color, height: 24, mode: trip.legs[step.leg ?? 0].mode, icon: true, onColour: true)
                     }
                     Text(step.sub).font(.geist(15, .medium))
                 }
@@ -535,10 +534,7 @@ private struct StepsFeed: View {
     @ViewBuilder
     private func mark(_ step: TodayPage.Step) -> some View {
         if step.kind == .ride, let line = trip.badge(step) {
-            let colours = LineLook(hex: step.color ?? "#00768B")
-            Text(line).font(.geist(12, .bold)).foregroundStyle(colours.ink)
-                .padding(.horizontal, 5).frame(minWidth: 26).frame(height: 20)
-                .background(colours.base, in: .rect(cornerRadius: 5))
+            LineBadge(line: line, color: step.color, height: 20)
         } else {
             Image(systemName: step.kind == .there ? "flag.fill" : step.kind == .getOff ? "arrow.down.right" : "figure.walk")
                 .font(.system(size: 12, weight: .bold)).frame(width: 26, height: 20)

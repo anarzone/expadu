@@ -8,6 +8,8 @@ use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\Dto\Leg;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * What Plan a trip says about delays and disruptions for the ways it lists,
@@ -28,6 +30,12 @@ final class TripDisruptions
     /** A KVB stop this near From or To is the one you'd start or end at. */
     private const STOP_METRES = 400;
 
+    /**
+     * A line notice that names stops is about this ride only when one of them is this close to a stop
+     * the ride makes on that line: the 18 split in Bonn says nothing to someone riding it in Cologne.
+     */
+    private const NOTICE_NEAR_METRES = 3000;
+
     /** Boarding stops whose boards are read, at most (each is a live-times call). */
     private const BOARDS = 2;
 
@@ -47,12 +55,12 @@ final class TripDisruptions
         $ends = array_values(array_unique([...$this->linesAt($from), ...$this->linesAt($to)]));
 
         $notices = collect($this->disruptions->getLineDisruptions())
-            ->map(function (array $d) use ($ridden, $ends) {
+            ->map(function (array $d) use ($ridden, $ends, $journeys, $from, $to) {
                 $lines = array_map('strval', $d['affected_lines'] ?? []);
-                $rides = array_intersect($lines, $ridden) !== [];
+                $rides = array_intersect($lines, $ridden) !== [] && $this->near($d, $this->riddenPoints($journeys, $lines));
                 $major = ($d['scale'] ?? 'minor') === 'major';
 
-                return $rides || ($major && array_intersect($lines, $ends) !== [])
+                return $rides || ($major && array_intersect($lines, $ends) !== [] && $this->near($d, [[$from->lat, $from->lng], [$to->lat, $to->lng]]))
                     ? [
                         'id' => $d['id'],
                         'title' => $d['title'] ?? '',
@@ -97,7 +105,8 @@ final class TripDisruptions
 
         $notice = collect($this->disruptions->getLineDisruptions())
             ->first(fn (array $d) => ($d['scale'] ?? 'minor') === 'major'
-                && array_intersect(array_map('strval', $d['affected_lines'] ?? []), $ridden) !== []);
+                && array_intersect(array_map('strval', $d['affected_lines'] ?? []), $ridden) !== []
+                && $this->near($d, $this->riddenPoints([$journey], array_map('strval', $d['affected_lines'] ?? []))));
         if ($notice !== null) {
             return ['notice' => [
                 'id' => $notice['id'],
@@ -114,6 +123,82 @@ final class TripDisruptions
         [$trouble] = $boards ? $this->atBoardingStops([$journey], $ridden) : [[], []];
 
         return $trouble === [] ? null : ['notice' => null, 'trouble' => $trouble[0]];
+    }
+
+    /**
+     * Whether a notice concerns these points: true when it names no stop (nothing to tell by) or when a
+     * stop it names is near one of them.
+     *
+     * @param  array<string, mixed>  $notice
+     * @param  list<array{0: float, 1: float}>  $points
+     */
+    private function near(array $notice, array $points): bool
+    {
+        $named = $this->namedStops($notice);
+        if ($named === [] || $points === []) {
+            return true;
+        }
+        foreach ($named as [$lat, $lng]) {
+            foreach ($points as [$pLat, $pLng]) {
+                if (self::metres($lat, $lng, $pLat, $pLng) <= self::NOTICE_NEAR_METRES) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Where the stops a notice names are, from the timetable; read once per notice text.
+     *
+     * @param  array<string, mixed>  $notice
+     * @return list<array{0: float, 1: float}>
+     */
+    private function namedStops(array $notice): array
+    {
+        $text = trim(($notice['title'] ?? '').' '.($notice['description'] ?? ''));
+        if ($text === '') {
+            return [];
+        }
+
+        return Cache::remember('trip:notice-stops:'.md5($text), 3600, function () use ($text): array {
+            $names = NoticeStops::in($text, (string) config('geocoding.search_default.city', 'Köln'));
+            if ($names === []) {
+                return [];
+            }
+
+            return DB::table('gtfs_stops')->whereIn('stop_name', $names)->get(['stop_lat', 'stop_lng'])
+                ->map(fn (object $stop) => [(float) $stop->stop_lat, (float) $stop->stop_lng])->values()->all();
+        });
+    }
+
+    /**
+     * Every stop the journeys make on these lines: where they board, pass and get off.
+     *
+     * @param  list<Journey>  $journeys
+     * @param  list<string>  $lines
+     * @return list<array{0: float, 1: float}>
+     */
+    private function riddenPoints(array $journeys, array $lines): array
+    {
+        $points = [];
+        foreach ($journeys as $journey) {
+            foreach ($journey->legs as $leg) {
+                if (! in_array((string) $leg->lineName, $lines, true)) {
+                    continue;
+                }
+                $points[] = [$leg->from->point->lat, $leg->from->point->lng];
+                $points[] = [$leg->to->point->lat, $leg->to->point->lng];
+                foreach ($leg->intermediateStops ?? [] as $stop) {
+                    if (isset($stop['lat'], $stop['lng'])) {
+                        $points[] = [(float) $stop['lat'], (float) $stop['lng']];
+                    }
+                }
+            }
+        }
+
+        return $points;
     }
 
     /**

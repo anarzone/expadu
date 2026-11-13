@@ -120,22 +120,4 @@ struct StepList: View {
     }
 }
 
-/// A ticket's half (.tk-top / .tk-bot): rounded outer corners and the two notches the perforation runs between.
-nonisolated struct TicketHalf: Shape {
-    let top: Bool
-
-    func path(in rect: CGRect) -> Path {
-        let radius: CGFloat = 26
-        let body = Path(roundedRect: rect, cornerRadii: top
-            ? RectangleCornerRadii(topLeading: radius, bottomLeading: 0, bottomTrailing: 0, topTrailing: radius)
-            : RectangleCornerRadii(topLeading: 0, bottomLeading: radius, bottomTrailing: radius, topTrailing: 0))
-        let y = top ? rect.maxY : rect.minY
-        let notches = Path { path in
-            path.addEllipse(in: CGRect(x: rect.minX - 11, y: y - 11, width: 22, height: 22))
-            path.addEllipse(in: CGRect(x: rect.maxX - 11, y: y - 11, width: 22, height: 22))
-        }
-        return body.subtracting(notches)
-    }
-}
-
 /// A ticket's reasons (.tk-why): changes, walking, and how close it cuts it.

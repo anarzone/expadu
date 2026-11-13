@@ -526,11 +526,7 @@ struct LineBadges: View {
     var body: some View {
         HStack(spacing: 3) {
             ForEach(lines, id: \.self) { line in
-                let look = LineLook(hex: colours[line] ?? "#4A4A4A")
-                Text(line).font(.geist(11.5, .bold)).monospacedDigit()
-                    .foregroundStyle(look.ink)
-                    .padding(.horizontal, 5).frame(minWidth: 22).frame(height: 18)
-                    .background(look.base, in: .rect(cornerRadius: 5))
+                LineBadge(line: line, color: colours[line] ?? "#4A4A4A", height: 18)
             }
         }
         .accessibilityElement(children: .ignore)
