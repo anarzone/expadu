@@ -29,6 +29,7 @@ class WaitlistSignup extends Model
     {
         return [
             'confirmed_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 

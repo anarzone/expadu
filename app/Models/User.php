@@ -50,7 +50,13 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return (bool) $this->is_admin;
+        return (bool) $this->is_admin && ! $this->isSuspended();
+    }
+
+    /** Suspended by an admin: signed in nowhere until it's lifted (EnsureAccountIsActive). */
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
     }
 
     /*
@@ -102,6 +108,9 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'suspended_at' => 'datetime',
+            'reviewed_at' => 'datetime',
+            'verification_reminded_at' => 'datetime',
             'arrival_date' => 'date',
             'speaks' => 'array',
             'onboarded_at' => 'datetime',
