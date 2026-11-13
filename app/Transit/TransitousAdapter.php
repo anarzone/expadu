@@ -89,7 +89,8 @@ class TransitousAdapter implements RouteService
         // A short walk from the last stop (12 then 3 to the door). Apart from the start's: one ask for
         // both found nothing whenever home is six minutes from its stop, and returned nonsense instead.
         'short_end' => ['maxPostTransitTime' => 300],
-        'no_change' => ['maxTransfers' => 0],
+        // No change ({@see directOnly}).
+        'no_change' => [],
     ];
 
     /** Runs kept of each route the alternatives add: the next one and the one after. */
@@ -110,8 +111,14 @@ class TransitousAdapter implements RouteService
     /** A way in starts with no longer a walk than this to its first ride. */
     private const WAYS_IN_START_WALK_MIN = 5;
 
-    /** A way on from the same first run is kept when it gets there no later than the best plus this. */
-    private const CONTINUATION_SLACK_MINUTES = 10;
+    /** Another way a `via` asks for is kept when it gets there no later than the best plus this (Google's are 2–5 later). */
+    private const CONTINUATION_SLACK_MINUTES = 6;
+
+    /** Other stops to get off at, within this of the destination. */
+    private const WAYS_OUT_METRES = 600;
+
+    /** Other stops near the destination asked as a `via` to get off at. */
+    private const WAYS_OUT_STOPS = 2;
 
     /** Absolute wall-clock deadline (microtime) set by withTimeBudget(); null = per-call caps only. */
     private ?float $deadline = null;
@@ -421,7 +428,9 @@ class TransitousAdapter implements RouteService
             return $itineraries;
         }
 
-        $asks = self::ALTERNATIVES + array_map(fn (array $via) => $via['ask'], $vias);
+        $asks = self::ALTERNATIVES;
+        $asks['no_change'] = $this->directOnly();
+        $asks += array_map(fn (array $via) => $via['ask'], $vias);
 
         try {
             $responses = PerfLogger::measure("ext:{$this->source()}.alternatives", fn () => Http::pool(fn (Pool $pool) => array_map(
@@ -482,10 +491,13 @@ class TransitousAdapter implements RouteService
      * - ways in: the stops its main ride (the longest) passes after its boarding stop, nearest the
      *   start and within {@see WAYS_IN_KM}, each with a minute's stay so the way changes there; kept
      *   when another ride brings them onto that line there ("16 / 18 to Ebertplatz, then the 12", not
-     *   an eleven-minute walk to Rudolfplatz).
+     *   an eleven-minute walk to Rudolfplatz);
+     * - ways out: the other stops near the destination, each with a minute's stay so the way gets off
+     *   there; kept when it needs no more rides than the best (the 1/7/9 to Deutzer Freiheit beside
+     *   the 3/4 to Suevenstr.).
      *
      * @param  list<Journey>  $itineraries
-     * @return array{0: Journey|null, 1: array<string, array{ask: array<string, mixed>, kind: string, run: string|null, line: string|null, stop: string}>}
+     * @return array{0: Journey|null, 1: array<string, array{ask: array<string, mixed>, kind: string, run: string|null, line: string|null, stop: string, rides?: int}>}
      */
     private function viaAsks(GeoPoint $from, GeoPoint $to, array $itineraries): array
     {
@@ -513,6 +525,18 @@ class TransitousAdapter implements RouteService
         $interchanges = array_values(array_filter($candidates, fn (array $stop) => ($lines[$stop['name']] ?? self::INTERCHANGE_LINES) >= self::INTERCHANGE_LINES));
         foreach (array_slice($interchanges, 0, self::WAYS_IN_STOPS) as $n => $stop) {
             $vias["in{$n}"] = ['ask' => ['via' => $stop['id'], 'viaMinimumStay' => 1], 'kind' => 'in', 'run' => null, 'line' => $main->lineName, 'stop' => $stop['name']];
+        }
+
+        // Ways out: the other stops near the destination, getting off there (the 1/7/9 to Deutzer
+        // Freiheit as well as the 3/4 to Suevenstr.); kept when no more changes get them there.
+        $off = collect($best->legs)->filter(fn (Leg $leg) => $leg->isTransit())->last();
+        $nearby = collect($this->stopsNear($to, self::WAYS_OUT_METRES))
+            ->reject(fn (array $stop) => $stop['name'] === $off?->to->name)
+            ->sortBy(fn (array $stop) => $this->metresBetween(new GeoPoint($stop['lat'], $stop['lng']), $to))
+            ->take(self::WAYS_OUT_STOPS)
+            ->values();
+        foreach ($nearby as $n => $stop) {
+            $vias["out{$n}"] = ['ask' => ['via' => $stop['id'], 'viaMinimumStay' => 1], 'kind' => 'out', 'run' => null, 'line' => null, 'stop' => $stop['name'], 'rides' => count(array_filter($best->legs, fn (Leg $leg) => $leg->isTransit()))];
         }
 
         return [$best, $vias];
@@ -566,12 +590,17 @@ class TransitousAdapter implements RouteService
     /**
      * Whether a way a `via` ask found is the alternative it was asked for.
      *
-     * @param  array{kind: string, run: string|null, line: string|null, stop: string}  $via
+     * @param  array{kind: string, run: string|null, line: string|null, stop: string, rides?: int}  $via
      */
     private function keeps(array $via, Journey $journey): bool
     {
         if ($via['kind'] === 'on') {
             return $this->firstRide($journey)?->tripId === $via['run'];
+        }
+        if ($via['kind'] === 'out') {
+            $rides = array_values(array_filter($journey->legs, fn (Leg $leg) => $leg->isTransit()));
+
+            return $rides !== [] && end($rides)->to->name === $via['stop'] && count($rides) <= $via['rides'];
         }
 
         // Ways in: one ride from near the start brings them to the stop, and they change onto the main
@@ -580,9 +609,50 @@ class TransitousAdapter implements RouteService
         $rides = array_values(array_filter($journey->legs, fn (Leg $leg) => $leg->isTransit()));
         $start = $journey->legs[0] ?? null;
 
+        // Nor riding away to catch the main line back through where they started (3 to Poststr., 4 back).
+        $passes = array_column($rides[1]->intermediateStops ?? [], 'name');
+
         return count($rides) >= 2
             && $rides[1]->lineName === $via['line'] && $rides[1]->from->name === $via['stop']
+            && ! in_array($rides[0]->from->name, $passes, true)
             && ($start === null || $start->isTransit() || $start->durationMin <= self::WAYS_IN_START_WALK_MIN);
+    }
+
+    /**
+     * The stops around a point, by the engine's own map of them (ids it routes by). Best effort.
+     *
+     * @return list<array{name: string, lat: float, lng: float, id: string}>
+     */
+    private function stopsNear(GeoPoint $point, int $metres): array
+    {
+        $timeout = $this->callTimeout(2.0);
+        if ($timeout === null) {
+            return [];
+        }
+        $dLat = $metres / 111_320;
+        $dLng = $metres / (111_320 * cos(deg2rad($point->lat)));
+        try {
+            $response = PerfLogger::measure("ext:{$this->source()}.stops", fn () => Http::baseUrl($this->baseUrl())
+                ->timeout($timeout)
+                ->connectTimeout(min(2.0, $timeout))
+                ->withHeaders(['User-Agent' => 'expadu.com'])
+                ->get('/api/v1/map/stops', [
+                    'min' => ($point->lat - $dLat).','.($point->lng - $dLng),
+                    'max' => ($point->lat + $dLat).','.($point->lng + $dLng),
+                ])
+                ->throw());
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $stops = [];
+        foreach ((array) $response->json() as $stop) {
+            if (isset($stop['name'], $stop['stopId'], $stop['lat'], $stop['lon'])) {
+                $stops[$stop['name']] ??= ['name' => (string) $stop['name'], 'lat' => (float) $stop['lat'], 'lng' => (float) $stop['lon'], 'id' => (string) $stop['stopId']];
+            }
+        }
+
+        return array_values($stops);
     }
 
     /** Off a line and back on it (the 4 out to Koelnmesse and back, the 12 to its end and back a stop). */
@@ -602,6 +672,18 @@ class TransitousAdapter implements RouteService
         }
 
         return null;
+    }
+
+    /**
+     * Asking for ways without a change. The plan API v3 (Transitous) counts changes: 0. Our MOTIS's
+     * v1 counts rides ({@see MotisAdapter}), and answered 0 with nothing at all, so the lines beside a
+     * ride and the tight changes were silently empty on production.
+     *
+     * @return array<string, int>
+     */
+    protected function directOnly(): array
+    {
+        return ['maxTransfers' => 0];
     }
 
     /** A route as a rider tells routes apart: its lines in order ("12>3"), or how it goes when it rides none. */
@@ -991,7 +1073,7 @@ class TransitousAdapter implements RouteService
                     ->connectTimeout(min(3.0, $timeout))
                     ->withHeaders(['User-Agent' => 'expadu.com'])
                     ->get($this->planPath(), $this->planQuery($stretch['from'], $stretch['to'], $stretch['at'], 12, [
-                        'maxTransfers' => 0, 'maxPreTransitTime' => 240, 'maxPostTransitTime' => 240, 'searchWindow' => 3600,
+                        ...$this->directOnly(), 'maxPreTransitTime' => 240, 'maxPostTransitTime' => 240, 'searchWindow' => 3600,
                     ])),
                 array_keys(array_values($stretches)),
                 array_values($stretches),
