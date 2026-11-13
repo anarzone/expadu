@@ -327,7 +327,11 @@ extension TripRoutesView {
             if runs[key] == nil { order.append(key) }
             runs[key, default: []].append(option)
         }
+        // A route there more than 45 minutes after the best is no alternative to it (as the server ranks
+        // them): its runs go under Later, not above them (a night tram at 00:17 among the 23:20s).
+        let latest = first.journey.arriveDate.map { $0.addingTimeInterval(45 * 60) }
         let heads = order.compactMap { runs[$0]?.first }
+            .filter { head in latest.map { (head.journey.arriveDate ?? .distantFuture) <= $0 } ?? true }
         let routes = [first] + heads.filter { $0.index != first.index }.sorted(by: departs)
         let headIDs = Set(routes.map(\.index))
         let later = options.filter { !headIDs.contains($0.index) }.sorted(by: departs)

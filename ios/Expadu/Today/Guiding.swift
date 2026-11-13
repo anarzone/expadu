@@ -20,14 +20,17 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     private(set) var offSince: Date?
     /// The trip being guided; set by the live card.
     var trip: TodayPage.Trip? {
-        didSet { if trip?.legs != oldValue?.legs { reached = 0; offSince = nil; here = nil; pulledAway = []; broken = [] } }
+        // The rides already checked are kept: a trip trip sync changed still has the ride they're on.
+        didSet { if trip?.legs != oldValue?.legs { reached = 0; offSince = nil; here = nil } }
     }
     /// Trip sync: a ride pulled away from its stop at another time than planned (which tram is it?).
     @ObservationIgnored var departed: ((TodayPage.Trip.Leg, Int, Date) -> Void)?
     /// Trip sync: a late ride gets them to the next ride's stop after it leaves (when they can be there).
     @ObservationIgnored var changeBroken: ((TodayPage.Trip.Leg, Int, Date) -> Void)?
-    @ObservationIgnored private var pulledAway: Set<Int> = []
-    @ObservationIgnored private var broken: Set<Int> = []
+    /// Rides checked once on board, and changes found broken: by the ride (its stop and planned time),
+    /// never by its place in the trip, which a switch moves.
+    @ObservationIgnored private var pulledAway: Set<String> = []
+    @ObservationIgnored private var broken: Set<String> = []
     /// Trip sync's own trail (Console, category tripsync): what the phone saw and asked.
     static let log = Logger(subsystem: "com.expadu.app", category: "tripsync")
     @ObservationIgnored private var reached = 0
@@ -126,8 +129,7 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     /// (it has the live times). Once a ride.
     private func rideCheck(_ trip: TodayPage.Trip, _ here: Guide.Position, accuracy: Double, at date: Date) {
         guard accuracy <= Guide.trustMetres, !here.offRoute, let ride = here.ride, ride.onBoard,
-              trip.legs.indices.contains(here.leg), !pulledAway.contains(here.leg) else { return }
-        pulledAway.insert(here.leg)
+              trip.legs.indices.contains(here.leg), pulledAway.insert(Self.key(trip.legs[here.leg])).inserted else { return }
         let leg = trip.legs[here.leg]
         let left = leg.departAt.addingTimeInterval(ride.late)
         let known = TimeInterval(max(0, leg.delayMin ?? 0) * 60)
@@ -139,17 +141,14 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     /// Getting in plus the change, after the next one leaves (as late as the board says it runs): the
     /// next tram there, once.
     private func changeCheck(at date: Date) {
-        guard let trip, let here, here.ride?.onBoard == true, trip.legs.indices.contains(here.leg), trip.legs[here.leg].rides,
-              let next = trip.legs.indices.dropFirst(here.leg + 1).first(where: { trip.legs[$0].rides }), !broken.contains(next) else { return }
-        let late = trip.late(here: here, at: date)
-        let change = trip.legs[(here.leg + 1)..<next].reduce(0) { $0 + $1.minutes }
-        let ready = trip.legs[here.leg].arriveAt.addingTimeInterval(late + Double(change) * 60)
-        let leaves = trip.legs[next].departAt.addingTimeInterval(TimeInterval(max(0, trip.legs[next].delayMin ?? 0) * 60))
-        guard ready.timeIntervalSince(leaves) > 60, leaves > date.addingTimeInterval(-600) else { return }
-        broken.insert(next)
-        Self.log.info("change to leg \(next, privacy: .public) broken: ready \(ready.formatted(date: .omitted, time: .standard), privacy: .public), it leaves \(leaves.formatted(date: .omitted, time: .standard), privacy: .public)")
-        changeBroken?(trip.legs[next], next, ready)
+        guard let trip, let here, let broken = trip.brokenChange(here: here, at: date),
+              self.broken.insert(Self.key(trip.legs[broken.leg])).inserted else { return }
+        Self.log.info("change to leg \(broken.leg, privacy: .public) broken: ready \(broken.ready.formatted(date: .omitted, time: .standard), privacy: .public)")
+        changeBroken?(trip.legs[broken.leg], broken.leg, broken.ready)
     }
+
+    /// A ride as trip sync knows it: where it boards and when it was planned to leave.
+    private static func key(_ leg: TodayPage.Trip.Leg) -> String { "\(leg.from)|\(leg.departTime)" }
 
     /// Where they are, while the phone knows it: a fix in the last minute, good enough to go by.
     func trusted(at now: Date = .now) -> Guide.Position? {
@@ -158,6 +157,8 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
 
     /// A new way started: guide it from its start.
     func restart() {
+        pulledAway = []
+        broken = []
         reached = 0
         offSince = nil
         here = nil
