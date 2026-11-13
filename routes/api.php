@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Internal\VrsFeedRelayController;
 use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AlertsController;
@@ -30,6 +31,11 @@ use App\Http\Controllers\Api\V1\Travel\AppTripController;
 use App\Http\Controllers\Api\V1\TravelController;
 use App\Http\Controllers\TodayRankController;
 use Illuminate\Support\Facades\Route;
+
+/*
+ * VRS's live feed for our router (MOTIS) on the box's own network; its token or a 404.
+ */
+Route::get('internal/vrs-gtfs-rt', VrsFeedRelayController::class)->name('internal.vrs-gtfs-rt');
 
 /*
  * The iPhone app's API. Bearer tokens only (config/sanctum.php): no cookie opens these routes.

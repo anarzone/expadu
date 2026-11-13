@@ -309,25 +309,6 @@ final class TodayModel {
         return false
     }
 
-    /// Off the way or the ride gone: our planner again, from where the phone is to the same place,
-    /// and the trip goes on with the first way. Nil when it did, else why not.
-    func newWay(_ api: AppAPI, trip: TodayPage.Trip, from: TodayPage.Point) async -> String? {
-        guard let end = trip.legs.last?.end else { return "This trip has no place to go to." }
-        do throws(APIFailure) {
-            let plan = try await api.planWay(to: trip.to, latitude: end.latitude, longitude: end.longitude,
-                                             fromLatitude: from.latitude, fromLongitude: from.longitude, startsAt: nil)
-            guard let way = plan.ways.first else { return "No route from here right now." }
-            _ = try await api.startWay(plan: plan.plan, way: 0, replace: true)
-            await load(api, quietly: true)
-            cardFlips += 1
-            let how = way.lines.isEmpty ? "on foot" : way.legs.filter(\.rides).map(\.name).joined(separator: ", then ")
-            sayInCard(Note(text: "New route: leave \(way.leaveTime), \(how), there \(way.arriveTime).", symbol: "arrow.triangle.branch"))
-            return nil
-        } catch {
-            return Self.words(error)
-        }
-    }
-
     /// The trip being ended: true when they made it. The card shows it in place before it goes.
     private(set) var finishing: Bool?
 

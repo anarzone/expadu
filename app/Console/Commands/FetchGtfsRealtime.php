@@ -15,6 +15,13 @@ class FetchGtfsRealtime extends Command
     {
         // 2.6–3.8 s and ~135 MB a read: only while someone reads live times.
         if (! $this->option('force') && ! $realtime->wanted()) {
+            // Our router reads the feed itself through the relay: kept fresh as it came, not read here.
+            if ($realtime->relayWanted()) {
+                $body = $realtime->refreshRaw();
+                $this->line($body === null ? 'The raw feed could not be fetched (or another fetch is running).' : 'Raw feed kept for the router: '.strlen($body).' bytes.');
+
+                return self::SUCCESS;
+            }
             $this->line('Nobody has read live times in the last ten minutes; not fetching.');
 
             return self::SUCCESS;

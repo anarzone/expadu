@@ -615,6 +615,17 @@ public struct TripPlan: Sendable {
         return try TravelJSON.decoder.decode(Reply.self, from: data).live
     }
 
+    /// The plan's reply with its ways swapped for the second request's live ones (same order, every one or
+    /// none), so a way is sent back as it was shown. Nil when they don't line up.
+    public static func rawWithLive(_ plan: Data, live: Data) -> Data? {
+        guard var json = try? JSONSerialization.jsonObject(with: plan) as? [String: Any],
+              let journeys = json["journeys"] as? [[String: Any]],
+              let reply = try? JSONSerialization.jsonObject(with: live) as? [String: Any],
+              let swapped = reply["live"] as? [[String: Any]], swapped.count == journeys.count else { return nil }
+        json["journeys"] = swapped
+        return try? JSONSerialization.data(withJSONObject: json)
+    }
+
     /// The journey as the server stores it (Add to plan, I'm on my way): sent back as it came.
     public static func raw(_ data: Data, index: Int) -> Data? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
