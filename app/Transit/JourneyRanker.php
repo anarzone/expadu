@@ -54,11 +54,11 @@ final class JourneyRanker
         $different = [];
         $again = [];
         foreach ($rides as $ride) {
-            $lines = implode('>', $ride->lines());
-            if (isset($different[$lines])) {
+            $way = $this->way($ride);
+            if (isset($different[$way])) {
                 $again[] = $ride;
             } else {
-                $different[$lines] = $ride;
+                $different[$way] = $ride;
             }
         }
         $different = array_values($different);
@@ -104,6 +104,19 @@ final class JourneyRanker
      * (six minutes from the S-Bahn to the tram at Hansaring). Counted as none, it put a way with two
      * changes above the tram straight there.
      */
+    /**
+     * A way as a rider tells ways apart: where each ride gets on and off. The 3, 4 and 5 from
+     * Appellhofplatz to Friesenplatz for the 12 are one way, and its 4 at 20:06 waits behind the 18
+     * to Ebertplatz instead of coming third. A ride without its stops goes by its line.
+     */
+    private function way(Journey $journey): string
+    {
+        return implode('>', array_map(
+            fn (Leg $leg): string => $leg->from->name !== $leg->to->name ? "{$leg->from->name}~{$leg->to->name}" : (string) $leg->lineName,
+            array_values(array_filter($journey->legs, fn (Leg $leg): bool => $leg->isTransit())),
+        ));
+    }
+
     private function walkingMin(Journey $journey): int
     {
         $legs = array_values($journey->legs);

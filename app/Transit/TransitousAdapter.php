@@ -478,8 +478,16 @@ class TransitousAdapter implements RouteService
             return $itineraries;
         }
 
-        // Known: what the list keeps, so the 18:39 7 isn't taken for the 20:25 one the window drops.
-        $known = array_fill_keys(array_map($this->route(...), $shown), true);
+        // Known: when each way the list keeps soonest gets there, so the 18:39 7 isn't taken for the
+        // 20:25 one the window drops. A way found again is new when it gets there sooner: from
+        // Appellhofplatz at 19:34 the list's own 18 then 12 leaves at 20:49, and the 18 at 19:39 to
+        // Ebertplatz for the 12 (Apple's only answer) was dropped as already listed.
+        $known = [];
+        foreach ($shown as $journey) {
+            $route = $this->route($journey);
+            $known[$route] = min($known[$route] ?? PHP_INT_MAX, $journey->arriveAt->getTimestamp());
+        }
+        $isKnown = fn (Journey $journey) => $journey->arriveAt->getTimestamp() >= ($known[$this->route($journey)] ?? PHP_INT_MAX);
         $added = [];
         $onward = [];
         $stayed = [];
@@ -497,7 +505,7 @@ class TransitousAdapter implements RouteService
 
                     continue;
                 }
-                if ($journey === null || isset($known[$this->route($journey)])) {
+                if ($journey === null || $isKnown($journey)) {
                     continue;
                 }
                 if ($via === null) {
