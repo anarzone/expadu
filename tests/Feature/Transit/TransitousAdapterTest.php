@@ -301,6 +301,8 @@ test('adds the routes a less-walking or no-change ask finds, once each, beside t
             str_contains($url, 'directModes=') => Http::response(['direct' => []]),
             str_contains($url, 'maxPostTransitTime=300') => Http::response(['itineraries' => [
                 $change('2026-07-06T07:00:00Z'), $change('2026-07-06T07:10:00Z'), $change('2026-07-06T07:20:00Z'), $direct,
+                // The 12 to its end and back a stop, for a shorter walk: never a way.
+                fakeItinerary([fakeLeg('TRAM', ['routeShortName' => '12']), fakeLeg('TRAM', ['routeShortName' => '12'])], 1, 2900),
             ]]),
             default => Http::response(['itineraries' => [$direct]]),
         };
@@ -354,6 +356,21 @@ test('adds other ways on from the best way\'s first tram, asked via the stops it
         ->not->toContain('12>S19');
     // Not via Ebertplatz, where the best way already changes.
     Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'via=id-Ebertplatz'));
+});
+
+test('a way with a ride the feed cannot name is left out, and an S-Bahn ride is a train', function () {
+    $unnamed = fakeItinerary([fakeLeg('WALK'), fakeLeg('OTHER', ['routeShortName' => '?']), fakeLeg('TRAM', ['routeShortName' => '12'])], 1, 2580);
+    $sbahn = fakeItinerary([fakeLeg('SUBURBAN', ['routeShortName' => 'S6'])], 0, 1800);
+
+    Http::fake(fn ($request) => str_contains(urldecode($request->url()), 'directModes=')
+        ? Http::response(['direct' => []])
+        : Http::response(['itineraries' => [$unnamed, $sbahn]]));
+
+    $journeys = (new TransitousAdapter)->plan(new GeoPoint(50.93, 6.94), new GeoPoint(51.02, 6.95))->journeys;
+
+    expect($journeys)->toHaveCount(1)
+        ->and($journeys[0]->legs[0]->mode)->toBe('rail')
+        ->and($journeys[0]->legs[0]->lineName)->toBe('S6');
 });
 
 test('re-plans without buses to surface a competitive S-Bahn route the primary set pruned', function () {

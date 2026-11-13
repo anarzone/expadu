@@ -41,6 +41,7 @@ class TransitousAdapter implements RouteService
         'REGIONAL_RAIL' => 'rail',
         'REGIONAL_FAST_RAIL' => 'rail',
         'NIGHT_RAIL' => 'rail',
+        'SUBURBAN' => 'rail',
         'FERRY' => 'ferry',
     ];
 
@@ -216,6 +217,9 @@ class TransitousAdapter implements RouteService
      */
     private function pruneAbsurd(array $journeys, bool $arriveBy = false): array
     {
+        // Off a line and back on it is never a way, whichever ask found it; unless it's the only one.
+        $once = array_values(array_filter($journeys, fn (Journey $j) => ! $this->ridesALineTwice($j)));
+        $journeys = $once === [] ? $journeys : $once;
         if (count($journeys) < 2) {
             return $journeys;
         }
@@ -438,7 +442,7 @@ class TransitousAdapter implements RouteService
                 }
                 if (! $via) {
                     $added[$this->route($journey)][$journey->departAt->getTimestamp()] = $journey;
-                } elseif ($this->firstRide($journey)?->tripId === $run && $journey->arriveAt->lte($latest) && ! $this->ridesALineTwice($journey)) {
+                } elseif ($this->firstRide($journey)?->tripId === $run && $journey->arriveAt->lte($latest)) {
                     $onward[$this->route($journey)] ??= $journey;
                 }
             }
@@ -503,7 +507,7 @@ class TransitousAdapter implements RouteService
             ->all()];
     }
 
-    /** Off a line and back on it (the 4 out to Koelnmesse and the 4 back): never a way on. */
+    /** Off a line and back on it (the 4 out to Koelnmesse and back, the 12 to its end and back a stop). */
     private function ridesALineTwice(Journey $journey): bool
     {
         $lines = $journey->lines();
@@ -736,7 +740,13 @@ class TransitousAdapter implements RouteService
                 return null;
             }
 
-            $mode = self::MODE_MAP[$rawLeg['mode'] ?? 'WALK'] ?? 'walk';
+            // A ride the feed can't name (mode OTHER, line "?": a run whose route data is missing) can't be
+            // shown or taken as told, and read as a walk it made "walk › walk › walk › 12, 1 change".
+            $mode = self::MODE_MAP[$rawLeg['mode'] ?? 'WALK'] ?? null;
+            $line = trim((string) ($rawLeg['routeShortName'] ?? ''));
+            if ($mode === null || (! in_array($mode, ['walk', 'bike'], true) && in_array($line, ['', '?'], true))) {
+                return null;
+            }
             $departAt = CarbonImmutable::parse($rawLeg['startTime'])->setTimezone('Europe/Berlin');
             $arriveAt = CarbonImmutable::parse($rawLeg['endTime'])->setTimezone('Europe/Berlin');
             $scheduledDepartAt = $this->scheduledTime($rawLeg['scheduledStartTime'] ?? null);
@@ -924,6 +934,9 @@ class TransitousAdapter implements RouteService
                     continue;
                 }
                 $line = trim((string) ($legs[0]['routeShortName'] ?? ''));
+                if (in_array($line, ['', '?'], true) || ! isset(self::MODE_MAP[$legs[0]['mode'] ?? ''])) {
+                    continue;
+                }
                 $rides[] = [
                     'line' => $line,
                     'headsign' => $legs[0]['headsign'] ?? null,
