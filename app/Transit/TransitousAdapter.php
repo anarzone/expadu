@@ -94,7 +94,7 @@ class TransitousAdapter implements RouteService
     private const CONTINUATION_STOPS = 4;
 
     /** A way on from the same first run is kept when it gets there no later than the best plus this. */
-    private const CONTINUATION_SLACK_MINUTES = 15;
+    private const CONTINUATION_SLACK_MINUTES = 10;
 
     /** Absolute wall-clock deadline (microtime) set by withTimeBudget(); null = per-call caps only. */
     private ?float $deadline = null;
@@ -385,7 +385,7 @@ class TransitousAdapter implements RouteService
      * - other ways on from the best way's first tram, as Google lists them ("12 then 13", "12 then S19",
      *   "12 then 5"): the router keeps one way per first run, so the stops that run passes nearest the
      *   destination are each asked as a `via`, and a way on the same first run with lines the list lacks,
-     *   there within a quarter of an hour of the best, is kept.
+     *   there within ten minutes of the best, is kept.
      *
      * Best effort: an ask that fails or runs out of time leaves the answer as it was.
      *
@@ -438,7 +438,7 @@ class TransitousAdapter implements RouteService
                 }
                 if (! $via) {
                     $added[$this->route($journey)][$journey->departAt->getTimestamp()] = $journey;
-                } elseif ($this->firstRide($journey)?->tripId === $run && $journey->arriveAt->lte($latest)) {
+                } elseif ($this->firstRide($journey)?->tripId === $run && $journey->arriveAt->lte($latest) && ! $this->ridesALineTwice($journey)) {
                     $onward[$this->route($journey)] ??= $journey;
                 }
             }
@@ -466,11 +466,12 @@ class TransitousAdapter implements RouteService
      */
     private function continuationVias(GeoPoint $to, array $itineraries): array
     {
+        // Only a way that changes has other ways on; a straight ride is already the way.
         $best = collect($itineraries)
             ->filter(fn (Journey $journey) => $this->firstRide($journey)?->tripId !== null)
             ->sortBy(fn (Journey $journey) => $journey->arriveAt->getTimestamp())
             ->first();
-        $ride = $best === null ? null : $this->firstRide($best);
+        $ride = $best === null || $best->transfers < 1 ? null : $this->firstRide($best);
         if ($ride === null || $this->callTimeout(2.0) === null) {
             return [null, []];
         }
@@ -500,6 +501,14 @@ class TransitousAdapter implements RouteService
             ->pluck('id')
             ->values()
             ->all()];
+    }
+
+    /** Off a line and back on it (the 4 out to Koelnmesse and the 4 back): never a way on. */
+    private function ridesALineTwice(Journey $journey): bool
+    {
+        $lines = $journey->lines();
+
+        return count($lines) !== count(array_unique($lines));
     }
 
     private function firstRide(Journey $journey): ?Leg
@@ -887,21 +896,24 @@ class TransitousAdapter implements RouteService
         }
 
         try {
+            // Answers come keyed by ask, in the order they finish: read back by key.
             $responses = PerfLogger::measure("ext:{$this->source()}.direct", fn () => Http::pool(fn (Pool $pool) => array_map(
-                fn (array $stretch) => $pool->baseUrl($this->baseUrl())
+                fn (int $n, array $stretch) => $pool->as("stretch{$n}")->baseUrl($this->baseUrl())
                     ->timeout($timeout)
                     ->connectTimeout(min(3.0, $timeout))
                     ->withHeaders(['User-Agent' => 'expadu.com'])
                     ->get($this->planPath(), $this->planQuery($stretch['from'], $stretch['to'], $stretch['at'], 12, [
                         'maxTransfers' => 0, 'maxPreTransitTime' => 240, 'maxPostTransitTime' => 240, 'searchWindow' => 3600,
                     ])),
-                $stretches,
+                array_keys(array_values($stretches)),
+                array_values($stretches),
             )));
         } catch (\Throwable) {
             return array_map(fn () => [], $stretches);
         }
 
-        return array_map(function ($response) {
+        return array_map(function (int $n) use ($responses) {
+            $response = $responses["stretch{$n}"] ?? null;
             if (! $response instanceof Response || ! $response->successful()) {
                 return [];
             }
@@ -923,7 +935,7 @@ class TransitousAdapter implements RouteService
             }
 
             return $rides;
-        }, array_values($responses));
+        }, array_keys(array_values($stretches)));
     }
 
     /**
