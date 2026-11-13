@@ -12,6 +12,10 @@ on:
         description: Rebuild even if the box already runs this feed
         type: boolean
         default: false
+      swap:
+        description: Swap the new store in (off for an engine upgrade, swapped by hand with the image)
+        type: boolean
+        default: true
 
 concurrency:
   group: motis-refresh
@@ -44,4 +48,5 @@ jobs:
         env:
           MOTIS_HOST: box
           FORCE: ${{ inputs.force && '1' || '0' }}
+          NO_SWAP: ${{ inputs.swap == false && '1' || '0' }}
         run: infra/motis/refresh.sh
