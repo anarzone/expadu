@@ -9,6 +9,7 @@
         <form class="xv-form waitlist" id="waitlistForm" method="POST" action="{{ route('waitlist.store') }}">
             @csrf
             <input type="hidden" name="source" value="{{ $source ?? 'footer' }}">
+            @include('marketing.partials.waitlist-guard')
             <label>Email<input type="email" name="email" autocomplete="email" placeholder="you@example.com" required maxlength="255"></label>
             <label>City<input type="text" name="city" value="Cologne" autocomplete="address-level2" placeholder="Your city" required maxlength="120"></label>
             <button class="xv-btn xv-btn--cyan xv-btn--block" type="submit">Notify me</button>

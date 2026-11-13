@@ -1315,6 +1315,15 @@ details.more .inner {
     gap: 6px;
 }
 
+/* WaitlistGuard's trap: off-screen, so people never see or fill it, while
+   scripts that fill every field do. */
+.xv .xv-form__trap {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
 .xv .xv-form {
     position: relative;
     display: grid;

@@ -48,7 +48,7 @@ $marketingRoutes = function () {
 
     // City waitlist — double opt-in: store sends a signed confirmation link.
     Route::post('waitlist', [WaitlistController::class, 'store'])
-        ->middleware('throttle:10,1')->name('waitlist.store');
+        ->middleware('throttle:waitlist')->name('waitlist.store');
     Route::get('waitlist/confirm/{signup}', [WaitlistController::class, 'confirm'])
         ->middleware('signed')->name('waitlist.confirm');
 };

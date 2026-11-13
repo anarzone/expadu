@@ -536,6 +536,7 @@
         <form class="xv-form waitlist" id="waitlistForm" method="POST" action="{{ route('waitlist.store') }}" data-reveal="card" style="transition-delay: 500ms">
             @csrf
             <input type="hidden" name="source" value="landing-join">
+            @include('marketing.partials.waitlist-guard')
             <div>
                 <h3 class="xv-disp">Get the new Expadu first</h3>
                 <p>The new app opens in Cologne first. Leave your e-mail and you’ll know the day it’s ready.</p>
