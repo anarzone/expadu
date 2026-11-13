@@ -6,6 +6,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Keeps scripts from using the waitlist to mail strangers. In November 2026
@@ -27,6 +28,16 @@ final class WaitlistGuard
 
     /** A page left open longer than this is drawn again before it posts. */
     private const MaxAgeSeconds = 86_400;
+
+    /**
+     * Confirmation mails the waitlist may send in a day, all addresses
+     * together. Resend's free plan sends 100 a day for everything, so the
+     * waitlist can never use up what account mails (verification, password
+     * reset, codes) need. Real signups run at a few a day.
+     */
+    public const DailyMailCap = 40;
+
+    private const MailsTodayKey = 'waitlist:mails-today';
 
     public const Trap = 'website';
 
@@ -72,7 +83,19 @@ final class WaitlistGuard
      */
     public function claimMail(string $email): bool
     {
-        return Cache::add('waitlist:mailed:'.sha1($email), 1, now()->addDay());
+        if (! Cache::add('waitlist:mailed:'.sha1($email), 1, now()->addDay())) {
+            return false;
+        }
+
+        RateLimiter::hit(self::MailsTodayKey, 86_400);
+
+        return true;
+    }
+
+    /** Whether today's confirmation mails are under DailyMailCap. */
+    public function mailsLeftToday(): bool
+    {
+        return ! RateLimiter::tooManyAttempts(self::MailsTodayKey, self::DailyMailCap);
     }
 
     private function drawnAt(string $stamp): ?int

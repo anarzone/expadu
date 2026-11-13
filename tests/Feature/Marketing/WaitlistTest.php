@@ -105,6 +105,21 @@ test('scripted posts get the usual reply but are not saved and mail no one', fun
     'posted a second after the form was drawn' => [fn () => waitlistFormDrawn(1)],
 ]);
 
+test('the waitlist stops mailing at the daily cap, so account mails keep their quota', function () {
+    foreach (range(1, WaitlistGuard::DailyMailCap) as $i) {
+        $this->withServerVariables(['REMOTE_ADDR' => "10.0.{$i}.1"])
+            ->postJson('/waitlist', ['email' => "p{$i}@example.com", 'city' => 'Cologne', ...waitlistFormDrawn()])
+            ->assertCreated();
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '10.1.0.1'])
+        ->postJson('/waitlist', ['email' => 'one-too-many@example.com', 'city' => 'Cologne', ...waitlistFormDrawn()])
+        ->assertTooManyRequests();
+
+    Mail::assertQueued(WaitlistConfirmation::class, WaitlistGuard::DailyMailCap);
+    expect(WaitlistSignup::query()->where('email', 'one-too-many@example.com')->exists())->toBeFalse();
+});
+
 test('a link or markup in the city field is rejected', function () {
     $this->postJson('/waitlist', [
         'email' => 'stranger@example.com',

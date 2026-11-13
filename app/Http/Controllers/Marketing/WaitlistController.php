@@ -53,6 +53,14 @@ class WaitlistController extends Controller
             ]);
         }
 
+        if (! $guard->mailsLeftToday()) {
+            Log::warning('waitlist.daily_mail_cap', ['cap' => WaitlistGuard::DailyMailCap]);
+
+            return response()->json([
+                'message' => 'We can’t send more confirmation emails today. Please try again tomorrow.',
+            ], 429);
+        }
+
         $signup->fill([
             'city' => $validated['city'],
             'source' => $validated['source'] ?? null,
