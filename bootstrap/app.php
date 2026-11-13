@@ -10,6 +10,7 @@ use App\Http\Middleware\SetCacheHeaders;
 use App\Http\Middleware\StartSessionKeepingPrivateQueries;
 use App\Support\MockClock;
 use App\Support\MockScenario;
+use App\Support\TrustedProxies;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -31,8 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Cloudflare and the Docker bridge, so request IPs are the visitor's (TrustedProxies).
         $middleware->trustProxies(
-            at: '*',
+            at: TrustedProxies::all(),
             headers: Request::HEADER_X_FORWARDED_FOR |
                      Request::HEADER_X_FORWARDED_HOST |
                      Request::HEADER_X_FORWARDED_PORT |

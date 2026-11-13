@@ -301,6 +301,8 @@ test('adds the routes a less-walking or no-change ask finds, once each, beside t
             str_contains($url, 'directModes=') => Http::response(['direct' => []]),
             str_contains($url, 'maxPostTransitTime=300') => Http::response(['itineraries' => [
                 $change('2026-07-06T07:00:00Z'), $change('2026-07-06T07:10:00Z'), $change('2026-07-06T07:20:00Z'), $direct,
+                // The 12 to its end and back a stop, for a shorter walk: never a way.
+                fakeItinerary([fakeLeg('TRAM', ['routeShortName' => '12']), fakeLeg('TRAM', ['routeShortName' => '12'])], 1, 2900),
             ]]),
             default => Http::response(['itineraries' => [$direct]]),
         };
@@ -354,6 +356,61 @@ test('adds other ways on from the best way\'s first tram, asked via the stops it
         ->not->toContain('12>S19');
     // Not via Ebertplatz, where the best way already changes.
     Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'via=id-Ebertplatz'));
+});
+
+test('a way with a ride the feed cannot name is left out, and an S-Bahn ride is a train', function () {
+    $unnamed = fakeItinerary([fakeLeg('WALK'), fakeLeg('OTHER', ['routeShortName' => '?']), fakeLeg('TRAM', ['routeShortName' => '12'])], 1, 2580);
+    $sbahn = fakeItinerary([fakeLeg('SUBURBAN', ['routeShortName' => 'S6'])], 0, 1800);
+
+    Http::fake(fn ($request) => str_contains(urldecode($request->url()), 'directModes=')
+        ? Http::response(['direct' => []])
+        : Http::response(['itineraries' => [$unnamed, $sbahn]]));
+
+    $journeys = (new TransitousAdapter)->plan(new GeoPoint(50.93, 6.94), new GeoPoint(51.02, 6.95))->journeys;
+
+    expect($journeys)->toHaveCount(1)
+        ->and($journeys[0]->legs[0]->mode)->toBe('rail')
+        ->and($journeys[0]->legs[0]->lineName)->toBe('S6');
+});
+
+test('adds the ways onto the main line at the interchanges near the start, not a long walk or a second change', function () {
+    $stop = fn (string $name, float $lat) => ['name' => $name, 'stopId' => "id-{$name}", 'lat' => $lat, 'lon' => 6.95];
+    $ride = fn (string $line, string $from, string $to, string $end) => fakeLeg('TRAM', [
+        'routeShortName' => $line, 'tripId' => "run-{$line}", 'from' => $stop($from, 50.94), 'to' => $stop($to, 51.02), 'endTime' => $end,
+    ]);
+    $walk = fn (int $minutes) => fakeLeg('WALK', ['duration' => $minutes * 60]);
+    $way = fn (array $legs, string $end) => array_merge(fakeItinerary($legs, count(array_filter($legs, fn ($l) => $l['mode'] !== 'WALK')) - 1, 2700), ['endTime' => $end]);
+    // Best: eleven minutes on foot to Rudolfplatz, then the 12 home.
+    $best = $way([$walk(11), $ride('12', 'Rudolfplatz', 'Merkenich Mitte', '2026-07-06T07:40:00Z')], '2026-07-06T07:46:00Z');
+
+    Http::fake(function ($request) use ($way, $ride, $walk, $best, $stop) {
+        $url = urldecode($request->url());
+
+        return match (true) {
+            str_contains($url, '/api/v1/trip') => Http::response(['legs' => [[
+                'from' => $stop('Rudolfplatz', 50.936),
+                'intermediateStops' => [$stop('Christophstr.', 50.944), $stop('Ebertplatz', 50.951)],
+                'to' => $stop('Merkenich Mitte', 51.024),
+            ]]]),
+            // Via Ebertplatz, changing there: the 18 from the start, then the same 12.
+            str_contains($url, 'via=id-Ebertplatz') => Http::response(['itineraries' => [
+                $way([$walk(3), $ride('18', 'Neumarkt', 'Ebertplatz', '2026-07-06T07:15:00Z'), $ride('12', 'Ebertplatz', 'Merkenich Mitte', '2026-07-06T07:40:00Z')], '2026-07-06T07:46:00Z'),
+            ]]),
+            // Via Christophstr.: the long walk again, a 15 one stop, then the 12 it could have taken.
+            str_contains($url, 'via=id-Christophstr.') => Http::response(['itineraries' => [
+                $way([$walk(11), $ride('15', 'Rudolfplatz', 'Christophstr.', '2026-07-06T07:05:00Z'), $ride('12', 'Christophstr.', 'Merkenich Mitte', '2026-07-06T07:40:00Z')], '2026-07-06T07:46:00Z'),
+            ]]),
+            str_contains($url, 'directModes=') => Http::response(['direct' => []]),
+            default => Http::response(['itineraries' => [$best]]),
+        };
+    });
+
+    $routes = collect((new TransitousAdapter)->plan(new GeoPoint(50.936, 6.947), new GeoPoint(51.023, 6.949))->journeys)
+        ->map(fn ($j) => implode('>', $j->lines()))->all();
+
+    expect($routes)->toContain('12', '18>12')->not->toContain('15>12');
+    // Each asked as a change there (a minute's stay), not riding through.
+    Http::assertSent(fn ($r) => str_contains(urldecode($r->url()), 'via=id-Ebertplatz') && str_contains($r->url(), 'viaMinimumStay=1'));
 });
 
 test('re-plans without buses to surface a competitive S-Bahn route the primary set pruned', function () {
