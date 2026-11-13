@@ -121,6 +121,19 @@ class TransitousAdapter implements RouteService
     /** Stops of the best way's main ride asked as a `via` to change onto it, the nearest the start. */
     private const WAYS_IN_STOPS = 3;
 
+    /**
+     * Stops before the best way boards its main ride, asked as well (on their own, so they don't push
+     * out the ones after): the router keeps one way per run, the one that leaves last, so at 20:27 the
+     * 18 to Ebertplatz for the 12 hid the 4 to Friesenplatz for that same 12 (Google's second).
+     */
+    private const WAYS_IN_UPSTREAM_STOPS = 2;
+
+    /**
+     * Nor further from the destination than the start, beyond this sideways hop: from Neumarkt, the 9
+     * south to Zülpicher Platz or the 16 to Barbarossaplatz rides away to catch the 12 back north.
+     */
+    private const WAYS_IN_UPSTREAM_AWAY_METRES = 300;
+
     /** A stop this many lines serve is where riders change (by the timetable). */
     private const INTERCHANGE_LINES = 4;
 
@@ -141,6 +154,9 @@ class TransitousAdapter implements RouteService
 
     /** Absolute wall-clock deadline (microtime) set by withTimeBudget(); null = per-call caps only. */
     private ?float $deadline = null;
+
+    /** @var array<string, array{stops: list<array{name: string, lat: float, lng: float, id: string|null}>, points: list<array{0: float, 1: float}>}|null> the runs read this request, by id */
+    private array $runs = [];
 
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult
     {
@@ -593,11 +609,18 @@ class TransitousAdapter implements RouteService
 
         $main = collect($best->legs)->filter(fn (Leg $leg) => $leg->isTransit())->sortByDesc(fn (Leg $leg) => $leg->durationMin)->first();
         $near = fn (array $stop) => $this->metresBetween(new GeoPoint($stop['lat'], $stop['lng']), $from) <= self::WAYS_IN_KM * 1000;
-        $candidates = $this->runStopsAfter($main, $from, self::WAYS_IN_STOPS * 3, beforeOff: true, only: $near);
+        $after = $this->runStopsAfter($main, $from, self::WAYS_IN_STOPS * 3, beforeOff: true, only: $near);
+        $start = $this->metresBetween($from, $to) + self::WAYS_IN_UPSTREAM_AWAY_METRES;
+        $before = $this->runStopsAfter($main, $from, self::WAYS_IN_UPSTREAM_STOPS * 3, beforeOff: true, upstream: true,
+            only: fn (array $stop) => $near($stop) && $this->metresBetween(new GeoPoint($stop['lat'], $stop['lng']), $to) <= $start);
         // Where riders change: stops many lines serve (an unknown count is asked, the timetable may be missing).
-        $lines = app(StopLines::class)->count(array_column($candidates, 'name'));
-        $interchanges = array_values(array_filter($candidates, fn (array $stop) => ($lines[$stop['name']] ?? self::INTERCHANGE_LINES) >= self::INTERCHANGE_LINES));
-        foreach (array_slice($interchanges, 0, self::WAYS_IN_STOPS) as $n => $stop) {
+        $lines = app(StopLines::class)->count([...array_column($after, 'name'), ...array_column($before, 'name')]);
+        $interchange = fn (array $stop) => ($lines[$stop['name']] ?? self::INTERCHANGE_LINES) >= self::INTERCHANGE_LINES;
+        $interchanges = [
+            ...array_slice(array_values(array_filter($after, $interchange)), 0, self::WAYS_IN_STOPS),
+            ...array_slice(array_values(array_filter($before, $interchange)), 0, self::WAYS_IN_UPSTREAM_STOPS),
+        ];
+        foreach ($interchanges as $n => $stop) {
             $vias["in{$n}"] = ['ask' => ['via' => $stop['id'], 'viaMinimumStay' => 1], 'kind' => 'in', 'run' => null, 'line' => $main->lineName, 'stop' => $stop['name']];
         }
 
@@ -726,20 +749,25 @@ class TransitousAdapter implements RouteService
     /**
      * The stops a ride's run passes after it boards, nearest a point: up to where the way gets off
      * ($beforeOff), else all the way on but that stop. `past`: after the stop the way gets off.
+     * $upstream: the stops the run passes before it boards instead.
      *
      * @param  (callable(array{name: string, lat: float, lng: float, id: string|null}): bool)|null  $only
      * @return list<array{name: string, lat: float, lng: float, id: string, past: bool}>
      */
-    private function runStopsAfter(?Leg $ride, GeoPoint $nearest, int $take, bool $beforeOff, ?callable $only = null): array
+    private function runStopsAfter(?Leg $ride, GeoPoint $nearest, int $take, bool $beforeOff, ?callable $only = null, bool $upstream = false): array
     {
         if ($ride?->tripId === null || $this->callTimeout(2.0) === null) {
             return [];
         }
-        try {
-            $run = $this->withTimeBudget(min(2.0, $this->callTimeout(2.0) ?? 0.0))->tripPath($ride->tripId);
-        } catch (\Throwable) {
-            return [];
+        // Read once a request, a run without stops or that failed too: the ways in ask both sides of it.
+        if (! array_key_exists($ride->tripId, $this->runs)) {
+            try {
+                $this->runs[$ride->tripId] = $this->withTimeBudget(min(2.0, $this->callTimeout(2.0) ?? 0.0))->tripPath($ride->tripId);
+            } catch (\Throwable) {
+                $this->runs[$ride->tripId] = null;
+            }
         }
+        $run = $this->runs[$ride->tripId];
 
         $boarded = false;
         $past = false;
@@ -747,8 +775,14 @@ class TransitousAdapter implements RouteService
         foreach ($run['stops'] ?? [] as $stop) {
             if (! $boarded) {
                 $boarded = $stop['name'] === $ride->from->name;
+                if ($upstream && ! $boarded && $stop['id'] !== null && ($only === null || $only($stop))) {
+                    $stops[$stop['name']] = $stop + ['past' => false];
+                }
 
                 continue;
+            }
+            if ($upstream) {
+                break;
             }
             if ($stop['name'] === $ride->to->name) {
                 if ($beforeOff) {
@@ -761,6 +795,10 @@ class TransitousAdapter implements RouteService
             if ($stop['id'] !== null && ($only === null || $only($stop))) {
                 $stops[$stop['name']] = $stop + ['past' => $past];
             }
+        }
+        // A run that never passes where the ride boards (names differ) has no stops before it.
+        if ($upstream && ! $boarded) {
+            return [];
         }
 
         return collect($stops)
