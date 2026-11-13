@@ -157,7 +157,8 @@ enum WayDrawing {
             let ring = UIColor(LineLook(hex: leg.color ?? "#1A4CD4").deep)
             for (n, stop) in leg.stopsOnTheWay.enumerated() {
                 guard let lat = stop.latitude, let lng = stop.longitude else { continue }
-                pins.append(.init(id: "stop\(index)-\(n)", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), title: stop.name, kind: .stop(ring: ring)))
+                pins.append(.init(id: "stop\(index)-\(n)", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), title: stop.name,
+                                  kind: .stop(ring: ring, symbol: LineBadge.symbol(leg.mode))))
             }
         }
         for (index, leg) in legs.enumerated() where leg.rides {

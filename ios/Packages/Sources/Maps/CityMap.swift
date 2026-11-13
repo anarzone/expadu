@@ -44,8 +44,9 @@ public struct CityMap: UIViewRepresentable {
             case badge(text: String, fill: UIColor, ink: UIColor)
             /// A place, with its SF Symbol.
             case place(symbol: String)
-            /// A stop a ride passes: a small ring in the line's colour.
-            case stop(ring: UIColor)
+            /// A stop a line passes: a small ring in the line's colour; close up (street level), the
+            /// station's badge with the mode's symbol, and its name.
+            case stop(ring: UIColor, symbol: String = "tram.fill")
         }
 
         public let id: String
@@ -157,6 +158,8 @@ public struct CityMap: UIViewRepresentable {
         private var animateFit = false
         private var pendingFit: (points: [CLLocationCoordinate2D], padding: UIEdgeInsets)?
         private var styleReady = false
+        /// Whether the map is close enough for stops to show their badge and name.
+        let stops = StopDetail()
 
         func apply(_ spec: CityMap) {
             self.spec = spec
@@ -265,15 +268,32 @@ public struct CityMap: UIViewRepresentable {
         public func mapView(_ mapView: MLNMapView, viewFor annotation: MLNAnnotation) -> MLNAnnotationView? {
             guard let pin = (annotation as? PinAnnotation)?.pin else { return nil }
             let view = MLNAnnotationView(reuseIdentifier: nil)
-            let host = UIHostingController(rootView: PinView(pin: pin))
+            let host = UIHostingController(rootView: PinView(pin: pin, stops: stops))
             host.view.backgroundColor = .clear
             let size = host.sizeThatFits(in: CGSize(width: 240, height: 80))
             host.view.frame = CGRect(origin: .zero, size: size)
             view.frame = host.view.frame
             view.addSubview(host.view)
-            // The point sits at the pin's tip (a flag) or its middle (a dot, a badge).
-            if pin.kind == .destination { view.centerOffset = CGVector(dx: 0, dy: -size.height / 2 + 4) }
+            // The point sits at the pin's tip (a flag), a stop's mark (its name hangs below), or its middle.
+            switch pin.kind {
+            case .destination: view.centerOffset = CGVector(dx: 0, dy: -size.height / 2 + 4)
+            case .stop:
+                view.centerOffset = CGVector(dx: 0, dy: (size.height - StopMark.mark) / 2)
+                view.isUserInteractionEnabled = false
+            default: break
+            }
             return view
+        }
+
+        // Stops show their badge and name once the map is at street level, and back to rings when it's not.
+        public func mapViewRegionIsChanging(_ mapView: MLNMapView) { closeUp(mapView) }
+
+        public func mapView(_ mapView: MLNMapView, regionDidChangeAnimated animated: Bool) { closeUp(mapView) }
+
+        private func closeUp(_ map: MLNMapView) {
+            let near = map.zoomLevel >= StopDetail.zoom
+            guard near != stops.near else { return }
+            withAnimation(.smooth(duration: 0.25)) { stops.near = near }
         }
 
         public func mapView(_ mapView: MLNMapView, annotationCanShowCallout annotation: MLNAnnotation) -> Bool { false }
@@ -305,6 +325,7 @@ final class PinAnnotation: NSObject, MLNAnnotation {
 /// How each pin looks: the start a blue dot, the destination our flag, a line its badge, a place its symbol.
 private struct PinView: View {
     let pin: CityMap.Pin
+    let stops: StopDetail
 
     var body: some View {
         switch pin.kind {
@@ -342,14 +363,57 @@ private struct PinView: View {
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .background(.white.opacity(0.92), in: .capsule)
             }
-        case let .stop(ring):
-            Circle().fill(.white).frame(width: 9, height: 9)
-                .overlay { Circle().strokeBorder(Color(ring), lineWidth: 2.5) }
-                .accessibilityLabel(pin.title)
+        case let .stop(ring, symbol):
+            StopMark(title: pin.title, ring: Color(ring), symbol: symbol, detail: stops)
         }
     }
 
     /// Labels sit on a white tag in light and dark maps alike, so their type stays dark.
     static let labelInk = Color(red: 0x21 / 255, green: 0x1D / 255, blue: 0x15 / 255)
+}
+
+/// How close the map is, shared by its stops.
+@MainActor @Observable
+final class StopDetail {
+    /// Street level: a stop's badge and name can be read without crowding the map.
+    static let zoom = 13.8
+    var near = false
+}
+
+/// A stop: a ring in its line's colour from afar; close up, the station's badge (as the board's own
+/// station has it) and its name under it.
+private struct StopMark: View {
+    /// The mark's box: the point sits at its middle.
+    static let mark: CGFloat = 24
+
+    let title: String
+    let ring: Color
+    let symbol: String
+    let detail: StopDetail
+
+    var body: some View {
+        let near = detail.near
+        VStack(spacing: 2) {
+            ZStack {
+                Circle().fill(.white).frame(width: 9, height: 9)
+                    .overlay { Circle().strokeBorder(ring, lineWidth: 2.5) }
+                    .opacity(near ? 0 : 1)
+                Image(systemName: symbol).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 22, height: 22)
+                    .background(Color(red: 0.18, green: 0.44, blue: 0.82), in: .circle)
+                    .overlay { Circle().strokeBorder(.white, lineWidth: 2) }
+                    .scaleEffect(near ? 1 : 0.4)
+                    .opacity(near ? 1 : 0)
+            }
+            .frame(width: Self.mark, height: Self.mark)
+            Text(title).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                .foregroundStyle(PinView.labelInk)
+                .padding(.horizontal, 5).padding(.vertical, 1)
+                .background(.white.opacity(0.92), in: .capsule)
+                .opacity(near ? 1 : 0)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+    }
 }
 #endif
