@@ -2,33 +2,23 @@
 
 namespace App\Marketing;
 
-use Illuminate\Contracts\Encryption\DecryptException;
+use App\Security\FormTraps;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Keeps scripts from using the waitlist to mail strangers. In November 2026
  * a bot posted hundreds of other people's addresses, and every post sent a
- * real confirmation mail from us. Two traps catch scripts without bothering
- * people, and one mail per address per day caps what any leak can send:
- *
- * - a field people never see (it sits off-screen); a script fills it in;
- * - a stamp of when the form was drawn; a post seconds later, or without the
- *   stamp, didn't come from someone typing.
+ * real confirmation mail from us. FormTraps catches scripts without
+ * bothering people, and one mail per address per day caps what any leak can
+ * send.
  *
  * A caught post gets the same reply as a real one, so the script learns
  * nothing, but nothing is saved and no mail goes out.
  */
 final class WaitlistGuard
 {
-    /** Nobody types an address and a city faster than this. */
-    private const MinSeconds = 3;
-
-    /** A page left open longer than this is drawn again before it posts. */
-    private const MaxAgeSeconds = 86_400;
-
     /**
      * Confirmation mails the waitlist may send in a day, all addresses
      * together. Resend's free plan sends 100 a day for everything, so the
@@ -39,14 +29,16 @@ final class WaitlistGuard
 
     private const MailsTodayKey = 'waitlist:mails-today';
 
-    public const Trap = 'website';
+    public const Trap = FormTraps::Trap;
 
-    public const Stamp = 'drawn';
+    public const Stamp = FormTraps::Stamp;
+
+    public function __construct(private readonly FormTraps $traps) {}
 
     /** When the form was drawn, sealed so it can't be forged or reused later. */
     public static function stamp(): string
     {
-        return Crypt::encryptString((string) now()->getTimestamp());
+        return FormTraps::stamp();
     }
 
     /**
@@ -56,25 +48,13 @@ final class WaitlistGuard
      */
     public function suspicion(Request $request): ?string
     {
-        if (trim((string) $request->input(self::Trap, '')) !== '') {
-            return 'trap';
-        }
-
-        $drawnAt = $this->drawnAt((string) $request->input(self::Stamp, ''));
-
-        if ($drawnAt === null) {
-            return 'no_stamp';
-        }
-
-        return now()->getTimestamp() - $drawnAt < self::MinSeconds ? 'too_fast' : null;
+        return $this->traps->suspicion($request);
     }
 
     /** True when the form was drawn so long ago it should be reloaded first. */
     public function expired(Request $request): bool
     {
-        $drawnAt = $this->drawnAt((string) $request->input(self::Stamp, ''));
-
-        return $drawnAt !== null && now()->getTimestamp() - $drawnAt > self::MaxAgeSeconds;
+        return $this->traps->expired($request);
     }
 
     /**
@@ -96,20 +76,5 @@ final class WaitlistGuard
     public function mailsLeftToday(): bool
     {
         return ! RateLimiter::tooManyAttempts(self::MailsTodayKey, self::DailyMailCap);
-    }
-
-    private function drawnAt(string $stamp): ?int
-    {
-        if ($stamp === '') {
-            return null;
-        }
-
-        try {
-            $value = Crypt::decryptString($stamp);
-        } catch (DecryptException) {
-            return null;
-        }
-
-        return ctype_digit($value) ? (int) $value : null;
     }
 }

@@ -240,3 +240,29 @@ export function AccountSocial({ providers }: { providers: string[] }) {
         </>
     );
 }
+
+/** FormTraps' field (app/Security/FormTraps.php): off-screen, so people never
+    see or fill it, while scripts that fill every field do. */
+export function AccountTrap({
+    value,
+    onChange,
+}: {
+    value: string;
+    onChange: (value: string) => void;
+}) {
+    return (
+        <div className="account-trap" aria-hidden="true">
+            <label>
+                Leave this empty
+                <input
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                />
+            </label>
+        </div>
+    );
+}

@@ -100,3 +100,31 @@ test('the reset page asks for no referrer, so its token stays out of other reque
 
     $this->get(route('password.request'))->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 });
+
+/** Mail actually handed to the transport (the array mailer keeps it). */
+function sentResetMails(): int
+{
+    return app('mail.manager')->mailer('array')->getSymfonyTransport()->messages()->count();
+}
+
+test('a scripted reset request says the link is on its way but mails no one', function () {
+    config(['mail.default' => 'array']);
+    $user = User::factory()->create();
+
+    $this->from(route('password.request'))
+        ->post(route('password.email'), ['email' => $user->email])
+        ->assertSessionHas('status');
+
+    expect(sentResetMails())->toBe(0);
+});
+
+test('a person\'s reset request through the web form is mailed', function () {
+    config(['mail.default' => 'array']);
+    $user = User::factory()->create();
+
+    $this->from(route('password.request'))
+        ->post(route('password.email'), ['email' => $user->email, ...formDrawn()])
+        ->assertSessionHas('status');
+
+    expect(sentResetMails())->toBe(1);
+});
