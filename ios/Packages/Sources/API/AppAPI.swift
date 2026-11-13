@@ -34,7 +34,8 @@ public struct AppAPI: Sendable {
             serverURL: baseURL,
             configuration: Configuration(dateTranscoder: .iso8601),
             transport: URLSessionTransport(),
-            middlewares: [middleware]
+            // Outermost, so each try goes out with the token as it is then.
+            middlewares: [RetryReads(), middleware]
         )
         self.device = device
     }
@@ -860,7 +861,9 @@ public struct AppAPI: Sendable {
         var body: [String: Any] = ["journey": journey, "destination": ["name": to.name, "lat": to.lat, "lng": to.lng], "replace": replace]
         if let from { body["origin"] = ["name": from.name, "lat": from.lat, "lng": from.lng] }
         if let plan { body["plan"] = ["date": plan.date, "target_id": plan.target] }
-        let reply = try await composer("POST", "travel/trip", body)
+        // Asked again when the answer is lost on the way (underground at Appellhofplatz the first tap went
+        // nowhere): the server takes the same journey again as the trip already started, never a second one.
+        let reply = try await composer("POST", "travel/trip", body, timeout: 15, retry: true)
         if reply.status == 409 {
             let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
             let trip = json["trip"] as? [String: Any]
@@ -899,7 +902,9 @@ public struct AppAPI: Sendable {
 
     /// Composer's requests: JSON with the token. Signed out and too many tries throw; any other
     /// answer comes back with its status, for the caller to read.
-    private func composer(_ method: String, _ path: String, _ body: [String: Any]? = nil, timeout: TimeInterval = 30) async throws(APIFailure) -> Raw {
+    /// `retry`: a dropped connection or a gateway hiccup is tried again after a short pause. Reads always
+    /// are; a write only when the server takes it twice as once (starting the same trip).
+    private func composer(_ method: String, _ path: String, _ body: [String: Any]? = nil, timeout: TimeInterval = 30, retry: Bool? = nil) async throws(APIFailure) -> Raw {
         guard let url = URL(string: path, relativeTo: baseURL.appendingPathComponent("")) else { throw .unreachable }
         var request = URLRequest(url: url, timeoutInterval: timeout)
         request.httpMethod = method
@@ -909,9 +914,20 @@ public struct AppAPI: Sendable {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         }
-        let data: Data, response: URLResponse
-        do { (data, response) = try await URLSession.shared.data(for: request) } catch { throw .unreachable }
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        let again = retry ?? (method == "GET")
+        var data = Data()
+        var status = 0
+        for attempt in 0...Transient.pauses.count {
+            do {
+                let response: URLResponse
+                (data, response) = try await URLSession.shared.data(for: request)
+                status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                guard again, Transient.gateway(status), attempt < Transient.pauses.count else { break }
+            } catch {
+                guard again, Transient.dropped(error), attempt < Transient.pauses.count else { throw .unreachable }
+            }
+            do { try await Task.sleep(for: Transient.pauses[attempt]) } catch { throw .unreachable }
+        }
         switch status {
         case 401: throw .signedOut
         case 403 where path.hasPrefix("composer/workspace"): throw .refused("Confirm your email address first.")
@@ -1152,6 +1168,47 @@ public struct AppAPI: Sendable {
 
     static func date(from text: String) -> Date? {
         try? Date.ISO8601FormatStyle(includingFractionalSeconds: false).parse(text)
+    }
+}
+
+/// A request that got no answer: the connection dropped, timed out or never came up (underground, between
+/// cells), or a gateway in front of the server stood in for it. Asking again is safe where asking twice is
+/// the same as asking once.
+enum Transient {
+    /// The pauses before each try again: a dropped connection comes back within a second or two, or not soon.
+    static let pauses: [Duration] = [.milliseconds(600), .milliseconds(1500)]
+
+    static func dropped(_ error: any Error) -> Bool {
+        if let wrapped = error as? ClientError { return dropped(wrapped.underlyingError) }
+        let error = error as NSError
+        guard error.domain == NSURLErrorDomain else { return false }
+        return [NSURLErrorNetworkConnectionLost, NSURLErrorTimedOut, NSURLErrorCannotConnectToHost, NSURLErrorDNSLookupFailed,
+                NSURLErrorCannotFindHost, NSURLErrorNotConnectedToInternet, NSURLErrorDataNotAllowed,
+                NSURLErrorInternationalRoamingOff, NSURLErrorSecureConnectionFailed].contains(error.code)
+    }
+
+    static func gateway(_ status: Int) -> Bool { [502, 503, 504].contains(status) }
+}
+
+/// Every read the generated client makes (Today, the boards, the routes) is tried again when it got no
+/// answer, so a dropped connection underground isn't "Times unavailable" or a dead tap.
+private struct RetryReads: ClientMiddleware {
+    func intercept(
+        _ request: HTTPRequest,
+        body: HTTPBody?,
+        baseURL: URL,
+        operationID: String,
+        next: @Sendable (HTTPRequest, HTTPBody?, URL) async throws -> (HTTPResponse, HTTPBody?)
+    ) async throws -> (HTTPResponse, HTTPBody?) {
+        guard request.method == .get || request.method == .head else { return try await next(request, body, baseURL) }
+        for pause in Transient.pauses {
+            do {
+                let answer = try await next(request, body, baseURL)
+                guard Transient.gateway(answer.0.status.code) else { return answer }
+            } catch where Transient.dropped(error) {}
+            try await Task.sleep(for: pause)
+        }
+        return try await next(request, body, baseURL)
     }
 }
 
