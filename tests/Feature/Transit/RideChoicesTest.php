@@ -89,5 +89,6 @@ test('a change with a minute to spare is tight, and says the next run and when i
     expect($change['spare_min'])->toBe(1)
         ->and($change['tight'])->toBeTrue()
         ->and($change['next'])->toMatchArray(['line' => '4', 'depart_time' => '12:06', 'arrive_time' => '12:15'])
-        ->and($change['there_time'])->toBe('12:16');
+        ->and($change['there_time'])->toBe('12:16')
+        ->and($change['later_min'])->toBe(10);
 });

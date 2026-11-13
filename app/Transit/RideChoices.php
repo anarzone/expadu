@@ -14,7 +14,8 @@ use Carbon\CarbonImmutable;
  * - `also`: other lines on that stretch that make the same connection, soonest first: they leave once
  *   the rider can be at the stop and get there no later (the last ride: up to two minutes later);
  * - `change` (every ride after the first): the minutes to spare for the change, and when that's a
- *   minute or less, the next run on the stretch and, on the last ride, when it gets them there.
+ *   minute or less, the next run on the stretch, how much later it makes them, and on the last ride
+ *   when it gets them there.
  *
  * Best effort: a stretch the engine doesn't answer leaves its rides as they were.
  */
@@ -152,7 +153,7 @@ class RideChoices
      * @param  array<string, mixed>  $leg
      * @param  list<array<string, mixed>>  $runs
      * @param  array<string, mixed>|null  $journey  the way, when this is its last ride
-     * @return array{spare_min: int, tight: bool, next: array{line: string, color: string|null, depart_time: string, arrive_time: string}|null, there_time: string|null}
+     * @return array{spare_min: int, tight: bool, next: array{line: string, color: string|null, depart_time: string, arrive_time: string}|null, there_time: string|null, later_min: int|null}
      */
     private function change(array $leg, array $runs, CarbonImmutable $ready, ?array $journey): array
     {
@@ -166,11 +167,17 @@ class RideChoices
             ->sortBy('depart_at')
             ->first();
 
-        // On the last ride the rest of the way is the walk at the end, as long as it was.
+        // On the last ride the rest of the way is the walk at the end, as long as it was; before it, the
+        // next run's lateness carries on (a guess: the rides after may wait less or more).
         $there = null;
+        $later = null;
         if ($next !== null && $journey !== null) {
             $walkOn = CarbonImmutable::parse($leg['arrive_at'])->diffInSeconds(CarbonImmutable::parse($journey['arrive_at']));
-            $there = $this->time(CarbonImmutable::parse($next['arrive_at'])->addSeconds((int) $walkOn)->toIso8601String());
+            $at = CarbonImmutable::parse($next['arrive_at'])->addSeconds((int) $walkOn);
+            $there = $this->time($at->toIso8601String());
+            $later = (int) round(CarbonImmutable::parse($journey['arrive_at'])->diffInSeconds($at) / 60);
+        } elseif ($next !== null) {
+            $later = (int) round($leaves->diffInSeconds(CarbonImmutable::parse($next['depart_at'])) / 60);
         }
 
         return [
@@ -183,6 +190,7 @@ class RideChoices
                 'arrive_time' => $this->time($next['arrive_at']),
             ],
             'there_time' => $there,
+            'later_min' => $later,
         ];
     }
 
