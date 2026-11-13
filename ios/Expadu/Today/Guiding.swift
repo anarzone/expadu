@@ -31,7 +31,8 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
-        manager.distanceFilter = 5
+        // Every fix, even standing still: a tram stuck between stops is late, not on its way.
+        manager.distanceFilter = kCLDistanceFilterNone
         manager.activityType = .otherNavigation
         manager.pausesLocationUpdatesAutomatically = false
     }
@@ -72,24 +73,28 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let last = locations.last, last.horizontalAccuracy >= 0, last.horizontalAccuracy < 80 else { return }
+        // Rough fixes too (a station's walls): with their accuracy, they say "at the stop" but never a turn.
+        guard let last = locations.last, last.horizontalAccuracy >= 0, last.horizontalAccuracy < 100 else { return }
         let point = TodayPage.Point(latitude: last.coordinate.latitude, longitude: last.coordinate.longitude)
         let at = last.timestamp
-        Task { @MainActor in self.moved(to: point, at: at) }
+        let accuracy = last.horizontalAccuracy
+        Task { @MainActor in self.moved(to: point, at: at, accuracy: accuracy) }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {}
 
-    private func moved(to point: TodayPage.Point, at date: Date) {
+    private func moved(to point: TodayPage.Point, at date: Date, accuracy: Double) {
         self.point = point
         at = date
-        guard let trip, let here = Guide(trip: trip).position(of: point, at: date, after: reached) else { return }
+        guard let trip, let here = Guide(trip: trip).position(of: point, at: date, after: reached, accuracy: accuracy) else { return }
         self.here = here
-        reached = max(reached, here.leg)
+        // A rough fix never moves them on to a later leg (nor back): only a good one does.
+        if accuracy <= Guide.trustMetres { reached = max(reached, here.leg) }
         offSince = here.offRoute ? (offSince ?? date) : nil
         island(at: date)
         // Said aloud, each once: the turn as it comes close, being off the way, arriving.
-        guard UserDefaults.standard.bool(forKey: "speakTurns") else { return }
+        // Nothing said aloud from a fix too rough to go by.
+        guard UserDefaults.standard.bool(forKey: "speakTurns"), accuracy <= Guide.trustMetres else { return }
         let key = trip.arriveTime ?? trip.to
         if let turn = here.turn, let metres = here.metresToTurn, metres <= 30 {
             TurnVoice.shared.say(turn.words, once: "\(key):\(here.leg):\(turn.words)")
@@ -101,6 +106,11 @@ final class PhoneFollow: NSObject, CLLocationManagerDelegate {
             TurnVoice.shared.say("\(missed.name) has left. Open Expadu for a new way.", once: "\(key):missed:\(missed.departTime)")
         }
         if here.arrived { TurnVoice.shared.say("You’re there.", once: "\(key):there") }
+    }
+
+    /// Where they are, while the phone knows it: a fix in the last minute, good enough to go by.
+    func trusted(at now: Date = .now) -> Guide.Position? {
+        here.flatMap { $0.trusted(at: now) ? $0 : nil }
     }
 
     /// A new way started: guide it from its start.

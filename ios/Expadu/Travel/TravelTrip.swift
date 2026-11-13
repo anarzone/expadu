@@ -36,8 +36,9 @@ struct TravelTrip: View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
             let now = timeline.date
             let steps = trip.steps
-            // The step they're on: where the phone is when walking, the clock on a ride (one rule, the card's too).
-            let current = trip.live(at: now, guided: planner.follower.here?.step).current
+            // The step they're on: the phone while it knows where they are, else the clock, as late as
+            // the ride runs (one rule, the card's and the island's too).
+            let current = trip.live(at: now, here: planner.follower.here).current
             let shown = looking ?? current
             let step = steps.indices.contains(shown) ? steps[shown] : nil
             let look = LineLook(hex: trip.legs.first { $0.rides }?.color ?? "#00768B")
@@ -162,7 +163,7 @@ struct TravelTrip: View {
                 Button { somewhereElse() } label: { Label("I’m somewhere else", systemImage: "location") }
                 Divider()
                 Toggle(isOn: $speak) { Label("Speak turns", systemImage: "speaker.wave.2") }
-                if planner.follower.here?.arrived == true || trip.live(at: .now).current >= trip.steps.count - 2 {
+                if planner.follower.trusted()?.arrived == true || trip.live(at: .now, here: planner.follower.here).current >= trip.steps.count - 2 {
                     Button {
                         Task { await today.endTrip(session.api, arrived: true); planner.stopFollowing(); dismiss() }
                     } label: { Label("I’m there", systemImage: "checkmark") }
@@ -240,8 +241,8 @@ struct TravelTrip: View {
                 .glassEffect(.clear, in: .rect(cornerRadius: 14))
             }
             if let problem { Text(problem).font(.geist(14, .medium)).opacity(0.9) }
-            // Walking: the next turn, from where the phone is.
-            if index == current(now), step.kind == .walk, let here = planner.follower.here, let turn = here.turn, !here.offRoute {
+            // Walking: the next turn, from where the phone is; none when it doesn't know.
+            if index == current(now), step.kind == .walk, let here = planner.follower.trusted(at: now), let turn = here.turn, !here.offRoute {
                 TurnRow(turn: turn, metres: here.metresToTurn)
                     .padding(10).background(Palette.surface, in: .rect(cornerRadius: 16)).foregroundStyle(Palette.text)
                     .transition(.opacity)
@@ -257,11 +258,11 @@ struct TravelTrip: View {
     }
 
     /// The step they're on now (the phone when walking, else the clock).
-    private func current(_ now: Date) -> Int { trip.live(at: now, guided: planner.follower.here?.step).current }
+    private func current(_ now: Date) -> Int { trip.live(at: now, here: planner.follower.here).current }
 
     /// Off the route for 15 s, or the ride gone, as the follower sees it.
     private var trouble: String? {
-        guard let here = planner.follower.here else { return nil }
+        guard let here = planner.follower.trusted() else { return nil }
         if let missed = here.missed { return "\(missed.name) has left. A new route from here?" }
         if here.offRoute, let since = planner.follower.offSince, Date.now.timeIntervalSince(since) > 15 {
             return "You’re off the route, \(TurnRow.distance(Int(here.offBy))) from it."
@@ -271,7 +272,7 @@ struct TravelTrip: View {
 
     /// What the minutes count down to: leaving, the next tram, getting off, or being there.
     private func countdownLabel(_ step: TodayPage.Step, index: Int, now: Date) -> String {
-        if step.at > now { return index == 0 ? "Leave in" : "Starts in" }
+        if step.at > timetable(now) { return index == 0 ? "Leave in" : "Starts in" }
         guard trip.steps.indices.contains(index + 1) else { return "" }
         let next = trip.steps[index + 1]
         switch next.kind {
@@ -448,9 +449,14 @@ struct TravelTrip: View {
     /// The minutes the countdown shows: until the step starts, or until the next one once on it.
     private func minutesLeft(_ step: TodayPage.Step, index: Int, now: Date) -> Int {
         let next = trip.steps.indices.contains(index + 1) ? trip.steps[index + 1].at : nil
+        // On the timetable as late as the ride runs: a late tram's minutes, not the plan's.
+        let now = timetable(now)
         let until = step.at > now ? step.at : (next ?? step.at)
         return max(0, Int((until.timeIntervalSince(now) / 60).rounded(.up)))
     }
+
+    /// Now on the trip's timetable: as far back as the ride runs late.
+    private func timetable(_ now: Date) -> Date { now.addingTimeInterval(-trip.late(here: planner.follower.here, at: now)) }
 
     /// The routes from where they are to the trip's place, to pick one from (never one taken for them).
     private func newRoutesFromHere() async {
