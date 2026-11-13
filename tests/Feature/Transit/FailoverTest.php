@@ -65,7 +65,13 @@ function fakeTriasTrips(): void
 }
 
 test('MOTIS serves as the primary provider and the result is cached', function () {
-    Http::fake(['motis.test/api/v1/plan*' => Http::response(motisPlanFixture())]);
+    Http::fake([
+        'motis.test/api/v1/plan*' => Http::response(motisPlanFixture()),
+        // Every other call answered here too (a run, the stops, the boards), never by whatever
+        // motis.test resolves to (Herd sends *.test to this machine; CI can't resolve it).
+        'motis.test/api/v1/stoptimes*' => Http::response(['stopTimes' => []]),
+        'motis.test/*' => Http::response([]),
+    ]);
 
     $service = app(RouteService::class);
     $from = new GeoPoint(50.9513, 6.9185);
