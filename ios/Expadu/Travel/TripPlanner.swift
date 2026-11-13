@@ -222,6 +222,7 @@ final class TripPlanner {
                 loading = false
                 if reply.plan.journeys.isEmpty { problem = "No routes right now" }
             }
+            await live(reply.plan, api)
         } catch {
             withAnimation(.smooth) {
                 loading = false
@@ -231,6 +232,13 @@ final class TripPlanner {
                 }
             }
         }
+    }
+
+    /// The ways as the boards run them (on time, late, cancelled, or timetable only), the board Travel
+    /// shows: swapped in when they come, as long as the same plan is still on screen.
+    private func live(_ plan: TripPlan, _ api: AppAPI) async {
+        guard let id = plan.checks, let journeys = try? await api.tripChecks(id), answer?.checks == id, let answer else { return }
+        withAnimation(.smooth(duration: 0.35)) { self.answer = answer.live(journeys) }
     }
 
     func showMore(_ api: AppAPI) async {

@@ -78,8 +78,9 @@ test('MOTIS serves as the primary provider and the result is cached', function (
     expect($second->source)->toBe('motis');
     // One uncached plan() = five MOTIS calls (transit, the less-walking and no-change
     // alternatives, a direct bike and a direct walk bucket); the second plan() is served
-    // entirely from cache, so the total stays at 5. (No rail station is seeded, so the
-    // rail-rescue gate stays shut — no extra call.)
+    // entirely from cache, so the total stays at 5. (The fixture's best way doesn't change,
+    // so there are no ways on from its first tram to ask; no rail station is seeded, so the
+    // rail-rescue gate stays shut: no extra call.)
     Http::assertSentCount(5);
 });
 

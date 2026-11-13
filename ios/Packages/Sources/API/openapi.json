@@ -2526,11 +2526,17 @@
                                         "gone": {
                                             "type": "array",
                                             "items": {}
+                                        },
+                                        "live": {
+                                            "type": "array",
+                                            "description": "The ways in the plan's order, each ride's live state and times as its board says.",
+                                            "items": {}
                                         }
                                     },
                                     "required": [
                                         "trouble",
-                                        "gone"
+                                        "gone",
+                                        "live"
                                     ]
                                 }
                             }
@@ -2663,7 +2669,8 @@
                                             "type": "string"
                                         },
                                         "journeys": {
-                                            "type": "string"
+                                            "type": "array",
+                                            "items": {}
                                         },
                                         "degraded": {
                                             "type": [
@@ -2980,10 +2987,7 @@
                                             "items": {}
                                         },
                                         "checks": {
-                                            "type": [
-                                                "string",
-                                                "null"
-                                            ],
+                                            "type": "null",
                                             "description": "The id the boarding stops' live runs are asked by; null when they're in."
                                         },
                                         "conditions": {
