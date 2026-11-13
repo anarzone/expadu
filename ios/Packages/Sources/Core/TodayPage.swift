@@ -316,7 +316,7 @@ public struct TodayPage: Equatable, Sendable {
             public var delayMin: Int?
             /// The live reading says this run won't come.
             public var cancelled = false
-            /// Other lines that do this ride's job ("or the 18"), from a plan.
+            /// Other lines that make this ride's connection, with when they leave ("18 at 12:33"), from a plan.
             public var also: [String] = []
             /// The change onto this ride, from a plan: how long there is, and the next run should it be missed.
             public var change: Change?

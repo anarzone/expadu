@@ -208,6 +208,7 @@ extension TripRoutesView {
     /// that way's steps in the same panel, with Show the way always in reach.
     func panel(_ options: [TripPlanner.Option]) -> some View {
         let chosen = options.first { $0.index == details }
+        let row = listRows(options).routes.first { $0.option.index == details }
         return VStack(spacing: 0) {
             // The handle: drag or tap to make the panel taller or shorter.
             Capsule().fill(Palette.border).frame(width: 36, height: 5)
@@ -226,7 +227,8 @@ extension TripRoutesView {
                 .sensoryFeedback(.selection, trigger: byBike)
             }
             if let chosen {
-                RouteDetail(planner: planner, option: chosen, kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
+                RouteDetail(planner: planner, option: chosen, also: row?.also ?? [], lines: row?.lines ?? [],
+                            kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
                             back: { withAnimation(.smooth(duration: 0.3)) { details = nil } },
                             show: { Task { _ = await planner.start(chosen, replace: false, session.api, today: today) } },
                             add: planner.target == nil ? nil : { Task { await planner.addToPlan(chosen, session.api) } })
@@ -324,15 +326,21 @@ extension TripRoutesView {
         let later = options.filter { !headIDs.contains($0.index) }.sorted(by: departs)
         return (routes.map { head in
             let others = (runs[Self.route(head.journey)] ?? []).filter { $0.index != head.index }.sorted(by: departs)
-            let mixed = others.contains { $0.journey.rides.map(\.line) != head.journey.rides.map(\.line) }
+            let firstLines = Set(([head] + others).compactMap { $0.journey.rides.first?.line })
+            // A later run names its first line when the row's runs take different ones ("1 at 12:24"),
+            // and the line it changes to where that's another ("12:27 then 16").
             let also = others.prefix(3).compactMap { other -> String? in
                 guard let ride = other.journey.rides.first else { return other.journey.leaveTime }
-                return mixed ? "\(ride.line ?? "") at \(ride.departTime)" : ride.departTime
+                let start = firstLines.count > 1 ? "\(ride.line ?? "") at \(ride.departTime)" : ride.departTime
+                let then = zip(other.journey.rides.dropFirst(), head.journey.rides.dropFirst())
+                    .filter { $0.line != $1.line }.compactMap(\.0.line)
+                return then.isEmpty ? start : start + " then " + then.joined(separator: ", ")
             }
-            // Each ride's lines across the row's runs, its own first.
+            // The first ride's lines across the row's runs (each named with its time under Also). A later
+            // ride shows only the lines that make this run's own connection (its `also`), never another run's.
             let lines = head.journey.rides.indices.map { i in
-                others.compactMap { $0.journey.rides.indices.contains(i) ? $0.journey.rides[i] : nil }
-                    .filter { $0.line != head.journey.rides[i].line }
+                i > 0 ? [] : others.compactMap(\.journey.rides.first)
+                    .filter { $0.line != head.journey.rides[0].line }
                     .map { LegStrip.Line(line: $0.line ?? "", color: $0.color) }
             }
             return Row(option: head, also: also, lines: lines)
@@ -420,7 +428,8 @@ private struct RouteRow: View {
             Text("Cancelled").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
         } else if let late = journey.rides.compactMap({ $0.realtime == true ? $0.delayMin : nil }).max(), late >= 2 {
             Text("\(late) min late").font(.geist(13, .semibold)).foregroundStyle(Palette.warnText)
-        } else if journey.rides.contains(where: { $0.realtime == true }) {
+        } else if journey.rides.first?.realtime == true {
+            // On time is the tram to catch first, by its board; a live board at the change says nothing of it.
             HStack(spacing: 4) { Circle().fill(Palette.goodText).frame(width: 6, height: 6); Text("On time") }
                 .font(.geist(13, .semibold)).foregroundStyle(Palette.goodText)
         } else if !option.lifts.isEmpty {
@@ -501,6 +510,9 @@ struct LegStrip: View {
 private struct RouteDetail: View {
     let planner: TripPlanner
     let option: TripPlanner.Option
+    /// As its row said them: the later runs, and the first ride's other lines.
+    let also: [String]
+    let lines: [[LegStrip.Line]]
     let kept: Bool
     let best: Bool
     let back: () -> Void
@@ -526,7 +538,11 @@ private struct RouteDetail: View {
             .padding(.horizontal, 16)
             VStack(alignment: .leading, spacing: 8) {
                 Text("\(journey.leaveTime) – \(journey.arriveTime)").font(.geist(24, .bold)).monospacedDigit()
-                LegStrip(journey: journey)
+                LegStrip(journey: journey, extra: lines)
+                if !also.isEmpty {
+                    Label("Also " + also.joined(separator: " · "), systemImage: "arrow.clockwise")
+                        .font(.geist(12.5, .medium)).foregroundStyle(Palette.textSoft).monospacedDigit()
+                }
             }
             .padding(.horizontal, 16).padding(.bottom, 10)
             Divider()
@@ -754,7 +770,7 @@ extension TripPlan.Journey {
                     TodayPage.Trip.Leg.Stop(name: StopName.short($0.name), time: $0.arriveTime ?? "", latitude: $0.lat, longitude: $0.lng)
                 },
                 delayMin: leg.delayMin, cancelled: leg.cancelled ?? false,
-                also: (leg.also ?? []).map(\.line),
+                also: (leg.also ?? []).map { "\($0.line) at \($0.departTime)" },
                 change: leg.change.map {
                     TodayPage.Trip.Leg.Change(spareMin: $0.spareMin, tight: $0.tight,
                                               next: $0.next.map { "\($0.line) at \($0.departTime)" }, thereTime: $0.thereTime)
