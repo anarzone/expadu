@@ -801,6 +801,13 @@ public struct AppAPI: Sendable {
         do { return (try TripPlan.decode(reply.data), reply.data) } catch { throw .unreachable }
     }
 
+    /// Plan a trip's second request: each way as the boards at its stops run it, in the plan's order.
+    public func tripChecks(_ id: String) async throws(APIFailure) -> [TripPlan.Journey] {
+        let reply = try await composer("POST", "travel/checks", ["checks": id])
+        guard reply.status == 200 else { throw .unreachable }
+        do { return try TripPlan.liveJourneys(reply.data) } catch { throw .unreachable }
+    }
+
     /// Whether they hold a Deutschlandticket, for the fares.
     public func setDeutschlandticket(_ held: Bool) async throws(APIFailure) {
         let reply = try await composer("PUT", "travel/deutschlandticket", ["held": held])

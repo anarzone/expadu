@@ -316,6 +316,25 @@ public struct TodayPage: Equatable, Sendable {
             public var delayMin: Int?
             /// The live reading says this run won't come.
             public var cancelled = false
+            /// Other lines that do this ride's job ("or the 18"), from a plan.
+            public var also: [String] = []
+            /// The change onto this ride, from a plan: how long there is, and the next run should it be missed.
+            public var change: Change?
+
+            public struct Change: Equatable, Sendable {
+                public let spareMin: Int
+                public let tight: Bool
+                /// "4 at 12:06".
+                public let next: String?
+                public let thereTime: String?
+
+                public init(spareMin: Int, tight: Bool, next: String?, thereTime: String?) {
+                    self.spareMin = spareMin
+                    self.tight = tight
+                    self.next = next
+                    self.thereTime = thereTime
+                }
+            }
 
             /// A stop a ride passes.
             public struct Stop: Equatable, Sendable {
@@ -334,9 +353,11 @@ public struct TodayPage: Equatable, Sendable {
 
             public init(mode: String, line: String?, color: String?, headsign: String?, from: String, to: String, departAt: Date, arriveAt: Date,
                         departTime: String, arriveTime: String, minutes: Int, stops: Int?, polyline: String? = nil, turns: [Turn] = [], stopsOnTheWay: [Stop] = [],
-                        delayMin: Int? = nil, cancelled: Bool = false) {
+                        delayMin: Int? = nil, cancelled: Bool = false, also: [String] = [], change: Change? = nil) {
                 self.delayMin = delayMin
                 self.cancelled = cancelled
+                self.also = also
+                self.change = change
                 self.polyline = polyline
                 self.turns = turns
                 self.stopsOnTheWay = stopsOnTheWay
