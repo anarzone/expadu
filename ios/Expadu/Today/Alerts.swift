@@ -223,21 +223,6 @@ private struct AlertBody: View {
     }
 }
 
-/// A line's number on its KVB colour.
-struct LineBadge: View {
-    let line: String
-    let color: String?
-    var height: CGFloat = 28
-
-    var body: some View {
-        let look = LineLook(hex: color ?? "#1A4CD4")
-        Text(Board.badge(line)).font(.geist(height * 0.55, .bold)).foregroundStyle(look.ink)
-            .lineLimit(1).minimumScaleFactor(0.6)
-            .padding(.horizontal, 7).frame(minWidth: height + 6).frame(height: height)
-            .background(look.fill, in: .rect(cornerRadius: 7))
-    }
-}
-
 /// Cologne today's line row (.ct-line): one of their lines in trouble. A tap opens what it means
 /// right under it; nothing slides over the page.
 struct LineRow: View {

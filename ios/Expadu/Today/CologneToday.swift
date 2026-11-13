@@ -99,7 +99,13 @@ struct CologneToday: View {
             .clipShape(.rect(cornerRadius: 22))
             .card(radius: 22)
         }
-        .task(id: open) { if open, model.board == nil { await model.loadBoard(session.api) } }
+        // Live while open, as Travel's board: read again every 30 s.
+        .task(id: open) {
+            while open, !Task.isCancelled {
+                await model.loadBoard(session.api)
+                try? await Task.sleep(for: .seconds(30))
+            }
+        }
     }
 }
 
@@ -353,13 +359,9 @@ struct DepartureLine: View {
     var open = false
 
     var body: some View {
-        let look = LineLook(hex: departure.color)
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
-                Text(departure.badge).font(.geist(departure.badge.count > 2 ? 13 : 16, .bold)).foregroundStyle(look.ink)
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                    .frame(width: 36, height: 30)
-                    .background(look.fill, in: .rect(cornerRadius: 8))
+                LineBadge(line: departure.line, color: departure.color, height: 30)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(departure.direction).font(.geist(15.5, .semibold)).foregroundStyle(Palette.text).lineLimit(1)
                     Text(catchWords).font(.geist(12.5)).foregroundStyle(Palette.textSoft).lineLimit(1)

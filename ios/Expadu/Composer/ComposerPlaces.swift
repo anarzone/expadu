@@ -199,14 +199,13 @@ struct PlaceSheet: View {
     @Environment(ComposerModel.self) private var model
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
+    @Environment(TripPlanner.self) private var planner
     @Environment(\.dismiss) private var dismiss
     @State private var isSaved = false
     @State private var been = false
     @State private var laptop: String?
     @State private var canAnswer = false
     @State private var thanks = false
-    @State private var plan: WayPlan?
-    @State private var way = 0
     @State private var finding = false
     @State private var problem: String?
 
@@ -291,12 +290,6 @@ struct PlaceSheet: View {
             if let standing = try? await session.api.placeStanding(place.id) { isSaved = standing.saved; been = standing.been }
             if let state = try? await session.api.laptopAnswer(place.id) { canAnswer = state.canAnswer; laptop = state.answer }
         }
-        .fullScreenCover(isPresented: Binding(get: { plan != nil }, set: { if !$0 { plan = nil } })) {
-            if let plan, plan.ways.indices.contains(way) {
-                WayMap(to: place.name, legs: plan.ways[way].legs, ways: plan.ways, picked: $way,
-                       start: { Task { await go(plan) } })
-            }
-        }
     }
 
     private var shareText: String {
@@ -349,26 +342,14 @@ struct PlaceSheet: View {
         }
     }
 
-    /// The ways there from the starting point (or where the phone is), on the map.
+    /// Travel's routes there (the one route list, map and Start trip), from Composer's starting point or
+    /// where the phone is. The place sheet makes way first: the planner opens over Composer.
     private func showWay(lat: Double, lng: Double) async {
-        finding = true
-        problem = nil
-        defer { finding = false }
-        let from = model.start?.lat.flatMap { lat in model.start?.lng.map { (lat, $0) } } ?? today.place.map { ($0.latitude, $0.longitude) }
-        do throws(APIFailure) {
-            let found = try await session.api.planWay(to: place.name, latitude: lat, longitude: lng, fromLatitude: from?.0, fromLongitude: from?.1, startsAt: nil)
-            if found.ways.isEmpty { problem = "No way there right now. Try again in a moment." } else { way = 0; plan = found }
-        } catch {
-            problem = ComposerModel.words(error)
-        }
-    }
-
-    private func go(_ plan: WayPlan) async {
-        let (running, why) = await today.startWay(session.api, plan: plan, way: way, replace: false)
-        self.plan = nil
-        if let why { problem = why } else if running { problem = "You’re already on your way somewhere else. End that trip on Today first." } else {
-            model.say("You’re on your way. Today shows it live.")
-        }
+        let start = model.start.flatMap { start in start.lat.flatMap { lat in start.lng.map { TripPoint(name: start.label, lat: lat, lng: $0) } } }
+        dismiss()
+        try? await Task.sleep(for: .milliseconds(350))
+        planner.shown = true
+        await planner.routes(to: TripPoint(name: place.name, lat: lat, lng: lng), startsAt: nil, from: start, session.api)
     }
 }
 

@@ -47,6 +47,9 @@ struct ShellView: View {
     @Environment(Session.self) private var session
     @State private var tab = AppTab.today
     @State private var today = TodayModel()
+    /// Plan a trip, its routes and the trip screen: one of each for the whole app, opened from
+    /// Travel, Today or Composer alike.
+    @State private var planner = TripPlanner()
     @State private var compact = false
     @State private var lastOffset: CGFloat = 0
     @State private var composer: ComposerOpening?
@@ -81,6 +84,7 @@ struct ShellView: View {
             }
         }
         .environment(today)
+        .environment(planner)
         .environment(\.sectionBarCompact, compact)
         // Travel keeps the bar folded, so the board, its search and its sheets have the room;
         // opened from its circle, it folds back after a moment.
@@ -156,6 +160,7 @@ struct ShellView: View {
                 ComposerScreen(opening: opening.words)
                     .id(opening.id)
                     .environment(today)
+                    .environment(planner)
                     .environment(\.shell, ShellActions(
                         openComposer: {},
                         show: { section in withAnimation(.snappy) { tab = section; compact = section == .travel } },
@@ -169,6 +174,35 @@ struct ShellView: View {
             }
         }
         .animation(reduceMotion ? nil : composer != nil ? ComposerMotion.glide(0.62) : ComposerMotion.ios(0.4), value: composer?.id)
+        // Leave at, from Today's or the board's Leave row; Other routes opens Plan a trip once it has gone.
+        .sheet(isPresented: $planner.leaveOpen, onDismiss: {
+            if let leave = planner.otherRoutesFor { planner.otherRoutesFor = nil; planner.openPlan(leave) }
+        }) {
+            if let leave = today.page?.leave {
+                LeaveSheet(leave: leave, otherWays: { planner.otherRoutesFor = leave; planner.leaveOpen = false })
+                    .environment(planner)
+                    .environment(today)
+                    .presentationDetents([.height(300)])
+                    .presentationBackground(Palette.surface)
+                    .presentationCornerRadius(32)
+            }
+        }
+        // The one Plan a trip and the one trip screen, over whichever page opened them.
+        .fullScreenCover(isPresented: $planner.shown) {
+            TripPlanView(planner: planner, station: planner.station, stationFavourite: planner.stationFavourite)
+                .environment(planner)
+                .environment(today)
+        }
+        .fullScreenCover(isPresented: Binding(get: { planner.showTrip && today.page?.trip != nil }, set: { planner.showTrip = $0 })) {
+            if let trip = today.page?.trip {
+                TravelTrip(trip: trip).environment(planner).environment(today)
+            }
+        }
+        // One follower for the trip, wherever it shows (Today, the board, the trip screen, the Live
+        // Activity): it starts with the trip and stops when the trip ends, anywhere.
+        .onChange(of: today.page?.trip, initial: true) { _, trip in
+            if let trip { planner.follow(trip) } else { planner.stopFollowing() }
+        }
     }
 
     /// Down hides the bar's words to a circle; up, or the top of the page, brings them back.

@@ -243,7 +243,7 @@ struct TripPlanView: View {
                         heading("Recent")
                         group {
                             ForEach(Array(recents.enumerated()), id: \.offset) { _, recent in
-                                PlanRow(icon: "clock.arrow.circlepath", title: JourneySteps.short(recent.name), sub: recent.area) {
+                                PlanRow(icon: "clock.arrow.circlepath", title: StopName.short(recent.name), sub: recent.area) {
                                     if let lat = recent.lat, let lng = recent.lng { Task { await go(TripPoint(name: recent.name, lat: lat, lng: lng)) } }
                                 }
                             }
@@ -255,10 +255,8 @@ struct TripPlanView: View {
                     heading("Direct from \(station?.name ?? "here")")
                     group {
                         ForEach(direct, id: \.dep.id) { row in
-                            let look = LineLook(hex: row.dep.line.color ?? "#4A4A4A")
                             HStack(spacing: 12) {
-                                Text(row.dep.line.line).font(.geist(14, .bold)).foregroundStyle(look.ink)
-                                    .frame(minWidth: 36, minHeight: 28).background(look.base, in: .rect(cornerRadius: 7))
+                                LineBadge(line: row.dep.line.line, color: row.dep.line.color ?? "#4A4A4A", height: 28)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(row.dep.dir.dest).font(.geist(16, .semibold)).lineLimit(1)
                                     Text(row.sub).font(.geist(13)).foregroundStyle(Palette.textSoft).lineLimit(1)
@@ -275,8 +273,8 @@ struct TripPlanView: View {
                     if !planner.suggestions.isEmpty {
                         group {
                             ForEach(planner.suggestions) { hit in
-                                PlanRow(icon: icon(hit.kind), title: JourneySteps.short(hit.name), sub: hit.area) {
-                                    let end = TripPoint(name: JourneySteps.short(hit.name), lat: hit.lat, lng: hit.lng)
+                                PlanRow(icon: icon(hit.kind), title: StopName.short(hit.name), sub: hit.area) {
+                                    let end = TripPoint(name: StopName.short(hit.name), lat: hit.lat, lng: hit.lng)
                                     if planner.field == .from { planner.setFrom(end) } else { Task { await go(end) } }
                                 }
                             }
@@ -333,7 +331,12 @@ struct TripPlanView: View {
 
     /// Recent destinations, without Home and Work (they're in Favourites just above).
     private var recents: [TravelPlaces.Recent] {
-        planner.places.recentDestinations.filter { !["home", "work", "zuhause", "arbeit"].contains($0.name.lowercased()) }
+        // One row per place as it reads: "Köln Neumarkt" and "Neumarkt" are the same Neumarkt.
+        var seen = Set<String>()
+        return planner.places.recentDestinations.filter { recent in
+            let name = StopName.short(recent.name).lowercased()
+            return !["home", "work", "zuhause", "arbeit"].contains(name) && seen.insert(name).inserted
+        }
     }
 
     private func go(_ end: TripPoint, target: TravelPlaces.Plan? = nil) async {
@@ -343,7 +346,7 @@ struct TripPlanView: View {
 
     private func pickFirst() async {
         if let hit = planner.suggestions.first {
-            let end = TripPoint(name: JourneySteps.short(hit.name), lat: hit.lat, lng: hit.lng)
+            let end = TripPoint(name: StopName.short(hit.name), lat: hit.lat, lng: hit.lng)
             if planner.field == .from { planner.setFrom(end) } else { await go(end) }
         }
     }
