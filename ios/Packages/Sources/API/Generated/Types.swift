@@ -440,12 +440,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/apple`.
     /// - Remark: Generated from `#/paths//auth/apple/post(signIn.apple)`.
     func signIn_apple(_ input: Operations.SignIn_apple.Input) async throws -> Operations.SignIn_apple.Output
+    /// When the sign-in screen opened, sealed: sign-up and the reset link carry
+    /// it back (FormTraps), as the website's forms do. Fetch it when the screen
+    /// opens and again after it's used; it works for a day
+    ///
+    /// - Remark: HTTP `GET /auth/form`.
+    /// - Remark: Generated from `#/paths//auth/form/get(signIn.form)`.
+    func signIn_form(_ input: Operations.SignIn_form.Input) async throws -> Operations.SignIn_form.Output
     /// A new account, signed in, its verification link on the way (as the web's)
     ///
     /// - Remark: HTTP `POST /auth/register`.
     /// - Remark: Generated from `#/paths//auth/register/post(signIn.register)`.
     func signIn_register(_ input: Operations.SignIn_register.Input) async throws -> Operations.SignIn_register.Output
-    /// Answers the same whether or not the address has an account
+    /// Answers the same whether or not the address has an account, and when
+    /// the request looks scripted (no stamp from GET /auth/form, or seconds
+    /// old): then no mail goes out, as on the website
     ///
     /// - Remark: HTTP `POST /auth/forgot-password`.
     /// - Remark: Generated from `#/paths//auth/forgot-password/post(signIn.forgotPassword)`.
@@ -1762,6 +1771,15 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// When the sign-in screen opened, sealed: sign-up and the reset link carry
+    /// it back (FormTraps), as the website's forms do. Fetch it when the screen
+    /// opens and again after it's used; it works for a day
+    ///
+    /// - Remark: HTTP `GET /auth/form`.
+    /// - Remark: Generated from `#/paths//auth/form/get(signIn.form)`.
+    public func signIn_form(headers: Operations.SignIn_form.Input.Headers = .init()) async throws -> Operations.SignIn_form.Output {
+        try await signIn_form(Operations.SignIn_form.Input(headers: headers))
+    }
     /// A new account, signed in, its verification link on the way (as the web's)
     ///
     /// - Remark: HTTP `POST /auth/register`.
@@ -1775,7 +1793,9 @@ extension APIProtocol {
             body: body
         ))
     }
-    /// Answers the same whether or not the address has an account
+    /// Answers the same whether or not the address has an account, and when
+    /// the request looks scripted (no stamp from GET /auth/form, or seconds
+    /// old): then no mail goes out, as on the website
     ///
     /// - Remark: HTTP `POST /auth/forgot-password`.
     /// - Remark: Generated from `#/paths//auth/forgot-password/post(signIn.forgotPassword)`.

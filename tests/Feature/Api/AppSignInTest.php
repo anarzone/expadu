@@ -225,7 +225,7 @@ test('🔒 the sign-in sheet returns a code to the app, not a session', function
 test('🔒 registering makes an account and sends its link, as the web does', function () {
     Event::fake([Registered::class]);
 
-    $this->postJson('/api/v1/auth/register', ['name' => 'Ana', 'email' => 'ana@example.com', 'password' => 'a-long-password', 'password_confirmation' => 'a-long-password', 'device_name' => 'iPhone'])
+    $this->postJson('/api/v1/auth/register', ['name' => 'Ana', 'email' => 'ana@example.com', 'password' => 'a-long-password', 'password_confirmation' => 'a-long-password', 'device_name' => 'iPhone', ...formDrawn()])
         ->assertOk()->assertJsonPath('user.email_verified', false);
 
     Event::assertDispatched(Registered::class);

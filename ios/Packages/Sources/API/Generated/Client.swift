@@ -13217,6 +13217,68 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// When the sign-in screen opened, sealed: sign-up and the reset link carry
+    /// it back (FormTraps), as the website's forms do. Fetch it when the screen
+    /// opens and again after it's used; it works for a day
+    ///
+    /// - Remark: HTTP `GET /auth/form`.
+    /// - Remark: Generated from `#/paths//auth/form/get(signIn.form)`.
+    public func signIn_form(_ input: Operations.SignIn_form.Input) async throws -> Operations.SignIn_form.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.SignIn_form.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/auth/form",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.SignIn_form.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Operations.SignIn_form.Output.Ok.Body.JsonPayload.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
     /// A new account, signed in, its verification link on the way (as the web's)
     ///
     /// - Remark: HTTP `POST /auth/register`.
@@ -13308,7 +13370,9 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Answers the same whether or not the address has an account
+    /// Answers the same whether or not the address has an account, and when
+    /// the request looks scripted (no stamp from GET /auth/form, or seconds
+    /// old): then no mail goes out, as on the website
     ///
     /// - Remark: HTTP `POST /auth/forgot-password`.
     /// - Remark: Generated from `#/paths//auth/forgot-password/post(signIn.forgotPassword)`.
