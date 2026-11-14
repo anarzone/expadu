@@ -5112,54 +5112,115 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "trip": {
+                                    "anyOf": [
+                                        {
                                             "type": "object",
                                             "properties": {
-                                                "journey": {
-                                                    "type": "array",
-                                                    "items": {}
-                                                },
-                                                "origin": {
-                                                    "type": [
-                                                        "array",
-                                                        "null"
-                                                    ],
-                                                    "items": {}
-                                                },
-                                                "destination": {
-                                                    "type": "array",
-                                                    "items": {}
-                                                },
-                                                "target": {
-                                                    "type": [
-                                                        "array",
-                                                        "null"
-                                                    ],
-                                                    "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
-                                                    "items": {}
-                                                },
-                                                "started_at": {
-                                                    "type": "string"
-                                                },
-                                                "city": {
-                                                    "type": "string",
-                                                    "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                "trip": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "journey": {
+                                                                    "type": "array",
+                                                                    "items": {}
+                                                                },
+                                                                "origin": {
+                                                                    "type": [
+                                                                        "array",
+                                                                        "null"
+                                                                    ],
+                                                                    "items": {}
+                                                                },
+                                                                "destination": {
+                                                                    "type": "array",
+                                                                    "items": {}
+                                                                },
+                                                                "target": {
+                                                                    "type": [
+                                                                        "array",
+                                                                        "null"
+                                                                    ],
+                                                                    "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
+                                                                    "items": {}
+                                                                },
+                                                                "started_at": {
+                                                                    "type": "string"
+                                                                },
+                                                                "city": {
+                                                                    "type": "string",
+                                                                    "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "journey",
+                                                                "origin",
+                                                                "destination",
+                                                                "target",
+                                                                "started_at",
+                                                                "city"
+                                                            ]
+                                                        },
+                                                        {}
+                                                    ]
                                                 }
                                             },
                                             "required": [
-                                                "journey",
-                                                "origin",
-                                                "destination",
-                                                "target",
-                                                "started_at",
-                                                "city"
+                                                "trip"
+                                            ],
+                                            "additionalProperties": {}
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "trip": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "journey": {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        },
+                                                        "origin": {
+                                                            "type": [
+                                                                "array",
+                                                                "null"
+                                                            ],
+                                                            "items": {}
+                                                        },
+                                                        "destination": {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        },
+                                                        "target": {
+                                                            "type": [
+                                                                "array",
+                                                                "null"
+                                                            ],
+                                                            "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
+                                                            "items": {}
+                                                        },
+                                                        "started_at": {
+                                                            "type": "string"
+                                                        },
+                                                        "city": {
+                                                            "type": "string",
+                                                            "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "journey",
+                                                        "origin",
+                                                        "destination",
+                                                        "target",
+                                                        "started_at",
+                                                        "city"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "trip"
                                             ]
                                         }
-                                    },
-                                    "required": [
-                                        "trip"
                                     ]
                                 }
                             }
@@ -5235,6 +5296,100 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/travel/trip/undo": {
+            "post": {
+                "operationId": "appTrip.undo",
+                "summary": "Undo a replace: the trip it replaced is followed again. Only the person's own, once",
+                "tags": [
+                    "AppTrip"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "undo": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "undo"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "trip": {
+                                            "type": "object",
+                                            "properties": {
+                                                "journey": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "origin": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                },
+                                                "destination": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "target": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "description": "The plan it's for, when it was started for one (its start, for \"12 min spare\").",
+                                                    "items": {}
+                                                },
+                                                "started_at": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string",
+                                                    "description": "Stop names carry the city (\"K\u00f6ln Neumarkt\"); the bar shows them as the signs do."
+                                                }
+                                            },
+                                            "required": [
+                                                "journey",
+                                                "origin",
+                                                "destination",
+                                                "target",
+                                                "started_at",
+                                                "city"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "trip"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"

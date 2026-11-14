@@ -14135,68 +14135,249 @@ public enum Operations {
                 @frozen public enum Body: Sendable, Hashable {
                     /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json`.
                     public struct JsonPayload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/trip`.
-                        public struct TripPayload: Codable, Hashable, Sendable {
-                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/trip/journey`.
-                            public var journey: [OpenAPIRuntime.OpenAPIValueContainer]
-                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/trip/origin`.
-                            public var origin: [OpenAPIRuntime.OpenAPIValueContainer]?
-                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/trip/destination`.
-                            public var destination: [OpenAPIRuntime.OpenAPIValueContainer]
-                            /// The plan it's for, when it was started for one (its start, for "12 min spare").
-                            ///
-                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/trip/target`.
-                            public var target: [OpenAPIRuntime.OpenAPIValueContainer]?
-                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/trip/started_at`.
-                            public var startedAt: Swift.String
-                            /// Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
-                            ///
-                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/trip/city`.
-                            public var city: Swift.String
-                            /// Creates a new `TripPayload`.
+                        /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1`.
+                        public struct Value1Payload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip`.
+                            public struct TripPayload: Codable, Hashable, Sendable {
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value1`.
+                                public struct Value1Payload: Codable, Hashable, Sendable {
+                                    /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value1/journey`.
+                                    public var journey: [OpenAPIRuntime.OpenAPIValueContainer]
+                                    /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value1/origin`.
+                                    public var origin: [OpenAPIRuntime.OpenAPIValueContainer]?
+                                    /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value1/destination`.
+                                    public var destination: [OpenAPIRuntime.OpenAPIValueContainer]
+                                    /// The plan it's for, when it was started for one (its start, for "12 min spare").
+                                    ///
+                                    /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value1/target`.
+                                    public var target: [OpenAPIRuntime.OpenAPIValueContainer]?
+                                    /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value1/started_at`.
+                                    public var startedAt: Swift.String
+                                    /// Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                                    ///
+                                    /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value1/city`.
+                                    public var city: Swift.String
+                                    /// Creates a new `Value1Payload`.
+                                    ///
+                                    /// - Parameters:
+                                    ///   - journey:
+                                    ///   - origin:
+                                    ///   - destination:
+                                    ///   - target: The plan it's for, when it was started for one (its start, for "12 min spare").
+                                    ///   - startedAt:
+                                    ///   - city: Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                                    public init(
+                                        journey: [OpenAPIRuntime.OpenAPIValueContainer],
+                                        origin: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                        destination: [OpenAPIRuntime.OpenAPIValueContainer],
+                                        target: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                        startedAt: Swift.String,
+                                        city: Swift.String
+                                    ) {
+                                        self.journey = journey
+                                        self.origin = origin
+                                        self.destination = destination
+                                        self.target = target
+                                        self.startedAt = startedAt
+                                        self.city = city
+                                    }
+                                    public enum CodingKeys: String, CodingKey {
+                                        case journey
+                                        case origin
+                                        case destination
+                                        case target
+                                        case startedAt = "started_at"
+                                        case city
+                                    }
+                                }
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value1`.
+                                public var value1: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value1Payload.TripPayload.Value1Payload?
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip/value2`.
+                                public var value2: OpenAPIRuntime.OpenAPIValueContainer?
+                                /// Creates a new `TripPayload`.
+                                ///
+                                /// - Parameters:
+                                ///   - value1:
+                                ///   - value2:
+                                public init(
+                                    value1: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value1Payload.TripPayload.Value1Payload? = nil,
+                                    value2: OpenAPIRuntime.OpenAPIValueContainer? = nil
+                                ) {
+                                    self.value1 = value1
+                                    self.value2 = value2
+                                }
+                                public init(from decoder: any Swift.Decoder) throws {
+                                    var errors: [any Swift.Error] = []
+                                    do {
+                                        self.value1 = try .init(from: decoder)
+                                    } catch {
+                                        errors.append(error)
+                                    }
+                                    do {
+                                        self.value2 = try .init(from: decoder)
+                                    } catch {
+                                        errors.append(error)
+                                    }
+                                    try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                                        [
+                                            self.value1,
+                                            self.value2
+                                        ],
+                                        type: Self.self,
+                                        codingPath: decoder.codingPath,
+                                        errors: errors
+                                    )
+                                }
+                                public func encode(to encoder: any Swift.Encoder) throws {
+                                    try self.value1?.encode(to: encoder)
+                                    try self.value2?.encode(to: encoder)
+                                }
+                            }
+                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1/trip`.
+                            public var trip: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value1Payload.TripPayload
+                            /// A container of undocumented properties.
+                            public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
+                            /// Creates a new `Value1Payload`.
                             ///
                             /// - Parameters:
-                            ///   - journey:
-                            ///   - origin:
-                            ///   - destination:
-                            ///   - target: The plan it's for, when it was started for one (its start, for "12 min spare").
-                            ///   - startedAt:
-                            ///   - city: Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            ///   - trip:
+                            ///   - additionalProperties: A container of undocumented properties.
                             public init(
-                                journey: [OpenAPIRuntime.OpenAPIValueContainer],
-                                origin: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
-                                destination: [OpenAPIRuntime.OpenAPIValueContainer],
-                                target: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
-                                startedAt: Swift.String,
-                                city: Swift.String
+                                trip: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value1Payload.TripPayload,
+                                additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()
                             ) {
-                                self.journey = journey
-                                self.origin = origin
-                                self.destination = destination
-                                self.target = target
-                                self.startedAt = startedAt
-                                self.city = city
+                                self.trip = trip
+                                self.additionalProperties = additionalProperties
                             }
                             public enum CodingKeys: String, CodingKey {
-                                case journey
-                                case origin
-                                case destination
-                                case target
-                                case startedAt = "started_at"
-                                case city
+                                case trip
+                            }
+                            public init(from decoder: any Swift.Decoder) throws {
+                                let container = try decoder.container(keyedBy: CodingKeys.self)
+                                self.trip = try container.decode(
+                                    Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value1Payload.TripPayload.self,
+                                    forKey: .trip
+                                )
+                                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                                    "trip"
+                                ])
+                            }
+                            public func encode(to encoder: any Swift.Encoder) throws {
+                                var container = encoder.container(keyedBy: CodingKeys.self)
+                                try container.encode(
+                                    self.trip,
+                                    forKey: .trip
+                                )
+                                try encoder.encodeAdditionalProperties(additionalProperties)
                             }
                         }
-                        /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/trip`.
-                        public var trip: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.TripPayload
+                        /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value1`.
+                        public var value1: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value1Payload?
+                        /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2`.
+                        public struct Value2Payload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2/trip`.
+                            public struct TripPayload: Codable, Hashable, Sendable {
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2/trip/journey`.
+                                public var journey: [OpenAPIRuntime.OpenAPIValueContainer]
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2/trip/origin`.
+                                public var origin: [OpenAPIRuntime.OpenAPIValueContainer]?
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2/trip/destination`.
+                                public var destination: [OpenAPIRuntime.OpenAPIValueContainer]
+                                /// The plan it's for, when it was started for one (its start, for "12 min spare").
+                                ///
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2/trip/target`.
+                                public var target: [OpenAPIRuntime.OpenAPIValueContainer]?
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2/trip/started_at`.
+                                public var startedAt: Swift.String
+                                /// Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                                ///
+                                /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2/trip/city`.
+                                public var city: Swift.String
+                                /// Creates a new `TripPayload`.
+                                ///
+                                /// - Parameters:
+                                ///   - journey:
+                                ///   - origin:
+                                ///   - destination:
+                                ///   - target: The plan it's for, when it was started for one (its start, for "12 min spare").
+                                ///   - startedAt:
+                                ///   - city: Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                                public init(
+                                    journey: [OpenAPIRuntime.OpenAPIValueContainer],
+                                    origin: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                    destination: [OpenAPIRuntime.OpenAPIValueContainer],
+                                    target: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                    startedAt: Swift.String,
+                                    city: Swift.String
+                                ) {
+                                    self.journey = journey
+                                    self.origin = origin
+                                    self.destination = destination
+                                    self.target = target
+                                    self.startedAt = startedAt
+                                    self.city = city
+                                }
+                                public enum CodingKeys: String, CodingKey {
+                                    case journey
+                                    case origin
+                                    case destination
+                                    case target
+                                    case startedAt = "started_at"
+                                    case city
+                                }
+                            }
+                            /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2/trip`.
+                            public var trip: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value2Payload.TripPayload
+                            /// Creates a new `Value2Payload`.
+                            ///
+                            /// - Parameters:
+                            ///   - trip:
+                            public init(trip: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value2Payload.TripPayload) {
+                                self.trip = trip
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case trip
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/json/value2`.
+                        public var value2: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value2Payload?
                         /// Creates a new `JsonPayload`.
                         ///
                         /// - Parameters:
-                        ///   - trip:
-                        public init(trip: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.TripPayload) {
-                            self.trip = trip
+                        ///   - value1:
+                        ///   - value2:
+                        public init(
+                            value1: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value1Payload? = nil,
+                            value2: Operations.AppTrip_start.Output.Ok.Body.JsonPayload.Value2Payload? = nil
+                        ) {
+                            self.value1 = value1
+                            self.value2 = value2
                         }
-                        public enum CodingKeys: String, CodingKey {
-                            case trip
+                        public init(from decoder: any Swift.Decoder) throws {
+                            var errors: [any Swift.Error] = []
+                            do {
+                                self.value1 = try .init(from: decoder)
+                            } catch {
+                                errors.append(error)
+                            }
+                            do {
+                                self.value2 = try .init(from: decoder)
+                            } catch {
+                                errors.append(error)
+                            }
+                            try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                                [
+                                    self.value1,
+                                    self.value2
+                                ],
+                                type: Self.self,
+                                codingPath: decoder.codingPath,
+                                errors: errors
+                            )
+                        }
+                        public func encode(to encoder: any Swift.Encoder) throws {
+                            try self.value1?.encode(to: encoder)
+                            try self.value2?.encode(to: encoder)
                         }
                     }
                     /// - Remark: Generated from `#/paths/travel/trip/POST/responses/200/content/application\/json`.
@@ -14551,6 +14732,254 @@ public enum Operations {
             /// Unauthenticated
             ///
             /// - Remark: Generated from `#/paths//travel/trip/delete(appTrip.end)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Undo a replace: the trip it replaced is followed again. Only the person's own, once
+    ///
+    /// - Remark: HTTP `POST /travel/trip/undo`.
+    /// - Remark: Generated from `#/paths//travel/trip/undo/post(appTrip.undo)`.
+    public enum AppTrip_undo {
+        public static let id: Swift.String = "appTrip.undo"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/travel/trip/undo/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTrip_undo.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTrip_undo.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppTrip_undo.Input.Headers
+            /// - Remark: Generated from `#/paths/travel/trip/undo/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/undo/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/travel/trip/undo/POST/requestBody/json/undo`.
+                    public var undo: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - undo:
+                    public init(undo: Swift.String) {
+                        self.undo = undo
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case undo
+                    }
+                }
+                /// - Remark: Generated from `#/paths/travel/trip/undo/POST/requestBody/content/application\/json`.
+                case json(Operations.AppTrip_undo.Input.Body.JsonPayload)
+            }
+            public var body: Operations.AppTrip_undo.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.AppTrip_undo.Input.Headers = .init(),
+                body: Operations.AppTrip_undo.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json/trip`.
+                        public struct TripPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json/trip/journey`.
+                            public var journey: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json/trip/origin`.
+                            public var origin: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json/trip/destination`.
+                            public var destination: [OpenAPIRuntime.OpenAPIValueContainer]
+                            /// The plan it's for, when it was started for one (its start, for "12 min spare").
+                            ///
+                            /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json/trip/target`.
+                            public var target: [OpenAPIRuntime.OpenAPIValueContainer]?
+                            /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json/trip/started_at`.
+                            public var startedAt: Swift.String
+                            /// Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            ///
+                            /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json/trip/city`.
+                            public var city: Swift.String
+                            /// Creates a new `TripPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - journey:
+                            ///   - origin:
+                            ///   - destination:
+                            ///   - target: The plan it's for, when it was started for one (its start, for "12 min spare").
+                            ///   - startedAt:
+                            ///   - city: Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+                            public init(
+                                journey: [OpenAPIRuntime.OpenAPIValueContainer],
+                                origin: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                destination: [OpenAPIRuntime.OpenAPIValueContainer],
+                                target: [OpenAPIRuntime.OpenAPIValueContainer]? = nil,
+                                startedAt: Swift.String,
+                                city: Swift.String
+                            ) {
+                                self.journey = journey
+                                self.origin = origin
+                                self.destination = destination
+                                self.target = target
+                                self.startedAt = startedAt
+                                self.city = city
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case journey
+                                case origin
+                                case destination
+                                case target
+                                case startedAt = "started_at"
+                                case city
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/json/trip`.
+                        public var trip: Operations.AppTrip_undo.Output.Ok.Body.JsonPayload.TripPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - trip:
+                        public init(trip: Operations.AppTrip_undo.Output.Ok.Body.JsonPayload.TripPayload) {
+                            self.trip = trip
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case trip
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/travel/trip/undo/POST/responses/200/content/application\/json`.
+                    case json(Operations.AppTrip_undo.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppTrip_undo.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppTrip_undo.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppTrip_undo.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/undo/post(appTrip.undo)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppTrip_undo.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppTrip_undo.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/undo/post(appTrip.undo)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/undo/post(appTrip.undo)/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Components.Responses.AuthenticationException)

@@ -23,7 +23,13 @@ struct StepList: View {
     var current: Int?
     /// The way's legs: a ride's stops on the way fold into its step, opened with Show stops.
     var legs: [TodayPage.Trip.Leg] = []
-    @State private var open: Set<Int> = []
+    /// On a trip: each ride's stops shown from the start (the arrow folds them), not folded.
+    var stopsOpen = false
+    /// On a ride: the stop it comes to next (by the phone, or the clock as late as it runs); the ones
+    /// before it passed. The step is the ride's.
+    var live: (step: Int, next: String?)?
+    /// Rides whose stops were folded (or opened) by hand, against `stopsOpen`.
+    @State private var toggled: Set<Int> = []
 
     /// The leg a ride step rides, when the way's legs came with the steps.
     private func ride(_ step: TodayPage.Step) -> TodayPage.Trip.Leg? {
@@ -50,7 +56,10 @@ struct StepList: View {
                 let colour = StepColour.of(step)
                 let isLast = index == steps.count - 1
                 let passes = stops(step)
-                let shown = open.contains(index)
+                let shown = stopsOpen != toggled.contains(index)
+                // On this ride now: the stops it has passed, and the one it comes to next.
+                let riding = live.map { $0.step == index } ?? false
+                let nextAt = riding ? passes.firstIndex { $0.name == live?.next } ?? passes.count : nil
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top, spacing: 12) {
                         Circle().strokeBorder(step.kind == .walk ? Palette.textSoft : colour, lineWidth: 3)
@@ -76,7 +85,7 @@ struct StepList: View {
                             if !passes.isEmpty {
                                 Button {
                                     withAnimation(.smooth(duration: 0.3)) {
-                                        if shown { open.remove(index) } else { open.insert(index) }
+                                        if toggled.contains(index) { toggled.remove(index) } else { toggled.insert(index) }
                                     }
                                 } label: {
                                     HStack(spacing: 4) {
@@ -96,18 +105,27 @@ struct StepList: View {
                     // The ride's stops, opened: full width, so their times line up with the steps'.
                     if shown {
                         VStack(alignment: .leading, spacing: 0) {
-                            ForEach(Array(passes.enumerated()), id: \.offset) { _, stop in
+                            ForEach(Array(passes.enumerated()), id: \.offset) { n, stop in
+                                let passed = nextAt.map { n < $0 } ?? false
+                                let coming = nextAt == n
                                 HStack(spacing: 8) {
-                                    Text(stop.name).font(.geist(13))
+                                    Text(stop.name).font(.geist(coming ? 14 : 13, coming ? .bold : .regular))
+                                        .foregroundStyle(coming ? colour : Palette.text)
+                                    if coming {
+                                        Text("Next").font(.geist(10.5, .bold)).foregroundStyle(.white)
+                                            .padding(.horizontal, 5).frame(height: 16).background(colour, in: .rect(cornerRadius: 4))
+                                    }
                                     Spacer(minLength: 6)
                                     Text(stop.time).font(.geist(12.5)).monospacedDigit().foregroundStyle(Palette.textSoft)
                                 }
                                 .frame(minHeight: 26)
-                                // The stop's mark sits on the ride's line, left of the text.
+                                .opacity(passed ? 0.45 : 1)
+                                // The stop's mark sits on the ride's line, left of the text: passed filled, the next one live.
                                 .overlay(alignment: .leading) {
-                                    Circle().fill(Palette.surface).overlay { Circle().strokeBorder(colour, lineWidth: 2) }
-                                        .frame(width: 9, height: 9).offset(x: -25)
+                                    StopMark(colour: colour, passed: passed, coming: coming).offset(x: -25)
                                 }
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel(stop.name + (coming ? ", next stop" : passed ? ", passed" : "") + ", \(stop.time)")
                             }
                         }
                         .padding(.leading, 29)
@@ -140,6 +158,32 @@ struct StepList: View {
             }
         } else {
             Capsule().fill(colour)
+        }
+    }
+}
+
+/// A ride's stop on its line: open, passed (filled), or the one it comes to next (a ring that pulses).
+private struct StopMark: View {
+    let colour: Color
+    let passed: Bool
+    let coming: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
+
+    var body: some View {
+        ZStack {
+            if coming {
+                Circle().fill(colour.opacity(0.25)).frame(width: 20, height: 20)
+                    .scaleEffect(pulse ? 1.15 : 0.7).opacity(pulse ? 0 : 1)
+            }
+            Circle().fill(passed || coming ? colour : Palette.surface)
+                .overlay { Circle().strokeBorder(colour, lineWidth: 2) }
+                .frame(width: coming ? 11 : 9, height: coming ? 11 : 9)
+        }
+        .frame(width: 9, height: 9)
+        .onAppear {
+            guard coming, !reduceMotion else { return }
+            withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { pulse = true }
         }
     }
 }

@@ -23,8 +23,10 @@ struct TravelTrip: View {
     @State private var followMe = false
     @State private var fitTick = 0
     /// On the map: the steps in the lower left, over the map (the map moves up to keep you in sight).
-    @State private var stepsOpen = false
+    @State private var stepsOpen = true
     @State private var asking = false
+    /// Each step swiped to, for its tick.
+    @State private var swiped = 0
     @AppStorage("speakTurns") private var speak = false
     @State private var problem: String?
     /// Where the Map button sits on the screen, for the map to grow out of ("Grow").
@@ -45,7 +47,7 @@ struct TravelTrip: View {
             ZStack(alignment: .top) {
                 if mapOn {
                     // The map view: the whole screen is the map, the step you're on in a band on top.
-                    mapLayer(current: current)
+                    mapLayer(current: current, now: now)
                         .transition(mapTransition)
                 }
                 VStack(spacing: 0) {
@@ -69,6 +71,10 @@ struct TravelTrip: View {
                     }
                     .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, mapOn ? 16 : 18)
                     .foregroundStyle(look.ink)
+                    // Swipes on the step: left for the next step, right for the one before (as the bars
+                    // do), down to minimise (as the chevron does).
+                    .contentShape(.rect)
+                    .gesture(stepSwipe(count: steps.count, current: current, shown: shown))
                     // On the map, the line's colour is the band behind the step you're on: as tall as the
                     // step by layout, never measured. A measured band fed its height back into the layout it
                     // was measured from, and the screen froze on Minimise (iOS killed it, 13 Nov).
@@ -76,7 +82,7 @@ struct TravelTrip: View {
                         if mapOn { colour(look, band: true) }
                     }
                     if !mapOn {
-                        way(steps: steps, current: current)
+                        way(steps: steps, current: current, now: now)
                             .transition(wayTransition)
                     }
                     Spacer(minLength: 0)
@@ -98,6 +104,7 @@ struct TravelTrip: View {
                 }
             }
             .coordinateSpace(.named(Self.screenSpace))
+            .sensoryFeedback(.selection, trigger: swiped)
             .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: shown)
             .onChange(of: MotionStore.shared.replays[.tripMapSwitch]) { switchMap(!mapOn) }
         }
@@ -293,7 +300,7 @@ struct TravelTrip: View {
 
     /// The whole way, on the page under the step you're on: every step (the one you're on marked, the ones
     /// done faded), each ride's stops, and the map in the same card.
-    private func way(steps: [TodayPage.Step], current: Int) -> some View {
+    private func way(steps: [TodayPage.Step], current: Int, now: Date) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("All steps").font(.geist(16, .bold))
@@ -317,7 +324,7 @@ struct TravelTrip: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     // One list: each ride's stops fold into its step (Show stops), not a second list under it.
-                    StepList(steps: steps, current: current, legs: trip.legs)
+                    StepList(steps: steps, current: current, legs: trip.legs, stopsOpen: true, live: liveStop(current: current, now: now))
                     Text(trip.legs.contains(where: \.rides)
                          ? "We’ll tell you one stop before. Your phone buzzes here, even with the screen off (with notifications on). The trip ends by itself."
                          : "It moves on by itself as you go. The trip ends by itself.")
@@ -338,19 +345,24 @@ struct TravelTrip: View {
     /// The map view's map: the route and where you are on the whole screen (the band lies over its top).
     /// Steps lays the steps over the lower left of the map, the one you're on at the bottom and the next
     /// ones above it fading out (as live comments do), and moves the map up so you stay in sight.
-    private func mapLayer(current: Int) -> some View {
+    private func mapLayer(current: Int, now: Date) -> some View {
         CityMap(lines: WayDrawing.lines(trip.legs), pins: WayDrawing.pins(trip.legs, to: trip.to), fit: WayDrawing.all(trip.legs),
                 padding: UIEdgeInsets(top: stepsOpen ? 225 : 250, left: 40, bottom: stepsOpen ? 16 : 130, right: 40), follow: followMe, showsUser: true,
                 fitID: fitTick * 10 + (stepsOpen ? 1 : 0), creditInset: stepsOpen ? 8 : 70,
                 // The list's top fades out, so the map only keeps clear of its solid lower part.
                 viewInset: UIEdgeInsets(top: 0, left: 0, bottom: stepsOpen ? Self.feedHeight * 0.7 + 64 : 0, right: 0))
             .ignoresSafeArea()
-            .overlay(alignment: .bottomLeading) { mapControls(current: current) }
+            .overlay(alignment: .bottomLeading) { mapControls(current: current, now: now) }
             .sensoryFeedback(.selection, trigger: followMe)
             .sensoryFeedback(.selection, trigger: stepsOpen)
     }
 
-    private static let feedHeight: CGFloat = 300
+    private static let feedHeight: CGFloat = 330
+
+    /// The steps card on the map, at the step they're on.
+    private func scrollToCurrent(_ reader: ScrollViewProxy, _ current: Int) {
+        reader.scrollTo("steps", anchor: UnitPoint(x: 0, y: Double(current) / Double(max(trip.steps.count - 1, 1))))
+    }
 
     /// The step you're on, compact, in the band over the map; its title is the same one as the big
     /// step's, gliding between the two.
@@ -415,12 +427,39 @@ struct TravelTrip: View {
 
     /// Steps (the list over the map) at the lower left, with the list above it when open; the step
     /// list view and follow-me at the lower right.
-    private func mapControls(current: Int) -> some View {
+    private func mapControls(current: Int, now: Date) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             if stepsOpen {
-                StepsFeed(trip: trip, current: current)
-                    .frame(height: Self.feedHeight)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                // The same steps as the step view (each ride's stops open, the next one live), in a card
+                // over the map. Its grab bar folds it away: drag it down, or tap it (the list itself scrolls).
+                VStack(spacing: 0) {
+                    Capsule().fill(Palette.border).frame(width: 40, height: 5)
+                        .frame(maxWidth: .infinity).frame(height: 24)
+                        .contentShape(.rect)
+                        .onTapGesture { withAnimation(.smooth(duration: 0.35)) { stepsOpen = false } }
+                        .gesture(
+                            DragGesture(minimumDistance: 8).onEnded { value in
+                                if value.translation.height > 40 { withAnimation(.smooth(duration: 0.35)) { stepsOpen = false } }
+                            }
+                        )
+                        .accessibilityLabel("Hide the steps")
+                        .accessibilityAddTraits(.isButton)
+                    ScrollViewReader { reader in
+                        ScrollView {
+                            StepList(steps: trip.steps, current: current, legs: trip.legs, stopsOpen: true, live: liveStop(current: current, now: now))
+                                .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 2)
+                                .id("steps")
+                        }
+                        .scrollIndicators(.hidden)
+                        .onAppear { scrollToCurrent(reader, current) }
+                        .onChange(of: current) { _, now in withAnimation(.smooth(duration: 0.6)) { scrollToCurrent(reader, now) } }
+                    }
+                }
+                .frame(height: Self.feedHeight)
+                .background(Palette.surface, in: .rect(cornerRadius: 22))
+                .clipShape(.rect(cornerRadius: 22))
+                .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             HStack(spacing: 8) {
                 Button { withAnimation(.smooth(duration: 0.35)) { stepsOpen.toggle() } } label: {
@@ -430,6 +469,14 @@ struct TravelTrip: View {
                 }
                 .buttonStyle(PressStyle())
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 15))
+                // Swipe up on it to open the steps, down to fold them.
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 20).onEnded { value in
+                        let dy = value.translation.height
+                        guard abs(dy) > 40, abs(dy) > abs(value.translation.width) else { return }
+                        withAnimation(.smooth(duration: 0.35)) { stepsOpen = dy < 0 }
+                    }
+                )
                 Spacer(minLength: 0)
                 Button { switchMap(false) } label: {
                     Image(systemName: "list.bullet.rectangle.portrait").font(.system(size: 18, weight: .semibold)).frame(width: 46, height: 46)
@@ -452,6 +499,31 @@ struct TravelTrip: View {
         }
         .foregroundStyle(Palette.text)
         .padding(.horizontal, 16).padding(.bottom, 8)
+    }
+
+    /// Swipes on the step you're on: left/right look at the next/previous step, down minimises. Vertical
+    /// swipes on the map's band are left to the map; only a clear horizontal or downward swipe counts.
+    private func stepSwipe(count: Int, current: Int, shown: Int) -> some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onEnded { value in
+                let dx = value.translation.width, dy = value.translation.height
+                if abs(dx) > abs(dy) * 1.4, abs(dx) > 50 {
+                    let to = min(max(shown + (dx < 0 ? 1 : -1), 0), count - 1)
+                    guard to != shown else { return }
+                    withAnimation(.smooth) { looking = to == current ? nil : to }
+                    swiped += 1
+                } else if dy > 90, dy > abs(dx) * 1.4 {
+                    dismiss()
+                }
+            }
+    }
+
+    /// The stop the ride comes to next, as late as it runs (the phone on board, else the board's delay).
+    private func liveStop(current: Int, now: Date) -> (step: Int, next: String?)? {
+        let steps = trip.steps
+        guard steps.indices.contains(current), steps[current].kind == .ride, let leg = steps[current].leg,
+              let left = Guide(trip: trip).rideLeft(leg: leg, at: now, late: trip.late(here: planner.follower.here, at: now)) else { return nil }
+        return (current, left.next)
     }
 
     /// The minutes the countdown shows: until the step starts, or until the next one once on it.
@@ -520,72 +592,3 @@ extension TripPlanner {
     }
 }
 
-/// The steps over the map's lower left, as live comments sit over a video: the one you're on at the
-/// bottom, the next ones above it fading out towards the top, the ones done below it (scroll down).
-/// It scrolls, and moves on by itself as the trip does.
-private struct StepsFeed: View {
-    let trip: TodayPage.Trip
-    let current: Int
-    private var steps: [TodayPage.Step] { trip.steps }
-
-    var body: some View {
-        ScrollViewReader { reader in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(Array(steps.enumerated().reversed()), id: \.offset) { index, step in
-                        row(step, index: index).id(index)
-                    }
-                }
-                .padding(.top, 120).padding(.bottom, 4)
-            }
-            .scrollIndicators(.hidden)
-            .defaultScrollAnchor(.bottom)
-            .mask {
-                LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black.opacity(0.35), location: 0.25),
-                                       .init(color: .black, location: 0.55), .init(color: .black, location: 1)],
-                               startPoint: .top, endPoint: .bottom)
-            }
-            .onAppear { reader.scrollTo(current, anchor: .bottom) }
-            .onChange(of: current) { _, now in withAnimation(.smooth(duration: 0.6)) { reader.scrollTo(now, anchor: .bottom) } }
-        }
-        .frame(maxWidth: 290, alignment: .leading)
-    }
-
-    private func row(_ step: TodayPage.Step, index: Int) -> some View {
-        let now = index == current
-        return HStack(alignment: .top, spacing: 8) {
-            mark(step)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 5) {
-                    Text(step.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
-                    if now {
-                        Text("Now").font(.geist(10.5, .bold)).foregroundStyle(Palette.onAction)
-                            .padding(.horizontal, 5).frame(height: 16).background(Palette.action, in: .rect(cornerRadius: 4))
-                    }
-                }
-                Text(step.title).font(.geist(now ? 15 : 14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                if index >= current, !step.sub.isEmpty {
-                    Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(now ? 2 : 1)
-                }
-            }
-        }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
-        .overlay { if now { RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.action.opacity(0.8), lineWidth: 1.5) } }
-        .foregroundStyle(Palette.text)
-        .opacity(index < current ? 0.55 : 1)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(now ? .isSelected : [])
-    }
-
-    @ViewBuilder
-    private func mark(_ step: TodayPage.Step) -> some View {
-        if step.kind == .ride, let line = trip.badge(step) {
-            LineBadge(line: line, color: step.color, height: 20)
-        } else {
-            Image(systemName: step.kind == .there ? "flag.fill" : step.kind == .getOff ? "arrow.down.right" : "figure.walk")
-                .font(.system(size: 12, weight: .bold)).frame(width: 26, height: 20)
-                .foregroundStyle(step.kind == .there ? Palette.action : Palette.textSoft)
-        }
-    }
-}

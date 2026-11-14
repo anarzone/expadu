@@ -83,7 +83,7 @@ final class TodayModel {
 
     /// What just changed, for the note; `undo` puts it back.
     struct Note: Equatable, Identifiable {
-        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea), way(String), ride(String) }
+        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea), way(String), ride(String), trip(String) }
 
         let id = UUID()
         let text: String
@@ -293,8 +293,25 @@ final class TodayModel {
         date.formatted(Date.FormatStyle().hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
     }
 
-    /// Undo from the card's note: the way the plan had before, or the tram the trip had before.
+    /// A new trip replaced the one they were on (one tap, no question): said on the trip, with Undo.
+    func tripReplaced(_ replaced: AppAPI.Replaced) {
+        sayInCard(Note(text: "Replaced your trip to \(replaced.to)", symbol: "arrow.triangle.swap", undo: .trip(replaced.undo)), seconds: 20)
+    }
+
+    /// Undo from the card's note: the way the plan had before, the tram the trip had before, or the trip a new one replaced.
     func undoCard(_ api: AppAPI) async {
+        if case let .trip(undo)? = cardNote?.undo {
+            withAnimation(.easeOut(duration: 0.2)) { cardNote = nil }
+            do throws(APIFailure) {
+                try await api.undoTripReplace(undo)
+                await load(api, quietly: true)
+                cardFlips += 1
+                sayInCard(Note(text: "Back on the trip you had.", symbol: "arrow.uturn.backward"))
+            } catch {
+                say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
+            return
+        }
         if case let .ride(undo)? = cardNote?.undo {
             withAnimation(.easeOut(duration: 0.2)) { cardNote = nil }
             do throws(APIFailure) {
@@ -350,6 +367,14 @@ final class TodayModel {
             do throws(APIFailure) {
                 try await api.tripRideUndo(undo)
                 say(Note(text: "Back to the tram you had", symbol: "arrow.uturn.backward"))
+                await load(api, quietly: true)
+            } catch {
+                say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
+        case let .trip(undo):
+            do throws(APIFailure) {
+                try await api.undoTripReplace(undo)
+                say(Note(text: "Back on the trip you had", symbol: "arrow.uturn.backward"))
                 await load(api, quietly: true)
             } catch {
                 say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
@@ -412,13 +437,15 @@ final class TodayModel {
         }
     }
 
-    /// I'm on my way. True when another trip is running and they should be asked first.
-    func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool) async -> Bool {
+    /// I'm on my way, in one tap: a trip already running is replaced, said on the new one with Undo.
+    /// True only when the server still asks first (never from here, which always replaces).
+    func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool = true) async -> Bool {
         do throws(APIFailure) {
             let started = try await api.startTrip(way: way, latitude: place?.latitude, longitude: place?.longitude, replace: replace)
-            if started == .running { return true }
+            guard case let .started(replaced) = started else { return true }
             cardNote = nil
             await load(api, quietly: true)
+            if let replaced { tripReplaced(replaced) }
         } catch {
             say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
             // The way it asked for has gone (that tram left): the card shows the next one at once.

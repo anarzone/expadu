@@ -12,6 +12,8 @@ use App\Personalisation\SignalRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 /**
  * The user's live trip session. Starting persists the chosen journey so it
@@ -42,6 +44,17 @@ class TripController extends Controller
             ], 409);
         }
 
+        // Replacing (confirmed on the web; one tap in the app, which asks no question): the trip it
+        // replaces is kept for half an hour, for Undo.
+        $replaced = null;
+        if ($running !== null) {
+            $replaced = ['undo' => (string) Str::uuid(), 'destination' => $running->destination['name'] ?? null];
+            Cache::put($this->undoKey($request->user(), $replaced['undo']), [
+                'journey' => $running->journey, 'destination' => $running->destination, 'origin' => $running->origin,
+                'target' => $running->target, 'started_at' => $running->started_at?->toIso8601String(),
+            ], now()->addMinutes(self::UNDO_MINUTES));
+        }
+
         // Persist the WHOLE journey — validating journey.legs makes Laravel
         // return only that sub-key, but the live timeline needs every field
         // (times, colours, intermediate-stop coordinates for GPS matching).
@@ -65,7 +78,32 @@ class TripController extends Controller
         );
         app(SignalRecorder::class)->tripStarted($request->user(), $validated['destination'], $request->target());
 
+        return response()->json(['trip' => $trip->toShared(), ...($replaced === null ? [] : ['replaced' => $replaced])]);
+    }
+
+    /** How long a replaced trip can be put back. */
+    private const UNDO_MINUTES = 30;
+
+    /** Undo a replace: the trip it replaced is followed again. Only the person's own, once. */
+    public function undo(Request $request): JsonResponse
+    {
+        $valid = $request->validate(['undo' => ['required', 'uuid']]);
+        $old = Cache::pull($this->undoKey($request->user(), $valid['undo']));
+        if (! is_array($old)) {
+            return response()->json(['message' => 'That can’t be undone any more.'], 422);
+        }
+        $trip = ActiveTrip::updateOrCreate(['user_id' => $request->user()->id], [
+            'journey' => $old['journey'], 'destination' => $old['destination'], 'origin' => $old['origin'],
+            'target' => $old['target'], 'started_at' => $old['started_at'] ?? now(),
+        ]);
+        $this->scheduleGetOffReminders($trip, $request->user());
+
         return response()->json(['trip' => $trip->toShared()]);
+    }
+
+    private function undoKey(User $user, string $undo): string
+    {
+        return "trip_replaced:{$user->id}:{$undo}";
     }
 
     /**

@@ -102,6 +102,8 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
             Route::delete('planned-trips/{plannedTrip}', [AppPlannedTripController::class, 'destroy'])->whereNumber('plannedTrip');
             // I'm on my way on a way from Plan a trip, and stopping it.
             Route::post('trip', [AppTripController::class, 'start'])->middleware('throttle:journey');
+            // Undo Start trip's replace: the trip it replaced, back.
+            Route::post('trip/undo', [AppTripController::class, 'undo'])->middleware('throttle:journey');
             Route::delete('trip', [AppTripController::class, 'end']);
             // The tram they're really on (trip sync): which run, switching to it, and Undo.
             Route::post('trip/ride/check', [AppTripRideController::class, 'check'])->middleware('throttle:journey');

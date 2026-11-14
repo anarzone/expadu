@@ -95,3 +95,25 @@ test('a trip keeps the plan it is for only when that plan is on your own day', f
         ->assertJsonPath('trip.target.title', 'Language class')
         ->assertJsonPath('trip.target.start_at', $start->toIso8601String());
 });
+
+test('replacing a trip keeps it for Undo, which puts it back once and only for its own person', function () {
+    $token = $this->user->createToken('iPhone')->plainTextToken;
+    $first = datedTripPayload();
+    $this->withToken($token)->postJson('/api/v1/travel/trip', $first)->assertSuccessful();
+
+    $second = datedTripPayload();
+    $second['destination'] = ['name' => 'Kalk Post', 'lat' => 50.94, 'lng' => 7.0];
+    $replaced = $this->withToken($token)->postJson('/api/v1/travel/trip', [...$second, 'replace' => true])
+        ->assertOk()->assertJsonPath('replaced.destination', 'Destination')->json('replaced.undo');
+    expect($this->user->activeTrip()->first()->destination['name'])->toBe('Kalk Post');
+
+    // Someone else's Undo does nothing.
+    app('auth')->forgetGuards();
+    $other = User::factory()->onboarded()->create()->createToken('iPhone')->plainTextToken;
+    $this->withToken($other)->postJson('/api/v1/travel/trip/undo', ['undo' => $replaced])->assertUnprocessable();
+
+    app('auth')->forgetGuards();
+    $this->withToken($token)->postJson('/api/v1/travel/trip/undo', ['undo' => $replaced])->assertOk();
+    expect($this->user->activeTrip()->first()->destination['name'])->toBe('Destination');
+    $this->withToken($token)->postJson('/api/v1/travel/trip/undo', ['undo' => $replaced])->assertUnprocessable();
+});

@@ -89,7 +89,6 @@ final class TripPlanner {
     private(set) var more = false
     private(set) var added: [Int: PlannedTrip] = [:]
     var savedSheet: PlannedTrip?
-    var ask: Option?
     var deutschlandticket = false
     var startingProblem: String?
     /// The server turned Start trip down for this way (its run has left): OK brings fresh routes.
@@ -365,7 +364,7 @@ final class TripPlanner {
     }
 
     /// I'm on my way on this way. Another trip running asks first.
-    func start(_ option: Option, replace: Bool, _ api: AppAPI, today: TodayModel) async -> Bool {
+    func start(_ option: Option, _ api: AppAPI, today: TodayModel) async -> Bool {
         guard busy == nil, let destination, let journey = raw.flatMap({ TripPlan.raw($0, index: option.index) }) else { return false }
         busy = option.index
         defer { busy = nil }
@@ -373,13 +372,13 @@ final class TripPlanner {
         let before = today.page?.trip
         do throws(APIFailure) {
             let result = try await api.startTravelTrip(journey: journey, to: destination, from: start,
-                                                       plan: target.map { (Self.day($0.startDate ?? .now), $0.id) }, replace: replace)
+                                                       plan: target.map { (Self.day($0.startDate ?? .now), $0.id) }, replace: true)
             switch result {
-            case .started:
+            case let .started(replaced):
                 await today.load(api, quietly: true)
                 // The trip opens from Today's answer. Without it (the connection dropped again), the routes
                 // stay with a plain note instead of closing onto nothing; Start again opens the same trip.
-                guard let started = today.page?.trip, !(replace && started == before) else {
+                guard let started = today.page?.trip, !(before != nil && started == before) else {
                     startingProblem = "Your trip has started, but it couldn’t be shown. Check your connection and tap Start trip again."
                     return false
                 }
@@ -391,9 +390,10 @@ final class TripPlanner {
                     showTrip = true
                 }
                 self.started += 1
+                if let replaced { today.tripReplaced(replaced) }
                 return true
             case .busy:
-                ask = option
+                // Only when the server still asks first (never: the app always replaces).
                 return false
             }
         } catch {

@@ -84,13 +84,6 @@ struct TripRoutesView: View {
                 }
             }
         } message: { Text(planner.startingProblem ?? "") }
-        .alert("Replace the trip you’re on?", isPresented: Binding(get: { planner.ask != nil }, set: { if !$0 { planner.ask = nil } })) {
-            Button("Keep", role: .cancel) { planner.ask = nil }
-            Button("Replace") {
-                if let option = planner.ask { Task { _ = await planner.start(option, replace: true, session.api, today: today) } }
-                planner.ask = nil
-            }
-        } message: { Text("You can only follow one trip at a time.") }
         .overlay(alignment: .bottom) {
             if let kept = undo {
                 UndoToast(text: "Added to your day", action: "Undo") {
@@ -237,7 +230,8 @@ extension TripRoutesView {
                 RouteDetail(planner: planner, option: chosen, also: row?.also ?? [], lines: row?.lines ?? [],
                             kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
                             back: { withAnimation(.smooth(duration: 0.3)) { details = nil } },
-                            show: { Task { _ = await planner.start(chosen, replace: planner.newRoutes, session.api, today: today) } },
+                            // One tap: a trip already running is replaced, said on the new one with Undo (never a question).
+                            show: { Task { _ = await planner.start(chosen, session.api, today: today) } },
                             add: planner.target == nil ? nil : { Task { await planner.addToPlan(chosen, session.api) } })
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)).combined(with: .opacity))
             } else {
