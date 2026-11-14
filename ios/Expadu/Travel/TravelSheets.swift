@@ -312,11 +312,11 @@ struct LeaveSheet: View {
         pressed += 1
         starting = true
         Task {
-            _ = await today.startTrip(session.api, way: way)
-            if today.page?.trip != nil {
+            // The trip opens at once (or as soon as the server has it, when the way's steps aren't here).
+            _ = await today.startTrip(session.api, way: way, opened: {
                 dismiss()
                 planner.showTrip = true
-            }
+            })
             starting = false
         }
     }
@@ -334,10 +334,20 @@ struct LeaveSheet: View {
                 Spacer(minLength: 0)
                 CircleButton(symbol: "xmark", label: "Close") { dismiss() }
             }
-            HStack(spacing: 7) {
-                tile("Leave", leave.leaveTime ?? "–")
-                tile("There", leave.arriveTime ?? "–")
-                tile("Spare", leave.spareMinutes.map { "\($0) min" } ?? "–")
+            // Didn't start (the run went, no connection): why, in place of the times, where the tap was.
+            if let problem = today.startProblem, !starting {
+                Label(problem, systemImage: "exclamationmark.triangle.fill")
+                    .font(.geist(14, .semibold)).foregroundStyle(Palette.warnText)
+                    .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .background(Palette.warnBackground, in: .rect(cornerRadius: 14))
+                    .transition(.opacity)
+            } else {
+                HStack(spacing: 7) {
+                    tile("Leave", leave.leaveTime ?? "–")
+                    tile("There", leave.arriveTime ?? "–")
+                    tile("Spare", leave.spareMinutes.map { "\($0) min" } ?? "–")
+                }
             }
             Button { start() } label: {
                 Label(starting ? "Starting…" : "Start trip", systemImage: "figure.walk")
@@ -348,6 +358,7 @@ struct LeaveSheet: View {
             .foregroundStyle(Palette.onAction)
             .disabled(starting || leave.ways.isEmpty)
             .sensoryFeedback(.impact(weight: .medium), trigger: pressed)
+            .sensoryFeedback(trigger: today.startProblem) { _, now in now == nil ? nil : .error }
             Button(action: otherWays) {
                 Label("Other routes", systemImage: "arrow.triangle.branch").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
             }
