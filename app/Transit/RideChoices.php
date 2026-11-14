@@ -115,7 +115,30 @@ class RideChoices
             return $now->addMinutes($walk);
         }
 
-        return CarbonImmutable::parse($legs[$index - 1]['arrive_at']);
+        // A change within one stop (the 12 on the Ring to the 18 below at Ebertplatz) comes as a walk of
+        // 0 m lasting the stop's minimum change time from the timetable, six minutes there, where riders
+        // take seconds. Nobody knows the stairs or the platform, so the spare is counted from when the
+        // ride before gets in: the gap the timetable really gives, never a "no minute to change" made up
+        // from the minimum (the owner, 14 Nov).
+        $before = $legs[$index - 1];
+        if (($before['mode'] ?? null) === 'walk' && self::withinStop($before) && isset($legs[$index - 2]['arrive_at'])) {
+            return CarbonImmutable::parse($legs[$index - 2]['arrive_at']);
+        }
+
+        return CarbonImmutable::parse($before['arrive_at']);
+    }
+
+    /**
+     * A walk that never leaves the stop: no metres, or from a stop to itself (a change within a station).
+     *
+     * @param  array<string, mixed>  $walk
+     */
+    public static function withinStop(array $walk): bool
+    {
+        $name = fn (?string $stop) => mb_strtolower(trim((string) $stop));
+
+        return (int) ($walk['distance_m'] ?? -1) === 0
+            || ($name($walk['from']['name'] ?? null) !== '' && $name($walk['from']['name'] ?? null) === $name($walk['to']['name'] ?? null));
     }
 
     /**

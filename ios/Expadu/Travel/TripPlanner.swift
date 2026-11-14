@@ -55,6 +55,8 @@ final class TripPlanner {
     // The page
     var shown = false
     var showTrip = false
+    /// Each trip started, for the success haptic as its screen opens.
+    private(set) var started = 0
     /// Leave at (Start trip, Other routes) for the next trip on their day, from Today or the board.
     var leaveOpen = false
     /// Other routes was picked in Leave at: Plan a trip opens for it once the sheet has gone.
@@ -388,6 +390,7 @@ final class TripPlanner {
                     answer = nil
                     showTrip = true
                 }
+                self.started += 1
                 return true
             case .busy:
                 ask = option

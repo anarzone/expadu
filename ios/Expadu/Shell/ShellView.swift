@@ -194,6 +194,8 @@ struct ShellView: View {
                 .environment(planner)
                 .environment(today)
         }
+        // Started: felt as the trip opens (the routes behind it close in the same moment, so it lives here).
+        .sensoryFeedback(.success, trigger: planner.started)
         .fullScreenCover(isPresented: Binding(get: { planner.showTrip && today.page?.trip != nil }, set: { planner.showTrip = $0 })) {
             if let trip = today.page?.trip {
                 TravelTrip(trip: trip).environment(planner).environment(today)
