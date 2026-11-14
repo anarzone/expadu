@@ -61,8 +61,10 @@ final class TripPlanner {
     var leaveOpen = false
     /// Other routes was picked in Leave at: Plan a trip opens for it once the sheet has gone.
     var otherRoutesFor: TodayPage.Leave?
-    /// The trip opens on its map (the board card's hold menu), once.
-    var tripOnMap = false
+    /// Which view the trip opens on (the card's map, the island's Steps or Map), taken once by the trip
+    /// screen, open or opening.
+    enum TripView { case steps, map }
+    var tripOpens: TripView?
     var field = Field.to
     var query = ""
     var listening = false

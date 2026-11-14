@@ -104,7 +104,11 @@ struct ShellView: View {
             case .tripStart:
                 withAnimation(.snappy) { tab = .today }
                 if let way = today.page?.leave?.ways.first {
-                    Task { _ = await today.startTrip(session.api, way: way, replace: false) }
+                    // One tap, as Start trip everywhere: a trip running is replaced, with Undo.
+                    Task {
+                        _ = await today.startTrip(session.api, way: way)
+                        if today.page?.trip != nil { planner.showTrip = true }
+                    }
                 } else {
                     Task { await today.findWay(session.api) }
                 }
@@ -113,6 +117,17 @@ struct ShellView: View {
                 if today.page?.trip != nil {
                     planner.newRoutes = true
                     planner.showTrip = true
+                }
+            case .tripSteps, .tripMap:
+                withAnimation(.snappy) { tab = .today }
+                if today.page?.trip != nil {
+                    planner.tripOpens = link == .tripMap ? .map : .steps
+                    planner.showTrip = true
+                }
+            case .tripThere:
+                withAnimation(.snappy) { tab = .today }
+                if today.page?.trip != nil {
+                    Task { await today.endTrip(session.api, arrived: true); planner.stopFollowing() }
                 }
             case .today: withAnimation(.snappy) { tab = .today }
             case .travel: withAnimation(.snappy) { tab = .travel }
