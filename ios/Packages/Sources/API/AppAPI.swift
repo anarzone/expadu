@@ -252,16 +252,25 @@ public struct AppAPI: Sendable {
     /// I'm on my way, on one of the ways Today sent. A trip already running isn't replaced unless asked:
     /// that comes back as `.running` with where it's going.
     public func startTrip(way: TodayPage.Way, latitude: Double?, longitude: Double?, replace: Bool = false) async throws(APIFailure) -> TripStart {
-        let input = Components.Schemas.TodayWayRequest(mode: .init(rawValue: way.mode) ?? .transit, departs: way.lines.isEmpty ? nil : way.departs, lat: latitude, lng: longitude, replace: replace)
-        let output = try await calling { try await client.todayTrip_start(body: .json(input)) }
-        switch output {
-        case .ok: return .started
-        case .unauthorized: throw .signedOut
-        case let .unprocessableContent(refusal): throw refused(refusal)
-        case .forbidden: throw .refused("Confirm your email address first.")
-        case let .undocumented(status, _):
-            if status == 409 { return .running }
-            throw failure(status)
+        var body: [String: Any] = ["mode": way.mode, "replace": replace]
+        if !way.lines.isEmpty, let departs = way.departs { body["departs"] = departs }
+        if let latitude, let longitude { body["lat"] = latitude; body["lng"] = longitude }
+        // Asked again when the answer is lost on the way: the server takes the same way again as the trip
+        // already started, never a second one (as Start trip from the routes).
+        let reply = try await composer("POST", "today/trip", body, timeout: 15, retry: true)
+        switch reply.status {
+        case 200..<300:
+            let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
+            let replaced = (json["replaced"] as? [String: Any]).flatMap { r in
+                (r["undo"] as? String).map { Replaced(undo: $0, to: r["destination"] as? String ?? "somewhere") }
+            }
+            return .started(replaced: replaced)
+        case 401: throw .signedOut
+        case 403: throw .refused("Confirm your email address first.")
+        case 409: return .running
+        case 422: throw .refused(Self.reason(reply.data) ?? "This way can’t be started now.")
+        case 429: throw .tooManyTries
+        default: throw .unreachable
         }
     }
 
@@ -308,7 +317,7 @@ public struct AppAPI: Sendable {
         let input = Components.Schemas.JourneyStartRequest(plan: plan, way: way, replace: replace)
         let output = try await calling { try await client.journey_start(body: .json(input)) }
         switch output {
-        case .ok: return .started
+        case .ok: return .started(replaced: nil)
         case .unauthorized: throw .signedOut
         case let .unprocessableContent(refusal): throw refused(refusal)
         case .forbidden: throw .refused("Confirm your email address first.")
@@ -849,8 +858,15 @@ public struct AppAPI: Sendable {
         guard (200..<300).contains(reply.status) || reply.status == 404 else { throw .unreachable }
     }
 
+    /// The trip a start replaced: where it went, and the token that puts it back.
+    public struct Replaced: Sendable, Equatable {
+        public let undo: String
+        public let to: String
+    }
+
     public enum TravelTripStart: Sendable, Equatable {
-        case started
+        /// Started; when it replaced a trip, which one and the token to put it back.
+        case started(replaced: Replaced?)
         /// Another trip is being followed: to what, arriving when.
         case busy(to: String, arrive: String?)
     }
@@ -878,7 +894,18 @@ public struct AppAPI: Sendable {
         }
         if reply.status == 429 { throw .tooManyTries }
         guard (200..<300).contains(reply.status) else { throw .unreachable }
-        return .started
+        let json = (try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any]) ?? [:]
+        let replaced = (json["replaced"] as? [String: Any]).flatMap { r in
+            (r["undo"] as? String).map { Replaced(undo: $0, to: r["destination"] as? String ?? "somewhere") }
+        }
+        return .started(replaced: replaced)
+    }
+
+    /// Undo Start trip's replace: the trip it replaced, followed again.
+    public func undoTripReplace(_ undo: String) async throws(APIFailure) {
+        let reply = try await composer("POST", "travel/trip/undo", ["undo": undo])
+        if reply.status == 422 { throw .refused(Self.reason(reply.data) ?? "That can’t be undone any more.") }
+        guard (200..<300).contains(reply.status) else { throw .unreachable }
     }
 
     public func endTravelTrip() async throws(APIFailure) {
@@ -1320,4 +1347,4 @@ private struct BearerToken: ClientMiddleware {
 }
 
 /// How starting a trip went: on its way, or another trip is running and they're asked first.
-public enum TripStart: Equatable, Sendable { case started, running }
+public enum TripStart: Equatable, Sendable { case started(replaced: AppAPI.Replaced?), running }

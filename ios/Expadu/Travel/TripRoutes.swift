@@ -84,13 +84,6 @@ struct TripRoutesView: View {
                 }
             }
         } message: { Text(planner.startingProblem ?? "") }
-        .alert("Replace the trip you’re on?", isPresented: Binding(get: { planner.ask != nil }, set: { if !$0 { planner.ask = nil } })) {
-            Button("Keep", role: .cancel) { planner.ask = nil }
-            Button("Replace") {
-                if let option = planner.ask { Task { _ = await planner.start(option, replace: true, session.api, today: today) } }
-                planner.ask = nil
-            }
-        } message: { Text("You can only follow one trip at a time.") }
         .overlay(alignment: .bottom) {
             if let kept = undo {
                 UndoToast(text: "Added to your day", action: "Undo") {
@@ -237,7 +230,8 @@ extension TripRoutesView {
                 RouteDetail(planner: planner, option: chosen, also: row?.also ?? [], lines: row?.lines ?? [],
                             kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
                             back: { withAnimation(.smooth(duration: 0.3)) { details = nil } },
-                            show: { Task { _ = await planner.start(chosen, replace: planner.newRoutes, session.api, today: today) } },
+                            // One tap: a trip already running is replaced, said on the new one with Undo (never a question).
+                            show: { Task { _ = await planner.start(chosen, session.api, today: today) } },
                             add: planner.target == nil ? nil : { Task { await planner.addToPlan(chosen, session.api) } })
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)).combined(with: .opacity))
             } else {
@@ -479,8 +473,16 @@ struct LegStrip: View {
         .accessibilityLabel(spoken)
     }
 
+    /// A change within one stop (the 12 to the 16/18 at Ebertplatz): the timetable gives it 0 m and the
+    /// stop's minimum change time, six minutes there, where riders take seconds. Nobody knows the stairs,
+    /// so no minutes are said for it (the owner, 14 Nov); a walk to another stop keeps its minutes.
+    private func inStation(_ leg: TripPlan.Leg) -> Bool {
+        leg.mode == "walk" && (leg.distanceM == 0 || (leg.from.name != nil && leg.from.name == leg.to.name))
+            && journey.legs.first != leg && journey.legs.last != leg
+    }
+
     private func strip(walks: Bool) -> some View {
-        let parts = journey.legs.filter { $0.isRide || (walks && $0.durationMin >= 2) || ($0.mode == "bike") }
+        let parts = journey.legs.filter { $0.isRide || (walks && $0.durationMin >= 2 && !inStation($0)) || ($0.mode == "bike") }
         let rides = journey.rides
         return HStack(spacing: 5) {
             ForEach(Array(parts.enumerated()), id: \.offset) { i, leg in
@@ -510,7 +512,7 @@ struct LegStrip: View {
     private var spoken: String {
         let rides = journey.rides
         return journey.legs.compactMap { leg in
-            guard leg.isRide else { return leg.durationMin >= 2 ? "\(leg.durationMin) minutes \(leg.mode == "bike" ? "by bike" : "walking")" : nil }
+            guard leg.isRide else { return leg.durationMin >= 2 && !inStation(leg) ? "\(leg.durationMin) minutes \(leg.mode == "bike" ? "by bike" : "walking")" : nil }
             let names = lines(leg, at: rides.firstIndex(of: leg) ?? 0).map(\.line).joined(separator: " or ")
             return "\(leg.mode == "bus" ? "bus" : "tram") \(names)"
         }.joined(separator: ", then ")
@@ -529,6 +531,8 @@ private struct RouteDetail: View {
     let back: () -> Void
     let show: () -> Void
     let add: (() -> Void)?
+    /// Each press of Start trip, for its haptic: felt the moment the finger lifts, before the network answers.
+    @State private var pressed = 0
 
     var body: some View {
         let journey = option.journey
@@ -564,7 +568,10 @@ private struct RouteDetail: View {
             }
             .scrollIndicators(.hidden)
             HStack(spacing: 8) {
-                Button(action: show) {
+                Button {
+                    pressed += 1
+                    show()
+                } label: {
                     Label(planner.busy == option.index && !kept ? "Starting…" : "Start trip", systemImage: "arrow.right")
                         .font(.geist(16, .semibold)).frame(maxWidth: .infinity).frame(height: 50)
                 }
@@ -572,6 +579,9 @@ private struct RouteDetail: View {
                 .buttonFace(Palette.action, radius: 14)
                 .foregroundStyle(Palette.onAction)
                 .disabled(journey.cancelled || planner.busy != nil)
+                .sensoryFeedback(.impact(weight: .medium), trigger: pressed)
+                // Couldn't start: felt as well as read.
+                .sensoryFeedback(trigger: planner.startingProblem) { _, now in now == nil ? nil : .error }
                 if let add {
                     Button(action: add) {
                         Text(kept ? "✓ In my day" : planner.busy == option.index ? "Adding…" : "Add to my day")

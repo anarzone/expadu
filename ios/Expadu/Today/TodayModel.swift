@@ -47,7 +47,25 @@ final class TodayModel {
     }
 
     func load(_ api: AppAPI, quietly: Bool = false, animated: Animation? = nil) async {
-        let place = await locator.coordinate()
+        // After an action (a quiet reload) the place already known will do, and a fresher one is found
+        // behind it for next time: asking the phone first waited up to 5 s for a precise fix, indoors
+        // nearly always, and held Start trip on "Starting…" until it read as a tap that did nothing
+        // (the owner, 14 Nov). A full load asks the phone.
+        let recent = placeAt.map { Date.now.timeIntervalSince($0) < 120 } ?? false
+        let place: CLLocationCoordinate2D?
+        if quietly, let known = self.place {
+            place = known
+            if !recent {
+                Task { [weak self] in
+                    guard let self, let fresh = await self.locator.coordinate() else { return }
+                    self.place = fresh
+                    self.placeAt = .now
+                }
+            }
+        } else {
+            place = await locator.coordinate()
+            if place != nil { placeAt = .now }
+        }
         self.place = place
         do throws(APIFailure) {
             let fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
@@ -65,7 +83,7 @@ final class TodayModel {
 
     /// What just changed, for the note; `undo` puts it back.
     struct Note: Equatable, Identifiable {
-        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea), way(String), ride(String) }
+        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea), way(String), ride(String), trip(String) }
 
         let id = UUID()
         let text: String
@@ -275,8 +293,25 @@ final class TodayModel {
         date.formatted(Date.FormatStyle().hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
     }
 
-    /// Undo from the card's note: the way the plan had before, or the tram the trip had before.
+    /// A new trip replaced the one they were on (one tap, no question): said on the trip, with Undo.
+    func tripReplaced(_ replaced: AppAPI.Replaced) {
+        sayInCard(Note(text: "Replaced your trip to \(replaced.to)", symbol: "arrow.triangle.swap", undo: .trip(replaced.undo)), seconds: 20)
+    }
+
+    /// Undo from the card's note: the way the plan had before, the tram the trip had before, or the trip a new one replaced.
     func undoCard(_ api: AppAPI) async {
+        if case let .trip(undo)? = cardNote?.undo {
+            withAnimation(.easeOut(duration: 0.2)) { cardNote = nil }
+            do throws(APIFailure) {
+                try await api.undoTripReplace(undo)
+                await load(api, quietly: true)
+                cardFlips += 1
+                sayInCard(Note(text: "Back on the trip you had.", symbol: "arrow.uturn.backward"))
+            } catch {
+                say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
+            return
+        }
         if case let .ride(undo)? = cardNote?.undo {
             withAnimation(.easeOut(duration: 0.2)) { cardNote = nil }
             do throws(APIFailure) {
@@ -336,6 +371,14 @@ final class TodayModel {
             } catch {
                 say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
             }
+        case let .trip(undo):
+            do throws(APIFailure) {
+                try await api.undoTripReplace(undo)
+                say(Note(text: "Back on the trip you had", symbol: "arrow.uturn.backward"))
+                await load(api, quietly: true)
+            } catch {
+                say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
         case let .signal(idea):
             pending.removeValue(forKey: idea.id)?.cancel()
             withAnimation(.snappy) { _ = hidden.remove(idea.id) }
@@ -378,6 +421,8 @@ final class TodayModel {
     /// Where the phone was when Today was last read: trips start there, as on Today.
     /// Where the phone was when Today was last read; Getting there plans from here too.
     private(set) var place: CLLocationCoordinate2D?
+    /// When `place` was found.
+    private var placeAt: Date?
 
     /// I'm on my way with no way to hand (the Leave card's not loaded, or the Lock Screen asked after
     /// it went): Today again, then the first way if there is one now, else why not, in words.
@@ -392,13 +437,15 @@ final class TodayModel {
         }
     }
 
-    /// I'm on my way. True when another trip is running and they should be asked first.
-    func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool) async -> Bool {
+    /// I'm on my way, in one tap: a trip already running is replaced, said on the new one with Undo.
+    /// True only when the server still asks first (never from here, which always replaces).
+    func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool = true) async -> Bool {
         do throws(APIFailure) {
             let started = try await api.startTrip(way: way, latitude: place?.latitude, longitude: place?.longitude, replace: replace)
-            if started == .running { return true }
+            guard case let .started(replaced) = started else { return true }
             cardNote = nil
             await load(api, quietly: true)
+            if let replaced { tripReplaced(replaced) }
         } catch {
             say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
             // The way it asked for has gone (that tram left): the card shows the next one at once.

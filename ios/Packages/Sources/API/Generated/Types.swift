@@ -238,6 +238,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `DELETE /travel/trip`.
     /// - Remark: Generated from `#/paths//travel/trip/delete(appTrip.end)`.
     func appTrip_end(_ input: Operations.AppTrip_end.Input) async throws -> Operations.AppTrip_end.Output
+    /// Undo a replace: the trip it replaced is followed again. Only the person's own, once
+    ///
+    /// - Remark: HTTP `POST /travel/trip/undo`.
+    /// - Remark: Generated from `#/paths//travel/trip/undo/post(appTrip.undo)`.
+    func appTrip_undo(_ input: Operations.AppTrip_undo.Input) async throws -> Operations.AppTrip_undo.Output
     /// - Remark: HTTP `POST /travel/trip/ride/check`.
     /// - Remark: Generated from `#/paths//travel/trip/ride/check/post(appTripRide.check)`.
     func appTripRide_check(_ input: Operations.AppTripRide_check.Input) async throws -> Operations.AppTripRide_check.Output
@@ -1092,6 +1097,19 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//travel/trip/delete(appTrip.end)`.
     public func appTrip_end(headers: Operations.AppTrip_end.Input.Headers = .init()) async throws -> Operations.AppTrip_end.Output {
         try await appTrip_end(Operations.AppTrip_end.Input(headers: headers))
+    }
+    /// Undo a replace: the trip it replaced is followed again. Only the person's own, once
+    ///
+    /// - Remark: HTTP `POST /travel/trip/undo`.
+    /// - Remark: Generated from `#/paths//travel/trip/undo/post(appTrip.undo)`.
+    public func appTrip_undo(
+        headers: Operations.AppTrip_undo.Input.Headers = .init(),
+        body: Operations.AppTrip_undo.Input.Body
+    ) async throws -> Operations.AppTrip_undo.Output {
+        try await appTrip_undo(Operations.AppTrip_undo.Input(
+            headers: headers,
+            body: body
+        ))
     }
     /// - Remark: HTTP `POST /travel/trip/ride/check`.
     /// - Remark: Generated from `#/paths//travel/trip/ride/check/post(appTripRide.check)`.

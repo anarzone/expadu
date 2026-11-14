@@ -302,17 +302,18 @@ struct LeaveSheet: View {
     @Environment(TripPlanner.self) private var planner
     @Environment(\.dismiss) private var dismiss
     @State private var starting = false
-    /// Another trip is running: asked before this one replaces it.
-    @State private var replacing = false
+    /// Each press, for its haptic.
+    @State private var pressed = 0
 
-    /// Start trip: true from the model means another trip runs (ask first); once started, the trip opens.
-    private func start(replace: Bool) {
+    /// Start trip, in one tap: a trip already running is replaced (said on the new one, with Undo); once
+    /// started, the trip opens.
+    private func start() {
         guard let way = leave.ways.first else { return }
+        pressed += 1
         starting = true
         Task {
-            if await today.startTrip(session.api, way: way, replace: replace) {
-                replacing = true
-            } else if today.page?.trip != nil {
+            _ = await today.startTrip(session.api, way: way)
+            if today.page?.trip != nil {
                 dismiss()
                 planner.showTrip = true
             }
@@ -338,7 +339,7 @@ struct LeaveSheet: View {
                 tile("There", leave.arriveTime ?? "–")
                 tile("Spare", leave.spareMinutes.map { "\($0) min" } ?? "–")
             }
-            Button { start(replace: false) } label: {
+            Button { start() } label: {
                 Label(starting ? "Starting…" : "Start trip", systemImage: "figure.walk")
                     .font(.geist(17, .semibold)).frame(maxWidth: .infinity).frame(height: 52)
             }
@@ -346,10 +347,7 @@ struct LeaveSheet: View {
             .buttonFace(Palette.action, radius: 14)
             .foregroundStyle(Palette.onAction)
             .disabled(starting || leave.ways.isEmpty)
-            .alert("Replace the trip you’re on?", isPresented: $replacing) {
-                Button("Keep", role: .cancel) {}
-                Button("Replace") { start(replace: true) }
-            } message: { Text("You can only follow one trip at a time.") }
+            .sensoryFeedback(.impact(weight: .medium), trigger: pressed)
             Button(action: otherWays) {
                 Label("Other routes", systemImage: "arrow.triangle.branch").font(.geist(15, .semibold)).frame(maxWidth: .infinity).frame(height: 44)
             }

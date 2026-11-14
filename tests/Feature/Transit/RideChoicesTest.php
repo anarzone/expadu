@@ -62,21 +62,23 @@ test('after a change, another line that makes the same connection is named besid
 
     expect(collect($legs[2]['also'])->pluck('line')->all())->toBe(['18'])
         ->and($legs[2]['also'][0]['depart_time'])->toBe('12:14')
-        ->and($legs[2]['change']['spare_min'])->toBe(3)
+        // Within one stop: from when the 12 gets in (12:10), not after the timetable's minimum change.
+        ->and($legs[2]['change']['spare_min'])->toBe(6)
         ->and($legs[2]['change']['tight'])->toBeFalse()
         ->and($legs[2]['change']['next'])->toBeNull()
         ->and($legs[0])->not->toHaveKey('change');
 });
 
 test('a change with a minute to spare is tight, and says the next run and when it gets there', function () {
+    // A walk between two stops: they're ready at the other one when the walk ends.
     $journey = ['arrive_at' => '2026-11-13T12:06:00+01:00', 'legs' => [
-        choiceLeg('tram', '9', 'Köln Sülz Weyertal', 'Köln Bf Deutz/Messe', '11:35', '11:52'),
-        choiceLeg('walk', null, 'Köln Bf Deutz/Messe', 'Köln Bf Deutz/Messe', '11:52', '11:55'),
+        choiceLeg('tram', '9', 'Köln Sülz Weyertal', 'Köln Deutz Technische Hochschule', '11:35', '11:52'),
+        choiceLeg('walk', null, 'Köln Deutz Technische Hochschule', 'Köln Bf Deutz/Messe', '11:52', '11:55'),
         choiceLeg('tram', '4', 'Köln Bf Deutz/Messe', 'Köln Mülheim Wiener Platz', '11:56', '12:05'),
         choiceLeg('walk', null, 'Köln Mülheim Wiener Platz', '', '12:05', '12:06'),
     ]];
     $choices = choicesWith([
-        'köln sülz weyertal|köln bf deutz/messe' => [choiceRun('9', '11:35', '11:52')],
+        'köln sülz weyertal|köln deutz technische hochschule' => [choiceRun('9', '11:35', '11:52')],
         'köln bf deutz/messe|köln mülheim wiener platz' => [
             choiceRun('4', '11:56', '12:05'),
             choiceRun('4', '12:01', '12:10', cancelled: true),
@@ -91,6 +93,26 @@ test('a change with a minute to spare is tight, and says the next run and when i
         ->and($change['next'])->toMatchArray(['line' => '4', 'depart_time' => '12:06', 'arrive_time' => '12:15'])
         ->and($change['there_time'])->toBe('12:16')
         ->and($change['later_min'])->toBe(10);
+});
+
+test('a change within one stop is counted from when the ride gets in, not from the timetable minimum', function () {
+    // The owner, 14 Nov: the 12 to the 16 at Ebertplatz takes seconds, the timetable's 0 m walk six minutes,
+    // and the row said "No minute to change". The gap the timetable gives is six minutes.
+    $change = fn (string $leaves) => ['arrive_at' => '2026-11-13T12:50:00+01:00', 'legs' => [
+        choiceLeg('tram', '12', 'Köln Merkenich Mitte', 'Köln Ebertplatz', '12:07', '12:30'),
+        [...choiceLeg('walk', null, 'Köln Ebertplatz', 'Köln Ebertplatz', '12:30', '12:36'), 'distance_m' => 0],
+        choiceLeg('tram', '16', 'Köln Ebertplatz', 'Köln Appellhofplatz', $leaves, '12:46'),
+        choiceLeg('walk', null, 'Köln Appellhofplatz', '', '12:46', '12:50'),
+    ]];
+    $choices = choicesWith([
+        'köln merkenich mitte|köln ebertplatz' => [choiceRun('12', '12:07', '12:30')],
+        'köln ebertplatz|köln appellhofplatz' => [choiceRun('16', '12:36', '12:42'), choiceRun('18', '12:44', '12:50')],
+    ]);
+
+    $legs = $choices->add([$change('12:36')], 3.0, CarbonImmutable::parse('2026-11-13T12:00:00+01:00'))[0]['legs'];
+
+    expect($legs[2]['change']['spare_min'])->toBe(6)
+        ->and($legs[2]['change']['tight'])->toBeFalse();
 });
 
 test('another line that gets there later but still in time for the next ride is named beside the first ride', function () {
