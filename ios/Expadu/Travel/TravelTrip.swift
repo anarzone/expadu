@@ -245,12 +245,14 @@ struct TravelTrip: View {
                     Text("min").font(.geist(17, .semibold))
                 }
             }
-            if !step.sub.isEmpty {
+            let line = liveLine(step, index: index, now: now)
+            if !line.isEmpty {
                 HStack(spacing: 8) {
                     if step.kind == .ride, let line = trip.badge(step) {
                         LineBadge(line: line, color: step.color, height: 24, mode: trip.legs[step.leg ?? 0].mode, icon: true, onColour: true)
                     }
-                    Text(step.sub).font(.geist(15, .medium))
+                    Text(line).font(.geist(15, .medium))
+                        .contentTransition(.numericText()).animation(.smooth, value: line)
                 }
                 .padding(.horizontal, 12).padding(.vertical, 10)
                 .glassEffect(.clear, in: .rect(cornerRadius: 14))
@@ -282,6 +284,49 @@ struct TravelTrip: View {
 
     /// The step they're on now (the phone when walking, else the clock).
     private func current(_ now: Date) -> Int { trip.live(at: now, here: planner.follower.here).current }
+
+    /// The line under the step now, live (the owner, 14 Nov: "instead of static text… valuable
+    /// information… updated"): what they need next, as it changes. On a ride, the stop it comes to
+    /// next and how many to go (as late as it runs), or that theirs is next; waiting for it, how late it
+    /// is and where it goes; on foot, the ride they walk to as late as it runs; getting off, what
+    /// comes after. A step looked at ahead, or one without anything live, keeps its own words.
+    private func liveLine(_ step: TodayPage.Step, index: Int, now: Date) -> String {
+        guard index == current(now) else { return step.sub }
+        let late = trip.late(here: planner.follower.here, at: now)
+        let lateWords = { (seconds: TimeInterval) -> String in
+            let minutes = Int((seconds / 60).rounded())
+            return minutes >= 2 ? "\(minutes) min late" : minutes <= -2 ? "\(-minutes) min early" : "On time"
+        }
+        let steps = trip.steps
+        let next = steps.indices.contains(index + 1) ? steps[index + 1] : nil
+        switch step.kind {
+        case .ride:
+            guard let leg = step.leg, trip.legs.indices.contains(leg) else { return step.sub }
+            let ride = trip.legs[leg]
+            let onBoard = planner.follower.here?.ride?.onBoard == true
+            // Not left yet: how it runs, and the way it goes.
+            if !onBoard, now < ride.departAt.addingTimeInterval(late) {
+                return [lateWords(late), ride.headsign.map { "towards \($0)" }].compactMap { $0 }.joined(separator: " · ")
+            }
+            guard let left = Guide(trip: trip).rideLeft(leg: leg, at: now, late: late) else { return step.sub }
+            if left.stops <= 1 { return "Get off at the next stop · \(ride.to)" }
+            let lateness = abs(late) >= 120 ? lateWords(late) + " · " : ""
+            return lateness + "Next \(left.next ?? ride.to) · \(left.stops) stops to go"
+        case .walk:
+            // Walking to a ride: that ride, as late as the board says.
+            if let next, next.kind == .ride, let leg = next.leg, trip.legs.indices.contains(leg) {
+                let ride = trip.legs[leg]
+                let delay = TimeInterval(max(0, ride.delayMin ?? 0) * 60)
+                return ride.cancelled ? "\(ride.name) at \(ride.departTime) is cancelled"
+                    : "\(ride.name) at \(ride.departTime) · " + lateWords(delay)
+            }
+            return step.sub
+        case .getOff:
+            return next.map { "Then " + $0.title.prefix(1).lowercased() + $0.title.dropFirst() } ?? step.sub
+        case .there:
+            return step.sub
+        }
+    }
 
     /// Off the route for 15 s, or the ride gone, as the follower sees it.
     private var trouble: String? {
@@ -393,7 +438,11 @@ struct TravelTrip: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(step.title).font(.posterGrotesque(24)).lineLimit(2).minimumScaleFactor(0.8)
-                if !step.sub.isEmpty { Text(step.sub).font(.geist(13.5, .medium)).opacity(0.9).lineLimit(1) }
+                let line = liveLine(step, index: index, now: now)
+                if !line.isEmpty {
+                    Text(line).font(.geist(13.5, .medium)).opacity(0.9).lineLimit(1).minimumScaleFactor(0.85)
+                        .contentTransition(.numericText()).animation(.smooth, value: line)
+                }
             }
             Spacer(minLength: 6)
             if index < count - 1 {
@@ -624,20 +673,22 @@ struct RideTrack: Equatable {
     let progress: Double
 }
 
-/// The steps over the map's lower left as a timeline read top to bottom: the first step at the top,
-/// what comes next below it, the step now kept at the top of the feed (the ones done above it, a
-/// scroll up). Every card is the same card, the same size. A ride's stops are stacked under it as iOS
-/// stacks a group of notifications (the edges of two more cards peek out below); a tap fans them out
-/// downwards, each stop a card like every other between the ride and the step after it, and "Show
-/// less" over the ride stacks them again. On the ride you're on they're fanned out from the start,
-/// and a stop passed leaves the feed, so the card under the ride is always the next stop.
+/// The steps over the map's lower left, read as the step list reads (the owner, 14 Nov: "in normal
+/// steps it is easy to follow, on the map it is not"): one line down the left joining every card, in
+/// the line's colour for a ride and dotted for walking, the same rings on it; the time of each in one
+/// column on the right; solid cards, so the map never shows through the words. The step now is kept
+/// at the top, later ones go on below and fade out. Every card is the same card.
+///
+/// A ride's stops are a stack, as iOS stacks a group of notifications. On the ride you're on, the
+/// stop it comes to next is the card on top, the rest behind it (their edges peek out below); a ride
+/// still to come keeps them all behind it. A tap fans them out downwards, each its own card; "Show
+/// less" over the ride stacks them again. A stop passed leaves the feed.
 private struct StepsFeed: View {
     let trip: TodayPage.Trip
     let current: Int
     let ride: RideTrack?
-    /// Rides opened by hand, and the ride you're on stacked by hand (it's open from the start).
+    /// Rides fanned out by hand.
     @State private var opened: Set<Int> = []
-    @State private var folded: Set<Int> = []
     /// Each fan-out or stack, and the ride it was: the feed keeps that ride where the finger is.
     @State private var turned = 0
     @State private var turnedRide: Int?
@@ -645,21 +696,30 @@ private struct StepsFeed: View {
 
     /// How far down the top edge fades in.
     static let fade: CGFloat = 22
+    /// Between two cards; the line crosses it.
+    static let gap: CGFloat = 6
+    /// The marks' column, and where the line runs in it.
+    static let markColumn: CGFloat = 22
 
     /// A card in the feed: a step, a stop a ride passes (by its place among the ride's stops on the
     /// way), or the header over a fanned-out ride (Show less).
     enum Card: Hashable { case step(Int), stop(Int, Int), head(Int) }
 
+    /// The line on its way through a card: a ride's colour, dotted walking, or none.
+    enum Rail: Equatable { case none, walk, ride(Color) }
+
     var body: some View {
+        let cards = self.cards
+        let rails = Self.rails(cards, steps: steps)
         ScrollViewReader { reader in
             ScrollView {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(cards, id: \.self) { card in
+                VStack(alignment: .leading, spacing: Self.gap) {
+                    ForEach(Array(cards.enumerated()), id: \.element) { n, card in
                         Group {
                             switch card {
-                            case let .step(index): row(steps[index], index: index)
-                            case let .stop(index, stop): stopCard(steps[index], index: index, stop: stop)
-                            case let .head(index): head(steps[index], index: index)
+                            case let .step(index): row(steps[index], index: index, rail: rails[n], last: n == cards.count - 1)
+                            case let .stop(index, stop): stopCard(steps[index], index: index, stop: stop, rail: rails[n])
+                            case let .head(index): head(steps[index], index: index, rail: rails[n])
                             }
                         }
                         // The ride over its stops, so they come out from under it.
@@ -673,8 +733,7 @@ private struct StepsFeed: View {
             // Room over the first card, clear of the fade: the card a scroll lands on is whole.
             .contentMargins(.top, Self.fade, for: .scrollContent)
             .defaultScrollAnchor(.top)
-            // Every card the same at the edges: done ones fade out over the top as they go, later ones
-            // fade out at the bottom as a timeline goes on below; nothing is cut off.
+            // Done ones fade out over the top, later ones at the bottom; nothing is cut off.
             .mask {
                 LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: Self.fade / 300),
                                        .init(color: .black, location: 0.6), .init(color: .black.opacity(0.35), location: 0.85),
@@ -684,15 +743,14 @@ private struct StepsFeed: View {
             .sensoryFeedback(.impact(weight: .light), trigger: turned)
             .onAppear { reader.scrollTo(focus, anchor: .top) }
             // After the cards that came or went are laid out: as the trip moves on, the step now at
-            // the top; a ride fanned out or stacked by hand stays where it was tapped (its Show less at
-            // the top, its stops opening below it in sight), never pulled back to the step now.
+            // the top; a ride fanned out or stacked by hand stays where it was tapped.
             .onChange(of: focus) { settle(reader, to: focus) }
             .onChange(of: turned) {
                 guard let ride = turnedRide else { return }
                 settle(reader, to: isOpen(ride) ? .head(ride) : .step(ride))
             }
         }
-        .frame(maxWidth: 290, alignment: .leading)
+        .frame(maxWidth: 300, alignment: .leading)
     }
 
     private func settle(_ reader: ScrollViewProxy, to card: Card) {
@@ -710,10 +768,34 @@ private struct StepsFeed: View {
         }
     }
 
-    /// The feed in time order: each step, and under an open ride (with Show less over it) its stops.
+    /// The feed in time order: each step; under a ride its stops fanned out (Show less over it), or on
+    /// the ride you're on the next one on top of the stack.
     private var cards: [Card] {
         steps.indices.flatMap { index -> [Card] in
-            isOpen(index) ? [.head(index), .step(index)] + shown(index).map { .stop(index, $0) } : [.step(index)]
+            if isOpen(index) { return [.head(index), .step(index)] + shown(index).map { .stop(index, $0) } }
+            if let next = nextStop(index), shown(index).contains(next) { return [.step(index), .stop(index, next)] }
+            return [.step(index)]
+        }
+    }
+
+    /// The line through each card: what it comes in on is what the card before went out on.
+    static func rails(_ cards: [Card], steps: [TodayPage.Step]) -> [(in: Rail, out: Rail)] {
+        var into = Rail.none
+        return cards.map { card in
+            let out: Rail
+            switch card {
+            case let .step(index):
+                let step = steps[index]
+                switch step.kind {
+                case .ride: out = .ride(StepColour.of(step))
+                case .there: out = .none
+                default: out = index == steps.count - 1 ? .none : .walk
+                }
+            case let .stop(index, _): out = .ride(StepColour.of(steps[index]))
+            case .head: out = into
+            }
+            defer { into = out }
+            return (into, out)
         }
     }
 
@@ -727,16 +809,23 @@ private struct StepsFeed: View {
         return ride.stopsOnTheWay.filter { $0.name != ride.from && $0.name != ride.to }
     }
 
-    /// The stops in a ride's stack: on the ride you're on, those still to come (a stop passed leaves
-    /// the feed as the moment moves on, so what's under the ride is always ahead); on another, all.
+    /// The stops in a ride's stack: on the ride you're on, those still to come; on another, all.
     private func shown(_ index: Int) -> [Int] {
         let all = Array(passes(steps[index]).indices)
         return index == current ? all.filter { !passed(index, $0) } : all
     }
 
+    /// Fanned out: by hand, and only while there's more than the one on top.
     private func isOpen(_ index: Int) -> Bool {
         guard steps.indices.contains(index), !shown(index).isEmpty else { return false }
-        return index == current ? !folded.contains(index) : opened.contains(index)
+        return opened.contains(index)
+    }
+
+    /// Stops still stacked behind what shows.
+    private func behind(_ index: Int) -> Int {
+        guard !isOpen(index) else { return 0 }
+        let count = shown(index).count
+        return nextStop(index) != nil ? max(0, count - 1) : count
     }
 
     /// On the ride now, once it has left: the stop on the way it comes to next (nil: next is getting off).
@@ -756,126 +845,138 @@ private struct StepsFeed: View {
     /// Fanned out or stacked, with a spring as iOS's notification stacks do.
     private func toggle(_ index: Int) {
         withAnimation(.spring(duration: 0.45, bounce: 0.15)) {
-            let open = isOpen(index)
-            if index == current {
-                if open { folded.insert(index) } else { folded.remove(index) }
-            } else {
-                if open { opened.remove(index) } else { opened.insert(index) }
-            }
+            if opened.contains(index) { opened.remove(index) } else { opened.insert(index) }
         }
         turnedRide = index
         turned += 1
     }
 
-    /// One card's frame, the same for a step and a stop: full width, glass, the same padding.
-    private func card(_ content: some View, now: Bool = false) -> some View {
-        content
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 10).padding(.vertical, 8)
-            .glassEffect(.regular, in: .rect(cornerRadius: 14))
-            .overlay { if now { RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.action.opacity(0.8), lineWidth: 1.5) } }
-            .foregroundStyle(Palette.text)
-    }
+    // MARK: The card
 
-    private func row(_ step: TodayPage.Step, index: Int) -> some View {
-        let now = index == current
-        let count = shown(index).count
-        let open = isOpen(index)
-        return card(
-            HStack(alignment: .top, spacing: 8) {
-                mark(step)
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 5) {
-                        Text(step.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
-                        if now { tag("Now", fill: Palette.action, ink: Palette.onAction) }
-                    }
-                    Text(step.title).font(.geist(14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                    if index >= current, !step.sub.isEmpty {
-                        Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(2)
-                    }
-                }
-            },
-            now: now
-        )
-        // Its stops stacked under it, the edges of two more cards peeking out below (where they go).
-        .background(alignment: .bottom) { if count > 0, !open { stack } }
-        .padding(.bottom, count > 0 && !open ? 14 : 0)
-        .contentShape(.rect)
-        .onTapGesture { if count > 0 { toggle(index) } }
-        .opacity(index < current ? 0.55 : 1)
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(now ? .isSelected : [])
-        .accessibilityAction(named: open ? "Show less" : "Show the \(count) stops") { toggle(index) }
-    }
-
-    /// The edges of the stacked cards under a ride: narrower and fainter the further back, only their
-    /// bottoms showing (the card in front hides the rest, as on the Lock Screen).
-    private var stack: some View {
-        VStack(spacing: 0) {
-            edge(radius: 13).padding(.horizontal, 10).opacity(0.9)
-            edge(radius: 11).padding(.horizontal, 20).opacity(0.7)
-        }
-        .offset(y: 14)
-        .allowsHitTesting(false)
-        .transition(.opacity)
-    }
-
-    /// One card's bottom edge under the ride: the card's own cream, a hairline, a soft shadow below.
-    private func edge(radius: CGFloat) -> some View {
-        UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius)
-            .fill(Palette.surface)
-            .overlay { UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius).strokeBorder(Palette.border, lineWidth: 0.75) }
-            .frame(height: 7)
-            .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
-    }
-
-    /// Over a ride's fanned-out stops, as over an open notification group: Show less, with the ride's
-    /// line on it (glass, so it reads over the map).
-    private func head(_ step: TodayPage.Step, index: Int) -> some View {
-        HStack {
-            Spacer(minLength: 0)
-            Button { toggle(index) } label: {
-                HStack(spacing: 7) {
-                    if let line = trip.badge(step) { LineBadge(line: line, color: step.color, height: 18) }
-                    Text("Show less").font(.geist(13, .semibold)).foregroundStyle(Palette.text)
-                    Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold)).foregroundStyle(Palette.textSoft)
-                }
-                .padding(.horizontal, 10).frame(height: 30)
-                .contentShape(.rect)
+    /// One card, the same for every step and stop: its mark on the line at the left, the words, the
+    /// time (and Now or Next) in a column on the right; solid, on the page's own cream.
+    private func card(rail: (in: Rail, out: Rail), done: Bool, now: Bool = false, stacked: Int = 0,
+                      @ViewBuilder mark: () -> some View, @ViewBuilder words: () -> some View, time: String, tag: (String, Color, Color)? = nil) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            mark().frame(width: Self.markColumn, height: 20)
+            words().frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(time).font(.geist(13, now ? .bold : .medium)).monospacedDigit()
+                    .foregroundStyle(now ? Palette.text : Palette.textSoft)
+                if let (text, fill, ink) = tag { Self.tag(text, fill: fill, ink: ink) }
             }
-            .buttonStyle(PressStyle())
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
-            .accessibilityLabel("Show less: stack the \(shown(index).count) stops on \(step.name)")
         }
-        .transition(.opacity)
-        .opacity(index < current ? 0.55 : 1)
+        .opacity(done ? 0.5 : 1)
+        .padding(.horizontal, 10).padding(.vertical, 9)
+        // The line, behind the mark: in from the card above, out to the card below, through the gaps.
+        .background(alignment: .topLeading) { line(rail).padding(.leading, 10) }
+        .background(Palette.surface, in: .rect(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14).strokeBorder(now ? Palette.action.opacity(0.85) : Palette.border.opacity(0.7), lineWidth: now ? 1.5 : 0.75)
+        }
+        // Stops stacked behind it: the edges of two more cards peek out below (where they go).
+        .background(alignment: .bottom) { if stacked > 0 { stack } }
+        .padding(.bottom, stacked > 0 ? 12 : 0)
+        .shadow(color: .black.opacity(0.1), radius: 6, y: 2)
+        .foregroundStyle(Palette.text)
     }
 
-    /// A stop the ride passes, a card like every other: the line, its time, its name, and how many stops
-    /// on from there to get off; "Next" on the one coming.
-    private func stopCard(_ step: TodayPage.Step, index: Int, stop: Int) -> some View {
+    /// The line through a card at the marks' centre: the half above the mark as it came in, the half
+    /// below as it goes out, each reaching across the gap to the next card.
+    private func line(_ rail: (in: Rail, out: Rail)) -> some View {
+        GeometryReader { proxy in
+            let x = Self.markColumn / 2
+            let mid: CGFloat = 9 + 10
+            ZStack(alignment: .topLeading) {
+                segment(rail.in, from: CGPoint(x: x, y: -Self.gap / 2 - 1), to: CGPoint(x: x, y: mid))
+                segment(rail.out, from: CGPoint(x: x, y: mid), to: CGPoint(x: x, y: proxy.size.height + Self.gap / 2 + 1))
+            }
+        }
+        .frame(width: Self.markColumn)
+        .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func segment(_ rail: Rail, from a: CGPoint, to b: CGPoint) -> some View {
+        let path = Path { $0.move(to: a); $0.addLine(to: b) }
+        switch rail {
+        case .none: EmptyView()
+        case .walk: path.stroke(Palette.textSoft, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.1, 6]))
+        case let .ride(colour): path.stroke(colour, style: StrokeStyle(lineWidth: 3, lineCap: .butt))
+        }
+    }
+
+    // MARK: Steps, stops, Show less
+
+    private func row(_ step: TodayPage.Step, index: Int, rail: (in: Rail, out: Rail), last: Bool) -> some View {
+        let now = index == current
+        let colour = StepColour.of(step)
+        // With the next stop on top of the stack (riding), the stack is under that card, not the ride's.
+        let behind = nextStop(index) == nil ? behind(index) : 0
+        let walking = step.kind == .walk
+        return card(rail: rail, done: index < current, now: now, stacked: behind,
+                    mark: {
+                        // The step list's ring; the step now is "you are here": solid, a white dot in it.
+                        if step.kind == .there {
+                            Image(systemName: "flag.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(Palette.action)
+                        } else {
+                            Circle().strokeBorder(walking ? Palette.textSoft : colour, lineWidth: 3)
+                                .background(Circle().fill(now ? (walking ? Palette.text : colour) : Palette.surface))
+                                .overlay { if now { Circle().fill(.white).frame(width: 6, height: 6) } }
+                                .frame(width: 17, height: 17)
+                        }
+                    },
+                    words: {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(step.title).font(.geist(now ? 15 : 14, now ? .bold : .semibold))
+                                .foregroundStyle(now && !walking ? colour : Palette.text)
+                                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                            if index >= current, !step.sub.isEmpty {
+                                Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(2)
+                            }
+                            if behind > 0 {
+                                Text("\(behind) stop\(behind == 1 ? "" : "s") · tap to see them").font(.geist(12, .medium)).foregroundStyle(Palette.navTeal)
+                            }
+                        }
+                    },
+                    time: step.time,
+                    tag: now ? ("Now", Palette.action, Palette.onAction) : nil)
+        .contentShape(.rect)
+        .onTapGesture { if !shown(index).isEmpty { toggle(index) } }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(now ? .isSelected : [])
+        .accessibilityAction(named: isOpen(index) ? "Show less" : "Show the stops") { if !shown(index).isEmpty { toggle(index) } }
+    }
+
+    /// A stop the ride passes, a card like every other: its ring on the ride's line, its name and how
+    /// many stops from there to get off, its time; "Next" on the one coming.
+    private func stopCard(_ step: TodayPage.Step, index: Int, stop: Int, rail: (in: Rail, out: Rail)) -> some View {
         let calls = passes(step)
         let call = calls[stop]
         let next = nextStop(index) == stop
+        let colour = StepColour.of(step)
         let look = LineLook(hex: step.color ?? "#1A4CD4")
         let ride = step.leg.map { trip.legs[$0] }
         let left = calls.count - stop
-        return card(
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "smallcircle.filled.circle").font(.system(size: 13, weight: .bold))
-                    .frame(width: 26, height: 20).foregroundStyle(look.deep)
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 5) {
-                        Text(call.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
-                        if next { tag("Next", fill: look.fill, ink: look.ink) }
-                    }
-                    Text(call.name).font(.geist(14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                    Text("\(left) stop\(left == 1 ? "" : "s") to \(ride?.to ?? "getting off")")
-                        .font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1)
-                }
-            }
-        )
-        .opacity(passed(index, stop) ? 0.55 : 1)
+        let behind = next ? behind(index) : 0
+        return card(rail: rail, done: passed(index, stop), stacked: behind,
+                    mark: { FeedStopMark(colour: colour, coming: next) },
+                    words: {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(call.name).font(.geist(14, next ? .bold : .semibold))
+                                .foregroundStyle(next ? colour : Palette.text)
+                                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                            Text("\(left) stop\(left == 1 ? "" : "s") to \(ride?.to ?? "getting off")")
+                                .font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                            if behind > 0 {
+                                Text("\(behind) more stop\(behind == 1 ? "" : "s") · tap to see them").font(.geist(12, .medium)).foregroundStyle(Palette.navTeal)
+                            }
+                        }
+                    },
+                    time: call.time,
+                    tag: next ? ("Next", look.base, look.ink) : nil)
+        .contentShape(.rect)
+        .onTapGesture { if behind > 0 || isOpen(index) { toggle(index) } }
         // Out from under the ride, downwards, as a notification group fans out.
         .transition(.asymmetric(insertion: .offset(y: -40).combined(with: .scale(scale: 0.94, anchor: .top)).combined(with: .opacity),
                                 removal: .offset(y: -40).combined(with: .scale(scale: 0.94, anchor: .top)).combined(with: .opacity)))
@@ -883,20 +984,80 @@ private struct StepsFeed: View {
         .accessibilityLabel("\(call.time), \(call.name)\(next ? ", next stop" : ""), \(left) to get off")
     }
 
+    /// The edges of the stacked cards under a card: narrower and fainter the further back, only their
+    /// bottoms showing (the card in front hides the rest, as on the Lock Screen).
+    private var stack: some View {
+        VStack(spacing: 0) {
+            edge(radius: 13).padding(.horizontal, 10).opacity(0.95)
+            edge(radius: 11).padding(.horizontal, 20).opacity(0.8)
+        }
+        .offset(y: 12)
+        .allowsHitTesting(false)
+        .transition(.opacity)
+    }
+
+    private func edge(radius: CGFloat) -> some View {
+        UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius)
+            .fill(Palette.surface)
+            .overlay { UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius).strokeBorder(Palette.border, lineWidth: 0.75) }
+            .frame(height: 6)
+            .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
+    }
+
+    /// Over a ride's fanned-out stops, as over an open notification group: Show less, with the ride's
+    /// line on it; the line goes on behind it, on the left.
+    private func head(_ step: TodayPage.Step, index: Int, rail: (in: Rail, out: Rail)) -> some View {
+        HStack {
+            line(rail).frame(height: 32).padding(.leading, 10)
+            Spacer(minLength: 0)
+            Button { toggle(index) } label: {
+                HStack(spacing: 7) {
+                    if let line = trip.badge(step) { LineBadge(line: line, color: step.color, height: 18) }
+                    Text("Show less").font(.geist(13, .semibold)).foregroundStyle(Palette.text)
+                    Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold)).foregroundStyle(Palette.textSoft)
+                }
+                .padding(.horizontal, 10).frame(height: 32)
+                .background(Palette.surface, in: .rect(cornerRadius: 10))
+                .overlay { RoundedRectangle(cornerRadius: 10).strokeBorder(Palette.border.opacity(0.7), lineWidth: 0.75) }
+                .shadow(color: .black.opacity(0.1), radius: 6, y: 2)
+                .contentShape(.rect)
+            }
+            .buttonStyle(PressStyle())
+            .accessibilityLabel("Show less: stack the \(shown(index).count) stops on \(step.name)")
+        }
+        .frame(height: 32)
+        .transition(.opacity)
+    }
+
     /// The small word on a card ("Now", "Next"): a rounded rectangle, never a pill.
-    private func tag(_ text: String, fill: some ShapeStyle, ink: Color) -> some View {
+    static func tag(_ text: String, fill: some ShapeStyle, ink: Color) -> some View {
         Text(text).font(.geist(10.5, .bold)).foregroundStyle(ink)
             .padding(.horizontal, 5).frame(height: 16).background(fill, in: .rect(cornerRadius: 4))
     }
+}
 
-    @ViewBuilder
-    private func mark(_ step: TodayPage.Step) -> some View {
-        if step.kind == .ride, let line = trip.badge(step) {
-            LineBadge(line: line, color: step.color, height: 20)
-        } else {
-            Image(systemName: step.kind == .there ? "flag.fill" : step.kind == .getOff ? "arrow.down.right" : "figure.walk")
-                .font(.system(size: 12, weight: .bold)).frame(width: 26, height: 20)
-                .foregroundStyle(step.kind == .there ? Palette.action : Palette.textSoft)
+/// A stop's mark in the map's feed: a small ring on the ride's line, the size of the step list's.
+/// The one coming next is a ring that calls (a halo going out from it), never solid: solid is the
+/// step you're on, so the two never look alike.
+private struct FeedStopMark: View {
+    let colour: Color
+    let coming: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
+
+    var body: some View {
+        ZStack {
+            if coming {
+                Circle().stroke(colour.opacity(0.5), lineWidth: 2).frame(width: 22, height: 22)
+                    .scaleEffect(pulse ? 1.2 : 0.6).opacity(pulse ? 0 : 1)
+            }
+            Circle().fill(Palette.surface)
+                .overlay { Circle().strokeBorder(colour, lineWidth: coming ? 3 : 2) }
+                .frame(width: coming ? 13 : 9, height: coming ? 13 : 9)
+        }
+        .onAppear {
+            guard coming, !reduceMotion else { return }
+            withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { pulse = true }
         }
     }
 }
