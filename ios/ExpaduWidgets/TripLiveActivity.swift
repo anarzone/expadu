@@ -20,12 +20,13 @@ struct ExpaduWidgets: WidgetBundle {
 struct TripLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TripActivityAttributes.self) { context in
-            LockCard(to: context.attributes.to, phase: context.state)
+            // Out of date (the app stopped and the ride it named has left): never an old tram as now.
+            LockCard(to: context.attributes.to, phase: context.isStale ? context.state.outOfDate : context.state)
                 .activityBackgroundTint(Color(light: 0xFFFDF8, dark: 0x26251C))
                 .activitySystemActionForegroundColor(Palette.text)
                 .widgetURL(URL(string: "expadu://today"))
         } dynamicIsland: { context in
-            let phase = context.state
+            let phase = context.isStale ? context.state.outOfDate : context.state
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Mark(phase: phase, size: .large).padding(.leading, 4)
