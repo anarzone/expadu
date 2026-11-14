@@ -358,7 +358,10 @@ struct TravelTrip: View {
                 padding: UIEdgeInsets(top: stepsOpen ? 225 : 250, left: 40, bottom: stepsOpen ? 16 : 130, right: 40), follow: followMe, showsUser: true,
                 fitID: fitTick * 10 + (stepsOpen ? 1 : 0), creditInset: stepsOpen ? 8 : 70,
                 // The way (and its flag) kept clear of the whole feed: a ride's stops fill it to the top.
-                viewInset: UIEdgeInsets(top: 0, left: 0, bottom: stepsOpen ? Self.feedHeight + 70 : 0, right: 0))
+                viewInset: UIEdgeInsets(top: 0, left: 0, bottom: stepsOpen ? Self.feedHeight + 70 : 0, right: 0),
+                // A drag of the map while following goes free, and the button says so (as Apple Maps).
+                followEnded: { withAnimation(.smooth) { followMe = false } },
+                standIn: standIn)
             .ignoresSafeArea()
             .overlay(alignment: .bottomLeading) { mapControls(current: current, now: now) }
             .sensoryFeedback(.selection, trigger: followMe)
@@ -366,6 +369,23 @@ struct TravelTrip: View {
     }
 
     private static let feedHeight: CGFloat = 300
+
+    /// The arrow's stand-in when the phone has no good fix (underground, a weak signal; the owner, 14
+    /// Nov: the arrow stuck where the last fix was): on a ride, where the ride is on its line by its
+    /// timetable, as late as it runs, heading the way it goes. On foot there's nothing to tell by.
+    private var standIn: (Date) -> CLLocation? {
+        let trip = trip
+        let follower = planner.follower
+        let guide = Guide(trip: trip)
+        return { date in
+            let live = trip.live(at: date, here: follower.here)
+            guard live.step.kind == .ride, let leg = live.step.leg,
+                  let at = guide.estimate(leg: leg, at: date, late: trip.late(here: follower.here, at: date)) else { return nil }
+            // A halo as wide as the guess may be off.
+            return CLLocation(coordinate: CLLocationCoordinate2D(latitude: at.point.latitude, longitude: at.point.longitude), altitude: 0,
+                              horizontalAccuracy: 60, verticalAccuracy: -1, course: at.course, speed: 8, timestamp: date)
+        }
+    }
 
     /// The step you're on, compact, in the band over the map; its title is the same one as the big
     /// step's, gliding between the two.
@@ -623,6 +643,9 @@ private struct StepsFeed: View {
     @State private var turnedRide: Int?
     private var steps: [TodayPage.Step] { trip.steps }
 
+    /// How far down the top edge fades in.
+    static let fade: CGFloat = 22
+
     /// A card in the feed: a step, a stop a ride passes (by its place among the ride's stops on the
     /// way), or the header over a fanned-out ride (Show less).
     enum Card: Hashable { case step(Int), stop(Int, Int), head(Int) }
@@ -644,14 +667,18 @@ private struct StepsFeed: View {
                         .id(card)
                     }
                 }
-                .padding(.top, 4).padding(.bottom, 160)
+                .padding(.bottom, 160)
             }
             .scrollIndicators(.hidden)
+            // Room over the first card, clear of the fade: the card a scroll lands on is whole.
+            .contentMargins(.top, Self.fade, for: .scrollContent)
             .defaultScrollAnchor(.top)
-            // Later in time fades out at the bottom, as a timeline goes on below.
+            // Every card the same at the edges: done ones fade out over the top as they go, later ones
+            // fade out at the bottom as a timeline goes on below; nothing is cut off.
             .mask {
-                LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.6),
-                                       .init(color: .black.opacity(0.35), location: 0.85), .init(color: .clear, location: 1)],
+                LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: Self.fade / 300),
+                                       .init(color: .black, location: 0.6), .init(color: .black.opacity(0.35), location: 0.85),
+                                       .init(color: .clear, location: 1)],
                                startPoint: .top, endPoint: .bottom)
             }
             .sensoryFeedback(.impact(weight: .light), trigger: turned)

@@ -112,11 +112,8 @@ struct ShellView: View {
             case .tripStart:
                 withAnimation(.snappy) { tab = .today }
                 if let way = today.page?.leave?.ways.first {
-                    // One tap, as Start trip everywhere: a trip running is replaced, with Undo.
-                    Task {
-                        _ = await today.startTrip(session.api, way: way)
-                        if today.page?.trip != nil { planner.showTrip = true }
-                    }
+                    // One tap, as Start trip everywhere: a trip running is replaced, with Undo; it opens at once.
+                    Task { _ = await today.startTrip(session.api, way: way, opened: { planner.showTrip = true }) }
                 } else {
                     Task { await today.findWay(session.api) }
                 }

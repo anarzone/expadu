@@ -189,6 +189,38 @@ public struct Guide: Sendable {
         return stops.last!.at
     }
 
+    /// Where a ride is at `date`, running `late` behind its timetable: on its line between the stops
+    /// it's due at (as far on in metres as in time), and the way it's heading (degrees from north).
+    /// For the map's arrow when the phone has no good fix (underground, a weak signal): it moves on
+    /// with the tram instead of standing where the last fix was.
+    public func estimate(leg: Int, at date: Date, late: TimeInterval) -> (point: TodayPage.Point, course: Double)? {
+        guard let line = lines.first(where: { $0.leg == leg }), let stops = marks[leg], let first = stops.first, let last = stops.last else { return nil }
+        let timetable = date.addingTimeInterval(-late)
+        var along = last.along
+        if timetable <= first.at {
+            along = first.along
+        } else {
+            for (a, b) in zip(stops, stops.dropFirst()) where timetable <= b.at {
+                let span = b.at.timeIntervalSince(a.at)
+                along = a.along + (span > 0 ? timetable.timeIntervalSince(a.at) / span : 0) * (b.along - a.along)
+                break
+            }
+        }
+        return Self.point(at: along, on: line)
+    }
+
+    /// The point `along` metres down a line, and the line's heading there.
+    static func point(at along: Double, on line: Line) -> (point: TodayPage.Point, course: Double) {
+        let i = max(0, min(line.along.lastIndex { $0 <= along } ?? 0, line.points.count - 2))
+        let a = line.points[i], b = line.points[i + 1]
+        let span = line.along[i + 1] - line.along[i]
+        let f = span > 0 ? min(1, max(0, (along - line.along[i]) / span)) : 0
+        let point = TodayPage.Point(latitude: a.latitude + (b.latitude - a.latitude) * f, longitude: a.longitude + (b.longitude - a.longitude) * f)
+        let (x, y) = offset(from: a, to: b)
+        let course = (atan2(x, y) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
+        return (point, course)
+    }
+
     /// A ride at `date`, running `late` behind its timetable: the stops still to come (the one to get
     /// off at counted, so 1 is "get off at the next stop"), and the next one.
     public func rideLeft(leg: Int, at date: Date, late: TimeInterval) -> (stops: Int, next: String?)? {
