@@ -12,6 +12,8 @@ struct TravelView: View {
     @Environment(TodayModel.self) private var today
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.sectionBarCompact) private var barCompact
+    @Environment(\.sectionBarTop) private var barTop
+    @State private var rowBottom: CGFloat = 0
     @State private var model = TravelModel()
     @Environment(TripPlanner.self) private var planner
 
@@ -42,17 +44,22 @@ struct TravelView: View {
         }
         .foregroundStyle(model.map ? Palette.text : lead.ink)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.55), value: model.leadLine?.line)
-        // Where to? sits in the bottom row, between the folded section bar and Composer's button.
+        // Where to? sits in the bottom row, between the folded section bar and Composer's button; when
+        // the bar opens it moves up and stretches over the bar, full width, as iOS 26's own bottom
+        // accessory does (Music, Podcasts), so the search is never hidden by the menu.
         .overlay(alignment: .bottom) {
-            WhereTo(open: { planner.open(from: model.station, favourite: model.favourite) },
-                    speak: { planner.open(from: model.station, favourite: model.favourite, listening: true) })
-                .padding(.leading, 16 + 56 + 10).padding(.trailing, 16 + 62 + 10)
-                .padding(.bottom, 28)
-                .opacity(barCompact ? 1 : 0)
-                .offset(y: barCompact ? 0 : 20)
-                .allowsHitTesting(barCompact)
-                .animation(.spring(duration: 0.4, bounce: 0.2), value: barCompact)
-                .ignoresSafeArea(edges: .bottom)
+            ZStack(alignment: .bottom) {
+                // Where this row ends on the screen, to set Where to? over the open bar by the bar's own top.
+                Color.clear.frame(height: 1)
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { rowBottom = $0 }
+                WhereTo(open: { planner.open(from: model.station, favourite: model.favourite) },
+                        speak: { planner.open(from: model.station, favourite: model.favourite, listening: true) })
+                    .padding(.leading, barCompact ? 16 + 56 + 10 : 16).padding(.trailing, barCompact ? 16 + 62 + 10 : 16)
+                    // Folded: where it has always sat. Open: 10 pt over the bar's top, wherever that is.
+                    .padding(.bottom, barCompact || barTop == 0 ? 28 : max(28, rowBottom - barTop + 10))
+            }
+            .animation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.2), value: barCompact)
+            .ignoresSafeArea(edges: .bottom)
         }
         .task { await model.start(session.api) }
         .onDisappear { model.stop() }

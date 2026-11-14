@@ -604,57 +604,58 @@ struct RideTrack: Equatable {
     let progress: Double
 }
 
-/// The steps over the map's lower left, as live comments sit over a video: the one you're on at the
-/// bottom, the next ones above it fading out towards the top, the ones done below it (scroll down).
-/// It scrolls, and moves on by itself as the trip does. Every card is the same card. A ride's stops
-/// are a stack behind it, as iOS stacks a group of notifications: two edges peek out, a tap fans them
-/// out as cards of their own between the ride and the step after it, rising in time as the feed does
-/// (passed ones faded as done steps are, the next one marked), and "Show less" stacks them again. On
-/// the ride you're on they're fanned out from the start, and the feed keeps the next stop in sight.
+/// The steps over the map's lower left as a timeline read top to bottom: the first step at the top,
+/// what comes next below it, the step now kept at the top of the feed (the ones done above it, a
+/// scroll up). Every card is the same card, the same size. A ride's stops are stacked under it as iOS
+/// stacks a group of notifications (the edges of two more cards peek out below); a tap fans them out
+/// downwards, each stop a card like every other between the ride and the step after it, and "Show
+/// less" over the ride stacks them again. On the ride you're on they're fanned out from the start,
+/// and a stop passed leaves the feed, so the card under the ride is always the next stop.
 private struct StepsFeed: View {
     let trip: TodayPage.Trip
     let current: Int
     let ride: RideTrack?
-    /// Rides opened by hand, and the ride you're on folded by hand (it's open from the start).
+    /// Rides opened by hand, and the ride you're on stacked by hand (it's open from the start).
     @State private var opened: Set<Int> = []
     @State private var folded: Set<Int> = []
-    /// Each fan-out or stack, so the feed settles back on the step now.
+    /// Each fan-out or stack, so the feed settles on the step now.
     @State private var turned = 0
     private var steps: [TodayPage.Step] { trip.steps }
 
     /// A card in the feed: a step, a stop a ride passes (by its place among the ride's stops on the
-    /// way), or the head of a fanned-out ride's stops (Show less).
+    /// way), or the header over a fanned-out ride (Show less).
     enum Card: Hashable { case step(Int), stop(Int, Int), head(Int) }
 
     var body: some View {
         ScrollViewReader { reader in
             ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
-                    ForEach(cards.reversed(), id: \.self) { card in
+                    ForEach(cards, id: \.self) { card in
                         Group {
                             switch card {
-                            case let .step(index): row(steps[index], index: index, reader: reader)
+                            case let .step(index): row(steps[index], index: index)
                             case let .stop(index, stop): stopCard(steps[index], index: index, stop: stop)
                             case let .head(index): head(steps[index], index: index)
                             }
                         }
+                        // The ride over its stops, so they come out from under it.
+                        .zIndex(Self.layer(card))
                         .id(card)
                     }
                 }
-                .padding(.top, 120).padding(.bottom, 4)
+                .padding(.top, 4).padding(.bottom, 160)
             }
             .scrollIndicators(.hidden)
-            .defaultScrollAnchor(.bottom)
+            .defaultScrollAnchor(.top)
+            // Later in time fades out at the bottom, as a timeline goes on below.
             .mask {
-                LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black.opacity(0.35), location: 0.25),
-                                       .init(color: .black, location: 0.55), .init(color: .black, location: 1)],
+                LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.6),
+                                       .init(color: .black.opacity(0.35), location: 0.85), .init(color: .clear, location: 1)],
                                startPoint: .top, endPoint: .bottom)
             }
-            .sensoryFeedback(.impact(weight: .light), trigger: opened)
-            .sensoryFeedback(.impact(weight: .light), trigger: folded)
-            .onAppear { reader.scrollTo(focus, anchor: .bottom) }
-            // The step now kept at the bottom, after the cards that came or went are laid out (a stack
-            // fanning out puts its cards above the ride; the step now stays where the eye is).
+            .sensoryFeedback(.impact(weight: .light), trigger: turned)
+            .onAppear { reader.scrollTo(focus, anchor: .top) }
+            // After the cards that came or went are laid out.
             .onChange(of: focus) { settle(reader) }
             .onChange(of: turned) { settle(reader) }
         }
@@ -664,32 +665,40 @@ private struct StepsFeed: View {
     private func settle(_ reader: ScrollViewProxy) {
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(80))
-            withAnimation(.smooth(duration: 0.5)) { reader.scrollTo(focus, anchor: .bottom) }
+            withAnimation(.smooth(duration: 0.5)) { reader.scrollTo(focus, anchor: .top) }
         }
     }
 
-    /// The feed in time order: each step, and after an open ride the stops it passes.
+    private static func layer(_ card: Card) -> Double {
+        switch card {
+        case .step: 2
+        case .head: 1
+        case .stop: 0
+        }
+    }
+
+    /// The feed in time order: each step, and under an open ride (with Show less over it) its stops.
     private var cards: [Card] {
         steps.indices.flatMap { index -> [Card] in
-            [.step(index)] + (isOpen(index) ? shown(index).map { .stop(index, $0) } + [.head(index)] : [])
+            isOpen(index) ? [.head(index), .step(index)] + shown(index).map { .stop(index, $0) } : [.step(index)]
         }
     }
 
-    /// What the feed keeps at its bottom: the step now (on a ride, its next stop is the card above it).
-    private var focus: Card { .step(current) }
-
-    /// The stops in a ride's stack: on the ride you're on, those still to come (a stop passed leaves
-    /// the feed, as the moment moves on, so what's above the ride is always ahead); on another, all.
-    private func shown(_ index: Int) -> [Int] {
-        let all = Array(passes(steps[index]).indices)
-        return index == current ? all.filter { !passed(index, $0) } : all
-    }
+    /// What the feed keeps at its top: the step now (with its Show less when its stops are out).
+    private var focus: Card { isOpen(current) ? .head(current) : .step(current) }
 
     /// The stops a ride passes between getting on and getting off (getting off is the step after it).
     private func passes(_ step: TodayPage.Step) -> [TodayPage.Trip.Leg.Stop] {
         guard step.kind == .ride, let leg = step.leg, trip.legs.indices.contains(leg) else { return [] }
         let ride = trip.legs[leg]
         return ride.stopsOnTheWay.filter { $0.name != ride.from && $0.name != ride.to }
+    }
+
+    /// The stops in a ride's stack: on the ride you're on, those still to come (a stop passed leaves
+    /// the feed as the moment moves on, so what's under the ride is always ahead); on another, all.
+    private func shown(_ index: Int) -> [Int] {
+        let all = Array(passes(steps[index]).indices)
+        return index == current ? all.filter { !passed(index, $0) } : all
     }
 
     private func isOpen(_ index: Int) -> Bool {
@@ -711,62 +720,9 @@ private struct StepsFeed: View {
         return Double(stop + 1) <= progress.rounded(.down)
     }
 
-    private func row(_ step: TodayPage.Step, index: Int, reader: ScrollViewProxy) -> some View {
-        let now = index == current
-        let count = shown(index).count
-        let open = isOpen(index)
-        return HStack(alignment: .top, spacing: 8) {
-            mark(step)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 5) {
-                    Text(step.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
-                    if now { tag("Now", fill: Palette.action, ink: Palette.onAction) }
-                }
-                Text(step.title).font(.geist(now ? 15 : 14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                if index >= current, !step.sub.isEmpty {
-                    Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(now ? 2 : 1)
-                }
-            }
-        }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
-        .overlay { if now { RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.action.opacity(0.8), lineWidth: 1.5) } }
-        // Its stops stacked behind it, the edges of two more cards peeking out above (where they go).
-        .background(alignment: .top) { if count > 0, !open { stack } }
-        .padding(.top, count > 0 && !open ? 14 : 0)
-        .contentShape(.rect)
-        .onTapGesture { if count > 0 { toggle(index) } }
-        .foregroundStyle(Palette.text)
-        .opacity(index < current ? 0.55 : 1)
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(now ? .isSelected : [])
-        .accessibilityAction(named: open ? "Show less" : "Show the \(count) stops") { toggle(index) }
-    }
-
-    /// The edges of the stacked cards behind a ride: narrower and fainter the further back, only their
-    /// tops showing (the card in front hides the rest, as on the Lock Screen).
-    private var stack: some View {
-        VStack(spacing: 0) {
-            edge(radius: 11).padding(.horizontal, 20).opacity(0.7)
-            edge(radius: 13).padding(.horizontal, 10).opacity(0.9)
-        }
-        .offset(y: -14)
-        .allowsHitTesting(false)
-        .transition(.opacity)
-    }
-
-    /// One card's top edge behind the ride: the card's own cream, a hairline, a soft shadow above.
-    private func edge(radius: CGFloat) -> some View {
-        UnevenRoundedRectangle(topLeadingRadius: radius, topTrailingRadius: radius)
-            .fill(Palette.surface)
-            .overlay { UnevenRoundedRectangle(topLeadingRadius: radius, topTrailingRadius: radius).strokeBorder(Palette.border, lineWidth: 0.75) }
-            .frame(height: 7)
-            .shadow(color: .black.opacity(0.1), radius: 2, y: -1)
-    }
-
     /// Fanned out or stacked, with a spring as iOS's notification stacks do.
     private func toggle(_ index: Int) {
-        withAnimation(.spring(duration: 0.45, bounce: 0.18)) {
+        withAnimation(.spring(duration: 0.45, bounce: 0.15)) {
             let open = isOpen(index)
             if index == current {
                 if open { folded.insert(index) } else { folded.remove(index) }
@@ -777,51 +733,120 @@ private struct StepsFeed: View {
         turned += 1
     }
 
+    /// One card's frame, the same for a step and a stop: full width, glass, the same padding.
+    private func card(_ content: some View, now: Bool = false) -> some View {
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .glassEffect(.regular, in: .rect(cornerRadius: 14))
+            .overlay { if now { RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.action.opacity(0.8), lineWidth: 1.5) } }
+            .foregroundStyle(Palette.text)
+    }
+
+    private func row(_ step: TodayPage.Step, index: Int) -> some View {
+        let now = index == current
+        let count = shown(index).count
+        let open = isOpen(index)
+        return card(
+            HStack(alignment: .top, spacing: 8) {
+                mark(step)
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 5) {
+                        Text(step.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                        if now { tag("Now", fill: Palette.action, ink: Palette.onAction) }
+                    }
+                    Text(step.title).font(.geist(14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    if index >= current, !step.sub.isEmpty {
+                        Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(2)
+                    }
+                }
+            },
+            now: now
+        )
+        // Its stops stacked under it, the edges of two more cards peeking out below (where they go).
+        .background(alignment: .bottom) { if count > 0, !open { stack } }
+        .padding(.bottom, count > 0 && !open ? 14 : 0)
+        .contentShape(.rect)
+        .onTapGesture { if count > 0 { toggle(index) } }
+        .opacity(index < current ? 0.55 : 1)
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(now ? .isSelected : [])
+        .accessibilityAction(named: open ? "Show less" : "Show the \(count) stops") { toggle(index) }
+    }
+
+    /// The edges of the stacked cards under a ride: narrower and fainter the further back, only their
+    /// bottoms showing (the card in front hides the rest, as on the Lock Screen).
+    private var stack: some View {
+        VStack(spacing: 0) {
+            edge(radius: 13).padding(.horizontal, 10).opacity(0.9)
+            edge(radius: 11).padding(.horizontal, 20).opacity(0.7)
+        }
+        .offset(y: 14)
+        .allowsHitTesting(false)
+        .transition(.opacity)
+    }
+
+    /// One card's bottom edge under the ride: the card's own cream, a hairline, a soft shadow below.
+    private func edge(radius: CGFloat) -> some View {
+        UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius)
+            .fill(Palette.surface)
+            .overlay { UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius).strokeBorder(Palette.border, lineWidth: 0.75) }
+            .frame(height: 7)
+            .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
+    }
+
     /// Over a ride's fanned-out stops, as over an open notification group: Show less, with the ride's
     /// line on it (glass, so it reads over the map).
     private func head(_ step: TodayPage.Step, index: Int) -> some View {
-        Button { toggle(index) } label: {
-            HStack(spacing: 7) {
-                if let line = trip.badge(step) { LineBadge(line: line, color: step.color, height: 18) }
-                Text("Show less").font(.geist(13, .semibold)).foregroundStyle(Palette.text)
-                Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)).foregroundStyle(Palette.textSoft)
+        HStack {
+            Spacer(minLength: 0)
+            Button { toggle(index) } label: {
+                HStack(spacing: 7) {
+                    if let line = trip.badge(step) { LineBadge(line: line, color: step.color, height: 18) }
+                    Text("Show less").font(.geist(13, .semibold)).foregroundStyle(Palette.text)
+                    Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold)).foregroundStyle(Palette.textSoft)
+                }
+                .padding(.horizontal, 10).frame(height: 30)
+                .contentShape(.rect)
             }
-            .padding(.horizontal, 10).frame(height: 32)
-            .contentShape(.rect)
+            .buttonStyle(PressStyle())
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
+            .accessibilityLabel("Show less: stack the \(shown(index).count) stops on \(step.name)")
         }
-        .buttonStyle(PressStyle())
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
-        .accessibilityLabel("Show less: stack the \(shown(index).count) stops on \(step.name)")
         .transition(.opacity)
         .opacity(index < current ? 0.55 : 1)
     }
 
-    /// A stop the ride passes, as a card like every other: its time, its name; "Next" on the one coming.
+    /// A stop the ride passes, a card like every other: the line, its time, its name, and how many stops
+    /// on from there to get off; "Next" on the one coming.
     private func stopCard(_ step: TodayPage.Step, index: Int, stop: Int) -> some View {
         let calls = passes(step)
         let call = calls[stop]
         let next = nextStop(index) == stop
         let look = LineLook(hex: step.color ?? "#1A4CD4")
-        return HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "smallcircle.filled.circle").font(.system(size: 12, weight: .bold))
-                .frame(width: 26, height: 20).foregroundStyle(look.deep)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 5) {
-                    Text(call.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
-                    if next { tag("Next", fill: look.fill, ink: look.ink) }
+        let ride = step.leg.map { trip.legs[$0] }
+        let left = calls.count - stop
+        return card(
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "smallcircle.filled.circle").font(.system(size: 13, weight: .bold))
+                    .frame(width: 26, height: 20).foregroundStyle(look.deep)
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 5) {
+                        Text(call.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                        if next { tag("Next", fill: look.fill, ink: look.ink) }
+                    }
+                    Text(call.name).font(.geist(14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    Text("\(left) stop\(left == 1 ? "" : "s") to \(ride?.to ?? "getting off")")
+                        .font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1)
                 }
-                Text(call.name).font(.geist(14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
             }
-        }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
-        .foregroundStyle(Palette.text)
+        )
         .opacity(passed(index, stop) ? 0.55 : 1)
-        // Out of the stack: from behind the ride, a little smaller, as a notification group fans out.
-        .transition(.asymmetric(insertion: .scale(scale: 0.92, anchor: .bottom).combined(with: .opacity).combined(with: .offset(y: 24)),
-                                removal: .scale(scale: 0.92, anchor: .bottom).combined(with: .opacity)))
+        // Out from under the ride, downwards, as a notification group fans out.
+        .transition(.asymmetric(insertion: .offset(y: -40).combined(with: .scale(scale: 0.94, anchor: .top)).combined(with: .opacity),
+                                removal: .offset(y: -40).combined(with: .scale(scale: 0.94, anchor: .top)).combined(with: .opacity)))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(call.time), \(call.name)\(next ? ", next stop" : "")")
+        .accessibilityLabel("\(call.time), \(call.name)\(next ? ", next stop" : ""), \(left) to get off")
     }
 
     /// The small word on a card ("Now", "Next"): a rounded rectangle, never a pill.

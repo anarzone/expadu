@@ -68,7 +68,9 @@ final class TodayModel {
         }
         self.place = place
         do throws(APIFailure) {
-            let fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            var fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            // A trip being started stays shown until the server answers for it.
+            if let starting { fresh.trip = starting }
             // The island shows the trip the server has, before the guidance hears of it: one ended
             // anywhere (here, the web, arrived) goes from the Lock Screen too.
             TripActivity.shared.running(fresh.trip)
@@ -455,6 +457,31 @@ final class TodayModel {
             await load(api, quietly: true)
         }
         return false
+    }
+
+    /// Start trip, shown before the server has it: kept on the page through any reload until its
+    /// answer comes, so a reload in between never takes the trip away.
+    private var starting: TodayPage.Trip?
+
+    /// The trip picked, on the page at once; the one it replaces comes back, for if it's turned down.
+    func showStarting(_ trip: TodayPage.Trip) -> TodayPage.Trip? {
+        let before = page?.trip
+        starting = trip
+        page?.trip = trip
+        return before
+    }
+
+    /// The server took it: its own trip (with the live times) in place of the one shown.
+    func started(_ api: AppAPI) async {
+        starting = nil
+        cardNote = nil
+        await load(api, quietly: true)
+    }
+
+    /// Turned down: the trip there was before, or none.
+    func notStarting(_ before: TodayPage.Trip?) {
+        starting = nil
+        page?.trip = before
     }
 
     /// The trip being ended: true when they made it. The card shows it in place before it goes.
