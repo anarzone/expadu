@@ -365,51 +365,72 @@ final class TripPlanner {
         do throws(APIFailure) { try await api.removePlannedTrip(planned.id) } catch {}
     }
 
-    /// I'm on my way on this way. Another trip running asks first.
+    /// I'm on my way on this way, in one tap, shown at once as Go is in Maps: the trip opens from the
+    /// route they picked while the server takes it (a trip running is replaced, with Undo), and its
+    /// answer then replaces the shown one quietly. Waiting for the server first (two answers, seconds
+    /// on the phone) read as a tap that did nothing (the owner, 13 and 14 Nov). Turned down, it goes
+    /// back to the routes it was picked from and says why.
     func start(_ option: Option, _ api: AppAPI, today: TodayModel) async -> Bool {
         guard busy == nil, let destination, let journey = raw.flatMap({ TripPlan.raw($0, index: option.index) }) else { return false }
         busy = option.index
         defer { busy = nil }
         let start = from ?? here.map { TripPoint(name: "Your location", lat: $0.latitude, lng: $0.longitude) }
-        let before = today.page?.trip
+        let chosen = TodayPage.Trip(to: destination.name, arriveTime: option.journey.arriveTime,
+                                    startTime: target?.startDate.map(TodayPage.clock), legs: option.journey.tripLegs)
+        let before = today.showStarting(chosen)
+        // Picked on Plan a trip (not new routes over the trip screen): it goes without its own motion,
+        // so the trip rises straight over where it was.
+        let fromPlan = shown
+        var quiet = Transaction()
+        quiet.disablesAnimations = true
+        withTransaction(quiet) { shown = false }
+        withAnimation(.smooth(duration: 0.45)) {
+            newRoutes = false
+            showTrip = true
+        }
+        self.started += 1
         do throws(APIFailure) {
             let result = try await api.startTravelTrip(journey: journey, to: destination, from: start,
                                                        plan: target.map { (Self.day($0.startDate ?? .now), $0.id) }, replace: true)
             switch result {
             case let .started(replaced):
-                await today.load(api, quietly: true)
-                // The trip opens from Today's answer. Without it (the connection dropped again), the routes
-                // stay with a plain note instead of closing onto nothing; Start again opens the same trip.
-                guard let started = today.page?.trip, !(before != nil && started == before) else {
-                    startingProblem = "Your trip has started, but it couldn’t be shown. Check your connection and tap Start trip again."
-                    return false
-                }
-                withAnimation(.smooth(duration: 0.45)) {
-                    newRoutes = false
-                    shown = false
-                    self.destination = nil
-                    answer = nil
-                    showTrip = true
-                }
-                self.started += 1
+                self.destination = nil
+                answer = nil
+                target = nil
+                await today.started(api)
                 if let replaced { today.tripReplaced(replaced) }
                 return true
             case .busy:
                 // Only when the server still asks first (never: the app always replaces).
+                notStarted(before, fromPlan: fromPlan, today: today, problem: nil)
                 return false
             }
         } catch {
             switch error {
             case let .refused(reason):
                 // The run has left or the way is over: say so; OK goes back to fresh routes.
-                startingProblem = reason
+                notStarted(before, fromPlan: fromPlan, today: today, problem: reason)
                 refreshAfterProblem = true
-            case .tooManyTries: startingProblem = "Too many tries in a minute. Try again in a moment."
+            case .tooManyTries: notStarted(before, fromPlan: fromPlan, today: today, problem: "Too many tries in a minute. Try again in a moment.")
             // Only after the tries again (AppAPI): there is no connection to reach us now.
-            default: startingProblem = "Couldn’t reach Expadu to start the trip. Check your connection and try again."
+            default: notStarted(before, fromPlan: fromPlan, today: today, problem: "Couldn’t reach Expadu to start the trip. Check your connection and try again.")
             }
             return false
         }
+    }
+
+    /// The server didn't take it: the trip they had (or none) back, and the routes they picked from.
+    private func notStarted(_ before: TodayPage.Trip?, fromPlan: Bool, today: TodayModel, problem: String?) {
+        withAnimation(.smooth(duration: 0.4)) {
+            today.notStarting(before)
+            if fromPlan {
+                showTrip = false
+                shown = true
+            } else {
+                newRoutes = true
+            }
+        }
+        startingProblem = problem
     }
 
     func setTicket(_ held: Bool, _ api: AppAPI) async {

@@ -538,8 +538,6 @@ private struct RouteDetail: View {
     let back: () -> Void
     let show: () -> Void
     let add: (() -> Void)?
-    /// Each press of Start trip, for its haptic: felt the moment the finger lifts, before the network answers.
-    @State private var pressed = 0
 
     var body: some View {
         let journey = option.journey
@@ -575,10 +573,8 @@ private struct RouteDetail: View {
             }
             .scrollIndicators(.hidden)
             HStack(spacing: 8) {
-                Button {
-                    pressed += 1
-                    show()
-                } label: {
+                // Felt as the trip opens, at once (the success tick, where the trip screen is shown).
+                Button(action: show) {
                     Label(planner.busy == option.index && !kept ? "Starting…" : "Start trip", systemImage: "arrow.right")
                         .font(.geist(16, .semibold)).frame(maxWidth: .infinity).frame(height: 50)
                 }
@@ -586,7 +582,6 @@ private struct RouteDetail: View {
                 .buttonFace(Palette.action, radius: 14)
                 .foregroundStyle(Palette.onAction)
                 .disabled(journey.cancelled || planner.busy != nil)
-                .sensoryFeedback(.impact(weight: .medium), trigger: pressed)
                 // Couldn't start: felt as well as read.
                 .sensoryFeedback(trigger: planner.startingProblem) { _, now in now == nil ? nil : .error }
                 if let add {
