@@ -618,8 +618,9 @@ private struct StepsFeed: View {
     /// Rides opened by hand, and the ride you're on stacked by hand (it's open from the start).
     @State private var opened: Set<Int> = []
     @State private var folded: Set<Int> = []
-    /// Each fan-out or stack, so the feed settles on the step now.
+    /// Each fan-out or stack, and the ride it was: the feed keeps that ride where the finger is.
     @State private var turned = 0
+    @State private var turnedRide: Int?
     private var steps: [TodayPage.Step] { trip.steps }
 
     /// A card in the feed: a step, a stop a ride passes (by its place among the ride's stops on the
@@ -655,17 +656,22 @@ private struct StepsFeed: View {
             }
             .sensoryFeedback(.impact(weight: .light), trigger: turned)
             .onAppear { reader.scrollTo(focus, anchor: .top) }
-            // After the cards that came or went are laid out.
-            .onChange(of: focus) { settle(reader) }
-            .onChange(of: turned) { settle(reader) }
+            // After the cards that came or went are laid out: as the trip moves on, the step now at
+            // the top; a ride fanned out or stacked by hand stays where it was tapped (its Show less at
+            // the top, its stops opening below it in sight), never pulled back to the step now.
+            .onChange(of: focus) { settle(reader, to: focus) }
+            .onChange(of: turned) {
+                guard let ride = turnedRide else { return }
+                settle(reader, to: isOpen(ride) ? .head(ride) : .step(ride))
+            }
         }
         .frame(maxWidth: 290, alignment: .leading)
     }
 
-    private func settle(_ reader: ScrollViewProxy) {
+    private func settle(_ reader: ScrollViewProxy, to card: Card) {
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(80))
-            withAnimation(.smooth(duration: 0.5)) { reader.scrollTo(focus, anchor: .top) }
+            withAnimation(.smooth(duration: 0.5)) { reader.scrollTo(card, anchor: .top) }
         }
     }
 
@@ -730,6 +736,7 @@ private struct StepsFeed: View {
                 if open { opened.remove(index) } else { opened.insert(index) }
             }
         }
+        turnedRide = index
         turned += 1
     }
 
