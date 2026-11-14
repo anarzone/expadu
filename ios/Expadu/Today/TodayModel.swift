@@ -47,7 +47,25 @@ final class TodayModel {
     }
 
     func load(_ api: AppAPI, quietly: Bool = false, animated: Animation? = nil) async {
-        let place = await locator.coordinate()
+        // After an action (a quiet reload) the place already known will do, and a fresher one is found
+        // behind it for next time: asking the phone first waited up to 5 s for a precise fix, indoors
+        // nearly always, and held Start trip on "Starting…" until it read as a tap that did nothing
+        // (the owner, 14 Nov). A full load asks the phone.
+        let recent = placeAt.map { Date.now.timeIntervalSince($0) < 120 } ?? false
+        let place: CLLocationCoordinate2D?
+        if quietly, let known = self.place {
+            place = known
+            if !recent {
+                Task { [weak self] in
+                    guard let self, let fresh = await self.locator.coordinate() else { return }
+                    self.place = fresh
+                    self.placeAt = .now
+                }
+            }
+        } else {
+            place = await locator.coordinate()
+            if place != nil { placeAt = .now }
+        }
         self.place = place
         do throws(APIFailure) {
             let fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
@@ -378,6 +396,8 @@ final class TodayModel {
     /// Where the phone was when Today was last read: trips start there, as on Today.
     /// Where the phone was when Today was last read; Getting there plans from here too.
     private(set) var place: CLLocationCoordinate2D?
+    /// When `place` was found.
+    private var placeAt: Date?
 
     /// I'm on my way with no way to hand (the Leave card's not loaded, or the Lock Screen asked after
     /// it went): Today again, then the first way if there is one now, else why not, in words.

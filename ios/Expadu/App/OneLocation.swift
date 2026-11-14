@@ -16,7 +16,8 @@ final class OneLocation: NSObject, CLLocationManagerDelegate {
     static let rough: CLLocationAccuracy = 120
 
     private let manager = CLLocationManager()
-    private var waiting: CheckedContinuation<CLLocation?, Never>?
+    /// Everyone asking while the phone listens: each gets the same answer.
+    private var waiting: [CheckedContinuation<CLLocation?, Never>] = []
     private var best: CLLocation?
 
     /// The accuracy of the last fix handed out, in metres (nil before any).
@@ -45,13 +46,18 @@ final class OneLocation: NSObject, CLLocationManagerDelegate {
             return recent
         }
         let location = await withCheckedContinuation { continuation in
-            waiting?.resume(returning: best)
-            waiting = continuation
+            // Already listening: wait for the same answer (a second caller used to cut the first short
+            // with no fix at all).
+            waiting.append(continuation)
+            guard waiting.count == 1 else { return }
             best = nil
             manager.startUpdatingLocation()
+            let round = rounds &+ 1
+            rounds = round
             Task { [weak self] in
                 try? await Task.sleep(for: .seconds(5))
-                self?.answer()
+                // Only this round's: an earlier round's timer never answers a later one early.
+                if self?.rounds == round { self?.answer() }
             }
         }
         lastAccuracy = location?.horizontalAccuracy
@@ -59,11 +65,18 @@ final class OneLocation: NSObject, CLLocationManagerDelegate {
     }
 
     private func answer() {
+        guard !waiting.isEmpty else { return }
         manager.stopUpdatingLocation()
-        waiting?.resume(returning: best)
-        waiting = nil
+        let found = best
+        let all = waiting
+        waiting = []
         best = nil
+        rounds &+= 1
+        for continuation in all { continuation.resume(returning: found) }
     }
+
+    /// Which listening round the timer belongs to.
+    private var rounds = 0
 
     private func take(_ location: CLLocation) {
         guard location.horizontalAccuracy >= 0, location.timestamp.timeIntervalSinceNow > -30 else { return }
