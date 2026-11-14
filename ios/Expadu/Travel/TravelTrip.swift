@@ -504,8 +504,9 @@ struct TravelTrip: View {
         return (current, left.next)
     }
 
-    /// On a ride: where the tram is along its stops, as a fraction (2.4 = four tenths of the way from its
-    /// third stop to its fourth; the boarding stop is 0), on the timetable as late as it runs.
+    /// On a ride that has left: where the tram is along its stops, as a fraction (2.4 = four tenths of
+    /// the way from its third stop to its fourth; the boarding stop is 0), on the timetable as late as it
+    /// runs. Before it leaves, nothing: no stop is "next" while they wait for it.
     private func rideTrack(current: Int, now: Date) -> RideTrack? {
         let steps = trip.steps
         guard steps.indices.contains(current), steps[current].kind == .ride, let index = steps[current].leg,
@@ -519,9 +520,9 @@ struct TravelTrip: View {
             times.append(max(time, last))
         }
         times.append(max(leg.arriveAt, times.last ?? leg.arriveAt))
-        guard let first = times.first, let last = times.last else { return nil }
+        guard let first = times.first, let last = times.last, at > first else { return nil }
         let progress: Double
-        if at <= first { progress = 0 } else if at >= last { progress = Double(times.count - 1) } else {
+        if at >= last { progress = Double(times.count - 1) } else {
             let i = times.lastIndex { $0 <= at } ?? 0
             let span = times.indices.contains(i + 1) ? times[i + 1].timeIntervalSince(times[i]) : 0
             progress = Double(i) + (span > 0 ? at.timeIntervalSince(times[i]) / span : 0)
@@ -596,22 +597,23 @@ extension TripPlanner {
 }
 
 
-/// A ride on the map's feed: which step, and how far the tram is along its stops (0 is boarding).
+/// A ride on the map's feed, once it has left: which step, and how far the tram is along its stops
+/// (0 is where it was boarded).
 struct RideTrack: Equatable {
     let step: Int
     let progress: Double
 }
 
-/// The steps over the map, as live comments: glass bubbles, the one you're on at the bottom, the ones to
-/// come rising above it and fading out. A ride's bubble holds its stops as a track in the line's colour
-/// that rises the same way: boarding at the bottom, getting off at the top, the tram climbing between the
-/// stops as it goes (passed ones faded, the next one named). Its arrow folds the track to one line.
+/// The steps over the map's lower left, as live comments sit over a video: the one you're on at the
+/// bottom, the next ones above it fading out towards the top, the ones done below it (scroll down).
+/// It scrolls, and moves on by itself as the trip does. One kind of bubble for every step; a ride's
+/// arrow opens its stops in it (passed ones faded, the next one live).
 private struct StepsFeed: View {
     let trip: TodayPage.Trip
     let current: Int
     let ride: RideTrack?
-    /// Rides whose track was folded by hand (open from the start).
-    @State private var folded: Set<Int> = []
+    /// Rides whose stops are open.
+    @State private var opened: Set<Int> = []
     private var steps: [TodayPage.Step] { trip.steps }
 
     var body: some View {
@@ -619,7 +621,7 @@ private struct StepsFeed: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(steps.enumerated().reversed()), id: \.offset) { index, step in
-                        row(step, index: index).id(index)
+                        row(step, index: index, reader: reader).id(index)
                     }
                 }
                 .padding(.top, 120).padding(.bottom, 4)
@@ -634,7 +636,7 @@ private struct StepsFeed: View {
             .onAppear { reader.scrollTo(current, anchor: .bottom) }
             .onChange(of: current) { _, now in withAnimation(.smooth(duration: 0.6)) { reader.scrollTo(now, anchor: .bottom) } }
         }
-        .frame(maxWidth: 300, alignment: .leading)
+        .frame(maxWidth: 290, alignment: .leading)
     }
 
     /// The stops a ride passes: boarding, those on the way, getting off (name and time).
@@ -644,57 +646,52 @@ private struct StepsFeed: View {
         return [(ride.from, ride.departTime)] + ride.stopsOnTheWay.map { ($0.name, $0.time) } + [(ride.to, ride.arriveTime)]
     }
 
-    private func row(_ step: TodayPage.Step, index: Int) -> some View {
+    private func row(_ step: TodayPage.Step, index: Int, reader: ScrollViewProxy) -> some View {
         let now = index == current
         let stops = calls(step)
-        let open = stops.count > 2 && !folded.contains(index)
-        let progress = ride?.step == index ? ride?.progress : (index < current ? Double(max(stops.count - 1, 0)) : nil)
-        return VStack(alignment: .leading, spacing: 8) {
-            // A ride's track sits above its title: the feed reads upwards, and so does the ride.
-            if open {
-                RideTrackView(stops: stops, colour: StepColour.of(step), progress: progress, vehicle: step.name.lowercased().hasPrefix("bus") ? "bus.fill" : "tram.fill")
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+        let open = opened.contains(index)
+        return HStack(alignment: .top, spacing: 8) {
+            mark(step)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 5) {
+                    Text(step.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                    if now { tag("Now", fill: Palette.action, ink: Palette.onAction) }
+                }
+                Text(step.title).font(.geist(now ? 15 : 14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                if index >= current, !step.sub.isEmpty {
+                    Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(now ? 2 : 1)
+                }
+                if open {
+                    stopLines(stops, step: step, index: index)
+                        .padding(.top, 6)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
             }
-            HStack(alignment: .top, spacing: 8) {
-                mark(step)
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 5) {
-                        Text(step.time).font(.geist(12, .bold)).monospacedDigit().foregroundStyle(Palette.textSoft)
-                        if now {
-                            Text("Now").font(.geist(10.5, .bold)).foregroundStyle(Palette.onAction)
-                                .padding(.horizontal, 5).frame(height: 16).background(Palette.action, in: .rect(cornerRadius: 4))
+            if stops.count > 2 {
+                Button {
+                    withAnimation(.smooth(duration: 0.3)) {
+                        if open { opened.remove(index) } else { opened.insert(index) }
+                    }
+                    // Opened, its stops are taller than the feed: the one coming (or, on a ride still to
+                    // come, where it's boarded) is brought into sight. Folded, back to the step now.
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(320))
+                        withAnimation(.smooth(duration: 0.4)) {
+                            if open { reader.scrollTo(current, anchor: .bottom) } else { reader.scrollTo(Self.stopID(index, nextStop(index, stops.count) ?? 0), anchor: .center) }
                         }
                     }
-                    Text(step.title).font(.geist(now ? 15 : 14, .bold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                    if stops.count > 2, !open {
-                        // Folded: still what matters, the next stop and how many to go.
-                        Text(summary(stops, progress: progress)).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1)
-                    } else if index >= current, !step.sub.isEmpty {
-                        Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(now ? 2 : 1)
-                    }
+                } label: {
+                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
+                        .rotationEffect(.degrees(open ? 180 : 0))
+                        .frame(width: 26, height: 26).background(Palette.quiet.opacity(0.85), in: .rect(cornerRadius: 8))
+                        .contentShape(.rect)
                 }
-                if stops.count > 2 {
-                    Spacer(minLength: 4)
-                    Button {
-                        withAnimation(.smooth(duration: 0.35)) {
-                            if folded.contains(index) { folded.remove(index) } else { folded.insert(index) }
-                        }
-                    } label: {
-                        // Points to where the stops are: up, above the ride, in this feed.
-                        Image(systemName: "chevron.up").font(.system(size: 11, weight: .bold))
-                            .rotationEffect(.degrees(open ? 0 : 180))
-                            .frame(width: 28, height: 28).background(Palette.quiet.opacity(0.85), in: .rect(cornerRadius: 8))
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(PressStyle())
-                    .accessibilityLabel(open ? "Hide the stops on \(step.name)" : "Show the \(stops.count - 2) stops on \(step.name)")
-                }
+                .buttonStyle(PressStyle())
+                .accessibilityLabel(open ? "Hide the stops on \(step.name)" : "Show the \(stops.count - 2) stops on \(step.name)")
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
-        // Glass with the page's cream in it: the map shows through, its street names don't (a ride's
-        // stops are text over the busiest part of it).
-        .glassEffect(.regular.tint(Palette.surface.opacity(0.72)), in: .rect(cornerRadius: 14))
+        .glassEffect(.regular, in: .rect(cornerRadius: 14))
         .overlay { if now { RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.action.opacity(0.8), lineWidth: 1.5) } }
         .foregroundStyle(Palette.text)
         .opacity(index < current ? 0.55 : 1)
@@ -702,12 +699,42 @@ private struct StepsFeed: View {
         .accessibilityAddTraits(now ? .isSelected : [])
     }
 
-    /// "Next Fordwerke Mitte · 9 stops to go", or the stops it passes before it leaves.
-    private func summary(_ stops: [(name: String, time: String)], progress: Double?) -> String {
-        guard let progress else { return "\(stops.count - 1) stops · get off at \(stops.last?.name ?? "")" }
-        let next = min(Int(progress.rounded(.down)) + 1, stops.count - 1)
-        let left = stops.count - 1 - Int(progress.rounded(.down))
-        return "Next \(stops[next].name) · \(left == 1 ? "get off there" : "\(left) stops to go")"
+    /// A ride's stops in its bubble, in order: on the ride now, the ones passed faded and the next one
+    /// bold with "Next" in the line's colour; where to get off marked.
+    private func stopLines(_ stops: [(name: String, time: String)], step: TodayPage.Step, index: Int) -> some View {
+        let at = ride?.step == index ? ride.map { Int($0.progress.rounded(.down)) } : nil
+        let next = nextStop(index, stops.count)
+        let look = LineLook(hex: step.color ?? "#1A4CD4")
+        return VStack(alignment: .leading, spacing: 4) {
+            ForEach(Array(stops.enumerated()), id: \.offset) { i, stop in
+                HStack(spacing: 6) {
+                    Text(stop.time).font(.geist(11.5, .semibold)).monospacedDigit().foregroundStyle(Palette.textSoft)
+                    Text(stop.name).font(.geist(12.5, i == next ? .bold : .medium)).lineLimit(1)
+                    if i == next {
+                        tag("Next", fill: look.fill, ink: look.ink)
+                    } else if i == stops.count - 1 {
+                        tag("Get off", fill: Palette.quiet, ink: Palette.text)
+                    }
+                }
+                .opacity(at.map { i <= $0 } ?? false ? 0.45 : 1)
+                .id(Self.stopID(index, i))
+            }
+        }
+        .animation(.smooth(duration: 0.4), value: at)
+    }
+
+    /// On the ride now, once it has left: the stop it comes to next.
+    private func nextStop(_ index: Int, _ count: Int) -> Int? {
+        guard ride?.step == index, let progress = ride?.progress else { return nil }
+        return min(Int(progress.rounded(.down)) + 1, count - 1)
+    }
+
+    private static func stopID(_ step: Int, _ stop: Int) -> String { "stop-\(step)-\(stop)" }
+
+    /// The small word on a bubble ("Now", "Next", "Get off"): a rounded rectangle, never a pill.
+    private func tag(_ text: String, fill: some ShapeStyle, ink: Color) -> some View {
+        Text(text).font(.geist(10.5, .bold)).foregroundStyle(ink)
+            .padding(.horizontal, 5).frame(height: 16).background(fill, in: .rect(cornerRadius: 4))
     }
 
     @ViewBuilder
@@ -718,86 +745,6 @@ private struct StepsFeed: View {
             Image(systemName: step.kind == .there ? "flag.fill" : step.kind == .getOff ? "arrow.down.right" : "figure.walk")
                 .font(.system(size: 12, weight: .bold)).frame(width: 26, height: 20)
                 .foregroundStyle(step.kind == .there ? Palette.action : Palette.textSoft)
-        }
-    }
-}
-
-/// A ride's stops as a track that rises: boarding at the bottom, getting off at the top, the rail in the
-/// line's colour (solid where the tram has been), the tram itself on the rail where it is now, moving on
-/// between stops. Passed stops faded; the next one bold with its time; getting off marked.
-private struct RideTrackView: View {
-    let stops: [(name: String, time: String)]
-    let colour: Color
-    /// Where the tram is, in stops from boarding; nil before the ride (nothing on the rail yet).
-    let progress: Double?
-    let vehicle: String
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pulse = false
-
-    private static let row: CGFloat = 22
-    private static let rail: CGFloat = 12
-
-    var body: some View {
-        let count = stops.count
-        let height = Self.row * CGFloat(count)
-        // Rows from the top: getting off first, boarding last.
-        let y = { (index: Double) in CGFloat(Double(count - 1) - index) * Self.row + Self.row / 2 }
-        let next = progress.map { min(Int($0.rounded(.down)) + 1, count - 1) }
-        return ZStack(alignment: .topLeading) {
-            // The rail: faint ahead, solid where the tram has been.
-            Capsule().fill(colour.opacity(0.28))
-                .frame(width: 4, height: max(0, y(0) - y(Double(count - 1))))
-                .offset(x: Self.rail - 2, y: y(Double(count - 1)))
-            if let progress {
-                Capsule().fill(colour)
-                    .frame(width: 4, height: max(0, y(0) - y(progress)))
-                    .offset(x: Self.rail - 2, y: y(progress))
-            }
-            VStack(spacing: 0) {
-                ForEach(Array(stops.enumerated().reversed()), id: \.offset) { n, stop in
-                    let passed = progress.map { Double(n) <= $0 && n < count - 1 } ?? false
-                    let coming = next == n
-                    let last = n == count - 1
-                    HStack(spacing: 8) {
-                        Circle().fill(passed ? colour : Palette.surface)
-                            .overlay { Circle().strokeBorder(colour, lineWidth: 2) }
-                            .frame(width: last ? 11 : 8, height: last ? 11 : 8)
-                            .frame(width: Self.rail * 2)
-                        Text(stop.name).font(.geist(coming ? 13.5 : 12.5, coming || last ? .bold : .medium)).lineLimit(1)
-                            .foregroundStyle(coming ? colour : Palette.text)
-                        if last {
-                            Text("Get off").font(.geist(10, .bold)).foregroundStyle(.white)
-                                .padding(.horizontal, 5).frame(height: 15).background(colour, in: .rect(cornerRadius: 4))
-                        }
-                        Spacer(minLength: 4)
-                        Text(stop.time).font(.geist(11.5, coming ? .bold : .semibold)).monospacedDigit()
-                            .foregroundStyle(coming ? colour : Palette.textSoft)
-                    }
-                    .frame(height: Self.row)
-                    .opacity(passed ? 0.45 : 1)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(stop.name + (coming ? ", next stop" : passed ? ", passed" : "") + (last ? ", get off" : "") + ", \(stop.time)")
-                }
-            }
-            // The tram, on the rail where it is now; a ring breathes around it.
-            if let progress, progress < Double(count - 1) {
-                ZStack {
-                    Circle().fill(colour.opacity(0.3)).frame(width: 26, height: 26)
-                        .scaleEffect(pulse ? 1.25 : 0.8).opacity(pulse ? 0 : 1)
-                    Image(systemName: vehicle).font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
-                        .frame(width: 18, height: 18).background(colour, in: .rect(cornerRadius: 6))
-                        .overlay { RoundedRectangle(cornerRadius: 6).strokeBorder(.white, lineWidth: 1.5) }
-                }
-                .frame(width: Self.rail * 2, height: 26)
-                .offset(y: y(progress) - 13)
-                .animation(reduceMotion ? nil : .smooth(duration: 1.2), value: progress)
-                .accessibilityHidden(true)
-            }
-        }
-        .frame(height: height, alignment: .top)
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeOut(duration: 1.6).repeatForever(autoreverses: false)) { pulse = true }
         }
     }
 }
