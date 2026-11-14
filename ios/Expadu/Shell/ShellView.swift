@@ -222,6 +222,8 @@ struct ShellView: View {
         .fullScreenCover(isPresented: Binding(get: { planner.showTrip && today.page?.trip != nil }, set: { planner.showTrip = $0 })) {
             if let trip = today.page?.trip {
                 TravelTrip(trip: trip).environment(planner).environment(today)
+                    // Clear, so the page below shows while the trip is pulled down (it draws its own).
+                    .presentationBackground(.clear)
             }
         }
         // One follower for the trip, wherever it shows (Today, the board, the trip screen, the Live

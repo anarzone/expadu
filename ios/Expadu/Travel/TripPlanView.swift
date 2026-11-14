@@ -18,6 +18,8 @@ struct TripPlanView: View {
     /// The routes swiped back toward the search: how far (0 to 1).
     @State private var routesBack: CGFloat = 0
     @State private var width: CGFloat = 402
+    /// Pulled down by its title, to close: how far.
+    @State private var pull: CGFloat = 0
 
     var body: some View {
         ZStack {
@@ -38,6 +40,8 @@ struct TripPlanView: View {
         // From the left edge, a swipe right closes Plan a trip whole: the page it opened over shows
         // below as it goes, as iOS's own pages do.
         .swipeBack(enabled: !planner.routesShown) { dismiss() }
+        // Pulled down by its title: the whole page follows the finger, the page below showing.
+        .pulledDown(pull)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .onChange(of: planner.routesShown) { routesBack = 0 }
         .animation(.smooth(duration: 0.4), value: planner.routesShown)
@@ -70,8 +74,8 @@ struct TripPlanView: View {
                 Text("Plan a trip").font(.posterGrotesque(26)).tracking(-0.3)
                 Spacer()
             }
-            // A swipe down on the title closes, as a sheet does.
-            .swipeDownToClose { dismiss() }
+            // A swipe down on the title pulls the page down to close, as a sheet does.
+            .pullDownHandle($pull) { dismiss() }
             fromTo
             chips
             if planner.listening {

@@ -27,6 +27,11 @@ struct TravelTrip: View {
     @State private var asking = false
     /// Each step swiped to, for its tick.
     @State private var swiped = 0
+    /// The step held: pulled down (the whole screen follows, to minimise) or dragged sideways (the step
+    /// follows, to the next or the one before); which, decided once per touch.
+    @State private var pull: CGFloat = 0
+    @State private var sideways: CGFloat = 0
+    @State private var axis: Axis?
     @AppStorage("speakTurns") private var speak = false
     @State private var problem: String?
     /// Where the Map button sits on the screen, for the map to grow out of ("Grow").
@@ -60,13 +65,18 @@ struct TravelTrip: View {
                         if let step {
                             // One step, two sizes: the old one goes quickly, the new one comes just after,
                             // so the two never sit on top of each other.
-                            if mapOn {
-                                bandMoment(step, index: shown, count: steps.count, now: now)
-                                    .transition(stepSwap)
-                            } else {
-                                moment(step, index: shown, count: steps.count, now: now, look: look)
-                                    .transition(stepSwap)
+                            Group {
+                                if mapOn {
+                                    bandMoment(step, index: shown, count: steps.count, now: now)
+                                        .transition(stepSwap)
+                                } else {
+                                    moment(step, index: shown, count: steps.count, now: now, look: look)
+                                        .transition(stepSwap)
+                                }
                             }
+                            // Dragged sideways: the step goes with the finger, fading as it goes.
+                            .offset(x: sideways)
+                            .opacity(1 - min(0.6, abs(sideways) / 300))
                         }
                     }
                     .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, mapOn ? 16 : 18)
@@ -104,6 +114,8 @@ struct TravelTrip: View {
                 }
             }
             .coordinateSpace(.named(Self.screenSpace))
+            // Pulled down by the step: the whole trip follows the finger, what's below showing.
+            .pulledDown(pull)
             .sensoryFeedback(.selection, trigger: swiped)
             .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: shown)
             .onChange(of: MotionStore.shared.replays[.tripMapSwitch]) { switchMap(!mapOn) }
@@ -284,6 +296,8 @@ struct TravelTrip: View {
 
     /// The step they're on now (the phone when walking, else the clock).
     private func current(_ now: Date) -> Int { trip.live(at: now, here: planner.follower.here).current }
+
+    private func steps(_ index: Int) -> TodayPage.Step? { trip.steps.indices.contains(index) ? trip.steps[index] : nil }
 
     /// The line under the step now, live (the owner, 14 Nov: "instead of static text… valuable
     /// information… updated"): what they need next, as it changes. On a ride, the stop it comes to
@@ -504,7 +518,8 @@ struct TravelTrip: View {
             if stepsOpen {
                 // The steps over the map as live comments: the one you're on at the bottom, the next ones
                 // above it fading out; each ride's stops in it, open (its arrow folds them), the next one live.
-                StepsFeed(trip: trip, current: current, ride: rideTrack(current: current, now: now))
+                StepsFeed(trip: trip, current: current, ride: rideTrack(current: current, now: now),
+                          live: steps(current).map { liveLine($0, index: current, now: now) })
                     .frame(height: Self.feedHeight)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
@@ -551,16 +566,35 @@ struct TravelTrip: View {
     /// Swipes on the step you're on: left/right look at the next/previous step, down minimises. Vertical
     /// swipes on the map's band are left to the map; only a clear horizontal or downward swipe counts.
     private func stepSwipe(count: Int, current: Int, shown: Int) -> some Gesture {
-        DragGesture(minimumDistance: 24)
-            .onEnded { value in
+        DragGesture(minimumDistance: 14, coordinateSpace: .global)
+            .onChanged { value in
                 let dx = value.translation.width, dy = value.translation.height
-                if abs(dx) > abs(dy) * 1.4, abs(dx) > 50 {
+                if axis == nil { axis = abs(dx) > abs(dy) ? .horizontal : dy > 0 ? .vertical : nil }
+                switch axis {
+                case .vertical: pull = PullDown.follow(dy)
+                case .horizontal:
+                    // No step that way: it gives a little, and comes back.
+                    let edge = (dx < 0 && shown >= count - 1) || (dx > 0 && shown <= 0)
+                    sideways = edge ? dx * 0.2 : dx * 0.8
+                case nil: break
+                }
+            }
+            .onEnded { value in
+                defer { axis = nil }
+                let dx = value.translation.width
+                switch axis {
+                case .vertical:
+                    PullDown.release($pull, dy: value.translation.height, predicted: value.predictedEndTranslation.height,
+                                     height: PullDown.page, reduceMotion: reduceMotion) { dismiss() }
+                case .horizontal:
                     let to = min(max(shown + (dx < 0 ? 1 : -1), 0), count - 1)
-                    guard to != shown else { return }
-                    withAnimation(.smooth) { looking = to == current ? nil : to }
-                    swiped += 1
-                } else if dy > 90, dy > abs(dx) * 1.4 {
-                    dismiss()
+                    let far = abs(dx) > 60 || abs(value.predictedEndTranslation.width) > 160
+                    withAnimation(.spring(duration: 0.35, bounce: 0.15)) {
+                        sideways = 0
+                        if far, to != shown { looking = to == current ? nil : to }
+                    }
+                    if far, to != shown { swiped += 1 }
+                case nil: break
                 }
             }
     }
@@ -687,6 +721,9 @@ private struct StepsFeed: View {
     let trip: TodayPage.Trip
     let current: Int
     let ride: RideTrack?
+    /// The step now, live (the band's line): "Next Bayenthal · 20 stops to go", "Tram 16 at 17:24 ·
+    /// 2 min late". Its card says it in place of the step's fixed words, and moves on with the trip.
+    var live: String?
     /// Rides fanned out by hand.
     @State private var opened: Set<Int> = []
     /// Each fan-out or stack, and the ride it was: the feed keeps that ride where the finger is.
@@ -931,7 +968,10 @@ private struct StepsFeed: View {
                             Text(step.title).font(.geist(now ? 15 : 14, now ? .bold : .semibold))
                                 .foregroundStyle(now && !walking ? colour : Palette.text)
                                 .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                            if index >= current, !step.sub.isEmpty {
+                            if now, let live, !live.isEmpty {
+                                Text(live).font(.geist(12.5, .medium)).foregroundStyle(Palette.text).lineLimit(2)
+                                    .contentTransition(.numericText()).animation(.smooth, value: live)
+                            } else if index >= current, !step.sub.isEmpty {
                                 Text(step.sub).font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(2)
                             }
                             if behind > 0 {
@@ -968,6 +1008,7 @@ private struct StepsFeed: View {
                                 .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                             Text("\(left) stop\(left == 1 ? "" : "s") to \(ride?.to ?? "getting off")")
                                 .font(.geist(12)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                                .contentTransition(.numericText()).animation(.smooth, value: left)
                             if behind > 0 {
                                 Text("\(behind) more stop\(behind == 1 ? "" : "s") · tap to see them").font(.geist(12, .medium)).foregroundStyle(Palette.navTeal)
                             }
