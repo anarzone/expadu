@@ -69,11 +69,14 @@ final class TodayModel {
         self.place = place
         do throws(APIFailure) {
             let fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            // The island shows the trip the server has, before the guidance hears of it: one ended
+            // anywhere (here, the web, arrived) goes from the Lock Screen too.
+            TripActivity.shared.running(fresh.trip)
             withAnimation(animated) { page = fresh }
             if phase != .ready { waveSince = .now }
             phase = .ready
             reportShown(api)
-            // No trip: the Leave card's countdown in the island when it's close; a trip ended elsewhere, gone.
+            // No trip: the Leave card's countdown in the island when it's close.
             if page?.trip == nil { TripActivity.shared.leave(page?.leave) }
         } catch {
             if page != nil, quietly { return }

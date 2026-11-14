@@ -57,6 +57,9 @@ struct ShellView: View {
     @State private var talk = Talk.idle
     @State private var safeBottom: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    /// Gone to the background since the day was last read (iOS comes back through inactive).
+    @State private var away = false
 
     /// The hold on the Composer button: listening, or about to cancel when the finger slides away.
     enum Talk: Equatable { case idle, listening, away }
@@ -220,6 +223,14 @@ struct ShellView: View {
         // Activity): it starts with the trip and stops when the trip ends, anywhere.
         .onChange(of: today.page?.trip, initial: true) { _, trip in
             if let trip { planner.follow(trip) } else { planner.stopFollowing() }
+        }
+        // Back in the app: the day (and the trip) read again at once, so the app and the Lock Screen
+        // say the same, never a trip there that has ended.
+        .onChange(of: scenePhase) { _, now in
+            if now == .background { away = true }
+            guard now == .active, away else { return }
+            away = false
+            if today.page != nil { Task { await today.load(session.api, quietly: true) } }
         }
         // Trip sync: the tram they're really on, and the next one when a delay breaks a change.
         .task {
