@@ -140,6 +140,8 @@ struct TravelTrip: View {
         .fullScreenCover(isPresented: Binding(get: { planner.newRoutes }, set: { if !$0 { closeNewRoutes() } })) {
             TripRoutesView(planner: planner, back: closeNewRoutes, close: closeNewRoutes)
                 .task { await newRoutesFromHere() }
+                // Clear, so the trip shows below while they're swiped back (the map draws their own).
+                .presentationBackground(.clear)
         }
     }
 
