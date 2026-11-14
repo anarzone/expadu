@@ -211,6 +211,8 @@ struct ShellView: View {
             TripPlanView(planner: planner, station: planner.station, stationFavourite: planner.stationFavourite)
                 .environment(planner)
                 .environment(today)
+                // Clear, so the page it opened over shows while it's swiped back (it draws its own).
+                .presentationBackground(.clear)
         }
         // Started: felt as the trip opens (the routes behind it close in the same moment, so it lives here).
         .sensoryFeedback(.success, trigger: planner.started)

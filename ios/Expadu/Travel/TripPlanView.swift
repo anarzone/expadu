@@ -15,17 +15,31 @@ struct TripPlanView: View {
     @State private var dictation = Dictation()
     @State private var whenOpen = false
     @FocusState private var focused: Bool
+    /// The routes swiped back toward the search: how far (0 to 1).
+    @State private var routesBack: CGFloat = 0
+    @State private var width: CGFloat = 402
 
     var body: some View {
         ZStack {
             Palette.surface.ignoresSafeArea()
+            // The search, and under the routes while they're swiped back: a little to the left, coming
+            // in as they go, as iOS's own pages do.
+            if !planner.routesShown || routesBack > 0 {
+                page
+                    .offset(x: planner.routesShown ? -width * 0.3 * (1 - routesBack) : 0)
+                    .allowsHitTesting(!planner.routesShown)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
             if planner.routesShown {
-                TripRoutesView(planner: planner, back: { planner.closeRoutes(); focused = true }, close: { planner.closeRoutes(); dismiss() })
+                TripRoutesView(planner: planner, back: { planner.closeRoutes(); focused = true }, close: { planner.closeRoutes(); dismiss() }, backDrag: $routesBack)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
-            } else {
-                page.transition(.move(edge: .leading).combined(with: .opacity))
             }
         }
+        // From the left edge, a swipe right closes Plan a trip whole: the page it opened over shows
+        // below as it goes, as iOS's own pages do.
+        .swipeBack(enabled: !planner.routesShown) { dismiss() }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onChange(of: planner.routesShown) { routesBack = 0 }
         .animation(.smooth(duration: 0.4), value: planner.routesShown)
         .foregroundStyle(Palette.text)
         .task { await planner.loadPlaces(session.api) }
@@ -56,6 +70,8 @@ struct TripPlanView: View {
                 Text("Plan a trip").font(.posterGrotesque(26)).tracking(-0.3)
                 Spacer()
             }
+            // A swipe down on the title closes, as a sheet does.
+            .swipeDownToClose { dismiss() }
             fromTo
             chips
             if planner.listening {
@@ -65,7 +81,8 @@ struct TripPlanView: View {
             }
         }
         .padding(.horizontal, 16).padding(.top, 8)
-        .onAppear { if !planner.listening { focused = true } }
+        // Not while it only shows under the routes being swiped back.
+        .onAppear { if !planner.listening && !planner.routesShown { focused = true } }
     }
 
     private var fromTo: some View {
