@@ -37,6 +37,9 @@ extension EnvironmentValues {
     @Entry var shell = ShellActions()
     /// The section bar is folded to its circle: Travel puts Where to? beside it.
     @Entry var sectionBarCompact = false
+    /// Where the bottom row (the section bar, Composer's button) starts on the screen: Travel's Where to?
+    /// sits just over it while the bar is open.
+    @Entry var sectionBarTop: CGFloat = 0
 }
 
 /// The phone shell: the brand, the bell and the account over each page; at the bottom a Liquid Glass
@@ -56,6 +59,7 @@ struct ShellView: View {
     @State private var dictation = Dictation()
     @State private var talk = Talk.idle
     @State private var safeBottom: CGFloat = 0
+    @State private var barTop: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     /// Gone to the background since the day was last read (iOS comes back through inactive).
@@ -89,6 +93,7 @@ struct ShellView: View {
         .environment(today)
         .environment(planner)
         .environment(\.sectionBarCompact, compact)
+        .environment(\.sectionBarTop, barTop)
         // Travel keeps the bar folded, so the board, its search and its sheets have the room;
         // opened from its circle, it folds back after a moment.
         .onChange(of: tab, initial: true) { _, section in
@@ -158,6 +163,7 @@ struct ShellView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, max(0, 21 - safeBottom))
             .offset(y: max(0, safeBottom - 21))
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { barTop = $0 }
         }
         .overlay(alignment: .bottomTrailing) {
             if talk != .idle {
