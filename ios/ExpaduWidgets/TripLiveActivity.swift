@@ -130,26 +130,40 @@ private struct Bars: View {
     }
 }
 
-/// What can be done from here: start the trip before leaving, a new way when it's gone wrong.
+/// What can be done from here, by phase, each opening the app where it's done: start the trip before
+/// leaving; on the way its steps, its map, a new route; a new route first when it's gone wrong; I'm
+/// there at the end. Rounded rectangles (never pills), the main one in its colour.
 private struct Action: View {
     let phase: TripPhase
+    /// The island's dark glass or the Lock Screen's card.
+    var dark = true
 
     var body: some View {
-        switch phase.kind {
-        case .leave:
-            Link(destination: URL(string: "expadu://trip/start")!) {
-                Label("Start trip", systemImage: "figure.walk").font(.geist(15, .semibold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).frame(height: 40)
-                    .background(Palette.action, in: .capsule)
+        HStack(spacing: 8) {
+            switch phase.kind {
+            case .leave:
+                button("Start trip", "figure.walk", "expadu://trip/start", main: Palette.action)
+                button("Steps", "list.bullet", "expadu://trip/steps")
+            case .trouble:
+                button("New route", "arrow.triangle.turn.up.right.diamond.fill", "expadu://trip/new-way", main: Color(hex: 0xF2A516), ink: .black)
+                button("Map", "map", "expadu://trip/map")
+            case .arrived:
+                button("I’m there", "checkmark", "expadu://trip/there", main: Color(hex: 0x2F9E5B))
+                button("Steps", "list.bullet", "expadu://trip/steps")
+            default:
+                button("Steps", "list.bullet", "expadu://trip/steps")
+                button("Map", "map", "expadu://trip/map")
+                button("New route", "arrow.triangle.turn.up.right.diamond", "expadu://trip/new-way")
             }
-        case .trouble:
-            Link(destination: URL(string: "expadu://trip/new-way")!) {
-                Label("New route from here", systemImage: "arrow.triangle.turn.up.right.diamond.fill").font(.geist(15, .semibold)).foregroundStyle(.black)
-                    .frame(maxWidth: .infinity).frame(height: 40)
-                    .background(Color(hex: 0xF2A516), in: .capsule)
-            }
-        default:
-            EmptyView()
+        }
+    }
+
+    private func button(_ title: String, _ symbol: String, _ link: String, main: Color? = nil, ink: Color = .white) -> some View {
+        Link(destination: URL(string: link)!) {
+            Label(title, systemImage: symbol).font(.geist(14, .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                .foregroundStyle(main == nil ? (dark ? Color.white : Palette.text) : ink)
+                .frame(maxWidth: .infinity).frame(height: 38)
+                .background(main ?? (dark ? Color.white.opacity(0.14) : Palette.quiet), in: .rect(cornerRadius: 11))
         }
     }
 }
@@ -189,6 +203,7 @@ private struct LockCard: View {
                 .foregroundStyle(phase.kind == .trouble ? Palette.warnText : phase.kind == .leave ? Palette.action : Palette.text)
                 .frame(maxWidth: 90, alignment: .trailing).lineLimit(1).minimumScaleFactor(0.6)
             }
+            Action(phase: phase, dark: false)
         }
         .padding(16)
     }

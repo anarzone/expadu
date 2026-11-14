@@ -126,7 +126,13 @@ struct TravelTrip: View {
         } message: { Text("The live steps stop. The trip stays on your day.") }
         .onAppear {
             planner.follow(trip)
-            if planner.tripOnMap { mapOn = true; planner.tripOnMap = false }
+            if let view = planner.tripOpens { mapOn = view == .map; planner.tripOpens = nil }
+        }
+        // Asked for while it's open (the island's Steps or Map): that view, switched in place.
+        .onChange(of: planner.tripOpens) { _, view in
+            guard let view else { return }
+            switchMap(view == .map)
+            planner.tripOpens = nil
         }
         // A new route (re-planned here or on Today) is the one followed from now on.
         .onChange(of: trip) { planner.follow(trip) }

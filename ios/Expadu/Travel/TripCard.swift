@@ -62,7 +62,7 @@ struct TripCard: View {
     @State private var back: Task<Void, Never>?
 
     private func open() { planner.showTrip = true }
-    private func map() { planner.tripOnMap = true; planner.showTrip = true }
+    private func map() { planner.tripOpens = .map; planner.showTrip = true }
     private func end() { askEnd = true }
 
     /// The routes from where the phone is now to the same place, over the trip screen, to pick one.
