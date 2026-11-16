@@ -602,6 +602,10 @@ final class Assistant
                 || collect($blocks['places']['places'] ?? [])->contains(fn (array $p): bool => isset($p['because']))),
             // Everything it looked at, as it read it (composer:eval checks the lead against it).
             'read' => $tools->read,
+            // What they told Composer that a kept sentence leans on, said under the answer ("From what you told me").
+            'told' => collect($this->kept)->flatMap(fn (array $sentence): array => $sentence['uses'])
+                ->filter(fn (mixed $id): bool => is_string($id) && preg_match('/^k\d+$/', $id) === 1)->unique()
+                ->map(fn (string $id): ?string => $tools->read[$id] ?? null)->filter()->values()->all(),
         ];
     }
 
