@@ -9935,7 +9935,7 @@
         "/routines/dismiss": {
             "post": {
                 "operationId": "routines.dismiss",
-                "summary": "Not now: that offer isn't made again for a while",
+                "summary": "Not now: that offer isn't made again for a while. Undo deletes the id it gives back",
                 "tags": [
                     "Routines"
                 ],
@@ -9968,10 +9968,18 @@
                                     "properties": {
                                         "dismissed": {
                                             "type": "boolean"
+                                        },
+                                        "id": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "description": "DELETE /routines/{id} takes the no back; null when it wasn't on offer."
                                         }
                                     },
                                     "required": [
-                                        "dismissed"
+                                        "dismissed",
+                                        "id"
                                     ]
                                 }
                             }

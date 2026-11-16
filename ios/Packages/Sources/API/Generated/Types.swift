@@ -477,7 +477,7 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /routines`.
     /// - Remark: Generated from `#/paths//routines/post(routines.store)`.
     func routines_store(_ input: Operations.Routines_store.Input) async throws -> Operations.Routines_store.Output
-    /// Not now: that offer isn't made again for a while
+    /// Not now: that offer isn't made again for a while. Undo deletes the id it gives back
     ///
     /// - Remark: HTTP `POST /routines/dismiss`.
     /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.
@@ -1947,7 +1947,7 @@ extension APIProtocol {
             body: body
         ))
     }
-    /// Not now: that offer isn't made again for a while
+    /// Not now: that offer isn't made again for a while. Undo deletes the id it gives back
     ///
     /// - Remark: HTTP `POST /routines/dismiss`.
     /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.

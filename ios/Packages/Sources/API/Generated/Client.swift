@@ -14311,7 +14311,7 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Not now: that offer isn't made again for a while
+    /// Not now: that offer isn't made again for a while. Undo deletes the id it gives back
     ///
     /// - Remark: HTTP `POST /routines/dismiss`.
     /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.

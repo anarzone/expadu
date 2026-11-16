@@ -167,6 +167,22 @@ test('two trips, or three at times far apart, are no routine; Not now isn\'t off
     expect(app(Routines::class)->offer($this->user, CarbonImmutable::now())['to_key'])->toBe('place:work');
 });
 
+test('Not now can be taken back: Undo deletes the no it gave, and the offer is there again', function () {
+    foreach (['2026-11-11 08:05', '2026-11-12 08:15', '2026-11-16 08:10'] as $at) {
+        routineTrip($this->user, $at);
+    }
+    $as = $this->withToken($this->user->createToken('iPhone')->plainTextToken);
+
+    $id = $as->postJson('/api/v1/routines/dismiss', ['to_key' => 'place:work'])->assertOk()->assertJsonPath('dismissed', true)->json('id');
+    expect($id)->toBeInt()->and($as->getJson('/api/v1/routines')->json('offer'))->toBeNull();
+
+    $as->deleteJson("/api/v1/routines/{$id}")->assertOk();
+    expect($as->getJson('/api/v1/routines')->json('offer.to_key'))->toBe('place:work');
+
+    // Nothing on offer: nothing to take back.
+    $as->postJson('/api/v1/routines/dismiss', ['to_key' => 'at:50.930,6.950'])->assertOk()->assertJsonPath('dismissed', false)->assertJsonPath('id', null);
+});
+
 test('🔒 a routine is theirs to change and forget, never anyone else\'s; personalisation off erases trips and routines', function () {
     foreach (['2026-11-11 08:05', '2026-11-12 08:15', '2026-11-16 08:10'] as $at) {
         routineTrip($this->user, $at);

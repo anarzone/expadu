@@ -72,13 +72,17 @@ class RoutinesController extends Controller
     }
 
     /**
-     * Not now: that offer isn't made again for a while.
+     * Not now: that offer isn't made again for a while. Undo deletes the id it gives back.
      */
     public function dismiss(Request $request): JsonResponse
     {
         $validated = $request->validate(['to_key' => ['required', 'string', 'max:64']]);
-        $this->routines->dismiss($request->user(), $validated['to_key'], CarbonImmutable::now());
+        $id = $this->routines->dismiss($request->user(), $validated['to_key'], CarbonImmutable::now());
 
-        return response()->json(['dismissed' => true]);
+        return response()->json([
+            'dismissed' => $id !== null,
+            /** @var int|null DELETE /routines/{id} takes the no back; null when it wasn't on offer. */
+            'id' => $id,
+        ]);
     }
 }
