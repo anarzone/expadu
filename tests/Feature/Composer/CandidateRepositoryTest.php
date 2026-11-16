@@ -270,13 +270,17 @@ test('free football recommendations require fee and access evidence without arra
         ->and($feasible[0]->sourceFacts['availability'])->toBe('unknown');
 });
 
-test('unknown costs cannot qualify for a low budget', function () {
+test('an unknown cost passes a low budget (the plan says the price isn\'t listed), never a free one', function () {
+    // No restaurant lists a price, so a cheap plan that dropped unknowns had no food at all (the 30 Oct grade: 1.5/5).
     spotWithHours(['name' => 'Unknown cost', 'category' => 'park']);
     spotWithHours(['name' => 'Known low cost', 'category' => 'cafe', 'price_range' => '€']);
-    $constraints = new Constraints(mondayWindow()->windowStart, mondayWindow()->windowEnd, budget: 'low');
-    $feasible = app(FeasibilityFilter::class)->filter($constraints, app(CandidateRepository::class)->candidatesFor($constraints));
+    $low = new Constraints(mondayWindow()->windowStart, mondayWindow()->windowEnd, budget: 'low');
+    $free = new Constraints(mondayWindow()->windowStart, mondayWindow()->windowEnd, budget: 'free');
 
-    expect(collect($feasible)->pluck('name')->all())->toBe(['Known low cost']);
+    expect(collect(app(FeasibilityFilter::class)->filter($low, app(CandidateRepository::class)->candidatesFor($low)))->pluck('name')->sort()->values()->all())
+        ->toBe(['Known low cost', 'Unknown cost'])
+        ->and(collect(app(FeasibilityFilter::class)->filter($free, app(CandidateRepository::class)->candidatesFor($free)))->pluck('name')->all())
+        ->not->toContain('Unknown cost');
 });
 
 test('wikidata or wikipedia tags mark a spot as a landmark', function () {

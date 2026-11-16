@@ -100,6 +100,9 @@ final class AssistantTools
     /** KVB notices per lookup. */
     private const NOTICES = 3;
 
+    /** Open-air kinds that are free to use unless their data says otherwise: everything else is free only when listed so. */
+    private const OPEN_AIR = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'skatepark', 'lake', 'nature', 'dog_park', 'table_tennis', 'boules', 'bbq', 'picnic', 'viewpoint'];
+
     /** Ids whose facts are about the person (their place, trip, records, taste, day): a sentence citing one may speak of them. */
     public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|k|u|plan)\d+|here|pw|trip|next|plan)$/';
 
@@ -736,7 +739,10 @@ final class AssistantTools
         $until = $this->clock($input['until'] ?? null, $day) ?? $day->endOfDay();
         $from = $from->max($day->isSameDay($this->now) ? $this->now : $day);
         $occurrences = Event::occurringBetween($day, $day->endOfDay())
-            ->filter(fn (array $o): bool => $o['starts_at']->lessThanOrEqualTo($until) && ($o['ends_at'] ?? $o['starts_at'])->greaterThanOrEqualTo($from));
+            ->filter(fn (array $o): bool => $o['starts_at']->lessThanOrEqualTo($until) && ($o['ends_at'] ?? $o['starts_at'])->greaterThanOrEqualTo($from))
+            // Under way already (the 30 Oct grade: a 13:00 tour suggested at 13:30, a 16:15 boat trip at 16:30): one
+            // you join at its start is left out once it has begun; a long one (a market, a festival) stays, said so.
+            ->reject(fn (array $o): bool => self::begun($o['starts_at'], $o['ends_at'], $this->now) && ! self::long($o['starts_at'], $o['ends_at']));
         // What they marked "not for me" (with the opt-in) or turned down in this conversation stays out.
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['event']) : [];
         $occurrences = $occurrences->reject(fn (array $o): bool => ($this->affinities?->isHidden('event', $o['event']->id) ?? false)
@@ -776,8 +782,22 @@ final class AssistantTools
             $this->events[$id] = $occurrences->first(fn (array $o): bool => $o['event']->id === $poster['id']
                 && $o['starts_at']->getTimestamp() === CarbonImmutable::parse($poster['occurrence_start'])->getTimestamp());
 
-            return $this->line($id, self::eventText($poster).(isset($this->earlier['event'][$poster['id']]) ? ' (You suggested it earlier.)' : ''));
-        })->implode("\n");
+            return $this->line($id, self::eventText($poster, $this->now).(isset($this->earlier['event'][$poster['id']]) ? ' (You suggested it earlier.)' : ''));
+        })->implode("\n")
+            // Their own step-free need (as places say "Step-free access listed."): events list no access, so that's said.
+            .($this->user->needs_step_free ? "\n".$this->line('n'.(++$this->count), 'Step-free access isn\'t listed for these events\' venues.') : '');
+    }
+
+    /** Begun more than a few minutes ago, at a listed time. */
+    private static function begun(CarbonImmutable $starts, ?CarbonImmutable $ends, CarbonImmutable $now): bool
+    {
+        return $starts->format('H:i:s') !== '00:00:00' && $starts->lessThan($now->subMinutes(10)) && ($ends === null || $ends->greaterThan($now));
+    }
+
+    /** Long enough to join under way: a market, a festival, an open day. */
+    private static function long(CarbonImmutable $starts, ?CarbonImmutable $ends): bool
+    {
+        return $ends !== null && $starts->diffInMinutes($ends) > 240;
     }
 
     /**
@@ -1585,9 +1605,15 @@ final class AssistantTools
      * @return array{value: string, free: string, basis: ?string, source_url: ?string}
      */
     /** Free to use as its data says: public, or nothing listed of who may, and no fee listed. */
-    private static function freeToUse(Candidate $c): bool
+    public static function freeToUse(Candidate $c): bool
     {
-        return in_array(self::publicUse($c)['value'], ['yes', 'unknown'], true) && self::publicUse($c)['free'] !== 'no';
+        $use = self::publicUse($c);
+        // A café, restaurant, bar or shop is free only when its data says so (the 30 Oct grade: paid restaurants listed as free).
+        if (! in_array($c->category, self::OPEN_AIR, true)) {
+            return $use['free'] === 'yes';
+        }
+
+        return in_array($use['value'], ['yes', 'unknown'], true) && $use['free'] !== 'no';
     }
 
     public static function publicUse(Candidate $c): array
@@ -1690,7 +1716,7 @@ final class AssistantTools
         $asked = collect(is_array($input['areas'] ?? null) ? $input['areas'] : [])->filter(fn (mixed $a): bool => is_string($a))
             ->map(fn (string $a): string => ($k = PlanDay::areas([$a])[0] ?? $a) === $a ? $a : "{$k} (\"{$a}\")")->implode(', ');
 
-        return $this->line($id, ($asked !== '' ? "Asked for: {$asked}.\n" : '').PlanDay::text($planned['plan']));
+        return $this->line($id, ($asked !== '' ? "Asked for: {$asked}.\n" : '').PlanDay::text($planned['plan'], $planned['notices']));
     }
 
     /** Reviewed paperwork guides matching the words: their titles, as Composer's guidance lists them. */
@@ -2135,12 +2161,21 @@ final class AssistantTools
     }
 
     /** A listing as the assistant reads it: title, kind, venue, time and price, as listed. */
-    public static function eventText(array $poster): string
+    /** @param  ?CarbonImmutable  $now  when given: one under way says so, one starting soon says how soon */
+    public static function eventText(array $poster, ?CarbonImmutable $now = null): string
     {
         $start = CarbonImmutable::parse($poster['occurrence_start'])->setTimezone('Europe/Berlin');
         $end = $poster['occurrence_end'] !== null ? CarbonImmutable::parse($poster['occurrence_end'])->setTimezone('Europe/Berlin') : null;
         $when = ! $poster['time_listed'] ? $start->format('l j F').', time not listed'
             : $start->format('l j F H:i').($end !== null && $end->isSameDay($start) ? '–'.$end->format('H:i') : '');
+        if ($now !== null && $poster['time_listed']) {
+            $soon = (int) $now->diffInMinutes($start, false);
+            $when .= match (true) {
+                $start->lessThanOrEqualTo($now) && ($end === null || $end->greaterThan($now)) => ', under way since '.$start->format('H:i'),
+                $soon > 0 && $soon <= 30 => ", starts in {$soon} min",
+                default => '',
+            };
+        }
         $venue = trim(($poster['venue']['name'] ?? '').(filled($poster['venue']['veedel'] ?? null) ? ", {$poster['venue']['veedel']}" : ''), ', ');
 
         return "\"{$poster['title']}\" ({$poster['category']})".($venue !== '' ? " at {$venue}" : '').". {$when}."

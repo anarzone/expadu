@@ -90,7 +90,7 @@ final class PlanDay
      * with, or why there's none, in words the AI can pass on.
      *
      * @param  array<string, mixed>  $input
-     * @return array{plan: array<string, mixed>, token: string, origin: ?string}|string
+     * @return array{plan: array<string, mixed>, token: string, origin: ?string, notices: list<string>}|string
      */
     public function plan(User $user, array $input, CarbonImmutable $now): array|string
     {
@@ -150,7 +150,8 @@ final class PlanDay
             return 'Nothing the planner knows fits that time. Another time, area or kind of place may work.';
         }
 
-        return ['plan' => $body['plan'], 'token' => $body['handoff_token'], 'origin' => $body['origin']['label'] ?? null];
+        return ['plan' => $body['plan'], 'token' => $body['handoff_token'], 'origin' => $body['origin']['label'] ?? null,
+            'notices' => array_values(array_filter(array_column($body['notices'] ?? [], 'text'), 'is_string'))];
     }
 
     /** The day they named: today, tomorrow, a weekday (the next one, today included) or a date. */
@@ -170,24 +171,44 @@ final class PlanDay
 
     /**
      * The plan as the AI reads it: its day and stops, by name, kind and Veedel. The person's
-     * own appointments in it stay theirs: the AI only learns a stop is theirs.
+     * own appointments in it stay theirs: the AI only learns a stop is theirs. What the plan
+     * couldn't keep to is said in code (the 30 Oct grade): every stop step-free when that was
+     * needed, prices not listed when it was to be cheap or free, the kinds asked for that it has
+     * none of, and the planner's widening of its picks.
      *
      * @param  array<string, mixed>  $plan
+     * @param  list<string>  $notices  the planner's own notices
      */
-    public static function text(array $plan): string
+    public static function text(array $plan, array $notices = []): string
     {
         $slots = collect($plan['slots']);
         $first = CarbonImmutable::parse($slots->first()['start_at'])->setTimezone('Europe/Berlin');
+        $constraints = $plan['constraints'] ?? [];
+        $stepFree = in_array('step_free', $constraints['needs'] ?? [], true);
+        $budget = in_array($constraints['budget'] ?? null, ['free', 'low'], true);
+        $label = fn (string $category): string => SpotCategory::tryFrom($category)?->label() ?? ucfirst(str_replace('_', ' ', $category));
 
-        return 'A plan for '.$first->format('l j F').":\n".$slots->map(function (array $slot): string {
+        $lines = $slots->map(function (array $slot) use ($stepFree, $budget, $label): string {
             $start = CarbonImmutable::parse($slot['start_at'])->setTimezone('Europe/Berlin')->format('H:i');
             if ($slot['is_appointment'] ?? false) {
                 return "- {$start}: one of their own plans (not shown to you)";
             }
-            $kind = SpotCategory::tryFrom((string) $slot['category'])?->label() ?? ucfirst(str_replace('_', ' ', (string) $slot['category']));
 
-            return "- {$start}".($slot['end_time'] !== null ? "–{$slot['end_time']}" : '').": \"{$slot['name']}\" ({$kind})".(filled($slot['veedel']) ? " in {$slot['veedel']}" : '');
-        })->implode("\n");
+            return "- {$start}".($slot['end_time'] !== null ? "–{$slot['end_time']}" : '').": \"{$slot['name']}\" ({$label((string) $slot['category'])})".(filled($slot['veedel']) ? " in {$slot['veedel']}" : '')
+                // Every stop of a step-free plan is verified step-free (FeasibilityFilter): said, as a place's is.
+                .($stepFree ? '. Step-free access listed' : '')
+                .($budget && ($slot['cost_tier'] ?? 'unknown') === 'unknown' ? '. Price not listed' : '');
+        });
+        // The kinds asked for that no stop is.
+        $asked = array_values(array_unique([...($constraints['sequence'] ?? []), ...($constraints['categories'] ?? [])]));
+        $have = $slots->reject(fn (array $slot): bool => $slot['is_appointment'] ?? false)->pluck('category')->all();
+        // A coarse kind ("food_drink") is met by any of its fine ones, as the planner matches it.
+        $missing = array_values(array_filter($asked, fn (string $kind): bool => array_intersect([$kind, ...SpotCategory::finesForCoarse($kind)], $have) === []));
+        $widened = collect($notices)->contains(fn (string $notice): bool => str_contains($notice, 'widened'));
+
+        return 'A plan for '.$first->format('l j F').":\n".$lines->implode("\n")
+            .($missing !== [] ? "\nNo ".implode(' or ', array_map(fn (string $c): string => mb_strtolower($label($c)), $missing)).' fits that time and place, so the plan has none.' : '')
+            .($widened ? "\nFew places fit exactly, so the planner widened its picks: some stops aren't what was asked." : '');
     }
 
     /**
