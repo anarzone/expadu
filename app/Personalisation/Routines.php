@@ -204,15 +204,20 @@ final class Routines
             ->whereRaw($condition, $bindings)->exists();
     }
 
-    /** Not now: not offered again for a while. */
-    public function dismiss(User $user, string $toKey, CarbonImmutable $now): void
+    /**
+     * Not now: not offered again for a while. Its id, so Undo can take the no back (forget), or
+     * null when that isn't on offer.
+     */
+    public function dismiss(User $user, string $toKey, CarbonImmutable $now): ?int
     {
         $subject = Pseudonym::for($user);
         $offer = $this->offer($user, $now);
         if ($offer === null || $offer['to_key'] !== $toKey) {
-            return;
+            return null;
         }
         $this->keep($subject, $offer, ['weekdays' => json_encode($offer['weekdays']), 'at' => $offer['at'], 'remind' => false, 'dismissed_until' => self::at($now->addDays(self::DISMISS_DAYS))]);
+
+        return (int) DB::table('routines')->where('subject_key', $subject)->where('to_key', $toKey)->value('id');
     }
 
     /** @param  array{weekdays?: list<int>, at?: string, remind?: bool}  $changes */
@@ -225,6 +230,7 @@ final class Routines
             ->update([...$values, 'updated_at' => now()]) === 1;
     }
 
+    /** A routine, or a Not now (Undo): gone, and offered again if the trips still show it. */
     public function forget(User $user, int $id): bool
     {
         return DB::table('routines')->where('id', $id)->where('subject_key', Pseudonym::for($user))->delete() === 1;

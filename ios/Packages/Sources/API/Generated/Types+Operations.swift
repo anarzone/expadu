@@ -30670,7 +30670,7 @@ public enum Operations {
             }
         }
     }
-    /// Not now: that offer isn't made again for a while
+    /// Not now: that offer isn't made again for a while. Undo deletes the id it gives back
     ///
     /// - Remark: HTTP `POST /routines/dismiss`.
     /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.
@@ -30731,15 +30731,25 @@ public enum Operations {
                     public struct JsonPayload: Codable, Hashable, Sendable {
                         /// - Remark: Generated from `#/paths/routines/dismiss/POST/responses/200/content/json/dismissed`.
                         public var dismissed: Swift.Bool
+                        /// DELETE /routines/{id} takes the no back; null when it wasn't on offer.
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/dismiss/POST/responses/200/content/json/id`.
+                        public var id: Swift.Int?
                         /// Creates a new `JsonPayload`.
                         ///
                         /// - Parameters:
                         ///   - dismissed:
-                        public init(dismissed: Swift.Bool) {
+                        ///   - id: DELETE /routines/{id} takes the no back; null when it wasn't on offer.
+                        public init(
+                            dismissed: Swift.Bool,
+                            id: Swift.Int? = nil
+                        ) {
                             self.dismissed = dismissed
+                            self.id = id
                         }
                         public enum CodingKeys: String, CodingKey {
                             case dismissed
+                            case id
                         }
                     }
                     /// - Remark: Generated from `#/paths/routines/dismiss/POST/responses/200/content/application\/json`.
