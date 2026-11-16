@@ -1,6 +1,7 @@
 <?php
 
 use App\Day\DayLine;
+use App\Models\Event;
 use App\Models\PlannedTrip;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -50,6 +51,17 @@ test('a free day says what\'s on in the city instead, and the phone gets it with
     $line = $as->getJson('/api/v1/today')->assertOk()->json('day_line');
 
     expect($line['text'])->toStartWith('Nothing planned');
+});
+
+test('a free day names when the city\'s next event starts, never how many: Today\'s events box counts those', function () {
+    Event::factory()->create(['starts_at' => CarbonImmutable::parse('2026-11-17 09:30', 'Europe/Berlin'), 'ends_at' => CarbonImmutable::parse('2026-11-17 11:00', 'Europe/Berlin')]);
+    Event::factory()->create(['starts_at' => CarbonImmutable::parse('2026-11-17 14:00', 'Europe/Berlin'), 'ends_at' => CarbonImmutable::parse('2026-11-17 16:00', 'Europe/Berlin')]);
+
+    expect(app(DayLine::class)->for($this->user, CarbonImmutable::now())['text'])->toBe('Nothing planned. The next event is at 09:30.');
+
+    // Later in the day, the next one from then.
+    $this->travelTo(CarbonImmutable::parse('2026-11-17 10:00', 'Europe/Berlin'));
+    expect(app(DayLine::class)->for($this->user, CarbonImmutable::now())['text'])->toBe('Nothing planned. The next event is at 14:00.');
 });
 
 test('a line is cut into pieces with each time its own', function () {

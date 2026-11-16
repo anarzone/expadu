@@ -41,16 +41,21 @@ final class DayLine
         return ['text' => $text, 'parts' => self::parts($text)];
     }
 
-    /** Nothing of theirs: what's on in the city, from now on. */
+    /**
+     * Nothing of theirs: when the city's next event starts. No count: right under it, Today's
+     * events box counts the ones picked for them, and two numbers side by side read as a
+     * contradiction ("39 events on" over "6 events").
+     */
     private function free(CarbonImmutable $now): string
     {
+        // The occurrences that start from now until midnight.
         $events = Event::occurringBetween($now, $now->endOfDay());
         if ($events->isEmpty()) {
             return 'Nothing planned today.';
         }
-        $first = $events->min(fn (array $o) => $o['starts_at'])->setTimezone('Europe/Berlin');
+        $next = $events->min(fn (array $o) => $o['starts_at'])->setTimezone('Europe/Berlin');
 
-        return 'Nothing planned. '.$events->count().' '.($events->count() === 1 ? 'event' : 'events').' on, the first at '.$first->max($now)->format('H:i').'.';
+        return 'Nothing planned. The next event is at '.$next->format('H:i').'.';
     }
 
     /**
