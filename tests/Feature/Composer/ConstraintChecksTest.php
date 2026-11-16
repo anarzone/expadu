@@ -4,6 +4,7 @@ use App\Composer\Assistant\AssistantTools;
 use App\Composer\Assistant\PlanDay;
 use App\Composer\Candidate;
 use App\Models\Event;
+use App\Models\Spot;
 use App\Models\User;
 use App\Privacy\ProcessingPurpose;
 use App\Services\WeatherService;
@@ -146,4 +147,49 @@ test('🔒 a restaurant or café is free only when its data says so; an open-air
         ->and(AssistantTools::freeToUse($place('museum', ['value' => 'yes', 'free' => 'yes', 'basis' => 'no_fee', 'source_url' => null])))->toBeTrue()
         ->and(AssistantTools::freeToUse($place('park', $unknown)))->toBeTrue()
         ->and(AssistantTools::freeToUse($place('park', ['value' => 'yes', 'free' => 'no', 'basis' => 'fee', 'source_url' => null])))->toBeFalse();
+});
+
+test('a meal they named moves the window so its stop lands in the meal\'s time; a later start or an end they gave stays', function () {
+    $day = CarbonImmutable::parse('2026-10-30', 'Europe/Berlin');
+    $at = fn (string $time): CarbonImmutable => $day->setTimeFromTimeString($time);
+    $window = fn (array $w): array => [$w[0]->format('H:i'), $w[1]->format('H:i')];
+
+    // remote_worker.dinner_after_park at 13:30: a park first, so the day starts in time for dinner at 18:00.
+    expect($window(PlanDay::aroundMeal('dinner', $day, $at('13:30'), $at('20:00'), ['park', 'restaurant'], [], false)))->toBe(['16:30', '21:30'])
+        // Dinner, then a bar: from dinner on, and on past it.
+        ->and($window(PlanDay::aroundMeal('dinner', $day, $at('13:30'), $at('20:00'), ['restaurant', 'bar'], [], false)))->toBe(['18:00', '23:00'])
+        // A later start they gave is theirs.
+        ->and($window(PlanDay::aroundMeal('dinner', $day, $at('19:00'), $at('23:00'), ['park', 'restaurant'], [], true)))->toBe(['19:00', '23:00'])
+        // Brunch with a museum named, no order: the museum first.
+        ->and($window(PlanDay::aroundMeal('brunch', $day, $at('09:00'), $at('13:00'), [], ['cafe', 'museum'], false)))->toBe(['09:00', '13:00']);
+});
+
+test('the plan says when the meal\'s stop is, against the meal\'s time', function () {
+    $plan = fn (string $start): array => ['constraints' => [], 'slots' => [
+        ['start_at' => '2026-10-30T13:40:00+01:00', 'end_time' => '14:40', 'name' => 'Stadtgarten', 'category' => 'park', 'veedel' => null, 'cost_tier' => 'free', 'is_appointment' => false],
+        ['start_at' => "2026-10-30T{$start}:00+01:00", 'end_time' => null, 'name' => 'Ox & Klee', 'category' => 'restaurant', 'veedel' => null, 'cost_tier' => 'unknown', 'is_appointment' => false],
+    ]];
+
+    expect(PlanDay::text($plan('18:15'), [], 'dinner'))->toContain('The restaurant at 18:15 is for dinner.')
+        ->and(PlanDay::text($plan('14:55'), [], 'dinner'))->toContain('The restaurant is at 14:55, outside dinner time (18:00–21:30).')
+        ->and(PlanDay::text($plan('14:55')))->not->toContain('dinner');
+});
+
+test('🔒 "a park, then dinner" asked at 13:30 is planned with dinner at dinner time, through the real planner', function () {
+    // remote_worker.dinner_after_park: the recorded plan put "dinner at Takumi 14:55".
+    $user = User::factory()->onboarded()->create();
+    Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'lat' => 50.9415, 'lng' => 6.9370, 'veedel' => 'Neustadt-Nord', 'opening_hours' => null]);
+    Spot::factory()->create(['name' => 'Ox & Klee', 'category' => 'restaurant', 'lat' => 50.9405, 'lng' => 6.9395, 'veedel' => 'Neustadt-Nord',
+        'opening_hours' => ['mon' => [['11:30', '23:00']], 'tue' => [['11:30', '23:00']], 'wed' => [['11:30', '23:00']], 'thu' => [['11:30', '23:00']], 'fri' => [['11:30', '23:00']], 'sat' => [['11:30', '23:00']], 'sun' => [['11:30', '23:00']]]]);
+    $this->actingAs($user);
+    $ask = ['day' => 'today', 'sequence' => ['park', 'restaurant'], 'areas' => ['Neustadt-Nord']];
+    $dinner = fn (array $planned): ?string => collect($planned['plan']['slots'])->firstWhere('category', 'restaurant')['start_at'] ?? null;
+
+    $without = app(PlanDay::class)->plan($user, $ask, CarbonImmutable::now());
+    $with = app(PlanDay::class)->plan($user, [...$ask, 'meal' => 'dinner'], CarbonImmutable::now());
+
+    expect($without)->toBeArray()->and($with)->toBeArray()
+        ->and(CarbonImmutable::parse($dinner($without))->setTimezone('Europe/Berlin')->format('H:i'))->toBeLessThan('18:00')
+        ->and(CarbonImmutable::parse($dinner($with))->setTimezone('Europe/Berlin')->format('H:i'))->toBeGreaterThanOrEqual('18:00')
+        ->and(PlanDay::text($with['plan'], $with['notices'], $with['meal']))->toContain('is for dinner.');
 });
