@@ -20532,6 +20532,1292 @@ public enum Operations {
             }
         }
     }
+    /// Everything Expadu knows about them
+    ///
+    /// - Remark: HTTP `GET /memory`.
+    /// - Remark: Generated from `#/paths//memory/get(memory.index)`.
+    public enum Memory_index {
+        public static let id: Swift.String = "memory.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/memory/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Memory_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.Memory_index.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/personalised`.
+                        public var personalised: Swift.Bool
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/FactsPayload`.
+                        public struct FactsPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/FactsPayload/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/FactsPayload/text`.
+                            public var text: Swift.String
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/FactsPayload/source`.
+                            public var source: Swift.String
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/FactsPayload/created_at`.
+                            public var createdAt: Swift.String
+                            /// Creates a new `FactsPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - text:
+                            ///   - source:
+                            ///   - createdAt:
+                            public init(
+                                id: Swift.Int,
+                                text: Swift.String,
+                                source: Swift.String,
+                                createdAt: Swift.String
+                            ) {
+                                self.id = id
+                                self.text = text
+                                self.source = source
+                                self.createdAt = createdAt
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case text
+                                case source
+                                case createdAt = "created_at"
+                            }
+                        }
+                        /// What Composer remembers, oldest first: told (said to Composer) or added (typed here).
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/facts`.
+                        public typealias FactsPayload = [Operations.Memory_index.Output.Ok.Body.JsonPayload.FactsPayloadPayload]
+                        /// What Composer remembers, oldest first: told (said to Composer) or added (typed here).
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/facts`.
+                        public var facts: Operations.Memory_index.Output.Ok.Body.JsonPayload.FactsPayload
+                        /// What they tend to like and skip, as Composer reads it; null when off or too little yet.
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste`.
+                        public struct TastePayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/CategoriesPayload`.
+                            public struct CategoriesPayloadPayload: Codable, Hashable, Sendable {
+                                /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/CategoriesPayload/name`.
+                                public var name: Swift.String
+                                /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/CategoriesPayload/level`.
+                                public var level: Swift.String
+                                /// Creates a new `CategoriesPayloadPayload`.
+                                ///
+                                /// - Parameters:
+                                ///   - name:
+                                ///   - level:
+                                public init(
+                                    name: Swift.String,
+                                    level: Swift.String
+                                ) {
+                                    self.name = name
+                                    self.level = level
+                                }
+                                public enum CodingKeys: String, CodingKey {
+                                    case name
+                                    case level
+                                }
+                            }
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/categories`.
+                            public typealias CategoriesPayload = [Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload.CategoriesPayloadPayload]
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/categories`.
+                            public var categories: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload.CategoriesPayload
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/VeedelsPayload`.
+                            public struct VeedelsPayloadPayload: Codable, Hashable, Sendable {
+                                /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/VeedelsPayload/name`.
+                                public var name: Swift.String
+                                /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/VeedelsPayload/level`.
+                                public var level: Swift.String
+                                /// Creates a new `VeedelsPayloadPayload`.
+                                ///
+                                /// - Parameters:
+                                ///   - name:
+                                ///   - level:
+                                public init(
+                                    name: Swift.String,
+                                    level: Swift.String
+                                ) {
+                                    self.name = name
+                                    self.level = level
+                                }
+                                public enum CodingKeys: String, CodingKey {
+                                    case name
+                                    case level
+                                }
+                            }
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/veedels`.
+                            public typealias VeedelsPayload = [Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload.VeedelsPayloadPayload]
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/veedels`.
+                            public var veedels: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload.VeedelsPayload
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/dayparts`.
+                            public var dayparts: [Swift.String]
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/week`.
+                            public var week: Swift.String?
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste/signals`.
+                            public var signals: Swift.Int
+                            /// Creates a new `TastePayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - categories:
+                            ///   - veedels:
+                            ///   - dayparts:
+                            ///   - week:
+                            ///   - signals:
+                            public init(
+                                categories: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload.CategoriesPayload,
+                                veedels: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload.VeedelsPayload,
+                                dayparts: [Swift.String],
+                                week: Swift.String? = nil,
+                                signals: Swift.Int
+                            ) {
+                                self.categories = categories
+                                self.veedels = veedels
+                                self.dayparts = dayparts
+                                self.week = week
+                                self.signals = signals
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case categories
+                                case veedels
+                                case dayparts
+                                case week
+                                case signals
+                            }
+                        }
+                        /// What they tend to like and skip, as Composer reads it; null when off or too little yet.
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste`.
+                        public var taste: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload?
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/situation`.
+                        @frozen public enum SituationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case nonEuEmployee = "non_eu_employee"
+                            case euEmployee = "eu_employee"
+                            case student = "student"
+                            case freelancer = "freelancer"
+                            case familyReunification = "family_reunification"
+                            case digitalNomad = "digital_nomad"
+                            case other = "other"
+                            case _empty_ = ""
+                        }
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/situation`.
+                        public var situation: Operations.Memory_index.Output.Ok.Body.JsonPayload.SituationPayload?
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/german_level`.
+                        @frozen public enum GermanLevelPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case none = "none"
+                            case a1 = "a1"
+                            case a2 = "a2"
+                            case b1 = "b1"
+                            case b2 = "b2"
+                            case c1 = "c1"
+                            case c2 = "c2"
+                            case _empty_ = ""
+                        }
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/german_level`.
+                        public var germanLevel: Operations.Memory_index.Output.Ok.Body.JsonPayload.GermanLevelPayload?
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/limit`.
+                        @frozen public enum LimitPayload: Int, Codable, Hashable, Sendable, CaseIterable {
+                            case _40 = 40
+                        }
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/limit`.
+                        public var limit: Operations.Memory_index.Output.Ok.Body.JsonPayload.LimitPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - personalised:
+                        ///   - facts: What Composer remembers, oldest first: told (said to Composer) or added (typed here).
+                        ///   - taste: What they tend to like and skip, as Composer reads it; null when off or too little yet.
+                        ///   - situation:
+                        ///   - germanLevel:
+                        ///   - limit:
+                        public init(
+                            personalised: Swift.Bool,
+                            facts: Operations.Memory_index.Output.Ok.Body.JsonPayload.FactsPayload,
+                            taste: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload? = nil,
+                            situation: Operations.Memory_index.Output.Ok.Body.JsonPayload.SituationPayload? = nil,
+                            germanLevel: Operations.Memory_index.Output.Ok.Body.JsonPayload.GermanLevelPayload? = nil,
+                            limit: Operations.Memory_index.Output.Ok.Body.JsonPayload.LimitPayload
+                        ) {
+                            self.personalised = personalised
+                            self.facts = facts
+                            self.taste = taste
+                            self.situation = situation
+                            self.germanLevel = germanLevel
+                            self.limit = limit
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case personalised
+                            case facts
+                            case taste
+                            case situation
+                            case germanLevel = "german_level"
+                            case limit
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/application\/json`.
+                    case json(Operations.Memory_index.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Memory_index.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Memory_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Memory_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//memory/get(memory.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Memory_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Memory_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//memory/get(memory.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Something for Composer to remember, typed on the screen. Refused with why (422): personalisation
+    /// off, a special category, already remembered, or full
+    ///
+    /// - Remark: HTTP `POST /memory`.
+    /// - Remark: Generated from `#/paths//memory/post(memory.store)`.
+    public enum Memory_store {
+        public static let id: Swift.String = "memory.store"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/memory/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_store.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_store.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Memory_store.Input.Headers
+            /// - Remark: Generated from `#/paths/memory/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/memory/POST/requestBody/json/text`.
+                    public var text: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - text:
+                    public init(text: Swift.String) {
+                        self.text = text
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case text
+                    }
+                }
+                /// - Remark: Generated from `#/paths/memory/POST/requestBody/content/application\/json`.
+                case json(Operations.Memory_store.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Memory_store.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Memory_store.Input.Headers = .init(),
+                body: Operations.Memory_store.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/memory/POST/responses/201/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/memory/POST/responses/201/content/json/fact`.
+                        public struct FactPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/memory/POST/responses/201/content/json/fact/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/memory/POST/responses/201/content/json/fact/text`.
+                            public var text: Swift.String
+                            /// Creates a new `FactPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - text:
+                            public init(
+                                id: Swift.Int,
+                                text: Swift.String
+                            ) {
+                                self.id = id
+                                self.text = text
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case text
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/memory/POST/responses/201/content/json/fact`.
+                        public var fact: Operations.Memory_store.Output.Created.Body.JsonPayload.FactPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - fact:
+                        public init(fact: Operations.Memory_store.Output.Created.Body.JsonPayload.FactPayload) {
+                            self.fact = fact
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case fact
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/memory/POST/responses/201/content/application\/json`.
+                    case json(Operations.Memory_store.Output.Created.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Memory_store.Output.Created.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Memory_store.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Memory_store.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//memory/post(memory.store)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.Memory_store.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.Memory_store.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//memory/post(memory.store)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//memory/post(memory.store)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Undo of a forget: the fact back in its place, under a new id
+    ///
+    /// - Remark: HTTP `POST /memory/restore`.
+    /// - Remark: Generated from `#/paths//memory/restore/post(memory.restore)`.
+    public enum Memory_restore {
+        public static let id: Swift.String = "memory.restore"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/memory/restore/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_restore.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_restore.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Memory_restore.Input.Headers
+            /// - Remark: Generated from `#/paths/memory/restore/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/restore/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/memory/restore/POST/requestBody/json/text`.
+                    public var text: Swift.String
+                    /// - Remark: Generated from `#/paths/memory/restore/POST/requestBody/json/source`.
+                    @frozen public enum SourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case told = "told"
+                        case added = "added"
+                        case _empty_ = ""
+                    }
+                    /// - Remark: Generated from `#/paths/memory/restore/POST/requestBody/json/source`.
+                    public var source: Operations.Memory_restore.Input.Body.JsonPayload.SourcePayload?
+                    /// - Remark: Generated from `#/paths/memory/restore/POST/requestBody/json/created_at`.
+                    public var createdAt: Foundation.Date?
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - text:
+                    ///   - source:
+                    ///   - createdAt:
+                    public init(
+                        text: Swift.String,
+                        source: Operations.Memory_restore.Input.Body.JsonPayload.SourcePayload? = nil,
+                        createdAt: Foundation.Date? = nil
+                    ) {
+                        self.text = text
+                        self.source = source
+                        self.createdAt = createdAt
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case text
+                        case source
+                        case createdAt = "created_at"
+                    }
+                }
+                /// - Remark: Generated from `#/paths/memory/restore/POST/requestBody/content/application\/json`.
+                case json(Operations.Memory_restore.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Memory_restore.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Memory_restore.Input.Headers = .init(),
+                body: Operations.Memory_restore.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/restore/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/memory/restore/POST/responses/201/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/memory/restore/POST/responses/201/content/json/fact`.
+                        public struct FactPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/memory/restore/POST/responses/201/content/json/fact/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/memory/restore/POST/responses/201/content/json/fact/text`.
+                            public var text: Swift.String
+                            /// Creates a new `FactPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - text:
+                            public init(
+                                id: Swift.Int,
+                                text: Swift.String
+                            ) {
+                                self.id = id
+                                self.text = text
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case text
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/memory/restore/POST/responses/201/content/json/fact`.
+                        public var fact: Operations.Memory_restore.Output.Created.Body.JsonPayload.FactPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - fact:
+                        public init(fact: Operations.Memory_restore.Output.Created.Body.JsonPayload.FactPayload) {
+                            self.fact = fact
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case fact
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/memory/restore/POST/responses/201/content/application\/json`.
+                    case json(Operations.Memory_restore.Output.Created.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Memory_restore.Output.Created.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Memory_restore.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Memory_restore.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//memory/restore/post(memory.restore)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.Memory_restore.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.Memory_restore.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//memory/restore/post(memory.restore)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//memory/restore/post(memory.restore)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// A fact's words, changed
+    ///
+    /// - Remark: HTTP `PATCH /memory/{fact}`.
+    /// - Remark: Generated from `#/paths//memory/{fact}/patch(memory.update)`.
+    public enum Memory_update {
+        public static let id: Swift.String = "memory.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/path/fact`.
+                public var fact: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - fact:
+                public init(fact: Swift.Int) {
+                    self.fact = fact
+                }
+            }
+            public var path: Operations.Memory_update.Input.Path
+            /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Memory_update.Input.Headers
+            /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/requestBody/json/text`.
+                    public var text: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - text:
+                    public init(text: Swift.String) {
+                        self.text = text
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case text
+                    }
+                }
+                /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/requestBody/content/application\/json`.
+                case json(Operations.Memory_update.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Memory_update.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Memory_update.Input.Path,
+                headers: Operations.Memory_update.Input.Headers = .init(),
+                body: Operations.Memory_update.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/responses/200/content/json/fact`.
+                        public struct FactPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/responses/200/content/json/fact/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/responses/200/content/json/fact/text`.
+                            public var text: Swift.String
+                            /// Creates a new `FactPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - text:
+                            public init(
+                                id: Swift.Int,
+                                text: Swift.String
+                            ) {
+                                self.id = id
+                                self.text = text
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case text
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/responses/200/content/json/fact`.
+                        public var fact: Operations.Memory_update.Output.Ok.Body.JsonPayload.FactPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - fact:
+                        public init(fact: Operations.Memory_update.Output.Ok.Body.JsonPayload.FactPayload) {
+                            self.fact = fact
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case fact
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/memory/{fact}/PATCH/responses/200/content/application\/json`.
+                    case json(Operations.Memory_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Memory_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Memory_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Memory_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//memory/{fact}/patch(memory.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Memory_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Memory_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//memory/{fact}/patch(memory.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//memory/{fact}/patch(memory.update)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//memory/{fact}/patch(memory.update)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// A fact forgotten; what it was comes back, so Undo can bring it back
+    ///
+    /// - Remark: HTTP `DELETE /memory/{fact}`.
+    /// - Remark: Generated from `#/paths//memory/{fact}/delete(memory.destroy)`.
+    public enum Memory_destroy {
+        public static let id: Swift.String = "memory.destroy"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/path/fact`.
+                public var fact: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - fact:
+                public init(fact: Swift.Int) {
+                    self.fact = fact
+                }
+            }
+            public var path: Operations.Memory_destroy.Input.Path
+            /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_destroy.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Memory_destroy.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Memory_destroy.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Memory_destroy.Input.Path,
+                headers: Operations.Memory_destroy.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content/json/forgotten`.
+                        public struct ForgottenPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content/json/forgotten/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content/json/forgotten/text`.
+                            public var text: Swift.String
+                            /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content/json/forgotten/source`.
+                            public var source: Swift.String
+                            /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content/json/forgotten/created_at`.
+                            public var createdAt: Swift.String
+                            /// Creates a new `ForgottenPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - text:
+                            ///   - source:
+                            ///   - createdAt:
+                            public init(
+                                id: Swift.Int,
+                                text: Swift.String,
+                                source: Swift.String,
+                                createdAt: Swift.String
+                            ) {
+                                self.id = id
+                                self.text = text
+                                self.source = source
+                                self.createdAt = createdAt
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case text
+                                case source
+                                case createdAt = "created_at"
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content/json/forgotten`.
+                        public var forgotten: Operations.Memory_destroy.Output.Ok.Body.JsonPayload.ForgottenPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - forgotten:
+                        public init(forgotten: Operations.Memory_destroy.Output.Ok.Body.JsonPayload.ForgottenPayload) {
+                            self.forgotten = forgotten
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case forgotten
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/memory/{fact}/DELETE/responses/200/content/application\/json`.
+                    case json(Operations.Memory_destroy.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Memory_destroy.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Memory_destroy.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Memory_destroy.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//memory/{fact}/delete(memory.destroy)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Memory_destroy.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Memory_destroy.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//memory/{fact}/delete(memory.destroy)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//memory/{fact}/delete(memory.destroy)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
     public enum Paperwork_v2_onboarding_draft_show {

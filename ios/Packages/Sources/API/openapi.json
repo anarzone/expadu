@@ -6983,6 +6983,463 @@
                 }
             }
         },
+        "/memory": {
+            "get": {
+                "operationId": "memory.index",
+                "summary": "Everything Expadu knows about them",
+                "tags": [
+                    "Memory"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "personalised": {
+                                            "type": "boolean"
+                                        },
+                                        "facts": {
+                                            "type": "array",
+                                            "description": "What Composer remembers, oldest first: told (said to Composer) or added (typed here).",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "text": {
+                                                        "type": "string"
+                                                    },
+                                                    "source": {
+                                                        "type": "string"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "text",
+                                                    "source",
+                                                    "created_at"
+                                                ]
+                                            }
+                                        },
+                                        "taste": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "description": "What they tend to like and skip, as Composer reads it; null when off or too little yet.",
+                                            "properties": {
+                                                "categories": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "level": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "name",
+                                                            "level"
+                                                        ]
+                                                    }
+                                                },
+                                                "veedels": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "level": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "name",
+                                                            "level"
+                                                        ]
+                                                    }
+                                                },
+                                                "dayparts": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "week": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "signals": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "categories",
+                                                "veedels",
+                                                "dayparts",
+                                                "week",
+                                                "signals"
+                                            ]
+                                        },
+                                        "situation": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "enum": [
+                                                "non_eu_employee",
+                                                "eu_employee",
+                                                "student",
+                                                "freelancer",
+                                                "family_reunification",
+                                                "digital_nomad",
+                                                "other",
+                                                null
+                                            ]
+                                        },
+                                        "german_level": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "enum": [
+                                                "none",
+                                                "a1",
+                                                "a2",
+                                                "b1",
+                                                "b2",
+                                                "c1",
+                                                "c2",
+                                                null
+                                            ]
+                                        },
+                                        "limit": {
+                                            "type": "integer",
+                                            "const": 40
+                                        }
+                                    },
+                                    "required": [
+                                        "personalised",
+                                        "facts",
+                                        "taste",
+                                        "situation",
+                                        "german_level",
+                                        "limit"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "memory.store",
+                "summary": "Something for Composer to remember, typed on the screen. Refused with why (422): personalisation\noff, a special category, already remembered, or full",
+                "tags": [
+                    "Memory"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "type": "string",
+                                        "maxLength": 160
+                                    }
+                                },
+                                "required": [
+                                    "text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fact": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "text"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "fact"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/memory/restore": {
+            "post": {
+                "operationId": "memory.restore",
+                "summary": "Undo of a forget: the fact back in its place, under a new id",
+                "tags": [
+                    "Memory"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "type": "string",
+                                        "maxLength": 160
+                                    },
+                                    "source": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "told",
+                                            "added",
+                                            null
+                                        ]
+                                    },
+                                    "created_at": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date-time"
+                                    }
+                                },
+                                "required": [
+                                    "text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fact": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "text"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "fact"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/memory/{fact}": {
+            "patch": {
+                "operationId": "memory.update",
+                "summary": "A fact's words, changed",
+                "tags": [
+                    "Memory"
+                ],
+                "parameters": [
+                    {
+                        "name": "fact",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "type": "string",
+                                        "maxLength": 160
+                                    }
+                                },
+                                "required": [
+                                    "text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fact": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "text"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "fact"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "memory.destroy",
+                "summary": "A fact forgotten; what it was comes back, so Undo can bring it back",
+                "tags": [
+                    "Memory"
+                ],
+                "parameters": [
+                    {
+                        "name": "fact",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "forgotten": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "text": {
+                                                    "type": "string"
+                                                },
+                                                "source": {
+                                                    "type": "string"
+                                                },
+                                                "created_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "text",
+                                                "source",
+                                                "created_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "forgotten"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/paperwork/v2/people/{person}/onboarding/draft": {
             "get": {
                 "operationId": "paperwork.v2.onboarding.draft.show",

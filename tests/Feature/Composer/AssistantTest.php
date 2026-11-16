@@ -5,6 +5,7 @@ use App\Composer\Assistant\Assistant;
 use App\Composer\Assistant\AssistantTools;
 use App\Composer\CandidateRepository;
 use App\Composer\WorkspaceUpgrade;
+use App\Enums\GermanLevel;
 use App\Enums\LocationSource;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
@@ -13,6 +14,7 @@ use App\Models\FavouriteStop;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Personalisation\Memory;
 use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingPurpose;
@@ -84,8 +86,10 @@ function assistantAsk($test, string $text = 'What’s up?', array $ask = []): ar
 {
     $revision = $test->getJson('/composer/workspace')->assertOk()->json('revision');
     $test->postJson('/composer/workspace', ['revision' => $revision, 'action' => 'message', 'text' => $text])->assertOk();
-    $messages = $test->postJson(route('composer.ask'), [...$ask, 'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerAssist)])
-        ->assertOk()->json('conversations.0.messages');
+    $state = $test->postJson(route('composer.ask'), [...$ask, 'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerAssist)])
+        ->assertOk()->json();
+    // The conversation it was asked in (a new one after "fresh").
+    $messages = collect($state['conversations'])->firstWhere('id', $state['active'] ?? $state['conversations'][0]['id'])['messages'];
 
     return collect($messages)->last(fn (array $m): bool => ($m['request'] ?? null) === 'ask');
 }
@@ -228,6 +232,50 @@ test('🔒 with the opt-in it may look at their taste: a "because" holds only wh
     expect($reply)->read->toBe(['taste', 'listings'])->lead->toBe('Since you like music, Jazz im Stadtgarten starts at 20:00.')
         ->taste->toBeTrue()->and($reply)->not->toHaveKey('invite')
         ->and($reply['events'][0]['because'])->toBe('You like music');
+});
+
+test('🔒 "I\'m vegetarian" is remembered with Undo and reaches the next conversation\'s first message, cited like any fact', function () {
+    $user = User::factory()->onboarded()->create(['german_level' => GermanLevel::A1]);
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
+    $jazz = assistantJazz();
+    $id = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['remember', ['fact' => 'vegetarian']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'I’ll remember that.', 'uses' => []]], 'show' => []]]]))
+        ->push(assistantTurn([['search_events', ['day' => 'today']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [
+            ['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id]],
+            ['text' => 'You’re vegetarian, so eat before you go.', 'uses' => ['k1']],
+        ], 'show' => [$id]]]]))]);
+    $this->actingAs($user);
+
+    $told = assistantAsk($this, 'I’m vegetarian');
+
+    expect(collect($told['blocks'])->firstWhere('type', 'done'))->text->toBe('Remembered: Vegetarian.')->undo->not->toBeNull()
+        ->and(app(Memory::class)->facts($user))->sequence(fn ($fact) => $fact->text->toBe('Vegetarian')->source->toBe('told'));
+
+    $revision = $this->getJson('/composer/workspace')->json('revision');
+    $this->postJson('/composer/workspace', ['revision' => $revision, 'action' => 'fresh'])->assertOk();
+    $next = assistantAsk($this, 'anything tonight?');
+
+    expect(Http::recorded()[2][0]->body())->toContain('What you know about them:')->toContain('[k1] Vegetarian')->toContain('[u2] German: A1')
+        ->and($next['lead'])->toBe('Jazz im Stadtgarten starts at 20:00. You’re vegetarian, so eat before you go.');
+});
+
+test('🔒 without the opt-in nothing about them is given and remember keeps nothing', function () {
+    $user = User::factory()->onboarded()->create(['german_level' => GermanLevel::A1]);
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['remember', ['fact' => 'Vegetarian']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Turn on personalisation and I can remember that.', 'uses' => []]], 'show' => []]]]))]);
+    $this->actingAs($user);
+
+    assistantAsk($this, 'I’m vegetarian');
+
+    // Not offered, and when called anyway, refused.
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'What you know about them'));
+    expect(Http::recorded()[0][0]->body())->not->toContain('"name":"remember"')
+        ->and(Http::recorded()[1][0]->body())->toContain('needs personalisation turned on')
+        ->and(DB::table('user_facts')->count())->toBe(0);
 });
 
 test('🔒 the page reads how far its own request has got, and nobody else\'s', function () {
