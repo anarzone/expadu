@@ -1716,7 +1716,7 @@ final class AssistantTools
         $asked = collect(is_array($input['areas'] ?? null) ? $input['areas'] : [])->filter(fn (mixed $a): bool => is_string($a))
             ->map(fn (string $a): string => ($k = PlanDay::areas([$a])[0] ?? $a) === $a ? $a : "{$k} (\"{$a}\")")->implode(', ');
 
-        return $this->line($id, ($asked !== '' ? "Asked for: {$asked}.\n" : '').PlanDay::text($planned['plan'], $planned['notices']));
+        return $this->line($id, ($asked !== '' ? "Asked for: {$asked}.\n" : '').PlanDay::text($planned['plan'], $planned['notices'], $planned['meal']));
     }
 
     /** Reviewed paperwork guides matching the words: their titles, as Composer's guidance lists them. */
