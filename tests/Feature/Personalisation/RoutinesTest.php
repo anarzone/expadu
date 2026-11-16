@@ -122,7 +122,8 @@ test('three weekday trips to Work at about 08:10 are offered as a routine; confi
 
 test('🔒 the offer shows the trips it rests on: theirs only, to that place only, each a day and a time and nothing more', function () {
     // Work at about 08:10 three times, once at lunch (no part of the routine, still a trip there), and one elsewhere.
-    foreach (['2026-11-11 08:05', '2026-11-12 08:15', '2026-11-16 08:10', '2026-11-13 12:40'] as $at) {
+    // And one late on Sunday: its day is Cologne's, whatever zone the database keeps time in.
+    foreach (['2026-11-11 08:05', '2026-11-12 08:15', '2026-11-16 08:10', '2026-11-13 12:40', '2026-11-15 23:40'] as $at) {
         routineTrip($this->user, $at);
     }
     routineTrip($this->user, '2026-11-14 19:00', 50.9300, 6.9500, 'Kletterfabrik');
@@ -140,6 +141,7 @@ test('🔒 the offer shows the trips it rests on: theirs only, to that place onl
             ['date' => '2026-11-11', 'weekday' => 3, 'at' => '08:05'],
             ['date' => '2026-11-12', 'weekday' => 4, 'at' => '08:15'],
             ['date' => '2026-11-13', 'weekday' => 5, 'at' => '12:40'],
+            ['date' => '2026-11-15', 'weekday' => 7, 'at' => '23:40'],
             ['date' => '2026-11-16', 'weekday' => 1, 'at' => '08:10'],
         ]);
 });
