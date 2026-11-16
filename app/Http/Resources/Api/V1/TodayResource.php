@@ -39,6 +39,8 @@ class TodayResource extends JsonResource
             'welcome' => (bool) ($this->resource['welcome'] ?? false),
             // Personalised suggestions on (Settings), for How we rank.
             'personalised' => (bool) ($this->resource['personalised'] ?? false),
+            /** @var array{text: string, parts: list<array{text: string, strong: bool}>}|null The day in one line, under the date (DayLine): its times marked strong. */
+            'day_line' => $this->resource['day_line'] ?? null,
             /** @var array{notice: array<int, string>, changes: array<int, string>|null, model_changed: bool, notice_version: string, provider_version: string}|null */
             'rank_paused' => $this->resource['rank_paused'] ?? null,
             /** @var array{temperature: int, condition: string, icon: string, summary: string|null, cycling: string|null, feels_like: int|null, high: int|null, low: int|null, hours: array<int, array{hour: string, temperature: int|null, icon: string|null, rain: int|null}>, today: array<int, array{hour: string, temperature: int|null, icon: string|null, condition: string|null, rain: int|null}>, days: array<int, array{date: string, low: int|null, high: int|null, icon: string|null, rain: int|null}>}|null */

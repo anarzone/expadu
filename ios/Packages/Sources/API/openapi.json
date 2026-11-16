@@ -12862,6 +12862,40 @@
                         "type": "boolean",
                         "description": "Personalised suggestions on (Settings), for How we rank."
                     },
+                    "day_line": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "The day in one line, under the date (DayLine): its times marked strong.",
+                        "properties": {
+                            "text": {
+                                "type": "string"
+                            },
+                            "parts": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {
+                                            "type": "string"
+                                        },
+                                        "strong": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "text",
+                                        "strong"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "text",
+                            "parts"
+                        ]
+                    },
                     "rank_paused": {
                         "type": [
                             "object",
@@ -14328,6 +14362,7 @@
                     "revision",
                     "welcome",
                     "personalised",
+                    "day_line",
                     "rank_paused",
                     "weather",
                     "plans",

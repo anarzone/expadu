@@ -2797,6 +2797,60 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TodayResource/personalised`.
             public var personalised: Swift.Bool
+            /// The day in one line, under the date (DayLine): its times marked strong.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayResource/day_line`.
+            public struct DayLinePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/day_line/text`.
+                public var text: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TodayResource/day_line/PartsPayload`.
+                public struct PartsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/day_line/PartsPayload/text`.
+                    public var text: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/day_line/PartsPayload/strong`.
+                    public var strong: Swift.Bool
+                    /// Creates a new `PartsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - text:
+                    ///   - strong:
+                    public init(
+                        text: Swift.String,
+                        strong: Swift.Bool
+                    ) {
+                        self.text = text
+                        self.strong = strong
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case text
+                        case strong
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/TodayResource/day_line/parts`.
+                public typealias PartsPayload = [Components.Schemas.TodayResource.DayLinePayload.PartsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/day_line/parts`.
+                public var parts: Components.Schemas.TodayResource.DayLinePayload.PartsPayload
+                /// Creates a new `DayLinePayload`.
+                ///
+                /// - Parameters:
+                ///   - text:
+                ///   - parts:
+                public init(
+                    text: Swift.String,
+                    parts: Components.Schemas.TodayResource.DayLinePayload.PartsPayload
+                ) {
+                    self.text = text
+                    self.parts = parts
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case text
+                    case parts
+                }
+            }
+            /// The day in one line, under the date (DayLine): its times marked strong.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayResource/day_line`.
+            public var dayLine: Components.Schemas.TodayResource.DayLinePayload?
             /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused`.
             public struct RankPausedPayload: Codable, Hashable, Sendable {
                 /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused/notice`.
@@ -4553,6 +4607,7 @@ extension Components {
             ///   - revision: The plan's revision a change to the day must send (day/command).
             ///   - welcome: A first visit: the page leads with Paperwork's way in.
             ///   - personalised: Personalised suggestions on (Settings), for How we rank.
+            ///   - dayLine: The day in one line, under the date (DayLine): its times marked strong.
             ///   - rankPaused:
             ///   - weather:
             ///   - plans:
@@ -4575,6 +4630,7 @@ extension Components {
                 revision: Swift.Int,
                 welcome: Swift.Bool,
                 personalised: Swift.Bool,
+                dayLine: Components.Schemas.TodayResource.DayLinePayload? = nil,
                 rankPaused: Components.Schemas.TodayResource.RankPausedPayload? = nil,
                 weather: Components.Schemas.TodayResource.WeatherPayload? = nil,
                 plans: Components.Schemas.TodayResource.PlansPayload,
@@ -4597,6 +4653,7 @@ extension Components {
                 self.revision = revision
                 self.welcome = welcome
                 self.personalised = personalised
+                self.dayLine = dayLine
                 self.rankPaused = rankPaused
                 self.weather = weather
                 self.plans = plans
@@ -4620,6 +4677,7 @@ extension Components {
                 case revision
                 case welcome
                 case personalised
+                case dayLine = "day_line"
                 case rankPaused = "rank_paused"
                 case weather
                 case plans
