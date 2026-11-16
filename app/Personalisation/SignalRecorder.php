@@ -229,6 +229,8 @@ final class SignalRecorder
         DB::table('list_impressions')->where('subject_key', $subject)->delete();
         // What Composer remembers about them goes too: it's personalisation's.
         app(Memory::class)->erase($user);
+        // So do the trips kept for routines, and the routines.
+        app(Routines::class)->erase($user);
         TodayTaste::forget($user instanceof User ? $user->id : $user);
     }
 

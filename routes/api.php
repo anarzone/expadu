@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\MemoryController;
 use App\Http\Controllers\Api\V1\MomentsController;
 use App\Http\Controllers\Api\V1\PaperworkDocumentsController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\RoutinesController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
 use App\Http\Controllers\Api\V1\TodayTripController;
@@ -72,6 +73,12 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::put('settings', [UserSettingController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
 
         Route::get('today', [TodayController::class, 'show'])->middleware('verified');
+        // Routines learned from trips: theirs, and the one to offer now.
+        Route::get('routines', [RoutinesController::class, 'index'])->middleware('verified');
+        Route::post('routines', [RoutinesController::class, 'store'])->middleware(['verified', 'throttle:60,1']);
+        Route::post('routines/dismiss', [RoutinesController::class, 'dismiss'])->middleware(['verified', 'throttle:60,1']);
+        Route::patch('routines/{routine}', [RoutinesController::class, 'update'])->whereNumber('routine')->middleware(['verified', 'throttle:60,1']);
+        Route::delete('routines/{routine}', [RoutinesController::class, 'destroy'])->whereNumber('routine')->middleware('verified');
         // What the phone schedules as its own notifications: the next 36 hours.
         Route::get('moments', [MomentsController::class, 'index'])->middleware('verified');
         Route::post('day/command', [DayController::class, 'command'])->middleware('verified');

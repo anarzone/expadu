@@ -9707,6 +9707,378 @@
                 }
             }
         },
+        "/routines": {
+            "get": {
+                "operationId": "routines.index",
+                "tags": [
+                    "Routines"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "routines": {
+                                            "type": "array",
+                                            "description": "Weekdays 1 (Monday) to 7.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "to_label": {
+                                                        "type": "string"
+                                                    },
+                                                    "from_key": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "weekdays": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "at": {
+                                                        "type": "string"
+                                                    },
+                                                    "remind": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "to_label",
+                                                    "from_key",
+                                                    "weekdays",
+                                                    "at",
+                                                    "remind"
+                                                ]
+                                            }
+                                        },
+                                        "offer": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "description": "What their trips show, to offer; null when nothing does.",
+                                            "properties": {
+                                                "to_key": {
+                                                    "type": "string"
+                                                },
+                                                "to_label": {
+                                                    "type": "string"
+                                                },
+                                                "from_key": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "weekdays": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "at": {
+                                                    "type": "string"
+                                                },
+                                                "times": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "to_key",
+                                                "to_label",
+                                                "from_key",
+                                                "weekdays",
+                                                "at",
+                                                "times"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "routines",
+                                        "offer"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "routines.store",
+                "summary": "Yes to the offer, with the days and time as they set them",
+                "tags": [
+                    "Routines"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "to_key": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    },
+                                    "weekdays": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 7
+                                        },
+                                        "minItems": 1
+                                    },
+                                    "at": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "to_key",
+                                    "weekdays",
+                                    "at"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "id"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "That routine isn\u2019t on offer any more."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/routines/dismiss": {
+            "post": {
+                "operationId": "routines.dismiss",
+                "summary": "Not now: that offer isn't made again for a while",
+                "tags": [
+                    "Routines"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "to_key": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "to_key"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "dismissed": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "dismissed"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/routines/{routine}": {
+            "patch": {
+                "operationId": "routines.update",
+                "summary": "Its days, its time, or whether it tells them when to leave",
+                "tags": [
+                    "Routines"
+                ],
+                "parameters": [
+                    {
+                        "name": "routine",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "weekdays": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 7
+                                        },
+                                        "minItems": 1
+                                    },
+                                    "at": {
+                                        "type": "string"
+                                    },
+                                    "remind": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "changed": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "changed"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "routines.destroy",
+                "tags": [
+                    "Routines"
+                ],
+                "parameters": [
+                    {
+                        "name": "routine",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "forgotten": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "forgotten"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/auth/token": {
             "post": {
                 "operationId": "signIn.token",
@@ -10573,6 +10945,9 @@
                                                 ]
                                             },
                                             "personalisation": {
+                                                "type": "boolean"
+                                            },
+                                            "routine_learning": {
                                                 "type": "boolean"
                                             },
                                             "composer_ask_first_everyday": {
@@ -14577,8 +14952,8 @@
                     }
                 }
             },
-            "AuthorizationException": {
-                "description": "Authorization error",
+            "ModelNotFoundException": {
+                "description": "Not found",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -14596,8 +14971,8 @@
                     }
                 }
             },
-            "ModelNotFoundException": {
-                "description": "Not found",
+            "AuthorizationException": {
+                "description": "Authorization error",
                 "content": {
                     "application/json": {
                         "schema": {

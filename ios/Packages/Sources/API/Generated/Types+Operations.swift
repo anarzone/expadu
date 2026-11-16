@@ -30096,6 +30096,1177 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /routines`.
+    /// - Remark: Generated from `#/paths//routines/get(routines.index)`.
+    public enum Routines_index {
+        public static let id: Swift.String = "routines.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/routines/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Routines_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.Routines_index.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload`.
+                        public struct RoutinesPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload/id`.
+                            public var id: Swift.Int
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload/to_label`.
+                            public var toLabel: Swift.String
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload/from_key`.
+                            public var fromKey: Swift.String?
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload/weekdays`.
+                            public var weekdays: [Swift.Int]
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload/at`.
+                            public var at: Swift.String
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload/remind`.
+                            public var remind: Swift.Bool
+                            /// Creates a new `RoutinesPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - toLabel:
+                            ///   - fromKey:
+                            ///   - weekdays:
+                            ///   - at:
+                            ///   - remind:
+                            public init(
+                                id: Swift.Int,
+                                toLabel: Swift.String,
+                                fromKey: Swift.String? = nil,
+                                weekdays: [Swift.Int],
+                                at: Swift.String,
+                                remind: Swift.Bool
+                            ) {
+                                self.id = id
+                                self.toLabel = toLabel
+                                self.fromKey = fromKey
+                                self.weekdays = weekdays
+                                self.at = at
+                                self.remind = remind
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case toLabel = "to_label"
+                                case fromKey = "from_key"
+                                case weekdays
+                                case at
+                                case remind
+                            }
+                        }
+                        /// Weekdays 1 (Monday) to 7.
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/routines`.
+                        public typealias RoutinesPayload = [Operations.Routines_index.Output.Ok.Body.JsonPayload.RoutinesPayloadPayload]
+                        /// Weekdays 1 (Monday) to 7.
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/routines`.
+                        public var routines: Operations.Routines_index.Output.Ok.Body.JsonPayload.RoutinesPayload
+                        /// What their trips show, to offer; null when nothing does.
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer`.
+                        public struct OfferPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/to_key`.
+                            public var toKey: Swift.String
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/to_label`.
+                            public var toLabel: Swift.String
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/from_key`.
+                            public var fromKey: Swift.String?
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/weekdays`.
+                            public var weekdays: [Swift.Int]
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/at`.
+                            public var at: Swift.String
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/times`.
+                            public var times: Swift.Int
+                            /// Creates a new `OfferPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - toKey:
+                            ///   - toLabel:
+                            ///   - fromKey:
+                            ///   - weekdays:
+                            ///   - at:
+                            ///   - times:
+                            public init(
+                                toKey: Swift.String,
+                                toLabel: Swift.String,
+                                fromKey: Swift.String? = nil,
+                                weekdays: [Swift.Int],
+                                at: Swift.String,
+                                times: Swift.Int
+                            ) {
+                                self.toKey = toKey
+                                self.toLabel = toLabel
+                                self.fromKey = fromKey
+                                self.weekdays = weekdays
+                                self.at = at
+                                self.times = times
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case toKey = "to_key"
+                                case toLabel = "to_label"
+                                case fromKey = "from_key"
+                                case weekdays
+                                case at
+                                case times
+                            }
+                        }
+                        /// What their trips show, to offer; null when nothing does.
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer`.
+                        public var offer: Operations.Routines_index.Output.Ok.Body.JsonPayload.OfferPayload?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - routines: Weekdays 1 (Monday) to 7.
+                        ///   - offer: What their trips show, to offer; null when nothing does.
+                        public init(
+                            routines: Operations.Routines_index.Output.Ok.Body.JsonPayload.RoutinesPayload,
+                            offer: Operations.Routines_index.Output.Ok.Body.JsonPayload.OfferPayload? = nil
+                        ) {
+                            self.routines = routines
+                            self.offer = offer
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case routines
+                            case offer
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/application\/json`.
+                    case json(Operations.Routines_index.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Routines_index.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Routines_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Routines_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//routines/get(routines.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Routines_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Routines_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//routines/get(routines.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Yes to the offer, with the days and time as they set them
+    ///
+    /// - Remark: HTTP `POST /routines`.
+    /// - Remark: Generated from `#/paths//routines/post(routines.store)`.
+    public enum Routines_store {
+        public static let id: Swift.String = "routines.store"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/routines/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_store.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_store.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Routines_store.Input.Headers
+            /// - Remark: Generated from `#/paths/routines/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/routines/POST/requestBody/json/to_key`.
+                    public var toKey: Swift.String
+                    /// - Remark: Generated from `#/paths/routines/POST/requestBody/json/weekdays`.
+                    public var weekdays: [Swift.Int]
+                    /// - Remark: Generated from `#/paths/routines/POST/requestBody/json/at`.
+                    public var at: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - toKey:
+                    ///   - weekdays:
+                    ///   - at:
+                    public init(
+                        toKey: Swift.String,
+                        weekdays: [Swift.Int],
+                        at: Swift.String
+                    ) {
+                        self.toKey = toKey
+                        self.weekdays = weekdays
+                        self.at = at
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case toKey = "to_key"
+                        case weekdays
+                        case at
+                    }
+                }
+                /// - Remark: Generated from `#/paths/routines/POST/requestBody/content/application\/json`.
+                case json(Operations.Routines_store.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Routines_store.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Routines_store.Input.Headers = .init(),
+                body: Operations.Routines_store.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/routines/POST/responses/201/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/routines/POST/responses/201/content/json/id`.
+                        public var id: Swift.Int?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - id:
+                        public init(id: Swift.Int? = nil) {
+                            self.id = id
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case id
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/routines/POST/responses/201/content/application\/json`.
+                    case json(Operations.Routines_store.Output.Created.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Routines_store.Output.Created.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Routines_store.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Routines_store.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//routines/post(routines.store)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.Routines_store.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.Routines_store.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/routines/POST/responses/409/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// Error overview.
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/POST/responses/409/content/json/message`.
+                        public var message: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - message: Error overview.
+                        public init(message: Swift.String) {
+                            self.message = message
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case message
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/routines/POST/responses/409/content/application\/json`.
+                    case json(Operations.Routines_store.Output.Conflict.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Routines_store.Output.Conflict.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Routines_store.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Routines_store.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// An error
+            ///
+            /// - Remark: Generated from `#/paths//routines/post(routines.store)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.Routines_store.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.Routines_store.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//routines/post(routines.store)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//routines/post(routines.store)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Not now: that offer isn't made again for a while
+    ///
+    /// - Remark: HTTP `POST /routines/dismiss`.
+    /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.
+    public enum Routines_dismiss {
+        public static let id: Swift.String = "routines.dismiss"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/routines/dismiss/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_dismiss.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_dismiss.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Routines_dismiss.Input.Headers
+            /// - Remark: Generated from `#/paths/routines/dismiss/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/dismiss/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/routines/dismiss/POST/requestBody/json/to_key`.
+                    public var toKey: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - toKey:
+                    public init(toKey: Swift.String) {
+                        self.toKey = toKey
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case toKey = "to_key"
+                    }
+                }
+                /// - Remark: Generated from `#/paths/routines/dismiss/POST/requestBody/content/application\/json`.
+                case json(Operations.Routines_dismiss.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Routines_dismiss.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Routines_dismiss.Input.Headers = .init(),
+                body: Operations.Routines_dismiss.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/dismiss/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/routines/dismiss/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/routines/dismiss/POST/responses/200/content/json/dismissed`.
+                        public var dismissed: Swift.Bool
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - dismissed:
+                        public init(dismissed: Swift.Bool) {
+                            self.dismissed = dismissed
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case dismissed
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/routines/dismiss/POST/responses/200/content/application\/json`.
+                    case json(Operations.Routines_dismiss.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Routines_dismiss.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Routines_dismiss.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Routines_dismiss.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Routines_dismiss.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Routines_dismiss.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Its days, its time, or whether it tells them when to leave
+    ///
+    /// - Remark: HTTP `PATCH /routines/{routine}`.
+    /// - Remark: Generated from `#/paths//routines/{routine}/patch(routines.update)`.
+    public enum Routines_update {
+        public static let id: Swift.String = "routines.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/path/routine`.
+                public var routine: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - routine:
+                public init(routine: Swift.Int) {
+                    self.routine = routine
+                }
+            }
+            public var path: Operations.Routines_update.Input.Path
+            /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Routines_update.Input.Headers
+            /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/requestBody/json/weekdays`.
+                    public var weekdays: [Swift.Int]?
+                    /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/requestBody/json/at`.
+                    public var at: Swift.String?
+                    /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/requestBody/json/remind`.
+                    public var remind: Swift.Bool?
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - weekdays:
+                    ///   - at:
+                    ///   - remind:
+                    public init(
+                        weekdays: [Swift.Int]? = nil,
+                        at: Swift.String? = nil,
+                        remind: Swift.Bool? = nil
+                    ) {
+                        self.weekdays = weekdays
+                        self.at = at
+                        self.remind = remind
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case weekdays
+                        case at
+                        case remind
+                    }
+                }
+                /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/requestBody/content/application\/json`.
+                case json(Operations.Routines_update.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Routines_update.Input.Body?
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.Routines_update.Input.Path,
+                headers: Operations.Routines_update.Input.Headers = .init(),
+                body: Operations.Routines_update.Input.Body? = nil
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/responses/200/content/json/changed`.
+                        public var changed: Swift.Bool
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - changed:
+                        public init(changed: Swift.Bool) {
+                            self.changed = changed
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case changed
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/routines/{routine}/PATCH/responses/200/content/application\/json`.
+                    case json(Operations.Routines_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Routines_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Routines_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Routines_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//routines/{routine}/patch(routines.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Routines_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Routines_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//routines/{routine}/patch(routines.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//routines/{routine}/patch(routines.update)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//routines/{routine}/patch(routines.update)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /routines/{routine}`.
+    /// - Remark: Generated from `#/paths//routines/{routine}/delete(routines.destroy)`.
+    public enum Routines_destroy {
+        public static let id: Swift.String = "routines.destroy"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/routines/{routine}/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/{routine}/DELETE/path/routine`.
+                public var routine: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - routine:
+                public init(routine: Swift.Int) {
+                    self.routine = routine
+                }
+            }
+            public var path: Operations.Routines_destroy.Input.Path
+            /// - Remark: Generated from `#/paths/routines/{routine}/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_destroy.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_destroy.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Routines_destroy.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.Routines_destroy.Input.Path,
+                headers: Operations.Routines_destroy.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/{routine}/DELETE/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/routines/{routine}/DELETE/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/routines/{routine}/DELETE/responses/200/content/json/forgotten`.
+                        public var forgotten: Swift.Bool
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - forgotten:
+                        public init(forgotten: Swift.Bool) {
+                            self.forgotten = forgotten
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case forgotten
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/routines/{routine}/DELETE/responses/200/content/application\/json`.
+                    case json(Operations.Routines_destroy.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Routines_destroy.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Routines_destroy.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Routines_destroy.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//routines/{routine}/delete(routines.destroy)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Routines_destroy.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Routines_destroy.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Not found
+            ///
+            /// - Remark: Generated from `#/paths//routines/{routine}/delete(routines.destroy)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.ModelNotFoundException)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.ModelNotFoundException {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//routines/{routine}/delete(routines.destroy)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Email and password. An account with two-step sign-in gets a challenge, not a token
     ///
     /// - Remark: HTTP `POST /auth/token`.
@@ -33309,6 +34480,8 @@ public enum Operations {
                         public var profileVisibility: Operations.UserSetting_update.Input.Body.JsonPayload.SettingsPayload.ProfileVisibilityPayload?
                         /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/personalisation`.
                         public var personalisation: Swift.Bool?
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/routine_learning`.
+                        public var routineLearning: Swift.Bool?
                         /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/composer_ask_first_everyday`.
                         public var composerAskFirstEveryday: Swift.Bool?
                         /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/composer_ask_first_paperwork`.
@@ -33321,6 +34494,7 @@ public enum Operations {
                         ///   - shareAnonymised:
                         ///   - profileVisibility:
                         ///   - personalisation:
+                        ///   - routineLearning:
                         ///   - composerAskFirstEveryday:
                         ///   - composerAskFirstPaperwork:
                         public init(
@@ -33329,6 +34503,7 @@ public enum Operations {
                             shareAnonymised: Swift.Bool? = nil,
                             profileVisibility: Operations.UserSetting_update.Input.Body.JsonPayload.SettingsPayload.ProfileVisibilityPayload? = nil,
                             personalisation: Swift.Bool? = nil,
+                            routineLearning: Swift.Bool? = nil,
                             composerAskFirstEveryday: Swift.Bool? = nil,
                             composerAskFirstPaperwork: Swift.Bool? = nil
                         ) {
@@ -33337,6 +34512,7 @@ public enum Operations {
                             self.shareAnonymised = shareAnonymised
                             self.profileVisibility = profileVisibility
                             self.personalisation = personalisation
+                            self.routineLearning = routineLearning
                             self.composerAskFirstEveryday = composerAskFirstEveryday
                             self.composerAskFirstPaperwork = composerAskFirstPaperwork
                         }
@@ -33346,6 +34522,7 @@ public enum Operations {
                             case shareAnonymised = "share_anonymised"
                             case profileVisibility = "profile_visibility"
                             case personalisation
+                            case routineLearning = "routine_learning"
                             case composerAskFirstEveryday = "composer_ask_first_everyday"
                             case composerAskFirstPaperwork = "composer_ask_first_paperwork"
                         }
