@@ -259,7 +259,10 @@ test('🔒 "I\'m vegetarian" is remembered with Undo and reaches the next conver
     $next = assistantAsk($this, 'anything tonight?');
 
     expect(Http::recorded()[2][0]->body())->toContain('What you know about them:')->toContain('[k1] Vegetarian')->toContain('[u2] German: A1')
-        ->and($next['lead'])->toBe('Jazz im Stadtgarten starts at 20:00. You’re vegetarian, so eat before you go.');
+        ->and($next['lead'])->toBe('Jazz im Stadtgarten starts at 20:00. You’re vegetarian, so eat before you go.')
+        // Said under the answer, from what they told Composer.
+        ->and($next['told'])->toBe(['Vegetarian'])
+        ->and($told)->not->toHaveKey('told');
 });
 
 test('🔒 without the opt-in nothing about them is given and remember keeps nothing', function () {

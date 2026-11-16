@@ -447,6 +447,7 @@ private struct DoneCard: View {
     let done: ComposerBlock.Done
     @Environment(ComposerModel.self) private var model
     @Environment(Session.self) private var session
+    @Environment(Pages.self) private var pages
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -466,6 +467,14 @@ private struct DoneCard: View {
             .foregroundStyle(Color(light: 0x17603A, dark: 0x86E2AA))
             .padding(.horizontal, 12).padding(.vertical, 11)
             .background(Color(light: 0xE4F4E8, dark: 0x1F3A28), in: .rect(cornerRadius: 16, style: .continuous))
+            // What Composer remembered or forgot: where all of it is kept, to see and change.
+            if done.link?.href?.hasPrefix("/settings/privacy") == true {
+                Button { pages.openKnows() } label: {
+                    Label("See what Expadu knows", systemImage: "arrow.right").labelStyle(TrailingIcon())
+                        .font(.geist(14.5, .semibold)).foregroundStyle(TodayLink.ink).frame(minHeight: 36)
+                }
+                .buttonStyle(PressStyle()).padding(.horizontal, 4)
+            }
             if let day = done.day, !day.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(day, id: \.self) { row in

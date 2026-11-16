@@ -116,6 +116,7 @@ private struct AnswerView: View {
     @Environment(ComposerModel.self) private var model
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
+    @Environment(Pages.self) private var pages
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -148,6 +149,21 @@ private struct AnswerView: View {
                     Text(words).font(.geist(17)).foregroundStyle(Palette.text).lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
+                }
+                // What it leant on that they told Composer: shown, and one tap from changing it.
+                if !message.told.isEmpty {
+                    Button { pages.openKnows() } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person").font(.system(size: 13, weight: .semibold))
+                            Text("From what you told me: \(Text(message.told.joined(separator: " · ")).font(.geist(13.5, .semibold)).foregroundStyle(Palette.text))")
+                                .multilineTextAlignment(.leading)
+                        }
+                        .font(.geist(13.5)).foregroundStyle(Palette.posterLead)
+                        .padding(.horizontal, 12).frame(minHeight: 40)
+                        .background(Palette.quiet, in: .rect(cornerRadius: 14))
+                    }
+                    .buttonStyle(PressStyle())
+                    .accessibilityHint("Opens what Expadu knows")
                 }
                 ForEach(Array(message.blocks.enumerated()), id: \.offset) { _, block in
                     ComposerCard(block: block, showText: message.lead?.isEmpty != false, question: question)

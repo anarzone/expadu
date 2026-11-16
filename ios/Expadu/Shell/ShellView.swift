@@ -53,6 +53,8 @@ struct ShellView: View {
     /// Plan a trip, its routes and the trip screen: one of each for the whole app, opened from
     /// Travel, Today or Composer alike.
     @State private var planner = TripPlanner()
+    /// Pages any screen opens over the app (What Expadu knows).
+    @State private var pages = Pages()
     @State private var compact = false
     @State private var lastOffset: CGFloat = 0
     @State private var composer: ComposerOpening?
@@ -92,6 +94,7 @@ struct ShellView: View {
         }
         .environment(today)
         .environment(planner)
+        .environment(pages)
         .environment(\.sectionBarCompact, compact)
         .environment(\.sectionBarTop, barTop)
         // Travel keeps the bar folded, so the board, its search and its sheets have the room;
@@ -183,6 +186,7 @@ struct ShellView: View {
                     .id(opening.id)
                     .environment(today)
                     .environment(planner)
+                    .environment(pages)
                     .environment(\.shell, ShellActions(
                         openComposer: {},
                         show: { section in withAnimation(.snappy) { tab = section; compact = section == .travel } },
@@ -214,6 +218,12 @@ struct ShellView: View {
             TripPlanView(planner: planner, station: planner.station, stationFavourite: planner.stationFavourite)
                 .environment(planner)
                 .environment(today)
+                // Clear, so the page it opened over shows while it's swiped back (it draws its own).
+                .presentationBackground(.clear)
+        }
+        // What Expadu knows, from the account menu, Composer's Remembered card or Today's How we rank.
+        .fullScreenCover(isPresented: $pages.knows) {
+            KnowsView()
                 // Clear, so the page it opened over shows while it's swiped back (it draws its own).
                 .presentationBackground(.clear)
         }
@@ -584,14 +594,17 @@ private struct ShellHeader: View {
     }
 }
 
-/// The account: for now, signing out.
+/// The account: what Expadu knows about them, and signing out.
 struct AccountButton: View {
     @Environment(Session.self) private var session
+    @Environment(Pages.self) private var pages
 
     var body: some View {
         Menu {
             Text(session.email)
-            Button("Sign out", role: .destructive) { Task { await session.signOut() } }
+            Button("What Expadu knows", systemImage: "person.text.rectangle") { pages.openKnows() }
+            Divider()
+            Button("Sign out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { Task { await session.signOut() } }
         } label: {
             Text(session.initial)
                 .font(.geist(14, .semibold))

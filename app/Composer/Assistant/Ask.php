@@ -101,6 +101,7 @@ final class Ask
                 'looked_at' => self::lookedAt($answer['looked'], $now) ?: null,
                 'invite' => $answer['invite'] ?: null,
                 'taste' => $answer['taste'] ?: null,
+                'told' => ($answer['told'] ?? []) ?: null,
             ]), $answer['token']);
         }
 
