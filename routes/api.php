@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\JourneyController;
 use App\Http\Controllers\Api\V1\MemoryController;
 use App\Http\Controllers\Api\V1\PaperworkDocumentsController;
+use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
 use App\Http\Controllers\Api\V1\TodayTripController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Api\V1\Travel\AppTripController;
 use App\Http\Controllers\Api\V1\Travel\AppTripRideController;
 use App\Http\Controllers\Api\V1\TravelController;
 use App\Http\Controllers\TodayRankController;
+use App\Http\Controllers\UserSettingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -61,6 +63,12 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::post('me/email-verification', [AccountController::class, 'resendVerification'])->middleware('throttle:fortify-forms');
         Route::post('me/deletion-code', [AccountController::class, 'sendDeletionCode'])->middleware(['verified', 'throttle:email-confirmation']);
         Route::post('me/delete', [AccountController::class, 'destroy'])->middleware('verified');
+        // Their situation and German level, by the profile's own rules (What Expadu knows).
+        Route::patch('me/profile', [ProfileController::class, 'update'])->middleware(['verified', 'throttle:60,1']);
+        // Their settings as the web's Settings saves them, the same controller: personalisation on (with
+        // their word that they're 16 or older) and off (which erases what was learned and remembered).
+        // Whether it's on, and under the current wording, is read from memory.
+        Route::put('settings', [UserSettingController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
 
         Route::get('today', [TodayController::class, 'show'])->middleware('verified');
         Route::post('day/command', [DayController::class, 'command'])->middleware('verified');

@@ -20567,6 +20567,10 @@ public enum Operations {
                     public struct JsonPayload: Codable, Hashable, Sendable {
                         /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/personalised`.
                         public var personalised: Swift.Bool
+                        /// On under the wording Settings shows now; false means turn it on again to agree to what it says now.
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/personalisation_current`.
+                        public var personalisationCurrent: Swift.Bool
                         /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/FactsPayload`.
                         public struct FactsPayloadPayload: Codable, Hashable, Sendable {
                             /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/FactsPayload/id`.
@@ -20743,6 +20747,7 @@ public enum Operations {
                         ///
                         /// - Parameters:
                         ///   - personalised:
+                        ///   - personalisationCurrent: On under the wording Settings shows now; false means turn it on again to agree to what it says now.
                         ///   - facts: What Composer remembers, oldest first: told (said to Composer) or added (typed here).
                         ///   - taste: What they tend to like and skip, as Composer reads it; null when off or too little yet.
                         ///   - situation:
@@ -20750,6 +20755,7 @@ public enum Operations {
                         ///   - limit:
                         public init(
                             personalised: Swift.Bool,
+                            personalisationCurrent: Swift.Bool,
                             facts: Operations.Memory_index.Output.Ok.Body.JsonPayload.FactsPayload,
                             taste: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload? = nil,
                             situation: Operations.Memory_index.Output.Ok.Body.JsonPayload.SituationPayload? = nil,
@@ -20757,6 +20763,7 @@ public enum Operations {
                             limit: Operations.Memory_index.Output.Ok.Body.JsonPayload.LimitPayload
                         ) {
                             self.personalised = personalised
+                            self.personalisationCurrent = personalisationCurrent
                             self.facts = facts
                             self.taste = taste
                             self.situation = situation
@@ -20765,6 +20772,7 @@ public enum Operations {
                         }
                         public enum CodingKeys: String, CodingKey {
                             case personalised
+                            case personalisationCurrent = "personalisation_current"
                             case facts
                             case taste
                             case situation
@@ -27055,6 +27063,246 @@ public enum Operations {
             }
         }
     }
+    /// One of the two fields, set to one of its values; why not (422) when it isn't one
+    ///
+    /// - Remark: HTTP `PATCH /me/profile`.
+    /// - Remark: Generated from `#/paths//me/profile/patch(profile.update)`.
+    public enum Profile_update {
+        public static let id: Swift.String = "profile.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/me/profile/PATCH/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Profile_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Profile_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Profile_update.Input.Headers
+            /// - Remark: Generated from `#/paths/me/profile/PATCH/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/me/profile/PATCH/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/me/profile/PATCH/requestBody/json/field`.
+                    @frozen public enum FieldPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case situation = "situation"
+                        case germanLevel = "german_level"
+                    }
+                    /// - Remark: Generated from `#/paths/me/profile/PATCH/requestBody/json/field`.
+                    public var field: Operations.Profile_update.Input.Body.JsonPayload.FieldPayload
+                    /// - Remark: Generated from `#/paths/me/profile/PATCH/requestBody/json/value`.
+                    public var value: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - field:
+                    ///   - value:
+                    public init(
+                        field: Operations.Profile_update.Input.Body.JsonPayload.FieldPayload,
+                        value: Swift.String
+                    ) {
+                        self.field = field
+                        self.value = value
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case field
+                        case value
+                    }
+                }
+                /// - Remark: Generated from `#/paths/me/profile/PATCH/requestBody/content/application\/json`.
+                case json(Operations.Profile_update.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Profile_update.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Profile_update.Input.Headers = .init(),
+                body: Operations.Profile_update.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/me/profile/PATCH/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/me/profile/PATCH/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/me/profile/PATCH/responses/200/content/json/situation`.
+                        @frozen public enum SituationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case nonEuEmployee = "non_eu_employee"
+                            case euEmployee = "eu_employee"
+                            case student = "student"
+                            case freelancer = "freelancer"
+                            case familyReunification = "family_reunification"
+                            case digitalNomad = "digital_nomad"
+                            case other = "other"
+                            case _empty_ = ""
+                        }
+                        /// - Remark: Generated from `#/paths/me/profile/PATCH/responses/200/content/json/situation`.
+                        public var situation: Operations.Profile_update.Output.Ok.Body.JsonPayload.SituationPayload?
+                        /// - Remark: Generated from `#/paths/me/profile/PATCH/responses/200/content/json/german_level`.
+                        @frozen public enum GermanLevelPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case none = "none"
+                            case a1 = "a1"
+                            case a2 = "a2"
+                            case b1 = "b1"
+                            case b2 = "b2"
+                            case c1 = "c1"
+                            case c2 = "c2"
+                            case _empty_ = ""
+                        }
+                        /// - Remark: Generated from `#/paths/me/profile/PATCH/responses/200/content/json/german_level`.
+                        public var germanLevel: Operations.Profile_update.Output.Ok.Body.JsonPayload.GermanLevelPayload?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - situation:
+                        ///   - germanLevel:
+                        public init(
+                            situation: Operations.Profile_update.Output.Ok.Body.JsonPayload.SituationPayload? = nil,
+                            germanLevel: Operations.Profile_update.Output.Ok.Body.JsonPayload.GermanLevelPayload? = nil
+                        ) {
+                            self.situation = situation
+                            self.germanLevel = germanLevel
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case situation
+                            case germanLevel = "german_level"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/me/profile/PATCH/responses/200/content/application\/json`.
+                    case json(Operations.Profile_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Profile_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Profile_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Profile_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//me/profile/patch(profile.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Profile_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Profile_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//me/profile/patch(profile.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//me/profile/patch(profile.update)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/question-preview`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)`.
     public enum Paperwork_v2_questions_preview {
@@ -32750,6 +32998,260 @@ public enum Operations {
             /// Unauthenticated
             ///
             /// - Remark: Generated from `#/paths//travel/nearby/get(travel.nearby)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `PUT /settings`.
+    /// - Remark: Generated from `#/paths//settings/put(userSetting.update)`.
+    public enum UserSetting_update {
+        public static let id: Swift.String = "userSetting.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/settings/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UserSetting_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UserSetting_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.UserSetting_update.Input.Headers
+            /// - Remark: Generated from `#/paths/settings/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings`.
+                    public struct SettingsPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/share_location`.
+                        public var shareLocation: Swift.Bool?
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/personalised_content`.
+                        public var personalisedContent: Swift.Bool?
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/share_anonymised`.
+                        public var shareAnonymised: Swift.Bool?
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/profile_visibility`.
+                        @frozen public enum ProfileVisibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                            case everyone = "everyone"
+                            case partners = "partners"
+                            case nobody = "nobody"
+                        }
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/profile_visibility`.
+                        public var profileVisibility: Operations.UserSetting_update.Input.Body.JsonPayload.SettingsPayload.ProfileVisibilityPayload?
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/personalisation`.
+                        public var personalisation: Swift.Bool?
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/composer_ask_first_everyday`.
+                        public var composerAskFirstEveryday: Swift.Bool?
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/composer_ask_first_paperwork`.
+                        public var composerAskFirstPaperwork: Swift.Bool?
+                        /// Creates a new `SettingsPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - shareLocation:
+                        ///   - personalisedContent:
+                        ///   - shareAnonymised:
+                        ///   - profileVisibility:
+                        ///   - personalisation:
+                        ///   - composerAskFirstEveryday:
+                        ///   - composerAskFirstPaperwork:
+                        public init(
+                            shareLocation: Swift.Bool? = nil,
+                            personalisedContent: Swift.Bool? = nil,
+                            shareAnonymised: Swift.Bool? = nil,
+                            profileVisibility: Operations.UserSetting_update.Input.Body.JsonPayload.SettingsPayload.ProfileVisibilityPayload? = nil,
+                            personalisation: Swift.Bool? = nil,
+                            composerAskFirstEveryday: Swift.Bool? = nil,
+                            composerAskFirstPaperwork: Swift.Bool? = nil
+                        ) {
+                            self.shareLocation = shareLocation
+                            self.personalisedContent = personalisedContent
+                            self.shareAnonymised = shareAnonymised
+                            self.profileVisibility = profileVisibility
+                            self.personalisation = personalisation
+                            self.composerAskFirstEveryday = composerAskFirstEveryday
+                            self.composerAskFirstPaperwork = composerAskFirstPaperwork
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case shareLocation = "share_location"
+                            case personalisedContent = "personalised_content"
+                            case shareAnonymised = "share_anonymised"
+                            case profileVisibility = "profile_visibility"
+                            case personalisation
+                            case composerAskFirstEveryday = "composer_ask_first_everyday"
+                            case composerAskFirstPaperwork = "composer_ask_first_paperwork"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings`.
+                    public var settings: Operations.UserSetting_update.Input.Body.JsonPayload.SettingsPayload
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - settings:
+                    public init(settings: Operations.UserSetting_update.Input.Body.JsonPayload.SettingsPayload) {
+                        self.settings = settings
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case settings
+                    }
+                }
+                /// - Remark: Generated from `#/paths/settings/PUT/requestBody/content/application\/json`.
+                case json(Operations.UserSetting_update.Input.Body.JsonPayload)
+            }
+            public var body: Operations.UserSetting_update.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.UserSetting_update.Input.Headers = .init(),
+                body: Operations.UserSetting_update.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/settings/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/settings/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/settings/PUT/responses/200/content/json/settings`.
+                        public var settings: OpenAPIRuntime.OpenAPIValueContainer
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - settings:
+                        public init(settings: OpenAPIRuntime.OpenAPIValueContainer) {
+                            self.settings = settings
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case settings
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/settings/PUT/responses/200/content/application\/json`.
+                    case json(Operations.UserSetting_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.UserSetting_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UserSetting_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UserSetting_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//settings/put(userSetting.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.UserSetting_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.UserSetting_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//settings/put(userSetting.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//settings/put(userSetting.update)/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Components.Responses.AuthenticationException)

@@ -428,6 +428,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /paperwork/v2/people/{person}/processes`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processes/post(paperwork.v2.processes.start)`.
     func paperwork_v2_processes_start(_ input: Operations.Paperwork_v2_processes_start.Input) async throws -> Operations.Paperwork_v2_processes_start.Output
+    /// One of the two fields, set to one of its values; why not (422) when it isn't one
+    ///
+    /// - Remark: HTTP `PATCH /me/profile`.
+    /// - Remark: Generated from `#/paths//me/profile/patch(profile.update)`.
+    func profile_update(_ input: Operations.Profile_update.Input) async throws -> Operations.Profile_update.Output
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/question-preview`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)`.
     func paperwork_v2_questions_preview(_ input: Operations.Paperwork_v2_questions_preview.Input) async throws -> Operations.Paperwork_v2_questions_preview.Output
@@ -550,6 +555,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /travel/nearby`.
     /// - Remark: Generated from `#/paths//travel/nearby/get(travel.nearby)`.
     func travel_nearby(_ input: Operations.Travel_nearby.Input) async throws -> Operations.Travel_nearby.Output
+    /// - Remark: HTTP `PUT /settings`.
+    /// - Remark: Generated from `#/paths//settings/put(userSetting.update)`.
+    func userSetting_update(_ input: Operations.UserSetting_update.Input) async throws -> Operations.UserSetting_update.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -1740,6 +1748,19 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// One of the two fields, set to one of its values; why not (422) when it isn't one
+    ///
+    /// - Remark: HTTP `PATCH /me/profile`.
+    /// - Remark: Generated from `#/paths//me/profile/patch(profile.update)`.
+    public func profile_update(
+        headers: Operations.Profile_update.Input.Headers = .init(),
+        body: Operations.Profile_update.Input.Body
+    ) async throws -> Operations.Profile_update.Output {
+        try await profile_update(Operations.Profile_update.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/question-preview`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/question-preview/get(paperwork.v2.questions.preview)`.
     public func paperwork_v2_questions_preview(
@@ -2080,6 +2101,17 @@ extension APIProtocol {
         try await travel_nearby(Operations.Travel_nearby.Input(
             query: query,
             headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PUT /settings`.
+    /// - Remark: Generated from `#/paths//settings/put(userSetting.update)`.
+    public func userSetting_update(
+        headers: Operations.UserSetting_update.Input.Headers = .init(),
+        body: Operations.UserSetting_update.Input.Body
+    ) async throws -> Operations.UserSetting_update.Output {
+        try await userSetting_update(Operations.UserSetting_update.Input(
+            headers: headers,
+            body: body
         ))
     }
 }
