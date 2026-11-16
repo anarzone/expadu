@@ -34,6 +34,7 @@ use App\Models\SpotFeedback;
 use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
+use App\Personalisation\Memory;
 use App\Personalisation\SignalRecorder;
 use App\Personalisation\TasteFacts;
 use App\Places\DestinationGrouping;
@@ -100,7 +101,7 @@ final class AssistantTools
     private const NOTICES = 3;
 
     /** Ids whose facts are about the person (their place, trip, records, taste, day): a sentence citing one may speak of them. */
-    public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|plan)\d+|here|pw|trip|next|plan)$/';
+    public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|k|u|plan)\d+|here|pw|trip|next|plan)$/';
 
     /**
      * What each tool's result sends, as Composer's notice names it (ProcessingPurpose::WORDS).
@@ -122,6 +123,7 @@ final class AssistantTools
         'add_appointment' => 'changes_you_ask_for', 'mark_done' => 'changes_you_ask_for', 'way_reminder' => 'changes_you_ask_for', 'remove_way' => 'changes_you_ask_for',
         'mute_alerts' => 'changes_you_ask_for', 'dismiss_alert' => 'changes_you_ask_for', 'read_alerts' => 'changes_you_ask_for',
         'set_notifications' => 'changes_you_ask_for', 'set_needs' => 'changes_you_ask_for', 'update_profile' => 'changes_you_ask_for',
+        'remember' => 'changes_you_ask_for', 'forget' => 'changes_you_ask_for',
         // Without their Paperwork permission, these only say it's needed.
         'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
     ];
@@ -237,6 +239,37 @@ final class AssistantTools
     public function personal(): bool
     {
         return $this->affinities !== null;
+    }
+
+    /**
+     * What Composer knows about the person, given with every message (with the opt-in only): what
+     * they asked it to remember ([k]), what they tend to like and skip ([t] [a] [h] [w], as my_taste
+     * says it) and their situation and German level ([u]). Each line is a fact a sentence may cite.
+     * Empty without the opt-in, or when there's nothing yet.
+     */
+    public function knownAbout(): string
+    {
+        if (! $this->personal()) {
+            return '';
+        }
+        $lines = [];
+        foreach (app(Memory::class)->facts($this->user) as $i => $fact) {
+            $lines[] = $this->line('k'.($i + 1), $fact['text']);
+        }
+        $situation = $this->user->situation?->value;
+        if ($situation !== null && $situation !== 'other') {
+            $lines[] = $this->line('u1', 'Here as: '.str_replace('_', ' ', $situation));
+        }
+        $german = $this->user->german_level?->value;
+        if ($german !== null) {
+            $lines[] = $this->line('u2', 'German: '.($german === 'none' ? 'none yet' : strtoupper($german)));
+        }
+        $taste = $this->taste !== null ? $this->myTaste() : '';
+        if ($taste !== '' && ! str_starts_with($taste, 'Not enough')) {
+            $lines[] = $taste;
+        }
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -358,6 +391,10 @@ final class AssistantTools
             ...($personal ? [
                 ['name' => 'my_taste', 'description' => 'What this person tends to like and skip (kinds of places and events, areas, times of day), from what they saved, opened and marked. They turned personalisation on.', 'input_schema' => $none],
                 ['name' => 'my_day', 'description' => 'This person\'s own plans and appointments today and tomorrow. They turned personalisation on.', 'input_schema' => $none],
+                ['name' => 'remember', 'description' => 'Keeps a lasting fact the person told you about themselves, so every later answer knows it: what they eat, who they live with (children and their ages), how they get around, their work or study hours, what they love or avoid, their languages. In a few words, as a fact about them ("Vegetarian", "Has a 3-year-old daughter", "Works from home on Fridays"). Only what they said, never a guess, never something only for today. Never anything about health, religion or beliefs, sexuality, politics or a union: for needing step-free ways use set_needs. Done with Undo on the card.',
+                    'input_schema' => ['type' => 'object', 'properties' => ['fact' => ['type' => 'string', 'description' => 'a few words, about them']], 'required' => ['fact']]],
+                ['name' => 'forget', 'description' => 'Forgets one thing you remember about them (its k id from what you know about them), when they say it\'s wrong or no longer so, or ask you to forget it. When it changed, forget the old one and remember the new. Done with Undo on the card.',
+                    'input_schema' => ['type' => 'object', 'properties' => ['fact' => ['type' => 'string', 'description' => 'its id, such as k2']], 'required' => ['fact']]],
             ] : []),
         ];
     }

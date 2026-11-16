@@ -218,7 +218,7 @@ final class SignalRecorder
         $this->interest($user, $action, SignalSurface::Today, SignalItemType::Need, $item, ['category' => $kind]);
     }
 
-    /** Erase everything learned about the person: ledger, affinities, hides, the lists they were shown. */
+    /** Erase everything learned about the person: ledger, affinities, hides, the lists they were shown, what Composer remembers. */
     public function forget(User|int $user): void
     {
         $subject = Pseudonym::for($user);
@@ -227,6 +227,8 @@ final class SignalRecorder
         DB::table('user_place_negatives')->where('subject_key', $subject)->delete();
         DB::table('taste_profiles')->where('subject_key', $subject)->delete();
         DB::table('list_impressions')->where('subject_key', $subject)->delete();
+        // What Composer remembers about them goes too: it's personalisation's.
+        app(Memory::class)->erase($user);
         TodayTaste::forget($user instanceof User ? $user->id : $user);
     }
 

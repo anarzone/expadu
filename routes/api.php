@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\Composer\AppPlaceWorkAnswerController;
 use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\JourneyController;
+use App\Http\Controllers\Api\V1\MemoryController;
 use App\Http\Controllers\Api\V1\PaperworkDocumentsController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
@@ -76,6 +77,12 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         // Today's own order after its notice changed: agree, or not now for a week.
         Route::put('today-rank', [TodayRankController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
         Route::post('today-rank/later', [TodayRankController::class, 'later'])->middleware('verified');
+        // What Expadu knows about you: what Composer remembers, the taste it learned, the profile it reads.
+        Route::get('memory', [MemoryController::class, 'index'])->middleware('verified');
+        Route::post('memory', [MemoryController::class, 'store'])->middleware(['verified', 'throttle:60,1']);
+        Route::post('memory/restore', [MemoryController::class, 'restore'])->middleware(['verified', 'throttle:60,1']);
+        Route::patch('memory/{fact}', [MemoryController::class, 'update'])->whereNumber('fact')->middleware(['verified', 'throttle:60,1']);
+        Route::delete('memory/{fact}', [MemoryController::class, 'destroy'])->whereNumber('fact')->middleware('verified');
         Route::get('travel/nearby', [TravelController::class, 'nearby'])->middleware('verified');
         // Travel, as the web's Travel page has it (routes/app/travel.php), with the token: the station board
         // by name or by where they are, the stop picker and ★ stops, a line's route and map, and the places

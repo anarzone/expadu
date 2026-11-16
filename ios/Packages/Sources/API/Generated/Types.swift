@@ -328,6 +328,32 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /journey/start`.
     /// - Remark: Generated from `#/paths//journey/start/post(journey.start)`.
     func journey_start(_ input: Operations.Journey_start.Input) async throws -> Operations.Journey_start.Output
+    /// Everything Expadu knows about them
+    ///
+    /// - Remark: HTTP `GET /memory`.
+    /// - Remark: Generated from `#/paths//memory/get(memory.index)`.
+    func memory_index(_ input: Operations.Memory_index.Input) async throws -> Operations.Memory_index.Output
+    /// Something for Composer to remember, typed on the screen. Refused with why (422): personalisation
+    /// off, a special category, already remembered, or full
+    ///
+    /// - Remark: HTTP `POST /memory`.
+    /// - Remark: Generated from `#/paths//memory/post(memory.store)`.
+    func memory_store(_ input: Operations.Memory_store.Input) async throws -> Operations.Memory_store.Output
+    /// Undo of a forget: the fact back in its place, under a new id
+    ///
+    /// - Remark: HTTP `POST /memory/restore`.
+    /// - Remark: Generated from `#/paths//memory/restore/post(memory.restore)`.
+    func memory_restore(_ input: Operations.Memory_restore.Input) async throws -> Operations.Memory_restore.Output
+    /// A fact's words, changed
+    ///
+    /// - Remark: HTTP `PATCH /memory/{fact}`.
+    /// - Remark: Generated from `#/paths//memory/{fact}/patch(memory.update)`.
+    func memory_update(_ input: Operations.Memory_update.Input) async throws -> Operations.Memory_update.Output
+    /// A fact forgotten; what it was comes back, so Undo can bring it back
+    ///
+    /// - Remark: HTTP `DELETE /memory/{fact}`.
+    /// - Remark: Generated from `#/paths//memory/{fact}/delete(memory.destroy)`.
+    func memory_destroy(_ input: Operations.Memory_destroy.Input) async throws -> Operations.Memory_destroy.Output
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
     func paperwork_v2_onboarding_draft_show(_ input: Operations.Paperwork_v2_onboarding_draft_show.Input) async throws -> Operations.Paperwork_v2_onboarding_draft_show.Output
@@ -1388,6 +1414,68 @@ extension APIProtocol {
         try await journey_start(Operations.Journey_start.Input(
             headers: headers,
             body: body
+        ))
+    }
+    /// Everything Expadu knows about them
+    ///
+    /// - Remark: HTTP `GET /memory`.
+    /// - Remark: Generated from `#/paths//memory/get(memory.index)`.
+    public func memory_index(headers: Operations.Memory_index.Input.Headers = .init()) async throws -> Operations.Memory_index.Output {
+        try await memory_index(Operations.Memory_index.Input(headers: headers))
+    }
+    /// Something for Composer to remember, typed on the screen. Refused with why (422): personalisation
+    /// off, a special category, already remembered, or full
+    ///
+    /// - Remark: HTTP `POST /memory`.
+    /// - Remark: Generated from `#/paths//memory/post(memory.store)`.
+    public func memory_store(
+        headers: Operations.Memory_store.Input.Headers = .init(),
+        body: Operations.Memory_store.Input.Body
+    ) async throws -> Operations.Memory_store.Output {
+        try await memory_store(Operations.Memory_store.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Undo of a forget: the fact back in its place, under a new id
+    ///
+    /// - Remark: HTTP `POST /memory/restore`.
+    /// - Remark: Generated from `#/paths//memory/restore/post(memory.restore)`.
+    public func memory_restore(
+        headers: Operations.Memory_restore.Input.Headers = .init(),
+        body: Operations.Memory_restore.Input.Body
+    ) async throws -> Operations.Memory_restore.Output {
+        try await memory_restore(Operations.Memory_restore.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// A fact's words, changed
+    ///
+    /// - Remark: HTTP `PATCH /memory/{fact}`.
+    /// - Remark: Generated from `#/paths//memory/{fact}/patch(memory.update)`.
+    public func memory_update(
+        path: Operations.Memory_update.Input.Path,
+        headers: Operations.Memory_update.Input.Headers = .init(),
+        body: Operations.Memory_update.Input.Body
+    ) async throws -> Operations.Memory_update.Output {
+        try await memory_update(Operations.Memory_update.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// A fact forgotten; what it was comes back, so Undo can bring it back
+    ///
+    /// - Remark: HTTP `DELETE /memory/{fact}`.
+    /// - Remark: Generated from `#/paths//memory/{fact}/delete(memory.destroy)`.
+    public func memory_destroy(
+        path: Operations.Memory_destroy.Input.Path,
+        headers: Operations.Memory_destroy.Input.Headers = .init()
+    ) async throws -> Operations.Memory_destroy.Output {
+        try await memory_destroy(Operations.Memory_destroy.Input(
+            path: path,
+            headers: headers
         ))
     }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
