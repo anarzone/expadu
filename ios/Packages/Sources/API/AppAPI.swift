@@ -713,6 +713,20 @@ public struct AppAPI: Sendable {
         _ = Self.composerReply(try await composer("PUT", "composer/paperwork-permission", body))
     }
 
+    // MARK: Moments
+
+    /// What the phone schedules as its own notifications for the next 36 hours.
+    public func moments() async throws(APIFailure) -> [Moment] {
+        let raw = try await composer("GET", "moments")
+        let json = (try? JSONSerialization.jsonObject(with: raw.data) as? [String: Any]) ?? [:]
+        guard raw.status == 200, let rows = json["moments"] as? [[String: Any]] else { throw failure(raw.status) }
+        return rows.compactMap { row in
+            guard let id = row["id"] as? String, let kind = row["kind"] as? String, let at = (row["at"] as? String).flatMap(Self.date(from:)),
+                  let title = row["title"] as? String, let body = row["body"] as? String else { return nil }
+            return Moment(id: id, kind: kind, at: at, title: title, body: body, link: row["link"] as? String ?? "/today")
+        }
+    }
+
     // MARK: What Expadu knows
 
     /// Everything Expadu knows about them.

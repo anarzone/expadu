@@ -241,12 +241,24 @@ struct ShellView: View {
         .onChange(of: today.page?.trip, initial: true) { _, trip in
             if let trip { planner.follow(trip) } else { planner.stopFollowing() }
         }
+        // The phone's own notifications from the moments: scheduled at launch, and again on every return.
+        .task {
+            Notifier.shared.start()
+            await Notifier.shared.sync(session.api)
+        }
+        // A tapped notification opens where it links.
+        .onChange(of: Notifier.shared.opened) { _, link in
+            guard let link else { return }
+            Notifier.shared.opened = nil
+            withAnimation(.snappy) { tab = link.hasPrefix("/travel") ? .travel : link.hasPrefix("/paperwork") ? .paperwork : .today }
+        }
         // Back in the app: the day (and the trip) read again at once, so the app and the Lock Screen
         // say the same, never a trip there that has ended.
         .onChange(of: scenePhase) { _, now in
             if now == .background { away = true }
             guard now == .active, away else { return }
             away = false
+            Task { await Notifier.shared.sync(session.api) }
             if today.page != nil { Task { await today.load(session.api, quietly: true) } }
         }
         // Trip sync: the tram they're really on, and the next one when a delay breaks a change.
