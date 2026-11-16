@@ -518,8 +518,7 @@ final class Assistant
         $places = $shown->filter(fn (string $id): bool => isset($tools->places[$id]))->take(self::PLACES_SHOWN)->map(fn (string $id): Candidate => $tools->places[$id])->values();
         // The cards it chose, then the rest of its search, up to six (coordinator, 23 Oct 2026: 6–8 when there are).
         if ($places->isNotEmpty()) {
-            $places = $places->concat(collect($tools->places)->reject(fn (Candidate $c): bool => $places->contains('id', $c->id))->values())
-                ->take(self::PLACES_SHOWN)->values();
+            $places = $places->concat(self::rest($tools, $places))->take(self::PLACES_SHOWN)->values();
             // Shown in its search's order, nearest first, whichever it chose (coordinator, 24 Oct 2026:
             // cards at 3.2 km, then 1.9 km, with nothing saying why).
             $rank = array_flip(array_keys($tools->places));
@@ -593,6 +592,10 @@ final class Assistant
             $lead = $lead === '' || str_ends_with($lead, ':') ? $line : $line.' '.$lead;
         }
 
+        // A search its words left out ("climbing or a gym", only the gym said): named in Composer's own line.
+        $also = isset($blocks['places']) ? self::alsoFound($tools, $lead) : '';
+        $lead = $also === '' ? $lead : trim($lead.' '.$also);
+
         return [
             'text' => $lead,
             'blocks' => array_values($blocks),
@@ -607,6 +610,50 @@ final class Assistant
                 ->filter(fn (mixed $id): bool => is_string($id) && preg_match('/^k\d+$/', $id) === 1)->unique()
                 ->map(fn (string $id): ?string => $tools->read[$id] ?? null)->filter()->values()->all(),
         ];
+    }
+
+    /**
+     * The rest of what its searches found, after the cards it chose: with two or more searches ("a
+     * climbing wall or a gym"), they take turns, so the second isn't cut off by the first's six.
+     *
+     * @param  Collection<int, Candidate>  $chosen
+     * @return Collection<int, Candidate>
+     */
+    private static function rest(AssistantTools $tools, Collection $chosen): Collection
+    {
+        $left = fn (array $ids): array => array_values(array_filter($ids, fn (string $id): bool => isset($tools->places[$id]) && ! $chosen->contains('id', $id)));
+        if (count($tools->searches) < 2) {
+            return collect($left(array_keys($tools->places)))->map(fn (string $id): Candidate => $tools->places[$id]);
+        }
+        $queues = array_map(fn (array $search): array => $left($search['ids']), $tools->searches);
+        $turns = [];
+        while (array_filter($queues) !== []) {
+            foreach ($queues as $i => $queue) {
+                if ($queue !== []) {
+                    $turns[] = array_shift($queues[$i]);
+                }
+            }
+        }
+
+        return collect(array_unique($turns))->map(fn (string $id): Candidate => $tools->places[$id])->values();
+    }
+
+    /**
+     * For each search the answer's words leave out, by what it looked for or any place it found: a
+     * line of Composer's own naming its first place ("Kletterfabrik (climbing) is also on the cards.").
+     */
+    private static function alsoFound(AssistantTools $tools, string $lead): string
+    {
+        if (count($tools->searches) < 2) {
+            return '';
+        }
+        $said = mb_strtolower($lead);
+
+        return collect($tools->searches)
+            ->reject(fn (array $search): bool => str_contains($said, mb_strtolower($search['kind']))
+                || collect($search['ids'])->contains(fn (string $id): bool => isset($tools->places[$id]) && str_contains($said, mb_strtolower($tools->places[$id]->name))))
+            ->map(fn (array $search): string => $tools->places[$search['ids'][0]]->name.' ('.$search['kind'].') is also on the cards.')
+            ->implode(' ');
     }
 
     /**
