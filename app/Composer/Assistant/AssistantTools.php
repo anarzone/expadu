@@ -184,6 +184,14 @@ final class AssistantTools
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
     public array $cards = [];
 
+    /**
+     * Each place search that found something, in order: what it looked for and its places' ids, so
+     * an answer to "climbing or a gym" shows both (the 30 Oct grade: only the gym was answered).
+     *
+     * @var list<array{kind: string, ids: list<string>}>
+     */
+    public array $searches = [];
+
     /** What "an activity" is when they don't name a kind: a day out's sights, culture and green. */
     private const DAY_OUT = ['museum', 'gallery', 'attraction', 'zoo', 'park', 'viewpoint', 'nature', 'market', 'theatre', 'cinema', 'arts_centre'];
 
@@ -1327,6 +1335,9 @@ final class AssistantTools
                 .($where !== null ? " {$where}" : ($this->location->hasOrigin() ? ' nearby' : ''))
                 .($maxWalk !== null ? " within about {$maxWalk} minutes' walk" : '').$lists.'.');
         }
+
+        $this->searches[] = ['kind' => $kinds !== [] ? implode(' or ', array_map(fn (string $k): string => self::kindName($k), $kinds))
+            : (is_string($activity ?? null) ? str_replace('_', ' ', $activity) : 'places'), 'ids' => $found->pluck('id')->all()];
 
         // The cards it will show were all shown before (asked again): said so, with the nearest as it's
         // listed, so the answer restates it rather than only offering something else (owner, 23 Oct 2026).

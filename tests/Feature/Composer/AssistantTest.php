@@ -430,6 +430,25 @@ test('place cards come nearest first, in the search\'s order, whichever the AI c
         ->toBe(['Café Near', 'Café Far']);
 });
 
+test('🔒 "a climbing wall or a gym": both searches get cards, and the one its words left out is named', function () {
+    // places_matrix.gym in the 30 Oct grade: two searches ran, the answer spoke only of the gym.
+    $user = User::factory()->onboarded()->create();
+    $gyms = collect(range(1, 6))->map(fn (int $i) => Spot::factory()->create(['name' => "Gym {$i}", 'category' => 'fitness_centre', 'veedel' => 'Ehrenfeld',
+        'is_active' => true, 'lat' => 50.9500 + $i * 0.0005, 'lng' => 6.9180]));
+    $wall = Spot::factory()->create(['name' => 'Kletterfabrik', 'category' => 'climbing', 'veedel' => 'Ehrenfeld', 'is_active' => true, 'lat' => 50.9560, 'lng' => 6.9200]);
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['search_places', ['kinds' => ['fitness_centre']]], ['search_places', ['kinds' => ['climbing']]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Gym 1 is the nearest gym.', 'uses' => ["spot:{$gyms[0]->id}"]]],
+            'show' => ["spot:{$gyms[0]->id}"]]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'a climbing wall or a gym near me?', ['lat' => 50.9497, 'lng' => 6.9177]);
+
+    $cards = collect(collect($reply['blocks'])->firstWhere('type', 'places')['places'] ?? [])->pluck('name')->all();
+    expect($cards)->toContain('Kletterfabrik')->toContain('Gym 1')->toHaveCount(6)
+        ->and($reply['lead'])->toBe('Gym 1 is the nearest gym. Kletterfabrik (climbing) is also on the cards.');
+});
+
 test('an answer after a lookup that says it will make a change, with none made, gets a round to make it', function () {
     $user = User::factory()->onboarded()->create();
     $jazz = assistantJazz();
