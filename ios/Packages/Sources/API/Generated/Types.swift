@@ -354,6 +354,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `DELETE /memory/{fact}`.
     /// - Remark: Generated from `#/paths//memory/{fact}/delete(memory.destroy)`.
     func memory_destroy(_ input: Operations.Memory_destroy.Input) async throws -> Operations.Memory_destroy.Output
+    /// - Remark: HTTP `GET /moments`.
+    /// - Remark: Generated from `#/paths//moments/get(moments.index)`.
+    func moments_index(_ input: Operations.Moments_index.Input) async throws -> Operations.Moments_index.Output
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
     func paperwork_v2_onboarding_draft_show(_ input: Operations.Paperwork_v2_onboarding_draft_show.Input) async throws -> Operations.Paperwork_v2_onboarding_draft_show.Output
@@ -1485,6 +1488,11 @@ extension APIProtocol {
             path: path,
             headers: headers
         ))
+    }
+    /// - Remark: HTTP `GET /moments`.
+    /// - Remark: Generated from `#/paths//moments/get(moments.index)`.
+    public func moments_index(headers: Operations.Moments_index.Input.Headers = .init()) async throws -> Operations.Moments_index.Output {
+        try await moments_index(Operations.Moments_index.Input(headers: headers))
     }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.

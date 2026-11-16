@@ -35,7 +35,7 @@ final class DayBriefs
     private const UNTIMED = '07:30';
 
     /** The evening brief before an important day. */
-    private const EVENING_AT = '19:00';
+    public const EVENING_AT = '19:00';
 
     /** Said before this, or not at all (a missed run catches up within it; quiet hours start at 22). */
     private const WINDOW_MINUTES = 120;

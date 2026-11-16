@@ -7445,6 +7445,82 @@
                 }
             }
         },
+        "/moments": {
+            "get": {
+                "operationId": "moments.index",
+                "tags": [
+                    "Moments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "moments": {
+                                            "type": "array",
+                                            "description": "Soonest first; leave, event, plan or brief.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "kind": {
+                                                        "type": "string"
+                                                    },
+                                                    "at": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "body": {
+                                                        "type": "string"
+                                                    },
+                                                    "link": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "kind",
+                                                    "at",
+                                                    "title",
+                                                    "body",
+                                                    "link"
+                                                ]
+                                            }
+                                        },
+                                        "until": {
+                                            "type": "string",
+                                            "description": "Read again by then at the latest."
+                                        },
+                                        "quiet_from": {
+                                            "type": "string"
+                                        },
+                                        "quiet_to": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "moments",
+                                        "until",
+                                        "quiet_from",
+                                        "quiet_to"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/paperwork/v2/people/{person}/onboarding/draft": {
             "get": {
                 "operationId": "paperwork.v2.onboarding.draft.show",

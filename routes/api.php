@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\JourneyController;
 use App\Http\Controllers\Api\V1\MemoryController;
+use App\Http\Controllers\Api\V1\MomentsController;
 use App\Http\Controllers\Api\V1\PaperworkDocumentsController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SignInController;
@@ -71,6 +72,8 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::put('settings', [UserSettingController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
 
         Route::get('today', [TodayController::class, 'show'])->middleware('verified');
+        // What the phone schedules as its own notifications: the next 36 hours.
+        Route::get('moments', [MomentsController::class, 'index'])->middleware('verified');
         Route::post('day/command', [DayController::class, 'command'])->middleware('verified');
         // The Leave card's trip: start it on a way, end it; keep another way for the plan, and undo that.
         Route::post('today/trip', [TodayTripController::class, 'start'])->middleware(['verified', 'throttle:journey']);

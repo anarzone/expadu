@@ -21826,6 +21826,227 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /moments`.
+    /// - Remark: Generated from `#/paths//moments/get(moments.index)`.
+    public enum Moments_index {
+        public static let id: Swift.String = "moments.index"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/moments/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Moments_index.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Moments_index.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Moments_index.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.Moments_index.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/moments/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/MomentsPayload`.
+                        public struct MomentsPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/MomentsPayload/id`.
+                            public var id: Swift.String
+                            /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/MomentsPayload/kind`.
+                            public var kind: Swift.String
+                            /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/MomentsPayload/at`.
+                            public var at: Swift.String
+                            /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/MomentsPayload/title`.
+                            public var title: Swift.String
+                            /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/MomentsPayload/body`.
+                            public var body: Swift.String
+                            /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/MomentsPayload/link`.
+                            public var link: Swift.String
+                            /// Creates a new `MomentsPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - id:
+                            ///   - kind:
+                            ///   - at:
+                            ///   - title:
+                            ///   - body:
+                            ///   - link:
+                            public init(
+                                id: Swift.String,
+                                kind: Swift.String,
+                                at: Swift.String,
+                                title: Swift.String,
+                                body: Swift.String,
+                                link: Swift.String
+                            ) {
+                                self.id = id
+                                self.kind = kind
+                                self.at = at
+                                self.title = title
+                                self.body = body
+                                self.link = link
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case id
+                                case kind
+                                case at
+                                case title
+                                case body
+                                case link
+                            }
+                        }
+                        /// Soonest first; leave, event, plan or brief.
+                        ///
+                        /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/moments`.
+                        public typealias MomentsPayload = [Operations.Moments_index.Output.Ok.Body.JsonPayload.MomentsPayloadPayload]
+                        /// Soonest first; leave, event, plan or brief.
+                        ///
+                        /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/moments`.
+                        public var moments: Operations.Moments_index.Output.Ok.Body.JsonPayload.MomentsPayload
+                        /// Read again by then at the latest.
+                        ///
+                        /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/until`.
+                        public var until: Swift.String
+                        /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/quiet_from`.
+                        public var quietFrom: Swift.String
+                        /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/json/quiet_to`.
+                        public var quietTo: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - moments: Soonest first; leave, event, plan or brief.
+                        ///   - until: Read again by then at the latest.
+                        ///   - quietFrom:
+                        ///   - quietTo:
+                        public init(
+                            moments: Operations.Moments_index.Output.Ok.Body.JsonPayload.MomentsPayload,
+                            until: Swift.String,
+                            quietFrom: Swift.String,
+                            quietTo: Swift.String
+                        ) {
+                            self.moments = moments
+                            self.until = until
+                            self.quietFrom = quietFrom
+                            self.quietTo = quietTo
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case moments
+                            case until
+                            case quietFrom = "quiet_from"
+                            case quietTo = "quiet_to"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/moments/GET/responses/200/content/application\/json`.
+                    case json(Operations.Moments_index.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Moments_index.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Moments_index.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Moments_index.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//moments/get(moments.index)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Moments_index.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Moments_index.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//moments/get(moments.index)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
     public enum Paperwork_v2_onboarding_draft_show {
