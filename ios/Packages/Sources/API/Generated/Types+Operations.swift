@@ -30182,7 +30182,7 @@ public enum Operations {
                         ///
                         /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/routines`.
                         public var routines: Operations.Routines_index.Output.Ok.Body.JsonPayload.RoutinesPayload
-                        /// What their trips show, to offer; null when nothing does.
+                        /// What their trips show, to offer, with the trips it rests on (every one to that place in the last three weeks); null when nothing does.
                         ///
                         /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer`.
                         public struct OfferPayload: Codable, Hashable, Sendable {
@@ -30198,6 +30198,39 @@ public enum Operations {
                             public var at: Swift.String
                             /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/times`.
                             public var times: Swift.Int
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/TripsPayload`.
+                            public struct TripsPayloadPayload: Codable, Hashable, Sendable {
+                                /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/TripsPayload/date`.
+                                public var date: Swift.String
+                                /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/TripsPayload/weekday`.
+                                public var weekday: Swift.Int
+                                /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/TripsPayload/at`.
+                                public var at: Swift.String
+                                /// Creates a new `TripsPayloadPayload`.
+                                ///
+                                /// - Parameters:
+                                ///   - date:
+                                ///   - weekday:
+                                ///   - at:
+                                public init(
+                                    date: Swift.String,
+                                    weekday: Swift.Int,
+                                    at: Swift.String
+                                ) {
+                                    self.date = date
+                                    self.weekday = weekday
+                                    self.at = at
+                                }
+                                public enum CodingKeys: String, CodingKey {
+                                    case date
+                                    case weekday
+                                    case at
+                                }
+                            }
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/trips`.
+                            public typealias TripsPayload = [Operations.Routines_index.Output.Ok.Body.JsonPayload.OfferPayload.TripsPayloadPayload]
+                            /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer/trips`.
+                            public var trips: Operations.Routines_index.Output.Ok.Body.JsonPayload.OfferPayload.TripsPayload
                             /// Creates a new `OfferPayload`.
                             ///
                             /// - Parameters:
@@ -30207,13 +30240,15 @@ public enum Operations {
                             ///   - weekdays:
                             ///   - at:
                             ///   - times:
+                            ///   - trips:
                             public init(
                                 toKey: Swift.String,
                                 toLabel: Swift.String,
                                 fromKey: Swift.String? = nil,
                                 weekdays: [Swift.Int],
                                 at: Swift.String,
-                                times: Swift.Int
+                                times: Swift.Int,
+                                trips: Operations.Routines_index.Output.Ok.Body.JsonPayload.OfferPayload.TripsPayload
                             ) {
                                 self.toKey = toKey
                                 self.toLabel = toLabel
@@ -30221,6 +30256,7 @@ public enum Operations {
                                 self.weekdays = weekdays
                                 self.at = at
                                 self.times = times
+                                self.trips = trips
                             }
                             public enum CodingKeys: String, CodingKey {
                                 case toKey = "to_key"
@@ -30229,9 +30265,10 @@ public enum Operations {
                                 case weekdays
                                 case at
                                 case times
+                                case trips
                             }
                         }
-                        /// What their trips show, to offer; null when nothing does.
+                        /// What their trips show, to offer, with the trips it rests on (every one to that place in the last three weeks); null when nothing does.
                         ///
                         /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/offer`.
                         public var offer: Operations.Routines_index.Output.Ok.Body.JsonPayload.OfferPayload?
@@ -30239,7 +30276,7 @@ public enum Operations {
                         ///
                         /// - Parameters:
                         ///   - routines: Weekdays 1 (Monday) to 7.
-                        ///   - offer: What their trips show, to offer; null when nothing does.
+                        ///   - offer: What their trips show, to offer, with the trips it rests on (every one to that place in the last three weeks); null when nothing does.
                         public init(
                             routines: Operations.Routines_index.Output.Ok.Body.JsonPayload.RoutinesPayload,
                             offer: Operations.Routines_index.Output.Ok.Body.JsonPayload.OfferPayload? = nil

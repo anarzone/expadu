@@ -120,6 +120,30 @@ test('three weekday trips to Work at about 08:10 are offered as a routine; confi
         ->and(CarbonImmutable::parse($moment['at'])->setTimezone('Europe/Berlin')->format('Y-m-d H:i'))->toBe('2026-11-17 08:05');
 });
 
+test('🔒 the offer shows the trips it rests on: theirs only, to that place only, each a day and a time and nothing more', function () {
+    // Work at about 08:10 three times, once at lunch (no part of the routine, still a trip there), and one elsewhere.
+    foreach (['2026-11-11 08:05', '2026-11-12 08:15', '2026-11-16 08:10', '2026-11-13 12:40'] as $at) {
+        routineTrip($this->user, $at);
+    }
+    routineTrip($this->user, '2026-11-14 19:00', 50.9300, 6.9500, 'Kletterfabrik');
+    // Someone else's trips to their own Work: the same key, another person.
+    $other = User::factory()->onboarded()->create();
+    $other->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true, Routines::SETTING => true], 'sixteen_or_older' => true]);
+    UserPlace::factory()->create(['user_id' => $other->id, 'name' => 'Work', 'category' => 'work', 'lat' => 50.9600, 'lng' => 6.9800]);
+    routineTrip($other->fresh(), '2026-11-10 07:45');
+    routineTrip($other->fresh(), '2026-11-12 07:50');
+
+    $offer = $this->withToken($this->user->createToken('iPhone')->plainTextToken)->getJson('/api/v1/routines')->assertOk()->json('offer');
+
+    expect($offer['times'])->toBe(3)
+        ->and($offer['trips'])->toBe([
+            ['date' => '2026-11-11', 'weekday' => 3, 'at' => '08:05'],
+            ['date' => '2026-11-12', 'weekday' => 4, 'at' => '08:15'],
+            ['date' => '2026-11-13', 'weekday' => 5, 'at' => '12:40'],
+            ['date' => '2026-11-16', 'weekday' => 1, 'at' => '08:10'],
+        ]);
+});
+
 test('two trips, or three at times far apart, are no routine; Not now isn\'t offered again for a month', function () {
     routineTrip($this->user, '2026-11-12 08:10');
     routineTrip($this->user, '2026-11-16 08:10');

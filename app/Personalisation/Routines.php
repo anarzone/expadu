@@ -68,7 +68,10 @@ final class Routines
      * The routine to offer now, if there is one: the strongest the trips show that isn't one
      * already, nor turned down lately.
      *
-     * @return array{to_key: string, to_label: string, from_key: ?string, weekdays: list<int>, at: string, times: int}|null
+     * With the trips it rests on, so the phone can show them what it saw: each a day and a time, every
+     * trip to that place in the window (the ones that didn't fit too), and nothing of where it started.
+     *
+     * @return array{to_key: string, to_label: string, from_key: ?string, weekdays: list<int>, at: string, times: int, trips: list<array{date: string, weekday: int, at: string}>}|null
      */
     public function offer(User $user, CarbonImmutable $now): ?array
     {
@@ -82,8 +85,16 @@ final class Routines
             ->where('started_at', '>=', $now->subDays(self::WINDOW_DAYS))->whereNotIn('to_key', $taken)
             ->orderBy('minute')->get(['to_key', 'to_label', 'from_key', 'started_at', 'weekday', 'minute']);
 
-        return $trips->groupBy('to_key')->map(fn ($group) => self::cluster($group->values()->all()))
+        $offer = $trips->groupBy('to_key')->map(fn ($group) => self::cluster($group->values()->all()))
             ->filter()->sortByDesc('times')->first();
+        if ($offer === null) {
+            return null;
+        }
+
+        return [...$offer, 'trips' => $trips->where('to_key', $offer['to_key'])
+            ->map(fn (object $t): array => ['date' => CarbonImmutable::parse($t->started_at)->setTimezone('Europe/Berlin')->toDateString(),
+                'weekday' => (int) $t->weekday, 'at' => sprintf('%02d:%02d', intdiv((int) $t->minute, 60), (int) $t->minute % 60)])
+            ->sortBy(fn (array $t): string => $t['date'].' '.$t['at'])->values()->all()];
     }
 
     /**
