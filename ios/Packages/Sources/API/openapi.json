@@ -7001,6 +7001,10 @@
                                         "personalised": {
                                             "type": "boolean"
                                         },
+                                        "personalisation_current": {
+                                            "type": "boolean",
+                                            "description": "On under the wording Settings shows now; false means turn it on again to agree to what it says now."
+                                        },
                                         "facts": {
                                             "type": "array",
                                             "description": "What Composer remembers, oldest first: told (said to Composer) or added (typed here).",
@@ -7134,6 +7138,7 @@
                                     },
                                     "required": [
                                         "personalised",
+                                        "personalisation_current",
                                         "facts",
                                         "taste",
                                         "situation",
@@ -8886,6 +8891,98 @@
                 }
             }
         },
+        "/me/profile": {
+            "patch": {
+                "operationId": "profile.update",
+                "summary": "One of the two fields, set to one of its values; why not (422) when it isn't one",
+                "tags": [
+                    "Profile"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "field": {
+                                        "type": "string",
+                                        "enum": [
+                                            "situation",
+                                            "german_level"
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "maxLength": 40
+                                    }
+                                },
+                                "required": [
+                                    "field",
+                                    "value"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "situation": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "enum": [
+                                                "non_eu_employee",
+                                                "eu_employee",
+                                                "student",
+                                                "freelancer",
+                                                "family_reunification",
+                                                "digital_nomad",
+                                                "other",
+                                                null
+                                            ]
+                                        },
+                                        "german_level": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "enum": [
+                                                "none",
+                                                "a1",
+                                                "a2",
+                                                "b1",
+                                                "b2",
+                                                "c1",
+                                                "c2",
+                                                null
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "situation",
+                                        "german_level"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/paperwork/v2/people/{person}/question-preview": {
             "get": {
                 "operationId": "paperwork.v2.questions.preview",
@@ -10353,6 +10450,84 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/NearbyDeparturesResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/settings": {
+            "put": {
+                "operationId": "userSetting.update",
+                "tags": [
+                    "UserSetting"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "settings": {
+                                        "type": "object",
+                                        "properties": {
+                                            "share_location": {
+                                                "type": "boolean"
+                                            },
+                                            "personalised_content": {
+                                                "type": "boolean"
+                                            },
+                                            "share_anonymised": {
+                                                "type": "boolean"
+                                            },
+                                            "profile_visibility": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "everyone",
+                                                    "partners",
+                                                    "nobody"
+                                                ]
+                                            },
+                                            "personalisation": {
+                                                "type": "boolean"
+                                            },
+                                            "composer_ask_first_everyday": {
+                                                "type": "boolean"
+                                            },
+                                            "composer_ask_first_paperwork": {
+                                                "type": "boolean"
+                                            }
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "settings"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "settings": {}
+                                    },
+                                    "required": [
+                                        "settings"
+                                    ]
                                 }
                             }
                         }

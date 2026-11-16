@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Personalisation\Memory;
+use App\Personalisation\PersonalisationWording;
 use App\Personalisation\TasteFacts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,8 @@ class MemoryController extends Controller
 
         return response()->json([
             'personalised' => $personal,
+            /** On under the wording Settings shows now; false means turn it on again to agree to what it says now. */
+            'personalisation_current' => PersonalisationWording::current($user),
             /** @var list<array{id: int, text: string, source: string, created_at: string}> What Composer remembers, oldest first: told (said to Composer) or added (typed here). */
             'facts' => $personal ? $this->memory->facts($user) : [],
             /** @var array{categories: list<array{name: string, level: string}>, veedels: list<array{name: string, level: string}>, dayparts: list<string>, week: string|null, signals: int}|null What they tend to like and skip, as Composer reads it; null when off or too little yet. */
