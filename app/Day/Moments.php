@@ -11,6 +11,7 @@ use App\Models\EventReminder;
 use App\Models\NotificationPreference;
 use App\Models\PlannedTrip;
 use App\Models\User;
+use App\Personalisation\Routines;
 use Carbon\CarbonImmutable;
 
 /**
@@ -21,6 +22,7 @@ use Carbon\CarbonImmutable;
  *
  * - leave: a planned way with "Remind me when to leave", five minutes before it leaves (they asked:
  *   quiet hours don't hold it);
+ * - routine: a routine they confirmed (Routines), five minutes before its usual time on its days;
  * - event: an event they asked to be reminded of, when they asked;
  * - plan: a risk to a stop on their plan (a disruption, a delay, rain, closed), an hour before it;
  * - brief: the morning brief of a day that isn't quiet, and the evening one before an important day.
@@ -52,14 +54,15 @@ final class Moments
 
         $moments = [
             ...$this->leaving($user, $now, $until),
+            ...$this->routines($user, $now, $until),
             ...($user->wantsNotification('events') ? $this->reminders($user, $now, $until) : []),
             ...$this->planRisks($user, $now, $until),
             ...($user->wantsNotification('brief') ? $this->briefs($user, $now, $until) : []),
         ];
 
         return collect($moments)
-            // What they asked for comes when they asked; the rest keeps their quiet hours.
-            ->reject(fn (array $m): bool => $m['kind'] !== 'leave' && $quiet($m['at']))
+            // What they asked for comes when they asked (a way or a routine to leave for); the rest keeps their quiet hours.
+            ->reject(fn (array $m): bool => ! in_array($m['kind'], ['leave', 'routine'], true) && $quiet($m['at']))
             ->sortBy(fn (array $m): int => $m['at']->getTimestamp())
             ->map(fn (array $m): array => [...$m, 'at' => $m['at']->toIso8601String()])
             ->values()->all();
@@ -80,6 +83,30 @@ final class Moments
                     'body' => "Leave at {$shared['depart_time']}".($ride !== null ? ' · '.PlannedTrip::rideName($ride)." at {$ride['time']}" : ''),
                     'link' => '/travel'];
             })->all();
+    }
+
+    /** @return list<array<string, mixed>> a confirmed routine's leave time, five minutes before, on its days */
+    private function routines(User $user, CarbonImmutable $now, CarbonImmutable $until): array
+    {
+        $moments = [];
+        if (! Routines::learns($user)) {
+            return [];
+        }
+        foreach (app(Routines::class)->confirmed($user) as $routine) {
+            if (! $routine['remind']) {
+                continue;
+            }
+            foreach ([$now->startOfDay(), $now->startOfDay()->addDay()] as $day) {
+                $leave = $day->setTimeFromTimeString($routine['at']);
+                $at = $leave->subMinutes(PlannedTrip::REMIND_BEFORE_MINUTES);
+                if (in_array($day->dayOfWeekIso, $routine['weekdays'], true) && $at->greaterThan($now) && $at->lessThanOrEqualTo($until)) {
+                    $moments[] = ['id' => "routine:{$routine['id']}:{$day->toDateString()}", 'kind' => 'routine', 'at' => $at,
+                        'title' => "Time to leave for {$routine['to_label']}", 'body' => "You usually leave at {$routine['at']}.", 'link' => '/travel'];
+                }
+            }
+        }
+
+        return $moments;
     }
 
     /** @return list<array<string, mixed>> */

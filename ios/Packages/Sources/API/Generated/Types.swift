@@ -469,6 +469,27 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `DELETE /paperwork/v2/processes/{process}/requirements/{requirement}/confirmation`.
     /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/requirements/{requirement}/confirmation/delete(paperwork.v2.requirements.withdraw)`.
     func paperwork_v2_requirements_withdraw(_ input: Operations.Paperwork_v2_requirements_withdraw.Input) async throws -> Operations.Paperwork_v2_requirements_withdraw.Output
+    /// - Remark: HTTP `GET /routines`.
+    /// - Remark: Generated from `#/paths//routines/get(routines.index)`.
+    func routines_index(_ input: Operations.Routines_index.Input) async throws -> Operations.Routines_index.Output
+    /// Yes to the offer, with the days and time as they set them
+    ///
+    /// - Remark: HTTP `POST /routines`.
+    /// - Remark: Generated from `#/paths//routines/post(routines.store)`.
+    func routines_store(_ input: Operations.Routines_store.Input) async throws -> Operations.Routines_store.Output
+    /// Not now: that offer isn't made again for a while
+    ///
+    /// - Remark: HTTP `POST /routines/dismiss`.
+    /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.
+    func routines_dismiss(_ input: Operations.Routines_dismiss.Input) async throws -> Operations.Routines_dismiss.Output
+    /// Its days, its time, or whether it tells them when to leave
+    ///
+    /// - Remark: HTTP `PATCH /routines/{routine}`.
+    /// - Remark: Generated from `#/paths//routines/{routine}/patch(routines.update)`.
+    func routines_update(_ input: Operations.Routines_update.Input) async throws -> Operations.Routines_update.Output
+    /// - Remark: HTTP `DELETE /routines/{routine}`.
+    /// - Remark: Generated from `#/paths//routines/{routine}/delete(routines.destroy)`.
+    func routines_destroy(_ input: Operations.Routines_destroy.Input) async throws -> Operations.Routines_destroy.Output
     /// Email and password. An account with two-step sign-in gets a challenge, not a token
     ///
     /// - Remark: HTTP `POST /auth/token`.
@@ -1905,6 +1926,63 @@ extension APIProtocol {
         try await paperwork_v2_requirements_withdraw(Operations.Paperwork_v2_requirements_withdraw.Input(
             path: path,
             query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /routines`.
+    /// - Remark: Generated from `#/paths//routines/get(routines.index)`.
+    public func routines_index(headers: Operations.Routines_index.Input.Headers = .init()) async throws -> Operations.Routines_index.Output {
+        try await routines_index(Operations.Routines_index.Input(headers: headers))
+    }
+    /// Yes to the offer, with the days and time as they set them
+    ///
+    /// - Remark: HTTP `POST /routines`.
+    /// - Remark: Generated from `#/paths//routines/post(routines.store)`.
+    public func routines_store(
+        headers: Operations.Routines_store.Input.Headers = .init(),
+        body: Operations.Routines_store.Input.Body
+    ) async throws -> Operations.Routines_store.Output {
+        try await routines_store(Operations.Routines_store.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Not now: that offer isn't made again for a while
+    ///
+    /// - Remark: HTTP `POST /routines/dismiss`.
+    /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.
+    public func routines_dismiss(
+        headers: Operations.Routines_dismiss.Input.Headers = .init(),
+        body: Operations.Routines_dismiss.Input.Body
+    ) async throws -> Operations.Routines_dismiss.Output {
+        try await routines_dismiss(Operations.Routines_dismiss.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Its days, its time, or whether it tells them when to leave
+    ///
+    /// - Remark: HTTP `PATCH /routines/{routine}`.
+    /// - Remark: Generated from `#/paths//routines/{routine}/patch(routines.update)`.
+    public func routines_update(
+        path: Operations.Routines_update.Input.Path,
+        headers: Operations.Routines_update.Input.Headers = .init(),
+        body: Operations.Routines_update.Input.Body? = nil
+    ) async throws -> Operations.Routines_update.Output {
+        try await routines_update(Operations.Routines_update.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /routines/{routine}`.
+    /// - Remark: Generated from `#/paths//routines/{routine}/delete(routines.destroy)`.
+    public func routines_destroy(
+        path: Operations.Routines_destroy.Input.Path,
+        headers: Operations.Routines_destroy.Input.Headers = .init()
+    ) async throws -> Operations.Routines_destroy.Output {
+        try await routines_destroy(Operations.Routines_destroy.Input(
+            path: path,
             headers: headers
         ))
     }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Personalisation\Routines;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -180,3 +182,6 @@ Schedule::command('security:daily-summary')->timezone('Europe/Berlin')->dailyAt(
 // Accounts never verified: a reminder a week before 30 days, then deleted (config/cleanup.php).
 // Unconfirmed waitlist entries go through model:prune (WaitlistSignup::prunable).
 Schedule::command('accounts:prune-unverified')->timezone('Europe/Berlin')->dailyAt('10:00')->withoutOverlapping()->onOneServer();
+
+// Trips kept for routines go after 90 days (Routines::KEEP_DAYS).
+Schedule::call(fn () => Routines::prune(CarbonImmutable::now()))->name('routines:prune-trips')->dailyAt('03:40');

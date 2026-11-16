@@ -43,7 +43,7 @@ final class AccountData
             'travel.json' => ['Your places (Home, Work), favourite stops, saved and recent journeys, planned and active trips.', fn () => $this->travel($user)],
             'alerts.json' => ['Alerts and notifications sent to you, and what you muted.', fn () => $this->alerts($user)],
             'activity.json' => ['What you did in the app that Expadu recorded (opened, saved, skipped).', fn () => $this->activity($user)],
-            'personalisation.json' => ['What personalisation learned (places, events, Today alerts, Travel stops and Composer topics), what Composer remembers about you, and the lists Today showed, kept under a pseudonym; each signal says what it was.', fn () => $this->personalisation($user)],
+            'personalisation.json' => ['What personalisation learned (places, events, Today alerts, Travel stops and Composer topics), what Composer remembers about you, the trips kept for routines and your routines, and the lists Today showed, kept under a pseudonym; each signal says what it was.', fn () => $this->personalisation($user)],
             'location.json' => ['Locations kept for the last 7 days, when location sharing is on.', fn () => $this->location($user)],
         ];
 
@@ -211,6 +211,8 @@ final class AccountData
         return [
             'taste_profile' => $this->rows('taste_profiles', 'subject_key', $subject),
             'remembered' => $this->rows('user_facts', 'subject_key', $subject),
+            'trips_kept_for_routines' => $this->rows('trip_history', 'subject_key', $subject),
+            'routines' => $this->rows('routines', 'subject_key', $subject),
             'signals' => array_map(fn (array $row): array => ['what' => self::signal($row), ...$row], $this->rows('user_signals', 'subject_key', $subject)),
             'affinities' => $this->rows('user_affinities', 'subject_key', $subject),
             'hidden_places' => $this->rows('user_place_negatives', 'subject_key', $subject),
