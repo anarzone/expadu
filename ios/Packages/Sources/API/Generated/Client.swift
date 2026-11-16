@@ -9433,6 +9433,86 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// - Remark: HTTP `GET /moments`.
+    /// - Remark: Generated from `#/paths//moments/get(moments.index)`.
+    public func moments_index(_ input: Operations.Moments_index.Input) async throws -> Operations.Moments_index.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.Moments_index.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/moments",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.Moments_index.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Operations.Moments_index.Output.Ok.Body.JsonPayload.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.AuthenticationException.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Responses.AuthenticationException.Body.JsonPayload.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
     public func paperwork_v2_onboarding_draft_show(_ input: Operations.Paperwork_v2_onboarding_draft_show.Input) async throws -> Operations.Paperwork_v2_onboarding_draft_show.Output {
