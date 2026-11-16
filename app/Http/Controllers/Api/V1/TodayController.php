@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Day\DayLine;
 use App\Day\DayProjection;
 use App\Home\ComingUp;
 use App\Home\FirstVisit;
@@ -50,6 +51,8 @@ class TodayController extends Controller
             'welcome' => $firstVisit->for($user),
             // Personalised suggestions on, and whether their order waits for a yes to a changed notice.
             'personalised' => $user->personalises(),
+            // The day in one line, from what's on it (in the brief's words, never the AI's).
+            'day_line' => app(DayLine::class)->for($user, CarbonImmutable::now(DayProjection::TIMEZONE)),
             'rank_paused' => $rankPause->onToday($user),
             // Which listings they've saved, so each idea's bookmark shows it.
             'saved_events' => EventBookmark::query()->where('user_id', $user->id)->get(['event_id', 'occurrence_start'])
