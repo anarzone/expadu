@@ -9767,7 +9767,7 @@
                                                 "object",
                                                 "null"
                                             ],
-                                            "description": "What their trips show, to offer; null when nothing does.",
+                                            "description": "What their trips show, to offer, with the trips it rests on (every one to that place in the last three weeks); null when nothing does.",
                                             "properties": {
                                                 "to_key": {
                                                     "type": "string"
@@ -9792,6 +9792,28 @@
                                                 },
                                                 "times": {
                                                     "type": "integer"
+                                                },
+                                                "trips": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "date": {
+                                                                "type": "string"
+                                                            },
+                                                            "weekday": {
+                                                                "type": "integer"
+                                                            },
+                                                            "at": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "date",
+                                                            "weekday",
+                                                            "at"
+                                                        ]
+                                                    }
                                                 }
                                             },
                                             "required": [
@@ -9800,7 +9822,8 @@
                                                 "from_key",
                                                 "weekdays",
                                                 "at",
-                                                "times"
+                                                "times",
+                                                "trips"
                                             ]
                                         }
                                     },

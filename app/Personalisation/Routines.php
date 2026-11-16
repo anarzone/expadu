@@ -58,7 +58,7 @@ final class Routines
             'to_key' => $to !== null ? "place:{$to->category}" : self::key((float) $destination['lat'], (float) $destination['lng']),
             'to_label' => $to !== null ? ($to->name ?: ucfirst($to->category)) : mb_substr((string) $destination['name'], 0, 200),
             'from_key' => isset($origin['lat'], $origin['lng']) ? $this->placeAt($user, (float) $origin['lat'], (float) $origin['lng'])?->category : null,
-            'started_at' => $at,
+            'started_at' => self::at($at),
             'weekday' => $at->dayOfWeekIso,
             'minute' => $at->hour * 60 + $at->minute,
         ]);
@@ -68,7 +68,10 @@ final class Routines
      * The routine to offer now, if there is one: the strongest the trips show that isn't one
      * already, nor turned down lately.
      *
-     * @return array{to_key: string, to_label: string, from_key: ?string, weekdays: list<int>, at: string, times: int}|null
+     * With the trips it rests on, so the phone can show them what it saw: each a day and a time, every
+     * trip to that place in the window (the ones that didn't fit too), and nothing of where it started.
+     *
+     * @return array{to_key: string, to_label: string, from_key: ?string, weekdays: list<int>, at: string, times: int, trips: list<array{date: string, weekday: int, at: string}>}|null
      */
     public function offer(User $user, CarbonImmutable $now): ?array
     {
@@ -77,13 +80,21 @@ final class Routines
         }
         $subject = Pseudonym::for($user);
         $taken = DB::table('routines')->where('subject_key', $subject)
-            ->where(fn ($q) => $q->whereNull('dismissed_until')->orWhere('dismissed_until', '>', $now))->pluck('to_key')->all();
+            ->where(fn ($q) => $q->whereNull('dismissed_until')->orWhere('dismissed_until', '>', self::at($now)))->pluck('to_key')->all();
         $trips = DB::table('trip_history')->where('subject_key', $subject)
-            ->where('started_at', '>=', $now->subDays(self::WINDOW_DAYS))->whereNotIn('to_key', $taken)
+            ->where('started_at', '>=', self::at($now->subDays(self::WINDOW_DAYS)))->whereNotIn('to_key', $taken)
             ->orderBy('minute')->get(['to_key', 'to_label', 'from_key', 'started_at', 'weekday', 'minute']);
 
-        return $trips->groupBy('to_key')->map(fn ($group) => self::cluster($group->values()->all()))
+        $offer = $trips->groupBy('to_key')->map(fn ($group) => self::cluster($group->values()->all()))
             ->filter()->sortByDesc('times')->first();
+        if ($offer === null) {
+            return null;
+        }
+
+        return [...$offer, 'trips' => $trips->where('to_key', $offer['to_key'])
+            ->map(fn (object $t): array => ['date' => CarbonImmutable::parse($t->started_at)->setTimezone('Europe/Berlin')->toDateString(),
+                'weekday' => (int) $t->weekday, 'at' => sprintf('%02d:%02d', intdiv((int) $t->minute, 60), (int) $t->minute % 60)])
+            ->sortBy(fn (array $t): string => $t['date'].' '.$t['at'])->values()->all()];
     }
 
     /**
@@ -201,7 +212,7 @@ final class Routines
         if ($offer === null || $offer['to_key'] !== $toKey) {
             return;
         }
-        $this->keep($subject, $offer, ['weekdays' => json_encode($offer['weekdays']), 'at' => $offer['at'], 'remind' => false, 'dismissed_until' => $now->addDays(self::DISMISS_DAYS)]);
+        $this->keep($subject, $offer, ['weekdays' => json_encode($offer['weekdays']), 'at' => $offer['at'], 'remind' => false, 'dismissed_until' => self::at($now->addDays(self::DISMISS_DAYS))]);
     }
 
     /** @param  array{weekdays?: list<int>, at?: string, remind?: bool}  $changes */
@@ -230,8 +241,18 @@ final class Routines
     /** Trips older than KEEP_DAYS go (nightly), and turned-down offers once they may be made again. */
     public static function prune(CarbonImmutable $now): int
     {
-        return DB::table('trip_history')->where('started_at', '<', $now->subDays(self::KEEP_DAYS))->delete()
-            + DB::table('routines')->whereNotNull('dismissed_until')->where('dismissed_until', '<', $now)->delete();
+        return DB::table('trip_history')->where('started_at', '<', self::at($now->subDays(self::KEEP_DAYS)))->delete()
+            + DB::table('routines')->whereNotNull('dismissed_until')->where('dismissed_until', '<', self::at($now))->delete();
+    }
+
+    /**
+     * A moment as the database is given it: with its offset. The query builder writes a time bare,
+     * and the database then reads it in its own session's zone, an hour or two off Cologne's when
+     * that is UTC: a trip at 23:40 would come back as the next day's.
+     */
+    private static function at(CarbonImmutable $at): string
+    {
+        return $at->format('Y-m-d H:i:sP');
     }
 
     /** Their Home or Work at a point, when it's within ~300 m of one. */

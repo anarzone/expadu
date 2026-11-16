@@ -24,7 +24,7 @@ class RoutinesController extends Controller
         return response()->json([
             /** @var list<array{id: int, to_label: string, from_key: string|null, weekdays: list<int>, at: string, remind: bool}> Weekdays 1 (Monday) to 7. */
             'routines' => $this->routines->confirmed($user),
-            /** @var array{to_key: string, to_label: string, from_key: string|null, weekdays: list<int>, at: string, times: int}|null What their trips show, to offer; null when nothing does. */
+            /** @var array{to_key: string, to_label: string, from_key: string|null, weekdays: list<int>, at: string, times: int, trips: list<array{date: string, weekday: int, at: string}>}|null What their trips show, to offer, with the trips it rests on (every one to that place in the last three weeks); null when nothing does. */
             'offer' => $this->routines->offer($user, CarbonImmutable::now()),
         ]);
     }
