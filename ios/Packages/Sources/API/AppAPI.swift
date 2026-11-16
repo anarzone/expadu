@@ -1299,6 +1299,9 @@ public struct AppAPI: Sendable {
             page.rankPaused = today.rankPaused.map {
                 TodayPage.RankPause(notice: $0.notice, changes: $0.changes, modelChanged: $0.modelChanged, noticeVersion: $0.noticeVersion, providerVersion: $0.providerVersion)
             }
+            page.dayLine = today.dayLine.map { line in
+                TodayPage.DayLine(text: line.text, parts: line.parts.map { TodayPage.DayLine.Part(text: $0.text, strong: $0.strong) })
+            }
             return page
         case .unauthorized: throw .signedOut
         case let .unprocessableContent(refusal): throw refused(refusal)
