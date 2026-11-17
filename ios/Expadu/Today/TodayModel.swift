@@ -440,6 +440,54 @@ final class TodayModel {
         }
     }
 
+    // MARK: What you'd go to (EventPicks)
+
+    /// Their picks as they tap, ahead of the server's answer; nil: the page's own.
+    private var picksShown: [String]?
+    /// The posters open or folded on this phone (Done, Not now, Change); nil: as the page says.
+    private(set) var picksOpen: Bool?
+    /// Each save after the one before, so the last tap wins.
+    private var picksSaving: Task<Void, Never>?
+
+    var picked: [String] { picksShown ?? page?.picks?.picked ?? [] }
+
+    /// A poster tapped: in or out, kept at once, and tonight's ideas move to where they now go.
+    func togglePick(_ api: AppAPI, _ key: String) {
+        var next = picked
+        if let at = next.firstIndex(of: key) { next.remove(at: at) } else { next.append(key) }
+        picksShown = next
+        savePicks(api, next, done: false)
+    }
+
+    /// Done or Not now: folded into its line, and Today stops asking.
+    func closePicks(_ api: AppAPI) {
+        withAnimation(Motion.spring) { picksOpen = false }
+        savePicks(api, picked, done: true)
+    }
+
+    /// Change: the posters again, as they were picked.
+    func reopenPicks() {
+        withAnimation(Motion.spring) { picksOpen = true }
+    }
+
+    private func savePicks(_ api: AppAPI, _ kinds: [String], done: Bool) {
+        let before = picksSaving
+        picksSaving = Task { [weak self] in
+            await before?.value
+            guard let self else { return }
+            do throws(APIFailure) {
+                try await api.savePicks(kinds, done: done)
+                // Another tap since: its own save reloads.
+                guard self.picked == kinds else { return }
+                await self.load(api, quietly: true, animated: Motion.spring)
+                if self.picksShown == kinds { self.picksShown = nil }
+            } catch {
+                self.picksShown = nil
+                self.say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
+        }
+    }
+
     /// Less like this: its kind lower from tomorrow, nothing hidden; sent once Undo has passed.
     func lessLikeThis(_ api: AppAPI, idea: TodayPage.Idea) {
         later(api, Signal(action: .lessLikeThis, event: idea.id), for: idea)
