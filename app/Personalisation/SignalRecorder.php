@@ -123,7 +123,7 @@ final class SignalRecorder
      *
      * @param  list<array<string, mixed>>  $slots  plan slots (PlanSlot::toArray() shape)
      */
-    public function planSlots(User $user, SignalAction $action, array $slots, ?string $companions = null): void
+    public function planSlots(User $user, SignalAction $action, array $slots, ?string $companions = null, SignalSurface $surface = SignalSurface::Composer): void
     {
         $signals = [];
         foreach ($slots as $slot) {
@@ -131,7 +131,7 @@ final class SignalRecorder
                 continue;
             }
             $at = is_string($slot['start_at'] ?? null) ? rescue(fn () => CarbonImmutable::parse($slot['start_at']), report: false) : null;
-            $signals[] = ['action' => $action, 'surface' => SignalSurface::Composer, 'type' => $item[0], 'id' => $item[1], 'at' => $at, 'companions' => $companions];
+            $signals[] = ['action' => $action, 'surface' => $surface, 'type' => $item[0], 'id' => $item[1], 'at' => $at, 'companions' => $companions];
         }
 
         $this->write($user, $signals);
@@ -336,6 +336,14 @@ final class SignalRecorder
      *
      * @param  list<SignalAction>  $actions
      */
+    /** An add to their plan taken back (Undo): what it said about them goes with it. */
+    public function addTakenBack(User $user, SignalItemType $type, int $id): void
+    {
+        $subject = Pseudonym::for($user);
+        $this->afterCommit(fn () => $this->withdraw($subject, $type, $id, [SignalAction::AddedToPlan]));
+        TodayTaste::forget($user->id);
+    }
+
     private function withdraw(string $subject, SignalItemType $type, int $id, array $actions): void
     {
         DB::table('user_signals')->where('subject_key', $subject)->where('item_type', $type->value)->where('item_id', $id)

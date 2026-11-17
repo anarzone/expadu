@@ -11,6 +11,8 @@ enum SignalAction: string
     case GetThere = 'get_there';
     case TripTaken = 'trip_taken';
     case PlanKeptUnedited = 'plan_kept_unedited';
+    /** Added to their own plan (Today's +, a Composer card's Add): their choice, like a save. */
+    case AddedToPlan = 'added_to_plan';
     case Shared = 'shared';
     case StopSwappedOut = 'stop_swapped_out';
     case NotForMe = 'not_for_me';

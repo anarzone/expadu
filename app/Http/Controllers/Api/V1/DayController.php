@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Composer\WorkspaceStore;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\DayCommandRequest;
+use App\Personalisation\SignalSurface;
 use Illuminate\Http\JsonResponse;
 
 class DayController extends Controller
@@ -16,7 +17,8 @@ class DayController extends Controller
      */
     public function command(DayCommandRequest $request, WorkspaceStore $store): JsonResponse
     {
-        $workspace = $store->command($request->user(), $request->validated());
+        // Today's own commands: what they add from here is learned as Today's.
+        $workspace = $store->command($request->user(), $request->validated(), SignalSurface::Today);
         $refusal = $workspace['refusal'] ?? null;
         $change = collect($workspace['changes'] ?? [])->last();
 
