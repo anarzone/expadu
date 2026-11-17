@@ -27,7 +27,7 @@ final class DayLine
     {
         $now = $now->setTimezone('Europe/Berlin');
         // What's still ahead today, most important first.
-        $items = collect($this->briefs->items($user, $now->startOfDay(), DayBriefs::MORNING))
+        $items = collect(self::said($this->briefs->items($user, $now->startOfDay(), DayBriefs::MORNING)))
             ->reject(fn (array $item): bool => is_string($item['at'] ?? null) && CarbonImmutable::parse($item['at'])->lessThan($now))
             ->values();
 
@@ -39,6 +39,21 @@ final class DayLine
         };
 
         return ['text' => $text, 'parts' => self::parts($text)];
+    }
+
+    /**
+     * What the line says, of the day's items: a risk to a stop of their plan ("Rain from 18:00
+     * during Stadtgarten walk…") already names the stop, so the plan itself isn't said again after
+     * it ("Then your plan: 1 stop from 17:30…").
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return list<array<string, mixed>>
+     */
+    public static function said(array $items): array
+    {
+        $risked = collect($items)->contains(fn (array $item): bool => str_starts_with((string) $item['kind'], 'plan_'));
+
+        return array_values(array_filter($items, fn (array $item): bool => ! ($risked && $item['kind'] === 'plan')));
     }
 
     /**
