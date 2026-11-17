@@ -16,7 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * ideas and places for the time they have, Paperwork's next step, what they saved and what's
  * coming up. Each part is null or empty when there's nothing real to show.
  *
- * @property-read array{day: array<string, mixed>, needs: array<string, mixed>|null, discovery: array<string, mixed>, coming_up: array<string, mixed>, paperwork: array<string, mixed>|null, saved: array<string, mixed>|null, continuation: array<string, mixed>|null, weather: array<string, mixed>|null, forecast: array<string, mixed>|null, saved_events?: array<int, string>, welcome?: bool, personalised?: bool, rank_paused?: array<string, mixed>|null, weather_days?: array<int, array<string, mixed>>} $resource
+ * @property-read array{day: array<string, mixed>, needs: array<string, mixed>|null, discovery: array<string, mixed>, coming_up: array<string, mixed>, paperwork: array<string, mixed>|null, saved: array<string, mixed>|null, continuation: array<string, mixed>|null, weather: array<string, mixed>|null, forecast: array<string, mixed>|null, saved_events?: array<int, string>, welcome?: bool, personalised?: bool, rank_paused?: array<string, mixed>|null, picks?: array<string, mixed>|null, weather_days?: array<int, array<string, mixed>>} $resource
  */
 class TodayResource extends JsonResource
 {
@@ -43,6 +43,8 @@ class TodayResource extends JsonResource
             'day_line' => $this->resource['day_line'] ?? null,
             /** @var array{notice: array<int, string>, changes: array<int, string>|null, model_changed: bool, notice_version: string, provider_version: string}|null */
             'rank_paused' => $this->resource['rank_paused'] ?? null,
+            /** @var array{ask: bool, picked: list<string>, learned: bool, kinds: list<array{key: string, label: string, today: int}>}|null "What would you go to?" (EventPicks): ask while they haven't said Done or Not now; the kinds they picked; whether what they open already says more; each kind with how many are on still today. Null when personalisation isn't on under the wording that names it. */
+            'picks' => $this->resource['picks'] ?? null,
             /** @var array{temperature: int, condition: string, icon: string, summary: string|null, cycling: string|null, feels_like: int|null, high: int|null, low: int|null, hours: array<int, array{hour: string, temperature: int|null, icon: string|null, rain: int|null}>, today: array<int, array{hour: string, temperature: int|null, icon: string|null, condition: string|null, rain: int|null}>, days: array<int, array{date: string, low: int|null, high: int|null, icon: string|null, rain: int|null}>}|null */
             'weather' => $this->weather($this->resource['weather'] ?? null, $this->resource['forecast'] ?? null, $this->resource['weather_days'] ?? []),
             /** @var array<int, array{id: string, title: string, subtitle: string|null, start_time: string|null, end_time: string|null, place: string|null, state: string, completed: bool, editable: bool, bring: array{title: string|null, ready: int, total: int, process: string|null}|null}> */

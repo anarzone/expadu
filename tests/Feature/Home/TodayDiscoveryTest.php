@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\UserPlace;
 use App\Models\Venue;
 use App\Personalisation\AffinityAggregator;
+use App\Personalisation\EventPicks;
 use App\Personalisation\SignalAction;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
@@ -342,4 +343,37 @@ test('🔒 with personalisation off, Today keeps its own order, with no whys and
 
     expect($events->pluck('title')->all())->toBe(['Tour', 'Gig 1', 'Gig 2', 'Gig 3'])
         ->and($events->every(fn (array $event) => ! isset($event['why'])))->toBeTrue();
+});
+
+test('day one: the kinds they picked come first, each saying so, with one New for you third', function () {
+    $this->travelTo(discoveryNoon());
+    $user = learnedFrom(User::factory()->create(['veedel' => 'Ehrenfeld']), saved: []);
+    app(EventPicks::class)->save($user, ['music', 'tours'], done: false);
+    tonight('Play', '13:00', 'stage');
+    tonight('Kids', '14:00', 'kids');
+    tonight('Gig 1', '18:00', 'music');
+    tonight('Walk', '19:00', 'tours');
+    tonight('Gig 2', '20:00', 'music');
+
+    $found = app(TodayDiscovery::class)->for($user->fresh(), discoveryNoon());
+    $events = collect($found['events']);
+
+    expect($events->pluck('title')->take(2)->all())->toBe(['Gig 1', 'Walk'])
+        ->and($events[0]['why'])->toBe('You picked music.')
+        ->and($events[2]['title'])->toBe('Play')->and($events[2]['why'])->toBe(TodayDiscovery::NEW_WHY)
+        ->and($found['today'])->toMatchArray(['music' => 2, 'tours' => 1, 'stage' => 1, 'kids' => 1])
+        ->and($found['learned'])->toBeFalse();
+});
+
+test('what they open says more than a pick: a kind they lean to strongly passes the kinds they picked', function () {
+    $this->travelTo(discoveryNoon());
+    $user = learnedFrom(User::factory()->create(['veedel' => 'Ehrenfeld']), saved: ['stage', 'stage', 'stage', 'stage', 'stage', 'stage']);
+    app(EventPicks::class)->save($user, ['music'], done: true);
+    tonight('Gig', '13:00', 'music');
+    tonight('Play', '18:00', 'stage');
+
+    $found = app(TodayDiscovery::class)->for($user->fresh(), discoveryNoon());
+
+    expect(collect($found['events'])->pluck('title')->all())->toBe(['Play', 'Gig'])
+        ->and($found['learned'])->toBeTrue();
 });

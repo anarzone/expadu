@@ -825,6 +825,13 @@ public struct AppAPI: Sendable {
     // MARK: What Expadu knows
 
     /// Everything Expadu knows about them.
+    /// The kinds of event they picked ("What would you go to?"), the whole set; `done` once they say
+    /// Done or Not now. Refused in the server's words when personalisation isn't on.
+    public func savePicks(_ kinds: [String], done: Bool) async throws(APIFailure) {
+        let raw = try await composer("PUT", "me/picks", ["kinds": kinds, "done": done])
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
     public func knows() async throws(APIFailure) -> Knows {
         let raw = try await composer("GET", "memory")
         guard raw.status == 200, let knows = try? JSONDecoder().decode(Knows.self, from: raw.data) else { throw failure(raw.status) }
@@ -1407,6 +1414,10 @@ public struct AppAPI: Sendable {
             page.paperworkStatus = today.paperworkStatus.rawValue
             page.rankPaused = today.rankPaused.map {
                 TodayPage.RankPause(notice: $0.notice, changes: $0.changes, modelChanged: $0.modelChanged, noticeVersion: $0.noticeVersion, providerVersion: $0.providerVersion)
+            }
+            page.picks = today.picks.map { picks in
+                TodayPage.Picks(ask: picks.ask, picked: picks.picked, learned: picks.learned,
+                                kinds: picks.kinds.map { TodayPage.Picks.Kind(key: $0.key, label: $0.label, today: $0.today) })
             }
             page.dayLine = today.dayLine.map { line in
                 TodayPage.DayLine(text: line.text, parts: line.parts.map { TodayPage.DayLine.Part(text: $0.text, strong: $0.strong) })

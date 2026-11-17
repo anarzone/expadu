@@ -210,6 +210,8 @@ final class AccountData
 
         return [
             'taste_profile' => $this->rows('taste_profiles', 'subject_key', $subject),
+            // The kinds of event they picked themselves ("What would you go to?").
+            'event_picks' => json_decode((string) ($user->getRawOriginal('interests') ?? 'null'), true),
             'remembered' => $this->rows('user_facts', 'subject_key', $subject),
             'trips_kept_for_routines' => $this->rows('trip_history', 'subject_key', $subject),
             'routines' => $this->rows('routines', 'subject_key', $subject),

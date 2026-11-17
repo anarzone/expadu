@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\MemoryController;
 use App\Http\Controllers\Api\V1\MomentsController;
 use App\Http\Controllers\Api\V1\NotificationSettingsController;
 use App\Http\Controllers\Api\V1\PaperworkDocumentsController;
+use App\Http\Controllers\Api\V1\PicksController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\RoutinesController;
 use App\Http\Controllers\Api\V1\SignInController;
@@ -102,6 +103,8 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::post('today-rank/later', [TodayRankController::class, 'later'])->middleware('verified');
         // What Expadu knows about you: what Composer remembers, the taste it learned, the profile it reads.
         Route::get('memory', [MemoryController::class, 'index'])->middleware('verified');
+        // "What would you go to?": the kinds of event they picked (Today and What Expadu knows).
+        Route::put('me/picks', [PicksController::class, 'update'])->middleware(['verified', 'throttle:60,1']);
         Route::post('memory', [MemoryController::class, 'store'])->middleware(['verified', 'throttle:60,1']);
         Route::post('memory/restore', [MemoryController::class, 'restore'])->middleware(['verified', 'throttle:60,1']);
         Route::patch('memory/{fact}', [MemoryController::class, 'update'])->whereNumber('fact')->middleware(['verified', 'throttle:60,1']);

@@ -959,6 +959,35 @@ public struct TodayPage: Equatable, Sendable {
     public var personalised = false
     /// Their own order waits for a yes to a changed notice.
     public var rankPaused: RankPause?
+    /// "What would you go to?": the kinds of event they picked, and whether to ask (EventPicks).
+    public var picks: Picks?
+
+    public struct Picks: Equatable, Sendable {
+        /// Ask on Today: they haven't said Done or Not now.
+        public var ask: Bool
+        /// The kinds they picked, by key ("music").
+        public var picked: [String]
+        /// What they open, save and go to already says more than the picks.
+        public var learned: Bool
+        public var kinds: [Kind]
+
+        public struct Kind: Equatable, Sendable, Identifiable {
+            public let key: String
+            /// As the server names it ("Stage & comedy").
+            public let label: String
+            /// How many are on still today.
+            public let today: Int
+            public var id: String { key }
+
+            public init(key: String, label: String, today: Int) {
+                self.key = key; self.label = label; self.today = today
+            }
+        }
+
+        public init(ask: Bool, picked: [String], learned: Bool, kinds: [Kind]) {
+            self.ask = ask; self.picked = picked; self.learned = learned; self.kinds = kinds
+        }
+    }
     /// The day in one line, under the date (the server's DayLine, written in code from what's on the
     /// day): its times marked to stand out.
     public var dayLine: DayLine?

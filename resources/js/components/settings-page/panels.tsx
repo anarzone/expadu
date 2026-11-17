@@ -263,6 +263,7 @@ const LEARNS_FROM: [IconName, string][] = [
     ['bell', 'Today alerts'],
     ['train', 'Travel stops'],
     ['spark', 'Composer topics'],
+    ['calendar', 'Event kinds you pick'],
 ];
 
 /** What it never uses (App\Personalisation\Sensitive; what TodayRank never sends). */
@@ -491,7 +492,7 @@ export function PrivacyPanel() {
                     <p>
                         {first
                             ? 'It learns only from places and events for now. '
-                            : 'This now says in full what it never uses and who puts Today in order. '}
+                            : 'It now also keeps the kinds of event you pick. '}
                         Confirm you’re 16 or older and turn it on again
                         {first
                             ? ' to include Today, Travel and Composer.'

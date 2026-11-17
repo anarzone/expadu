@@ -4,12 +4,14 @@ namespace App\Home;
 
 use App\Day\DayItem;
 use App\Day\DayProjection;
+use App\Enums\EventCategory;
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
 use App\Models\Event;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Affinities;
+use App\Personalisation\EventPicks;
 use App\Personalisation\ListImpressions;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\TasteFacts;
@@ -60,7 +62,7 @@ final class TodayDiscovery
     public const RULES = 'rules-2';
 
     /** The rules over either order, from what they lean to (arranged()); logged with each list. */
-    public const ARRANGED = 'arranged-1';
+    public const ARRANGED = 'arranged-2';
 
     /** How many ideas the iPhone shows (TodayResource takes the first six). */
     private const SHOWN = 6;
@@ -74,7 +76,7 @@ final class TodayDiscovery
     /** Code's whys at most, as the AI's: the first picks' that hold. */
     private const WHYS = 3;
 
-    public const NEW_WHY = 'New for you: a change from what you usually open.';
+    public const NEW_WHY = 'New for you: something besides your usual.';
 
     /** From this hour, tomorrow's listings join today's. */
     private const TOMORROW_FROM_HOUR = 21;
@@ -107,11 +109,12 @@ final class TodayDiscovery
         private ListImpressions $impressions,
         private Affinities $affinities,
         private TasteFacts $facts,
+        private EventPicks $picks,
     ) {}
 
     /**
      * @param  bool  $shown  the person is about to see it (Today's own render, not the ranker's read): its lists are logged
-     * @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null}
+     * @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null, today: array<string, int>, learned: bool}
      */
     public function for(User $user, ?CarbonImmutable $now = null, bool $shown = false): array
     {
@@ -157,7 +160,7 @@ final class TodayDiscovery
         $listed = self::arranged(self::ranked($candidates, $order['events'] ?? null, $order['why'] ?? [], $eventKey), $leanings, $order !== null)
             ->map(function (array $event) use ($reasons, &$whys): array {
                 if (isset($event['new_for_you'])) {
-                    return [...$event, 'why' => self::NEW_WHY, 'reasons' => ['Something different from what you usually open, so Today doesn’t only repeat what you like.']];
+                    return [...$event, 'why' => self::NEW_WHY, 'reasons' => ['Something different from what you picked and usually open, so Today doesn’t only repeat what you like.']];
                 }
                 // No why from the AI (or no AI order): the first leaning it matches, in code's words.
                 if (! isset($event['why']) && $reasons !== null && $whys < self::WHYS && ($first = $reasons($event)[0] ?? null) !== null) {
@@ -194,6 +197,11 @@ final class TodayDiscovery
             'part' => $onlyTomorrow ? 'tomorrow' : ($now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening')),
             'events' => $listed->all(),
             'around' => $around,
+            // How many of each kind are still on today, for the kinds they can pick (EventPicks).
+            'today' => $events->reject(fn (array $event) => isset($event['day']))
+                ->countBy(fn (array $event) => EventCategory::fromLegacy($event['category'] ?? null)->value)->all(),
+            // What they open, save and go to already says what they lean to (TasteFacts).
+            'learned' => ($leanings['strong'] ?? []) !== [] || ($leanings['some'] ?? []) !== [],
         ];
     }
 
@@ -235,10 +243,12 @@ final class TodayDiscovery
      *   (moved, never dropped);
      * - third, one "New for you": the first of a kind they've shown nothing for either way, so
      *   Today doesn't only repeat what they like.
+     * A kind they picked themselves (EventPicks) counts as one they lean to some; over the AI's
+     * order too, until what they open, save and go to says more (no strong or some yet).
      * No leanings (personalisation off, or nothing learned yet): the order as it was.
      *
      * @param  Collection<int, array<string, mixed>>  $events
-     * @param  array{strong: list<string>, some: list<string>, avoid: list<string>, lately: list<string>, areas: list<string>}|null  $leanings
+     * @param  array{strong: list<string>, some: list<string>, avoid: list<string>, lately: list<string>, areas: list<string>, picked?: list<string>}|null  $leanings
      * @return Collection<int, array<string, mixed>>
      */
     public static function arranged(Collection $events, ?array $leanings, bool $ordered): Collection
@@ -247,16 +257,24 @@ final class TodayDiscovery
             return $events->values();
         }
         $kind = fn (array $event): ?string => TasteFacts::categoryLabel((string) ($event['category'] ?? ''));
-        $liked = [...$leanings['strong'], ...$leanings['some'], ...$leanings['lately']];
+        $picked = $leanings['picked'] ?? [];
+        $liked = [...$leanings['strong'], ...$leanings['some'], ...$leanings['lately'], ...$picked];
+
+        if ($ordered && $picked !== [] && $leanings['strong'] === [] && $leanings['some'] === []) {
+            // Day one: the AI's order, with the kinds they picked first.
+            $events = $events->values()->map(fn (array $event, int $index): array => [$event, in_array($kind($event), $picked, true) ? 1 : 0, $index])
+                ->sort(fn (array $a, array $b): int => [$b[1], $a[2]] <=> [$a[1], $b[2]])
+                ->map(fn (array $pair): array => $pair[0])->values();
+        }
 
         if (! $ordered) {
-            $score = function (array $event) use ($leanings, $kind): int {
+            $score = function (array $event) use ($leanings, $kind, $picked): int {
                 $k = $kind($event);
                 $area = $event['venue']['veedel'] ?? null;
 
                 return match (true) {
                     $k !== null && in_array($k, $leanings['strong'], true) => 3,
-                    $k !== null && (in_array($k, $leanings['some'], true) || in_array($k, $leanings['lately'], true)) => 2,
+                    $k !== null && (in_array($k, $leanings['some'], true) || in_array($k, $leanings['lately'], true) || in_array($k, $picked, true)) => 2,
                     default => 0,
                 } + (is_string($area) && in_array($area, $leanings['areas'], true) ? 1 : 0)
                   - ($k !== null && in_array($k, $leanings['avoid'], true) ? 4 : 0);
@@ -294,9 +312,10 @@ final class TodayDiscovery
 
     /**
      * What they lean to, as code reads it: kinds strong, some and avoided (TasteFacts, learned
-     * overnight), kinds looked at lately (TodayTaste, live), and Veedels. Null when there's nothing.
+     * overnight), kinds looked at lately (TodayTaste, live), the kinds they picked (EventPicks), and
+     * Veedels. Null when there's nothing.
      *
-     * @return array{strong: list<string>, some: list<string>, avoid: list<string>, lately: list<string>, areas: list<string>}|null
+     * @return array{strong: list<string>, some: list<string>, avoid: list<string>, lately: list<string>, areas: list<string>, picked: list<string>}|null
      */
     private function leanings(User $user): ?array
     {
@@ -309,6 +328,7 @@ final class TodayDiscovery
             'avoid' => $level('categories', ['avoid']),
             'lately' => array_values(array_filter(array_map(fn (string $kind): ?string => TasteFacts::categoryLabel($kind), $recent['categories']))),
             'areas' => array_values(array_unique([...$level('veedels', ['strong', 'some']), ...$recent['areas']])),
+            'picked' => $this->picks->labels($user),
         ];
 
         return array_filter($leanings) === [] ? null : $leanings;
@@ -316,7 +336,8 @@ final class TodayDiscovery
 
     /**
      * Which of the person's leanings an event matches, in words, from what personalisation learned
-     * (TasteFacts) and what they looked at lately (TodayTaste): its kind, then its neighbourhood.
+     * (TasteFacts), what they picked (EventPicks) and what they looked at lately (TodayTaste): its
+     * kind, then its neighbourhood.
      *
      * @return Closure(array<string, mixed>): list<string>
      */
@@ -328,14 +349,16 @@ final class TodayDiscovery
         $kinds = $leaning('categories');
         $areas = $leaning('veedels');
         $lately = array_values(array_filter(array_map(fn (string $kind): ?string => TasteFacts::categoryLabel($kind), $recent['categories'])));
+        $picked = $this->picks->labels($user);
 
-        return function (array $event) use ($kinds, $areas, $lately, $recent): array {
+        return function (array $event) use ($kinds, $areas, $lately, $recent, $picked): array {
             $kind = TasteFacts::categoryLabel((string) ($event['category'] ?? ''));
             $area = $event['venue']['veedel'] ?? null;
 
             return array_values(array_filter([
                 match (true) {
                     $kind !== null && in_array($kind, $kinds, true) => "You lean to {$kind}, from what you open, save and go to.",
+                    $kind !== null && in_array($kind, $picked, true) => "You picked {$kind}.",
                     $kind !== null && in_array($kind, $lately, true) => "You looked at {$kind} lately.",
                     default => null,
                 },

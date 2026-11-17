@@ -135,6 +135,20 @@ final class KnowsModel {
         }
     }
 
+    /// A kind of event in or out of what they picked: kept at once; back as it was if it doesn't go through.
+    func togglePick(_ key: String, _ api: AppAPI) async {
+        guard let picks = knows?.picks else { return }
+        var next = picks.kinds
+        if let at = next.firstIndex(of: key) { next.remove(at: at) } else { next.append(key) }
+        knows?.picks?.kinds = next
+        do {
+            try await api.savePicks(next, done: picks.done)
+        } catch {
+            if knows?.picks?.kinds == next { knows?.picks?.kinds = picks.kinds }
+            problem = Self.words(error)
+        }
+    }
+
     func undo(_ api: AppAPI) async {
         guard let toast else { return }
         withAnimation(.snappy) { self.toast = nil }
@@ -286,7 +300,7 @@ struct KnowsView: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Personalisation").font(.geist(16, .semibold)).foregroundStyle(Palette.text)
-                Text("Learns from what you open, save and skip, and from what you tell Composer.")
+                Text("Learns from what you open, save and skip, what you tell Composer and the kinds of event you pick.")
                     .font(.geist(13.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 4)
@@ -327,6 +341,26 @@ struct KnowsView: View {
         Text("Or just tell Composer: “I’m vegetarian”, “we have a toddler”. Tap one to change or forget it.")
             .font(.geist(13)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 4).padding(.top, 8)
+
+        if let picks = knows.picks, !knows.pickKinds.isEmpty {
+            heading("What you picked").padding(.top, 26).padding(.bottom, 4).padding(.horizontal, 4)
+            Text("Today puts these first until what you open, save and go to says more. Tap one to take it out or add it.")
+                .font(.geist(13.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 4).padding(.bottom, 10)
+            VStack(alignment: .leading, spacing: 14) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 14) {
+                    ForEach(Array(knows.pickKinds.enumerated()), id: \.element.key) { index, kind in
+                        PickTile(label: kind.label, on: picks.kinds.contains(kind.key), tilt: PickTile.tilts[index % PickTile.tilts.count]) {
+                            Task { await model.togglePick(kind.key, session.api) }
+                        }
+                    }
+                }
+                Text(picks.kinds.isEmpty ? "Nothing picked. Today goes by what you open, save and go to." : "\(picks.kinds.count) picked")
+                    .font(.geist(13.5, .semibold)).foregroundStyle(Palette.textSoft).contentTransition(.numericText())
+            }
+            .padding(.horizontal, 14).padding(.top, 16).padding(.bottom, 14)
+            .card(radius: 18)
+        }
 
         heading("What you tend to like").padding(.top, 26).padding(.bottom, 8).padding(.horizontal, 4)
         VStack(alignment: .leading, spacing: 0) {
@@ -479,10 +513,10 @@ struct KnowsView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(again ? "Personalisation says more now" : "Let Expadu get to know you")
                 .font(.posterGrotesque(23)).foregroundStyle(Palette.text).padding(.bottom, 6)
-            Text(again ? "It now also keeps what you tell Composer about yourself. Turn it on again to keep using it."
+            Text(again ? "It now also keeps the kinds of event you pick on Today. Turn it on again to keep using it."
                  : "Then Composer and Today answer for you, not for everyone. Off, they still work, just the same for all.")
                 .font(.geist(15)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true).padding(.bottom, 10)
-            ForEach(["What you open, save and skip in Today, Travel and Composer", "What you tell Composer about yourself, like “I’m vegetarian”", "Your situation and German level"], id: \.self) { use in
+            ForEach(["What you open, save and skip in Today, Travel and Composer", "What you tell Composer about yourself, like “I’m vegetarian”", "The kinds of event you pick, like music or tours", "Your situation and German level"], id: \.self) { use in
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Palette.focus)
                         .frame(width: 30, height: 30).background(Palette.selectBackground, in: .rect(cornerRadius: 10))

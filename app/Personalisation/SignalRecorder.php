@@ -231,6 +231,8 @@ final class SignalRecorder
         app(Memory::class)->erase($user);
         // So do the trips kept for routines, and the routines.
         app(Routines::class)->erase($user);
+        // And the kinds of event they picked.
+        app(EventPicks::class)->erase($user);
         TodayTaste::forget($user instanceof User ? $user->id : $user);
     }
 
