@@ -467,7 +467,10 @@ struct ComposerScreen: View {
 
     /// What Composer sends and to whom, under the box on the wall, with the notice and the way out.
     private func notice(_ disclosure: ComposerDisclosure) -> some View {
-        var words = AttributedString("Composer sends what you type, with your nearest stop and neighbourhood, to \(disclosure.processorName ?? "its processor") to answer you · ")
+        // AI Act Art. 50(1): they're told Composer is an AI, at every message (the owner's pick, option A, 17 Nov).
+        let processor = disclosure.processorName ?? "Anthropic"
+        let who = processor.hasPrefix("Anthropic") ? "Claude, by Anthropic" : processor
+        var words = AttributedString("Composer is an AI assistant (\(who)). It gets what you type, with your nearest stop and neighbourhood · ")
         if let link = disclosure.processorPrivacyUrl.flatMap(URL.init(string:)) {
             var notice = AttributedString("Privacy notice")
             notice.link = link
