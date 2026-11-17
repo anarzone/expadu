@@ -442,7 +442,7 @@ struct WhatsOnSheet: View {
         let send = Task {
             try? await Task.sleep(for: .seconds(8))
             guard !Task.isCancelled else { return }
-            try? await api.send([Signal(action: .notForMe, event: listing.idea.id)])
+            try? await api.send([Signal(action: .notForMe, event: listing.idea.id, surface: .events)])
             withAnimation(.snappy) { if hiding?.listing.id == listing.id { hiding = nil } }
         }
         path.removeAll()
