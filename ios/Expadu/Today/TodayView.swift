@@ -111,6 +111,8 @@ struct TodayView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: pull > PullMark.reach)
         .task { await model.start(session.api) }
         .task { await model.loadRoutines(session.api) }
+        // Their calendar changed, or they turned it on or off: Today as it now fits.
+        .onChange(of: MyCalendar.shared.changes) { Task { await model.load(session.api, quietly: true, animated: Motion.spring) } }
         // Asked here, over Today, right after a routine was set and while iOS hasn't asked.
         .notificationAsk()
         .onChange(of: model.phase) { _, phase in

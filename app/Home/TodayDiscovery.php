@@ -2,6 +2,7 @@
 
 namespace App\Home;
 
+use App\Day\Busy;
 use App\Day\DayItem;
 use App\Day\DayProjection;
 use App\Enums\EventCategory;
@@ -12,6 +13,7 @@ use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Affinities;
 use App\Personalisation\EventPicks;
+use App\Personalisation\Interleaving;
 use App\Personalisation\ListImpressions;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\TasteFacts;
@@ -114,9 +116,10 @@ final class TodayDiscovery
 
     /**
      * @param  bool  $shown  the person is about to see it (Today's own render, not the ranker's read): its lists are logged
+     * @param  list<array{0: int, 1: int}>  $busy  when their own calendar says they're busy (Busy): no idea is offered then
      * @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null, today: array<string, int>, learned: bool}
      */
-    public function for(User $user, ?CarbonImmutable $now = null, bool $shown = false): array
+    public function for(User $user, ?CarbonImmutable $now = null, bool $shown = false, array $busy = []): array
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(DayProjection::TIMEZONE);
         $active = collect($this->days->itemsOn($user, $now->format('Y-m-d')))
@@ -127,7 +130,7 @@ final class TodayDiscovery
         $home = $this->home($user);
         // What they turned down ("Not for me") stays off Today while it's hidden.
         $hidden = $user->personalises() ? $this->affinities->for($user) : null;
-        $events = $this->events($now, $active, $home)
+        $events = $this->events($now, $active, $home, $busy)
             ->reject(fn (array $event) => $hidden?->isHidden(SignalItemType::Event->value, (int) $event['id']) ?? false)
             ->values();
         // "Also in ‹area›" is for after today's plan: tomorrow's listings stay out of it.
@@ -169,7 +172,17 @@ final class TodayDiscovery
                 $whys += isset($event['why']) ? 1 : 0;
 
                 return $event;
-            })
+            });
+        // Does the order help? Theirs and the usual one drafted into one list (Interleaving),
+        // each idea with the order that put it there; the same for them all day.
+        $draft = Interleaving::on($user)
+            ? Interleaving::draft($candidates->map($eventKey)->all(), $listed->map($eventKey)->all(), Interleaving::seed($user, $now->toDateString()))
+            : null;
+        if ($draft !== null) {
+            $byKey = $listed->keyBy($eventKey);
+            $listed = collect($draft)->map(fn (array $pick) => [...$byKey[$pick['key']], 'team' => $pick['team']]);
+        }
+        $listed = $listed
             ->map(fn (array $event, int $index) => [...$event, 'layout' => match (true) {
                 $index < 2 => 'poster',
                 $index < 5 => 'compact',
@@ -183,8 +196,11 @@ final class TodayDiscovery
         if ($shown) {
             [$policy, $version] = $order === null ? ['rule', self::RULES] : ['haiku', (string) ($order['version'] ?? TodayRanker::VERSION)];
             $version .= $leanings === null ? '' : '+'.self::ARRANGED;
-            $this->impressions->record($user, 'today_events', $now, $policy, $version, $candidates->map($eventKey)->all(),
-                $listed->map(fn (array $event) => ['key' => $eventKey($event), 'layout' => $event['layout'], ...(isset($event['new_for_you']) ? ['pick' => 'new'] : [])])->all());
+            // Drafted from two: the usual order (always RULES) against theirs, each idea with its
+            // order; the version says theirs, "r " for the rules', "h " for the AI's.
+            [$eventsPolicy, $eventsVersion] = $draft === null ? [$policy, $version] : ['interleave', ($policy === 'haiku' ? 'h ' : 'r ').$version];
+            $this->impressions->record($user, 'today_events', $now, $eventsPolicy, $eventsVersion, $candidates->map($eventKey)->all(),
+                $listed->map(fn (array $event) => ['key' => $eventKey($event), 'layout' => $event['layout'], ...(isset($event['new_for_you']) ? ['pick' => 'new'] : []), ...(isset($event['team']) ? ['team' => $event['team']] : [])])->all());
             $this->impressions->record($user, 'today_places', $now, $policy, $version, $places->map($placeKey)->all(),
                 collect($around['places'] ?? [])->map(fn (array $place) => ['key' => $placeKey($place)])->all());
         }
@@ -195,7 +211,8 @@ final class TodayDiscovery
             // A free day's heading (Today decides it's free): "Ideas for
             // this afternoon", or "for tomorrow" when that's all there is.
             'part' => $onlyTomorrow ? 'tomorrow' : ($now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening')),
-            'events' => $listed->all(),
+            // Which order put an idea there is never shown.
+            'events' => $listed->map(fn (array $event) => array_diff_key($event, ['team' => true]))->all(),
             'around' => $around,
             // How many of each kind are still on today, for the kinds they can pick (EventPicks).
             'today' => $events->reject(fn (array $event) => isset($event['day']))
@@ -384,10 +401,10 @@ final class TodayDiscovery
      * @param  array{name: string, key: string, lat: float, lng: float}|null  $home
      * @return Collection<int, array<string, mixed>>
      */
-    private function events(CarbonImmutable $now, Collection $active, ?array $home): Collection
+    private function events(CarbonImmutable $now, Collection $active, ?array $home, array $busy = []): Collection
     {
         $today = $this->listings($now, $now)
-            ->filter(function (array $listing) use ($now, $active): bool {
+            ->filter(function (array $listing) use ($now, $active, $busy): bool {
                 ['start' => $start, 'end' => $end] = $listing;
                 if ($start < $now->getTimestamp()) {
                     $until = $end ?? ($listing['time_listed'] ? $start + self::NO_END_HOURS * 3600 : null);
@@ -396,7 +413,8 @@ final class TodayDiscovery
                     }
                 }
 
-                return ! $active->contains(fn (DayItem $plan) => $end !== null && $plan->startAt !== null && $plan->endAt !== null
+                return ! Busy::clashes($busy, max($start, $now->getTimestamp()), $end)
+                    && ! $active->contains(fn (DayItem $plan) => $end !== null && $plan->startAt !== null && $plan->endAt !== null
                     && $start < $plan->endAt->getTimestamp() && $end > $plan->startAt->getTimestamp());
             })
             ->values();
@@ -410,7 +428,7 @@ final class TodayDiscovery
         // Late, or with few left to start: tomorrow's too, said to be tomorrow's. One long-running listing
         // used to keep them out all evening.
         $tomorrow = $now->setTimezone('Europe/Berlin')->hour >= self::TOMORROW_FROM_HOUR || $ahead->count() < self::FEW_AHEAD
-            ? $this->nearFirst($this->listings($now, $now->addDay())->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])->values(), $home)
+            ? $this->nearFirst($this->listings($now, $now->addDay())->reject(fn (array $listing) => Busy::clashes($busy, $listing['start'], $listing['end']))->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])->values(), $home)
             : collect();
 
         // One listing imported from two sources is one idea: the same title at the same start shows once.

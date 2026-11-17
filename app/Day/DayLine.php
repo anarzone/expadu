@@ -21,9 +21,10 @@ final class DayLine
     public function __construct(private DayBriefs $briefs) {}
 
     /**
+     * @param  list<array{0: int, 1: int}>  $busy  when their own calendar says they're busy (Busy): said first
      * @return array{text: string, parts: list<array{text: string, strong: bool}>}
      */
-    public function for(User $user, CarbonImmutable $now): array
+    public function for(User $user, CarbonImmutable $now, array $busy = []): array
     {
         $now = $now->setTimezone('Europe/Berlin');
         // What's still ahead today, most important first.
@@ -37,6 +38,13 @@ final class DayLine
             $items->count() === 2 => $items[0]['text'].' Then '.lcfirst($items[1]['text']),
             default => $items[0]['text'],
         };
+        // Their calendar first: busy now, or a stretch later today; nothing of what it is.
+        $stretch = Busy::nextStretch($busy, $now);
+        if ($stretch !== null) {
+            $time = fn (int $at): string => CarbonImmutable::createFromTimestamp($at, 'Europe/Berlin')->format('H:i');
+            $busyText = $stretch[0] <= $now->getTimestamp() ? 'Busy until '.$time($stretch[1]).'.' : 'Busy '.$time($stretch[0]).'–'.$time($stretch[1]).'.';
+            $text = $busyText.' '.($items->isEmpty() ? 'Free after that.' : $text);
+        }
 
         return ['text' => $text, 'parts' => self::parts($text)];
     }

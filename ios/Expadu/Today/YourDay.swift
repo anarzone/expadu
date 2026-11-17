@@ -48,9 +48,13 @@ struct YourDay: View {
                     // Where the day is going: the trip's own destination, as a stop on the line.
                     TripEnd(trip: trip).padding(.bottom, 12)
                 } else if page.ahead.isEmpty {
-                    EmptyDay(page: page).padding(.top, 4).padding(.bottom, 12)
+                    // Their own calendar, when there's nothing of Expadu's ahead.
+                    CalendarStops(entries: calendar)
+                    if calendar.isEmpty { EmptyDay(page: page).padding(.top, 4).padding(.bottom, 12) }
                 }
                 plans(after, firstIsNext: before.isEmpty && tripHere == nil)
+                // What's in their calendar after the last plan.
+                if !page.ahead.isEmpty { CalendarStops(entries: calendar.filter { $0.clock >= (page.ahead.last?.start ?? "") }) }
                 AddPlan(date: page.date)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -65,10 +69,21 @@ struct YourDay: View {
 
     static let line = Color(hex: 0xE6421F)
 
+    /// Their own calendar's entries still ahead today, read on this phone (MyCalendar).
+    private var calendar: [MyCalendar.Entry] {
+        _ = MyCalendar.shared.changes
+        return MyCalendar.shared.today(now: page.now)
+    }
+
     /// Plans on the line, each with what follows it (free time, or the way to the next).
     @ViewBuilder
     private func plans(_ list: [TodayPage.Plan], firstIsNext: Bool) -> some View {
         ForEach(Array(list.enumerated()), id: \.element.id) { index, plan in
+            // Their calendar's entries that come before this plan (and after the one before it).
+            if !calendar.isEmpty, let at = page.ahead.firstIndex(where: { $0.id == plan.id }) {
+                let from = at == 0 ? "" : (page.ahead[at - 1].start ?? "")
+                CalendarStops(entries: calendar.filter { $0.clock >= from && $0.clock < (plan.start ?? "24:00") })
+            }
             Stop(page: page, plan: plan, next: firstIsNext && index == 0)
             if let free = page.free, free.anchorTitle == plan.title {
                 FreeTime(page: page, free: free)
@@ -77,6 +92,57 @@ struct YourDay: View {
             }
         }
     }
+}
+
+/// Entries from their own calendar on the line: when, what, and which calendar, said to be on this
+/// phone only (the calendar canvas). Read here; never sent anywhere but as busy times.
+struct CalendarStops: View {
+    let entries: [MyCalendar.Entry]
+
+    var body: some View {
+        ForEach(entries) { entry in
+            HStack(alignment: .top, spacing: 10) {
+                RoundedRectangle(cornerRadius: 2).fill(entry.color)
+                    .overlay {
+                        // Hatched: theirs, not a plan of Expadu's.
+                        Rectangle().fill(.white.opacity(0.5)).mask {
+                            Canvas { context, size in
+                                var y: CGFloat = -size.width
+                                while y < size.height {
+                                    var path = Path()
+                                    path.move(to: CGPoint(x: 0, y: y + size.width))
+                                    path.addLine(to: CGPoint(x: size.width, y: y))
+                                    context.stroke(path, with: .color(.black), lineWidth: 1.5)
+                                    y += 5
+                                }
+                            }
+                        }
+                    }
+                    .frame(width: 4).clipShape(.rect(cornerRadius: 2))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.clock).font(.posterGrotesque(19)).monospacedDigit().foregroundStyle(Palette.text)
+                    Text(entry.title).font(.geist(16, .semibold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+                    Label("\(entry.calendar) · until \(entry.until) · only on this phone", systemImage: "lock.fill").labelStyle(Tight())
+                        .font(.geist(13)).foregroundStyle(Palette.textSoft)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.bottom, 14)
+            .accessibilityElement(children: .combine)
+        }
+    }
+}
+
+extension MyCalendar.Entry {
+    var clock: String { Self.hours.string(from: start) }
+    var until: String { Self.hours.string(from: end) }
+
+    private static let hours: DateFormatter = {
+        let format = DateFormatter()
+        format.locale = Locale(identifier: "en_GB")
+        format.dateFormat = "HH:mm"
+        return format
+    }()
 }
 
 /// The destination of a trip that isn't a plan (an event's Getting there): its time and name.
