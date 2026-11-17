@@ -272,3 +272,74 @@ test('a place\'s row is shared for its slot, with each person\'s own distance an
         ->and($first['saved'])->toBeFalse()
         ->and($second['saved'])->toBeTrue();
 });
+
+/** Personalisation on (current wording) with no AI order, and what they did before, learned overnight. */
+function learnedFrom(User $user, array $saved, array $notForMe = []): User
+{
+    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk();
+    $user = $user->fresh();
+    foreach ([...array_map(fn ($c) => [$c, SignalAction::Saved], $saved), ...array_map(fn ($c) => [$c, SignalAction::NotForMe], $notForMe)] as $i => [$category, $action]) {
+        $past = discoveryEvent("Past {$i}", '2026-10-1'.($i % 9 + 1).' 20:00');
+        $past->update(['category' => $category]);
+        app(SignalRecorder::class)->record($user, $action, SignalSurface::Events, SignalItemType::Event, $past->id);
+    }
+    app(AffinityAggregator::class)->rebuild();
+    TodayTaste::forget($user->id);
+
+    return $user->fresh();
+}
+
+function tonight(string $title, string $time, string $category): Event
+{
+    $event = discoveryEvent($title, "2026-10-26 {$time}");
+    $event->update(['category' => $category]);
+
+    return $event;
+}
+
+test('with no AI order, what they lean to comes first, two of a kind at most among six, and one New for you third', function () {
+    $this->travelTo(discoveryNoon());
+    $user = learnedFrom(User::factory()->create(['veedel' => 'Ehrenfeld']), saved: ['music', 'music', 'music', 'music', 'music']);
+    tonight('Tour', '13:00', 'tours');
+    tonight('Play', '14:00', 'stage');
+    tonight('Gig 1', '18:00', 'music');
+    tonight('Gig 2', '19:00', 'music');
+    tonight('Gig 3', '20:00', 'music');
+    tonight('Kids', '15:00', 'kids');
+
+    $events = collect(app(TodayDiscovery::class)->for($user, discoveryNoon())['events']);
+
+    // Music first, but only two of it among the six; the third gig waits after them.
+    expect($events->pluck('title')->take(2)->all())->toBe(['Gig 1', 'Gig 2'])
+        ->and($events[0]['why'])->toBe('You lean to music.')
+        // Third: a kind they've shown nothing for.
+        ->and($events[2]['title'])->toBe('Tour')->and($events[2]['why'])->toBe(TodayDiscovery::NEW_WHY)
+        ->and($events->pluck('title')->last())->toBe('Gig 3')
+        ->and($events->pluck('title')->sort()->values()->all())->toBe(['Gig 1', 'Gig 2', 'Gig 3', 'Kids', 'Play', 'Tour']);
+});
+
+test('a kind they turned down goes last, and nothing is dropped', function () {
+    $this->travelTo(discoveryNoon());
+    $user = learnedFrom(User::factory()->create(['veedel' => 'Ehrenfeld']), saved: ['music', 'music'], notForMe: ['party', 'party', 'party']);
+    tonight('Rave', '13:00', 'party');
+    tonight('Gig', '18:00', 'music');
+    tonight('Play', '19:00', 'stage');
+
+    $titles = collect(app(TodayDiscovery::class)->for($user, discoveryNoon())['events'])->pluck('title')->all();
+
+    expect($titles[0])->toBe('Gig')->and(end($titles))->toBe('Rave')->and($titles)->toHaveCount(3);
+});
+
+test('🔒 with personalisation off, Today keeps its own order, with no whys and no New for you', function () {
+    $this->travelTo(discoveryNoon());
+    $user = User::factory()->create(['veedel' => 'Ehrenfeld']);
+    tonight('Tour', '13:00', 'tours');
+    tonight('Gig 1', '18:00', 'music');
+    tonight('Gig 2', '19:00', 'music');
+    tonight('Gig 3', '20:00', 'music');
+
+    $events = collect(app(TodayDiscovery::class)->for($user, discoveryNoon())['events']);
+
+    expect($events->pluck('title')->all())->toBe(['Tour', 'Gig 1', 'Gig 2', 'Gig 3'])
+        ->and($events->every(fn (array $event) => ! isset($event['why'])))->toBeTrue();
+});
