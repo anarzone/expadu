@@ -163,7 +163,7 @@ struct StepList: View {
 }
 
 /// A ride's stop on its line: open, passed (filled), or the one it comes to next (a ring that pulses).
-private struct StopMark: View {
+struct StopMark: View {
     let colour: Color
     let passed: Bool
     let coming: Bool

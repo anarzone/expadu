@@ -37,6 +37,9 @@ extension EnvironmentValues {
     @Entry var shell = ShellActions()
     /// The section bar is folded to its circle: Travel puts Where to? beside it.
     @Entry var sectionBarCompact = false
+    /// Where the bottom row (the section bar, Composer's button) starts on the screen: Travel's Where to?
+    /// sits just over it while the bar is open.
+    @Entry var sectionBarTop: CGFloat = 0
 }
 
 /// The phone shell: the brand, the bell and the account over each page; at the bottom a Liquid Glass
@@ -50,13 +53,19 @@ struct ShellView: View {
     /// Plan a trip, its routes and the trip screen: one of each for the whole app, opened from
     /// Travel, Today or Composer alike.
     @State private var planner = TripPlanner()
+    /// Pages any screen opens over the app (What Expadu knows).
+    @State private var pages = Pages()
     @State private var compact = false
     @State private var lastOffset: CGFloat = 0
     @State private var composer: ComposerOpening?
     @State private var dictation = Dictation()
     @State private var talk = Talk.idle
     @State private var safeBottom: CGFloat = 0
+    @State private var barTop: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    /// Gone to the background since the day was last read (iOS comes back through inactive).
+    @State private var away = false
 
     /// The hold on the Composer button: listening, or about to cancel when the finger slides away.
     enum Talk: Equatable { case idle, listening, away }
@@ -85,7 +94,9 @@ struct ShellView: View {
         }
         .environment(today)
         .environment(planner)
+        .environment(pages)
         .environment(\.sectionBarCompact, compact)
+        .environment(\.sectionBarTop, barTop)
         // Travel keeps the bar folded, so the board, its search and its sheets have the room;
         // opened from its circle, it folds back after a moment.
         .onChange(of: tab, initial: true) { _, section in
@@ -104,11 +115,8 @@ struct ShellView: View {
             case .tripStart:
                 withAnimation(.snappy) { tab = .today }
                 if let way = today.page?.leave?.ways.first {
-                    // One tap, as Start trip everywhere: a trip running is replaced, with Undo.
-                    Task {
-                        _ = await today.startTrip(session.api, way: way)
-                        if today.page?.trip != nil { planner.showTrip = true }
-                    }
+                    // One tap, as Start trip everywhere: a trip running is replaced, with Undo; it opens at once.
+                    Task { _ = await today.startTrip(session.api, way: way, opened: { planner.showTrip = true }) }
                 } else {
                     Task { await today.findWay(session.api) }
                 }
@@ -155,6 +163,7 @@ struct ShellView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, max(0, 21 - safeBottom))
             .offset(y: max(0, safeBottom - 21))
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { barTop = $0 }
         }
         .overlay(alignment: .bottomTrailing) {
             if talk != .idle {
@@ -177,6 +186,7 @@ struct ShellView: View {
                     .id(opening.id)
                     .environment(today)
                     .environment(planner)
+                    .environment(pages)
                     .environment(\.shell, ShellActions(
                         openComposer: {},
                         show: { section in withAnimation(.snappy) { tab = section; compact = section == .travel } },
@@ -208,18 +218,36 @@ struct ShellView: View {
             TripPlanView(planner: planner, station: planner.station, stationFavourite: planner.stationFavourite)
                 .environment(planner)
                 .environment(today)
+                // Clear, so the page it opened over shows while it's swiped back (it draws its own).
+                .presentationBackground(.clear)
+        }
+        // What Expadu knows, from the account menu, Composer's Remembered card or Today's How we rank.
+        .fullScreenCover(isPresented: $pages.knows) {
+            KnowsView()
+                // Clear, so the page it opened over shows while it's swiped back (it draws its own).
+                .presentationBackground(.clear)
         }
         // Started: felt as the trip opens (the routes behind it close in the same moment, so it lives here).
         .sensoryFeedback(.success, trigger: planner.started)
         .fullScreenCover(isPresented: Binding(get: { planner.showTrip && today.page?.trip != nil }, set: { planner.showTrip = $0 })) {
             if let trip = today.page?.trip {
                 TravelTrip(trip: trip).environment(planner).environment(today)
+                    // Clear, so the page below shows while the trip is pulled down (it draws its own).
+                    .presentationBackground(.clear)
             }
         }
         // One follower for the trip, wherever it shows (Today, the board, the trip screen, the Live
         // Activity): it starts with the trip and stops when the trip ends, anywhere.
         .onChange(of: today.page?.trip, initial: true) { _, trip in
             if let trip { planner.follow(trip) } else { planner.stopFollowing() }
+        }
+        // Back in the app: the day (and the trip) read again at once, so the app and the Lock Screen
+        // say the same, never a trip there that has ended.
+        .onChange(of: scenePhase) { _, now in
+            if now == .background { away = true }
+            guard now == .active, away else { return }
+            away = false
+            if today.page != nil { Task { await today.load(session.api, quietly: true) } }
         }
         // Trip sync: the tram they're really on, and the next one when a delay breaks a change.
         .task {
@@ -566,14 +594,17 @@ private struct ShellHeader: View {
     }
 }
 
-/// The account: for now, signing out.
+/// The account: what Expadu knows about them, and signing out.
 struct AccountButton: View {
     @Environment(Session.self) private var session
+    @Environment(Pages.self) private var pages
 
     var body: some View {
         Menu {
             Text(session.email)
-            Button("Sign out", role: .destructive) { Task { await session.signOut() } }
+            Button("What Expadu knows", systemImage: "person.text.rectangle") { pages.openKnows() }
+            Divider()
+            Button("Sign out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { Task { await session.signOut() } }
         } label: {
             Text(session.initial)
                 .font(.geist(14, .semibold))

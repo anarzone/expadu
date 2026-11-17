@@ -82,9 +82,16 @@ public struct CityMap: UIViewRepresentable {
     /// Parts of the map covered by something laid over it (a list at the bottom): the map's centre, its
     /// fits and following the phone all keep clear of them, and a change moves the map smoothly.
     let viewInset: UIEdgeInsets
+    /// Following, a drag of the map (it goes free, as Apple Maps does): said so the follow button shows it.
+    let followEnded: (() -> Void)?
+    /// Where the trip says the phone is (a ride by its timetable), for the arrow when the phone has no good fix.
+    let standIn: ((Date) -> CLLocation?)?
 
     public init(lines: [Line], pins: [Pin], fit: [CLLocationCoordinate2D], padding: UIEdgeInsets = UIEdgeInsets(top: 40, left: 40, bottom: 40, right: 40),
-                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0, creditInset: CGFloat = 8, viewInset: UIEdgeInsets = .zero) {
+                interactive: Bool = true, follow: Bool = false, showsUser: Bool = false, fitID: Int = 0, creditInset: CGFloat = 8, viewInset: UIEdgeInsets = .zero,
+                followEnded: (() -> Void)? = nil, standIn: ((Date) -> CLLocation?)? = nil) {
+        self.followEnded = followEnded
+        self.standIn = standIn
         self.fitID = fitID
         self.creditInset = creditInset
         self.viewInset = viewInset
@@ -111,6 +118,8 @@ public struct CityMap: UIViewRepresentable {
         let dark = context.environment.colorScheme == .dark
         let map = SizedMapView(frame: .zero, styleURL: Self.style(dark: dark))
         map.laidOut = { [weak coordinator = context.coordinator] in coordinator?.fitIfPending() }
+        // The arrow's own source, before the arrow shows: the phone, or the trip's stand-in without a good fix.
+        map.locationManager = context.coordinator.location
         map.delegate = context.coordinator
         map.logoView.isHidden = true
         // OpenStreetMap's credit stays: the (i) opens it.
@@ -160,14 +169,27 @@ public struct CityMap: UIViewRepresentable {
         private var styleReady = false
         /// Whether the map is close enough for stops to show their badge and name.
         let stops = StopDetail()
+        let location = StandInLocationManager()
+        /// Following as last asked: the camera is set to follow only when this changes, never again on
+        /// every update (that pulled a dragged or pinched map back each second, the owner, 14 Nov).
+        private var following = false
 
         func apply(_ spec: CityMap) {
             self.spec = spec
+            location.standIn = spec.standIn
             guard let map else { return }
             map.showsUserLocation = spec.showsUser || spec.follow
+            // Following, the map turns with the way they go: a twist of two fingers while zooming
+            // would stop that, so it doesn't turn by hand then. Pinching zooms around the arrow and keeps
+            // following at the new zoom; a drag goes free (mapView(_:didChange:animated:)).
+            map.allowsRotating = spec.interactive && !spec.follow
             if spec.follow {
-                if map.userTrackingMode != .followWithCourse { map.setUserTrackingMode(.followWithCourse, animated: true, completionHandler: nil) }
+                if !following {
+                    following = true
+                    map.setUserTrackingMode(.followWithCourse, animated: true, completionHandler: nil)
+                }
             } else {
+                following = false
                 if map.userTrackingMode != .none { map.userTrackingMode = .none }
                 let key = "\(spec.fitID)|" + spec.fit.map { String(format: "%.5f,%.5f", $0.latitude, $0.longitude) }.joined(separator: ";")
                 if key != fitKey, !spec.fit.isEmpty {
@@ -297,6 +319,13 @@ public struct CityMap: UIViewRepresentable {
         }
 
         public func mapView(_ mapView: MLNMapView, annotationCanShowCallout annotation: MLNAnnotation) -> Bool { false }
+
+        /// The map stopped following by itself (a drag): free from now on, and said so.
+        public func mapView(_ mapView: MLNMapView, didChange mode: MLNUserTrackingMode, animated: Bool) {
+            guard following, mode == .none else { return }
+            following = false
+            spec?.followEnded?()
+        }
     }
 }
 

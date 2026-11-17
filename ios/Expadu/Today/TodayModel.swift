@@ -68,12 +68,17 @@ final class TodayModel {
         }
         self.place = place
         do throws(APIFailure) {
-            let fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            var fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            // A trip being started stays shown until the server answers for it.
+            if let starting { fresh.trip = starting }
+            // The island shows the trip the server has, before the guidance hears of it: one ended
+            // anywhere (here, the web, arrived) goes from the Lock Screen too.
+            TripActivity.shared.running(fresh.trip)
             withAnimation(animated) { page = fresh }
             if phase != .ready { waveSince = .now }
             phase = .ready
             reportShown(api)
-            // No trip: the Leave card's countdown in the island when it's close; a trip ended elsewhere, gone.
+            // No trip: the Leave card's countdown in the island when it's close.
             if page?.trip == nil { TripActivity.shared.leave(page?.leave) }
         } catch {
             if page != nil, quietly { return }
@@ -438,20 +443,63 @@ final class TodayModel {
     }
 
     /// I'm on my way, in one tap: a trip already running is replaced, said on the new one with Undo.
+    /// Shown at once, as Go is in Maps: when the way's steps are here the trip goes on the page and
+    /// `opened` runs before the server answers (waiting for it and then for the whole day read as a tap
+    /// that did nothing, the owner, 14 Nov); its answer then replaces the shown trip quietly. Without
+    /// them, `opened` runs once the server has it. Turned down: the trip there was comes back and
+    /// `startProblem` says why (where the tap was: the Leave sheet, or the card).
     /// True only when the server still asks first (never from here, which always replaces).
-    func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool = true) async -> Bool {
+    func startTrip(_ api: AppAPI, way: TodayPage.Way, replace: Bool = true, opened: (() -> Void)? = nil) async -> Bool {
+        startProblem = nil
+        let shown: TodayPage.Trip?? = way.legs.isEmpty ? nil
+            : .some(showStarting(TodayPage.Trip(to: page?.leave?.to ?? "", arriveTime: way.arriveTime, startTime: page?.leave?.start, legs: way.legs)))
+        if shown != nil { opened?() }
         do throws(APIFailure) {
             let started = try await api.startTrip(way: way, latitude: place?.latitude, longitude: place?.longitude, replace: replace)
-            guard case let .started(replaced) = started else { return true }
-            cardNote = nil
-            await load(api, quietly: true)
+            guard case let .started(replaced) = started else {
+                if let shown { notStarting(shown) }
+                return true
+            }
+            await self.started(api)
+            if shown == nil, page?.trip != nil { opened?() }
             if let replaced { tripReplaced(replaced) }
         } catch {
-            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            if let shown { notStarting(shown) }
+            let why = Self.words(error)
+            startProblem = why
+            say(Note(text: why, symbol: "exclamationmark.circle", problem: true))
             // The way it asked for has gone (that tram left): the card shows the next one at once.
             await load(api, quietly: true)
         }
         return false
+    }
+
+    /// Why the last Start trip didn't start, for where it was tapped.
+    private(set) var startProblem: String?
+
+    /// Start trip, shown before the server has it: kept on the page through any reload until its
+    /// answer comes, so a reload in between never takes the trip away.
+    private var starting: TodayPage.Trip?
+
+    /// The trip picked, on the page at once; the one it replaces comes back, for if it's turned down.
+    func showStarting(_ trip: TodayPage.Trip) -> TodayPage.Trip? {
+        let before = page?.trip
+        starting = trip
+        page?.trip = trip
+        return before
+    }
+
+    /// The server took it: its own trip (with the live times) in place of the one shown.
+    func started(_ api: AppAPI) async {
+        starting = nil
+        cardNote = nil
+        await load(api, quietly: true)
+    }
+
+    /// Turned down: the trip there was before, or none.
+    func notStarting(_ before: TodayPage.Trip?) {
+        starting = nil
+        page?.trip = before
     }
 
     /// The trip being ended: true when they made it. The card shows it in place before it goes.

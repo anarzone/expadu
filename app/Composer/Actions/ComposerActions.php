@@ -46,6 +46,8 @@ final class ComposerActions
         'set_notifications' => [SettingsActions::class, 'everyday'],
         'set_needs' => [SettingsActions::class, 'everyday'],
         'update_profile' => [SettingsActions::class, 'everyday'],
+        'remember' => [MemoryActions::class, 'everyday'],
+        'forget' => [MemoryActions::class, 'everyday'],
         'change_paperwork_fact' => [PaperworkActions::class, 'paperwork'],
         'paperwork_step' => [PaperworkActions::class, 'paperwork'],
         'paperwork_report' => [PaperworkActions::class, 'paperwork'],

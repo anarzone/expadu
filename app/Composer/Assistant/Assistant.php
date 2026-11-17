@@ -117,7 +117,7 @@ final class Assistant
         The answer:
         - sentences: one to three short, friendly sentences in the first person, 50 words at most in all, each with the ids of the results it relies on in uses. The cards give the details, so don't read out a whole trip, board, plan or list: say what matters most.
         - Use only facts from the results: copy names, times and numbers exactly, with 24-hour times. Add nothing they don't say: no prices, opening hours, distances, crowds, travel times, counts or weather beyond them. State facts plainly, without "might", "may" or "probably". Don't read back today's date or the time.
-        - You know nothing about the person beyond their words and what the tools return: never guess their plans, tastes or where they are.
+        - You know nothing about the person beyond their words, what you know about them (when it's given) and what the tools return: never guess their plans, tastes or where they are.
         - show: the ids of the results to show as cards, best first: at most three listings and six places (every place you name gets a card), and the trip, board, plan, choice, guide or notice the answer is about. Always show the cards of their own you looked up (paperwork, my_trip, my_next), and every change you made or proposed.
         - If nothing fits, say plainly what you looked at and offer to plan something.
         TXT;
@@ -129,7 +129,8 @@ final class Assistant
 
     /** Added for people who turned personalisation on. */
     private const PERSONAL = <<<'TXT'
-        This person turned personalisation on: you may also look at what they like and skip (my_taste) and their own plans today and tomorrow (my_day). Prefer what fits their taste and leaves their plans free, and never suggest what they skip.
+        This person turned personalisation on. What you know about them is at the top of their message: what they asked you to remember ([k] ids), what they tend to like and skip ([t] [a] [h] [w] ids) and their situation and German level ([u] ids). Use it in every answer without being asked: a vegetarian gets vegetarian places, a family with a toddler gets places for small children, someone with little German gets events in English. A sentence that relies on it cites those ids in uses. You may also look at their own plans today and tomorrow (my_day). Prefer what fits them and leaves their plans free, and never suggest what they skip.
+        - When they tell you a lasting fact about themselves (what they eat, their children, how they get around, their hours, what they love or avoid), call remember with it in a few words, in the same round as the lookups, and say "I'll remember that." in the answer. When they say something you know is wrong or no longer so, or ask you to forget it, call forget with its k id (and remember the new fact when it changed). Never remember anything about health, religion or beliefs, sexuality, politics or a union.
         - because: for each suggestion that fits their taste, one short line saying why, in the form "You like live music" or "You go to Ehrenfeld a lot", citing the my_taste ids in uses. No counts, nothing their taste doesn't say.
         TXT;
 
@@ -332,7 +333,10 @@ final class Assistant
         $again = $tools->askedAgain();
         // The plans this conversation made, as they are now (owner, 24 Oct 2026: follow-ups are read against the plan).
         $planned = collect($history['suggested']['plans'] ?? [])->map(fn (string $date): ?string => $tools->planText($date))->filter()->map(fn (string $plan): string => $plan."\n\n")->implode('');
-        $messages = [['role' => 'user', 'content' => $earlier.$planned."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
+        // What Composer knows about them (with the opt-in): what they asked it to remember, their taste, their situation.
+        $about = $tools->knownAbout();
+        $aboutThem = $about === '' ? '' : "What you know about them:\n{$about}\n\n";
+        $messages = [['role' => 'user', 'content' => $aboutThem.$earlier.$planned."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
             .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nMessage: \"{$text}\""
             .($again ? "\n(They sent this same message before in this conversation: asking again isn't turning down what you showed. Answer it again.)" : '')]];
         // What the model was given to start from: the day and time, the conversation, the plans.
@@ -514,8 +518,7 @@ final class Assistant
         $places = $shown->filter(fn (string $id): bool => isset($tools->places[$id]))->take(self::PLACES_SHOWN)->map(fn (string $id): Candidate => $tools->places[$id])->values();
         // The cards it chose, then the rest of its search, up to six (coordinator, 23 Oct 2026: 6–8 when there are).
         if ($places->isNotEmpty()) {
-            $places = $places->concat(collect($tools->places)->reject(fn (Candidate $c): bool => $places->contains('id', $c->id))->values())
-                ->take(self::PLACES_SHOWN)->values();
+            $places = $places->concat(self::rest($tools, $places))->take(self::PLACES_SHOWN)->values();
             // Shown in its search's order, nearest first, whichever it chose (coordinator, 24 Oct 2026:
             // cards at 3.2 km, then 1.9 km, with nothing saying why).
             $rank = array_flip(array_keys($tools->places));
@@ -589,6 +592,10 @@ final class Assistant
             $lead = $lead === '' || str_ends_with($lead, ':') ? $line : $line.' '.$lead;
         }
 
+        // A search its words left out ("climbing or a gym", only the gym said): named in Composer's own line.
+        $also = isset($blocks['places']) ? self::alsoFound($tools, $lead) : '';
+        $lead = $also === '' ? $lead : trim($lead.' '.$also);
+
         return [
             'text' => $lead,
             'blocks' => array_values($blocks),
@@ -598,7 +605,55 @@ final class Assistant
                 || collect($blocks['places']['places'] ?? [])->contains(fn (array $p): bool => isset($p['because']))),
             // Everything it looked at, as it read it (composer:eval checks the lead against it).
             'read' => $tools->read,
+            // What they told Composer that a kept sentence leans on, said under the answer ("From what you told me").
+            'told' => collect($this->kept)->flatMap(fn (array $sentence): array => $sentence['uses'])
+                ->filter(fn (mixed $id): bool => is_string($id) && preg_match('/^k\d+$/', $id) === 1)->unique()
+                ->map(fn (string $id): ?string => $tools->read[$id] ?? null)->filter()->values()->all(),
         ];
+    }
+
+    /**
+     * The rest of what its searches found, after the cards it chose: with two or more searches ("a
+     * climbing wall or a gym"), they take turns, so the second isn't cut off by the first's six.
+     *
+     * @param  Collection<int, Candidate>  $chosen
+     * @return Collection<int, Candidate>
+     */
+    private static function rest(AssistantTools $tools, Collection $chosen): Collection
+    {
+        $left = fn (array $ids): array => array_values(array_filter($ids, fn (string $id): bool => isset($tools->places[$id]) && ! $chosen->contains('id', $id)));
+        if (count($tools->searches) < 2) {
+            return collect($left(array_keys($tools->places)))->map(fn (string $id): Candidate => $tools->places[$id]);
+        }
+        $queues = array_map(fn (array $search): array => $left($search['ids']), $tools->searches);
+        $turns = [];
+        while (array_filter($queues) !== []) {
+            foreach ($queues as $i => $queue) {
+                if ($queue !== []) {
+                    $turns[] = array_shift($queues[$i]);
+                }
+            }
+        }
+
+        return collect(array_unique($turns))->map(fn (string $id): Candidate => $tools->places[$id])->values();
+    }
+
+    /**
+     * For each search the answer's words leave out, by what it looked for or any place it found: a
+     * line of Composer's own naming its first place ("Kletterfabrik (climbing) is also on the cards.").
+     */
+    private static function alsoFound(AssistantTools $tools, string $lead): string
+    {
+        if (count($tools->searches) < 2) {
+            return '';
+        }
+        $said = mb_strtolower($lead);
+
+        return collect($tools->searches)
+            ->reject(fn (array $search): bool => str_contains($said, mb_strtolower($search['kind']))
+                || collect($search['ids'])->contains(fn (string $id): bool => isset($tools->places[$id]) && str_contains($said, mb_strtolower($tools->places[$id]->name))))
+            ->map(fn (array $search): string => $tools->places[$search['ids'][0]]->name.' ('.$search['kind'].') is also on the cards.')
+            ->implode(' ');
     }
 
     /**

@@ -713,6 +713,77 @@ public struct AppAPI: Sendable {
         _ = Self.composerReply(try await composer("PUT", "composer/paperwork-permission", body))
     }
 
+    // MARK: What Expadu knows
+
+    /// Everything Expadu knows about them.
+    public func knows() async throws(APIFailure) -> Knows {
+        let raw = try await composer("GET", "memory")
+        guard raw.status == 200, let knows = try? JSONDecoder().decode(Knows.self, from: raw.data) else { throw failure(raw.status) }
+        return knows
+    }
+
+    /// Something for Composer to remember, typed here; refused in the server's words (a special category, full).
+    public func remember(_ text: String) async throws(APIFailure) -> Knows.Fact {
+        try Self.fact(try await composer("POST", "memory", ["text": text]), source: "added")
+    }
+
+    /// A fact's words, changed.
+    public func change(_ fact: Knows.Fact, to text: String) async throws(APIFailure) -> Knows.Fact {
+        var changed = try Self.fact(try await composer("PATCH", "memory/\(fact.id)", ["text": text]), source: fact.source)
+        changed.createdAt = fact.createdAt
+        return changed
+    }
+
+    /// A fact forgotten; it comes back as it was, for Undo.
+    public func forget(_ fact: Knows.Fact) async throws(APIFailure) -> Knows.Fact {
+        let raw = try await composer("DELETE", "memory/\(fact.id)")
+        // Already gone (forgotten elsewhere): as good as forgotten here.
+        if raw.status == 404 { return fact }
+        let json = (try? JSONSerialization.jsonObject(with: raw.data) as? [String: Any]) ?? [:]
+        guard raw.status == 200, let gone = json["forgotten"].flatMap({ try? JSONSerialization.data(withJSONObject: $0) }),
+              let fact = try? JSONDecoder().decode(Knows.Fact.self, from: gone) else { throw failure(raw.status) }
+        return fact
+    }
+
+    /// Undo of a forget: back in its place, under a new id.
+    public func restore(_ fact: Knows.Fact) async throws(APIFailure) -> Knows.Fact {
+        var back = try Self.fact(try await composer("POST", "memory/restore", ["text": fact.text, "source": fact.source, "created_at": fact.createdAt]), source: fact.source)
+        back.createdAt = fact.createdAt
+        return back
+    }
+
+    /// Personalisation on, with their word that they're 16 or older, or off, which erases what it learned.
+    public func setPersonalisation(_ on: Bool) async throws(APIFailure) {
+        var body: [String: Any] = ["settings": ["personalisation": on]]
+        if on { body["sixteen_or_older"] = true }
+        let raw = try await composer("PUT", "settings", body)
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
+    /// Their situation or German level, set by the profile's own rules.
+    public func setProfile(_ field: String, _ value: String) async throws(APIFailure) {
+        let raw = try await composer("PATCH", "me/profile", ["field": field, "value": value])
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
+    /// A fact as the server kept it ({fact: {id, text}}), or why not (422).
+    private static func fact(_ raw: Raw, source: String) throws(APIFailure) -> Knows.Fact {
+        let json = (try? JSONSerialization.jsonObject(with: raw.data) as? [String: Any]) ?? [:]
+        guard (200..<300).contains(raw.status), let fact = json["fact"] as? [String: Any], let id = fact["id"] as? Int, let text = fact["text"] as? String else {
+            throw refusal(raw) ?? (raw.status == 401 ? .signedOut : raw.status == 429 ? .tooManyTries : .unreachable)
+        }
+        return Knows.Fact(id: id, text: text, source: source, createdAt: ISO8601DateFormatter().string(from: .now))
+    }
+
+    /// The server's words for a refusal (422), when it gave them.
+    private static func refusal(_ raw: Raw) -> APIFailure? {
+        if raw.status == 404 { return .refused("That’s no longer remembered.") }
+        guard raw.status == 422 else { return nil }
+        let json = (try? JSONSerialization.jsonObject(with: raw.data) as? [String: Any]) ?? [:]
+        let first = (json["errors"] as? [String: [String]])?.values.first?.first
+        return .refused(first ?? json["message"] as? String ?? "That didn’t go through. Try again in a moment.")
+    }
+
     // MARK: Travel
 
     private static func query(_ pairs: [(String, String)]) -> String {
@@ -1227,6 +1298,9 @@ public struct AppAPI: Sendable {
             page.paperworkStatus = today.paperworkStatus.rawValue
             page.rankPaused = today.rankPaused.map {
                 TodayPage.RankPause(notice: $0.notice, changes: $0.changes, modelChanged: $0.modelChanged, noticeVersion: $0.noticeVersion, providerVersion: $0.providerVersion)
+            }
+            page.dayLine = today.dayLine.map { line in
+                TodayPage.DayLine(text: line.text, parts: line.parts.map { TodayPage.DayLine.Part(text: $0.text, strong: $0.strong) })
             }
             return page
         case .unauthorized: throw .signedOut

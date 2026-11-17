@@ -12,7 +12,11 @@ use App\Http\Controllers\Api\V1\Composer\AppPlaceWorkAnswerController;
 use App\Http\Controllers\Api\V1\DayController;
 use App\Http\Controllers\Api\V1\EventsController;
 use App\Http\Controllers\Api\V1\JourneyController;
+use App\Http\Controllers\Api\V1\MemoryController;
+use App\Http\Controllers\Api\V1\MomentsController;
 use App\Http\Controllers\Api\V1\PaperworkDocumentsController;
+use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\RoutinesController;
 use App\Http\Controllers\Api\V1\SignInController;
 use App\Http\Controllers\Api\V1\TodayController;
 use App\Http\Controllers\Api\V1\TodayTripController;
@@ -31,6 +35,7 @@ use App\Http\Controllers\Api\V1\Travel\AppTripController;
 use App\Http\Controllers\Api\V1\Travel\AppTripRideController;
 use App\Http\Controllers\Api\V1\TravelController;
 use App\Http\Controllers\TodayRankController;
+use App\Http\Controllers\UserSettingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -60,8 +65,22 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::post('me/email-verification', [AccountController::class, 'resendVerification'])->middleware('throttle:fortify-forms');
         Route::post('me/deletion-code', [AccountController::class, 'sendDeletionCode'])->middleware(['verified', 'throttle:email-confirmation']);
         Route::post('me/delete', [AccountController::class, 'destroy'])->middleware('verified');
+        // Their situation and German level, by the profile's own rules (What Expadu knows).
+        Route::patch('me/profile', [ProfileController::class, 'update'])->middleware(['verified', 'throttle:60,1']);
+        // Their settings as the web's Settings saves them, the same controller: personalisation on (with
+        // their word that they're 16 or older) and off (which erases what was learned and remembered).
+        // Whether it's on, and under the current wording, is read from memory.
+        Route::put('settings', [UserSettingController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
 
         Route::get('today', [TodayController::class, 'show'])->middleware('verified');
+        // Routines learned from trips: theirs, and the one to offer now.
+        Route::get('routines', [RoutinesController::class, 'index'])->middleware('verified');
+        Route::post('routines', [RoutinesController::class, 'store'])->middleware(['verified', 'throttle:60,1']);
+        Route::post('routines/dismiss', [RoutinesController::class, 'dismiss'])->middleware(['verified', 'throttle:60,1']);
+        Route::patch('routines/{routine}', [RoutinesController::class, 'update'])->whereNumber('routine')->middleware(['verified', 'throttle:60,1']);
+        Route::delete('routines/{routine}', [RoutinesController::class, 'destroy'])->whereNumber('routine')->middleware('verified');
+        // What the phone schedules as its own notifications: the next 36 hours.
+        Route::get('moments', [MomentsController::class, 'index'])->middleware('verified');
         Route::post('day/command', [DayController::class, 'command'])->middleware('verified');
         // The Leave card's trip: start it on a way, end it; keep another way for the plan, and undo that.
         Route::post('today/trip', [TodayTripController::class, 'start'])->middleware(['verified', 'throttle:journey']);
@@ -76,6 +95,12 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         // Today's own order after its notice changed: agree, or not now for a week.
         Route::put('today-rank', [TodayRankController::class, 'update'])->middleware(['verified', 'throttle:privacy-processing']);
         Route::post('today-rank/later', [TodayRankController::class, 'later'])->middleware('verified');
+        // What Expadu knows about you: what Composer remembers, the taste it learned, the profile it reads.
+        Route::get('memory', [MemoryController::class, 'index'])->middleware('verified');
+        Route::post('memory', [MemoryController::class, 'store'])->middleware(['verified', 'throttle:60,1']);
+        Route::post('memory/restore', [MemoryController::class, 'restore'])->middleware(['verified', 'throttle:60,1']);
+        Route::patch('memory/{fact}', [MemoryController::class, 'update'])->whereNumber('fact')->middleware(['verified', 'throttle:60,1']);
+        Route::delete('memory/{fact}', [MemoryController::class, 'destroy'])->whereNumber('fact')->middleware('verified');
         Route::get('travel/nearby', [TravelController::class, 'nearby'])->middleware('verified');
         // Travel, as the web's Travel page has it (routes/app/travel.php), with the token: the station board
         // by name or by where they are, the stop picker and ★ stops, a line's route and map, and the places

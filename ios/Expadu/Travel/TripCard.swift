@@ -168,12 +168,15 @@ struct TripCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 4)
+            // The minutes are the card's point: always whole ("11 min"), never squeezed to "…" by a long
+            // title on Today's narrow column (the owner, 14 Nov); the words under them may shorten.
             VStack(alignment: .trailing, spacing: 0) {
                 Text(live.big).font(.posterGrotesque(20)).monospacedDigit().contentTransition(.numericText(countsDown: true))
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .lineLimit(1).fixedSize()
                 Text(live.bigNote).font(.geist(11.5)).foregroundStyle(Palette.textSoft).lineLimit(1)
+                    .frame(maxWidth: 96, alignment: .trailing)
             }
-            .layoutPriority(-1)
+            .layoutPriority(1)
             // No chevron: the trip slides up over the board, it isn't a page pushed in from the side.
         }
     }

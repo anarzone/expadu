@@ -12,7 +12,12 @@ struct TravelView: View {
     @Environment(TodayModel.self) private var today
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.sectionBarCompact) private var barCompact
+    @Environment(\.sectionBarTop) private var barTop
+    @State private var rowBottom: CGFloat = 0
     @State private var model = TravelModel()
+    /// The board dragged sideways, to the next line or the one before: how far.
+    @State private var lineDrag: CGFloat = 0
+    @State private var lineAxis: Axis?
     @Environment(TripPlanner.self) private var planner
 
     var body: some View {
@@ -42,17 +47,22 @@ struct TravelView: View {
         }
         .foregroundStyle(model.map ? Palette.text : lead.ink)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.55), value: model.leadLine?.line)
-        // Where to? sits in the bottom row, between the folded section bar and Composer's button.
+        // Where to? sits in the bottom row, between the folded section bar and Composer's button; when
+        // the bar opens it moves up and stretches over the bar, full width, as iOS 26's own bottom
+        // accessory does (Music, Podcasts), so the search is never hidden by the menu.
         .overlay(alignment: .bottom) {
-            WhereTo(open: { planner.open(from: model.station, favourite: model.favourite) },
-                    speak: { planner.open(from: model.station, favourite: model.favourite, listening: true) })
-                .padding(.leading, 16 + 56 + 10).padding(.trailing, 16 + 62 + 10)
-                .padding(.bottom, 28)
-                .opacity(barCompact ? 1 : 0)
-                .offset(y: barCompact ? 0 : 20)
-                .allowsHitTesting(barCompact)
-                .animation(.spring(duration: 0.4, bounce: 0.2), value: barCompact)
-                .ignoresSafeArea(edges: .bottom)
+            ZStack(alignment: .bottom) {
+                // Where this row ends on the screen, to set Where to? over the open bar by the bar's own top.
+                Color.clear.frame(height: 1)
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { rowBottom = $0 }
+                WhereTo(open: { planner.open(from: model.station, favourite: model.favourite) },
+                        speak: { planner.open(from: model.station, favourite: model.favourite, listening: true) })
+                    .padding(.leading, barCompact ? 16 + 56 + 10 : 16).padding(.trailing, barCompact ? 16 + 62 + 10 : 16)
+                    // Folded: where it has always sat. Open: 10 pt over the bar's top, wherever that is.
+                    .padding(.bottom, barCompact || barTop == 0 ? 28 : max(28, rowBottom - barTop + 10))
+            }
+            .animation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.2), value: barCompact)
+            .ignoresSafeArea(edges: .bottom)
         }
         .task { await model.start(session.api) }
         .onDisappear { model.stop() }
@@ -212,6 +222,9 @@ struct TravelView: View {
                     .padding(16)
                 }
             }
+            // Dragged sideways: the board goes with the finger, fading as it goes, before the next line.
+            .offset(x: lineDrag)
+            .opacity(1 - min(0.5, abs(lineDrag) / 400))
             .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: model.line)
             // The last rows scroll up clear of Where to? and the buttons beside it.
             .padding(.bottom, 120)
@@ -220,14 +233,28 @@ struct TravelView: View {
         .refreshable { await model.load(session.api) }
         // Swipe the board sideways: the next line, as the canvas's pages.
         .simultaneousGesture(
-            DragGesture(minimumDistance: 30)
+            DragGesture(minimumDistance: 20)
+                .onChanged { value in
+                    let dx = value.translation.width, dy = value.translation.height
+                    if lineAxis == nil { lineAxis = abs(dx) > abs(dy) * 1.5 ? .horizontal : .vertical }
+                    guard lineAxis == .horizontal, (model.station?.lineNames.count ?? 0) > 1 else { return }
+                    lineDrag = dx * 0.7
+                }
                 .onEnded { value in
-                    guard abs(value.translation.width) > 60, abs(value.translation.width) > abs(value.translation.height) * 1.5,
-                          let lines = model.station?.lineNames, lines.count > 1 else { return }
+                    defer { lineAxis = nil }
+                    guard lineAxis == .horizontal else { return }
+                    let far = abs(value.translation.width) > 60 || abs(value.predictedEndTranslation.width) > 180
+                    guard far, let lines = model.station?.lineNames, lines.count > 1 else {
+                        withAnimation(.spring(duration: 0.35, bounce: 0.2)) { lineDrag = 0 }
+                        return
+                    }
                     let pages: [String?] = [nil] + lines
                     let i = pages.firstIndex(of: model.line) ?? 0
                     let next = pages[(i + (value.translation.width < 0 ? 1 : -1) + pages.count) % pages.count]
-                    withAnimation(.snappy) { model.line = next }
+                    withAnimation(.snappy) {
+                        model.line = next
+                        lineDrag = 0
+                    }
                 }
         )
     }

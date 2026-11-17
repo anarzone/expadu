@@ -34,6 +34,7 @@ use App\Models\SpotFeedback;
 use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
+use App\Personalisation\Memory;
 use App\Personalisation\SignalRecorder;
 use App\Personalisation\TasteFacts;
 use App\Places\DestinationGrouping;
@@ -99,8 +100,11 @@ final class AssistantTools
     /** KVB notices per lookup. */
     private const NOTICES = 3;
 
+    /** Open-air kinds that are free to use unless their data says otherwise: everything else is free only when listed so. */
+    private const OPEN_AIR = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'skatepark', 'lake', 'nature', 'dog_park', 'table_tennis', 'boules', 'bbq', 'picnic', 'viewpoint'];
+
     /** Ids whose facts are about the person (their place, trip, records, taste, day): a sentence citing one may speak of them. */
-    public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|plan)\d+|here|pw|trip|next|plan)$/';
+    public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|k|u|plan)\d+|here|pw|trip|next|plan)$/';
 
     /**
      * What each tool's result sends, as Composer's notice names it (ProcessingPurpose::WORDS).
@@ -122,6 +126,7 @@ final class AssistantTools
         'add_appointment' => 'changes_you_ask_for', 'mark_done' => 'changes_you_ask_for', 'way_reminder' => 'changes_you_ask_for', 'remove_way' => 'changes_you_ask_for',
         'mute_alerts' => 'changes_you_ask_for', 'dismiss_alert' => 'changes_you_ask_for', 'read_alerts' => 'changes_you_ask_for',
         'set_notifications' => 'changes_you_ask_for', 'set_needs' => 'changes_you_ask_for', 'update_profile' => 'changes_you_ask_for',
+        'remember' => 'changes_you_ask_for', 'forget' => 'changes_you_ask_for',
         // Without their Paperwork permission, these only say it's needed.
         'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
     ];
@@ -178,6 +183,14 @@ final class AssistantTools
 
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
     public array $cards = [];
+
+    /**
+     * Each place search that found something, in order: what it looked for and its places' ids, so
+     * an answer to "climbing or a gym" shows both (the 30 Oct grade: only the gym was answered).
+     *
+     * @var list<array{kind: string, ids: list<string>}>
+     */
+    public array $searches = [];
 
     /** What "an activity" is when they don't name a kind: a day out's sights, culture and green. */
     private const DAY_OUT = ['museum', 'gallery', 'attraction', 'zoo', 'park', 'viewpoint', 'nature', 'market', 'theatre', 'cinema', 'arts_centre'];
@@ -237,6 +250,37 @@ final class AssistantTools
     public function personal(): bool
     {
         return $this->affinities !== null;
+    }
+
+    /**
+     * What Composer knows about the person, given with every message (with the opt-in only): what
+     * they asked it to remember ([k]), what they tend to like and skip ([t] [a] [h] [w], as my_taste
+     * says it) and their situation and German level ([u]). Each line is a fact a sentence may cite.
+     * Empty without the opt-in, or when there's nothing yet.
+     */
+    public function knownAbout(): string
+    {
+        if (! $this->personal()) {
+            return '';
+        }
+        $lines = [];
+        foreach (app(Memory::class)->facts($this->user) as $i => $fact) {
+            $lines[] = $this->line('k'.($i + 1), $fact['text']);
+        }
+        $situation = $this->user->situation?->value;
+        if ($situation !== null && $situation !== 'other') {
+            $lines[] = $this->line('u1', 'Here as: '.str_replace('_', ' ', $situation));
+        }
+        $german = $this->user->german_level?->value;
+        if ($german !== null) {
+            $lines[] = $this->line('u2', 'German: '.($german === 'none' ? 'none yet' : strtoupper($german)));
+        }
+        $taste = $this->taste !== null ? $this->myTaste() : '';
+        if ($taste !== '' && ! str_starts_with($taste, 'Not enough')) {
+            $lines[] = $taste;
+        }
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -358,6 +402,10 @@ final class AssistantTools
             ...($personal ? [
                 ['name' => 'my_taste', 'description' => 'What this person tends to like and skip (kinds of places and events, areas, times of day), from what they saved, opened and marked. They turned personalisation on.', 'input_schema' => $none],
                 ['name' => 'my_day', 'description' => 'This person\'s own plans and appointments today and tomorrow. They turned personalisation on.', 'input_schema' => $none],
+                ['name' => 'remember', 'description' => 'Keeps a lasting fact the person told you about themselves, so every later answer knows it: what they eat, who they live with (children and their ages), how they get around, their work or study hours, what they love or avoid, their languages. In a few words, as a fact about them ("Vegetarian", "Has a 3-year-old daughter", "Works from home on Fridays"). Only what they said, never a guess, never something only for today. Never anything about health, religion or beliefs, sexuality, politics or a union: for needing step-free ways use set_needs. Done with Undo on the card.',
+                    'input_schema' => ['type' => 'object', 'properties' => ['fact' => ['type' => 'string', 'description' => 'a few words, about them']], 'required' => ['fact']]],
+                ['name' => 'forget', 'description' => 'Forgets one thing you remember about them (its k id from what you know about them), when they say it\'s wrong or no longer so, or ask you to forget it. When it changed, forget the old one and remember the new. Done with Undo on the card.',
+                    'input_schema' => ['type' => 'object', 'properties' => ['fact' => ['type' => 'string', 'description' => 'its id, such as k2']], 'required' => ['fact']]],
             ] : []),
         ];
     }
@@ -699,7 +747,10 @@ final class AssistantTools
         $until = $this->clock($input['until'] ?? null, $day) ?? $day->endOfDay();
         $from = $from->max($day->isSameDay($this->now) ? $this->now : $day);
         $occurrences = Event::occurringBetween($day, $day->endOfDay())
-            ->filter(fn (array $o): bool => $o['starts_at']->lessThanOrEqualTo($until) && ($o['ends_at'] ?? $o['starts_at'])->greaterThanOrEqualTo($from));
+            ->filter(fn (array $o): bool => $o['starts_at']->lessThanOrEqualTo($until) && ($o['ends_at'] ?? $o['starts_at'])->greaterThanOrEqualTo($from))
+            // Under way already (the 30 Oct grade: a 13:00 tour suggested at 13:30, a 16:15 boat trip at 16:30): one
+            // you join at its start is left out once it has begun; a long one (a market, a festival) stays, said so.
+            ->reject(fn (array $o): bool => self::begun($o['starts_at'], $o['ends_at'], $this->now) && ! self::long($o['starts_at'], $o['ends_at']));
         // What they marked "not for me" (with the opt-in) or turned down in this conversation stays out.
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['event']) : [];
         $occurrences = $occurrences->reject(fn (array $o): bool => ($this->affinities?->isHidden('event', $o['event']->id) ?? false)
@@ -739,8 +790,22 @@ final class AssistantTools
             $this->events[$id] = $occurrences->first(fn (array $o): bool => $o['event']->id === $poster['id']
                 && $o['starts_at']->getTimestamp() === CarbonImmutable::parse($poster['occurrence_start'])->getTimestamp());
 
-            return $this->line($id, self::eventText($poster).(isset($this->earlier['event'][$poster['id']]) ? ' (You suggested it earlier.)' : ''));
-        })->implode("\n");
+            return $this->line($id, self::eventText($poster, $this->now).(isset($this->earlier['event'][$poster['id']]) ? ' (You suggested it earlier.)' : ''));
+        })->implode("\n")
+            // Their own step-free need (as places say "Step-free access listed."): events list no access, so that's said.
+            .($this->user->needs_step_free ? "\n".$this->line('n'.(++$this->count), 'Step-free access isn\'t listed for these events\' venues.') : '');
+    }
+
+    /** Begun more than a few minutes ago, at a listed time. */
+    private static function begun(CarbonImmutable $starts, ?CarbonImmutable $ends, CarbonImmutable $now): bool
+    {
+        return $starts->format('H:i:s') !== '00:00:00' && $starts->lessThan($now->subMinutes(10)) && ($ends === null || $ends->greaterThan($now));
+    }
+
+    /** Long enough to join under way: a market, a festival, an open day. */
+    private static function long(CarbonImmutable $starts, ?CarbonImmutable $ends): bool
+    {
+        return $ends !== null && $starts->diffInMinutes($ends) > 240;
     }
 
     /**
@@ -1271,6 +1336,9 @@ final class AssistantTools
                 .($maxWalk !== null ? " within about {$maxWalk} minutes' walk" : '').$lists.'.');
         }
 
+        $this->searches[] = ['kind' => $kinds !== [] ? implode(' or ', array_map(fn (string $k): string => self::kindName($k), $kinds))
+            : (is_string($activity ?? null) ? str_replace('_', ' ', $activity) : 'places'), 'ids' => $found->pluck('id')->all()];
+
         // The cards it will show were all shown before (asked again): said so, with the nearest as it's
         // listed, so the answer restates it rather than only offering something else (owner, 23 Oct 2026).
         // Asked word for word again, those shown come first: the ones shown before, then any new.
@@ -1548,9 +1616,15 @@ final class AssistantTools
      * @return array{value: string, free: string, basis: ?string, source_url: ?string}
      */
     /** Free to use as its data says: public, or nothing listed of who may, and no fee listed. */
-    private static function freeToUse(Candidate $c): bool
+    public static function freeToUse(Candidate $c): bool
     {
-        return in_array(self::publicUse($c)['value'], ['yes', 'unknown'], true) && self::publicUse($c)['free'] !== 'no';
+        $use = self::publicUse($c);
+        // A café, restaurant, bar or shop is free only when its data says so (the 30 Oct grade: paid restaurants listed as free).
+        if (! in_array($c->category, self::OPEN_AIR, true)) {
+            return $use['free'] === 'yes';
+        }
+
+        return in_array($use['value'], ['yes', 'unknown'], true) && $use['free'] !== 'no';
     }
 
     public static function publicUse(Candidate $c): array
@@ -1653,7 +1727,7 @@ final class AssistantTools
         $asked = collect(is_array($input['areas'] ?? null) ? $input['areas'] : [])->filter(fn (mixed $a): bool => is_string($a))
             ->map(fn (string $a): string => ($k = PlanDay::areas([$a])[0] ?? $a) === $a ? $a : "{$k} (\"{$a}\")")->implode(', ');
 
-        return $this->line($id, ($asked !== '' ? "Asked for: {$asked}.\n" : '').PlanDay::text($planned['plan']));
+        return $this->line($id, ($asked !== '' ? "Asked for: {$asked}.\n" : '').PlanDay::text($planned['plan'], $planned['notices'], $planned['meal']));
     }
 
     /** Reviewed paperwork guides matching the words: their titles, as Composer's guidance lists them. */
@@ -2098,12 +2172,21 @@ final class AssistantTools
     }
 
     /** A listing as the assistant reads it: title, kind, venue, time and price, as listed. */
-    public static function eventText(array $poster): string
+    /** @param  ?CarbonImmutable  $now  when given: one under way says so, one starting soon says how soon */
+    public static function eventText(array $poster, ?CarbonImmutable $now = null): string
     {
         $start = CarbonImmutable::parse($poster['occurrence_start'])->setTimezone('Europe/Berlin');
         $end = $poster['occurrence_end'] !== null ? CarbonImmutable::parse($poster['occurrence_end'])->setTimezone('Europe/Berlin') : null;
         $when = ! $poster['time_listed'] ? $start->format('l j F').', time not listed'
             : $start->format('l j F H:i').($end !== null && $end->isSameDay($start) ? '–'.$end->format('H:i') : '');
+        if ($now !== null && $poster['time_listed']) {
+            $soon = (int) $now->diffInMinutes($start, false);
+            $when .= match (true) {
+                $start->lessThanOrEqualTo($now) && ($end === null || $end->greaterThan($now)) => ', under way since '.$start->format('H:i'),
+                $soon > 0 && $soon <= 30 => ", starts in {$soon} min",
+                default => '',
+            };
+        }
         $venue = trim(($poster['venue']['name'] ?? '').(filled($poster['venue']['veedel'] ?? null) ? ", {$poster['venue']['veedel']}" : ''), ', ');
 
         return "\"{$poster['title']}\" ({$poster['category']})".($venue !== '' ? " at {$venue}" : '').". {$when}."

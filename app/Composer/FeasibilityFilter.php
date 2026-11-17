@@ -32,7 +32,8 @@ class FeasibilityFilter
     {
         return match ($constraints->budget) {
             'free' => $candidate->costTier === 'free',
-            'low' => in_array($candidate->costTier, ['free', 'low'], true),
+            // Few places list a price (no restaurant does): cheap lets an unknown through, and the plan says it isn't listed.
+            'low' => in_array($candidate->costTier, ['free', 'low', 'unknown'], true),
             default => true,
         };
     }

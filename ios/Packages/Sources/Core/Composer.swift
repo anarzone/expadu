@@ -87,11 +87,13 @@ public struct ComposerMessage: Decodable, Equatable, Sendable, Identifiable {
     public let invite: Bool?
     /// What the AI was given, in plain words, for the fine print.
     public let lookedAt: [String]
+    /// What they told Composer that the answer leans on ("From what you told me: Vegetarian").
+    public let told: [String]
 
     public var mine: Bool { role == "user" }
 
     enum CodingKeys: String, CodingKey {
-        case id, role, text, createdAt, kind, plan, date, changeId, rows, lead, blocks, title, suggestions, sources, written, withoutAi, invite, lookedAt
+        case id, role, text, createdAt, kind, plan, date, changeId, rows, lead, blocks, title, suggestions, sources, written, withoutAi, invite, lookedAt, told
     }
 
     public init(from decoder: Decoder) throws {
@@ -114,6 +116,7 @@ public struct ComposerMessage: Decodable, Equatable, Sendable, Identifiable {
         withoutAi = try? c.decode(String.self, forKey: .withoutAi)
         invite = try? c.decode(Bool.self, forKey: .invite)
         lookedAt = (try? c.decode([String].self, forKey: .lookedAt)) ?? []
+        told = (try? c.decode([String].self, forKey: .told)) ?? []
     }
 }
 

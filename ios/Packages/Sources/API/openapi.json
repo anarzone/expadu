@@ -6983,6 +6983,544 @@
                 }
             }
         },
+        "/memory": {
+            "get": {
+                "operationId": "memory.index",
+                "summary": "Everything Expadu knows about them",
+                "tags": [
+                    "Memory"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "personalised": {
+                                            "type": "boolean"
+                                        },
+                                        "personalisation_current": {
+                                            "type": "boolean",
+                                            "description": "On under the wording Settings shows now; false means turn it on again to agree to what it says now."
+                                        },
+                                        "facts": {
+                                            "type": "array",
+                                            "description": "What Composer remembers, oldest first: told (said to Composer) or added (typed here).",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "text": {
+                                                        "type": "string"
+                                                    },
+                                                    "source": {
+                                                        "type": "string"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "text",
+                                                    "source",
+                                                    "created_at"
+                                                ]
+                                            }
+                                        },
+                                        "taste": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "description": "What they tend to like and skip, as Composer reads it; null when off or too little yet.",
+                                            "properties": {
+                                                "categories": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "level": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "name",
+                                                            "level"
+                                                        ]
+                                                    }
+                                                },
+                                                "veedels": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "level": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "name",
+                                                            "level"
+                                                        ]
+                                                    }
+                                                },
+                                                "dayparts": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "week": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "signals": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "categories",
+                                                "veedels",
+                                                "dayparts",
+                                                "week",
+                                                "signals"
+                                            ]
+                                        },
+                                        "situation": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "enum": [
+                                                "non_eu_employee",
+                                                "eu_employee",
+                                                "student",
+                                                "freelancer",
+                                                "family_reunification",
+                                                "digital_nomad",
+                                                "other",
+                                                null
+                                            ]
+                                        },
+                                        "german_level": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "enum": [
+                                                "none",
+                                                "a1",
+                                                "a2",
+                                                "b1",
+                                                "b2",
+                                                "c1",
+                                                "c2",
+                                                null
+                                            ]
+                                        },
+                                        "limit": {
+                                            "type": "integer",
+                                            "const": 40
+                                        }
+                                    },
+                                    "required": [
+                                        "personalised",
+                                        "personalisation_current",
+                                        "facts",
+                                        "taste",
+                                        "situation",
+                                        "german_level",
+                                        "limit"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "memory.store",
+                "summary": "Something for Composer to remember, typed on the screen. Refused with why (422): personalisation\noff, a special category, already remembered, or full",
+                "tags": [
+                    "Memory"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "type": "string",
+                                        "maxLength": 160
+                                    }
+                                },
+                                "required": [
+                                    "text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fact": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "text"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "fact"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/memory/restore": {
+            "post": {
+                "operationId": "memory.restore",
+                "summary": "Undo of a forget: the fact back in its place, under a new id",
+                "tags": [
+                    "Memory"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "type": "string",
+                                        "maxLength": 160
+                                    },
+                                    "source": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "told",
+                                            "added",
+                                            null
+                                        ]
+                                    },
+                                    "created_at": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date-time"
+                                    }
+                                },
+                                "required": [
+                                    "text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fact": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "text"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "fact"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/memory/{fact}": {
+            "patch": {
+                "operationId": "memory.update",
+                "summary": "A fact's words, changed",
+                "tags": [
+                    "Memory"
+                ],
+                "parameters": [
+                    {
+                        "name": "fact",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "type": "string",
+                                        "maxLength": 160
+                                    }
+                                },
+                                "required": [
+                                    "text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fact": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "text"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "fact"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "memory.destroy",
+                "summary": "A fact forgotten; what it was comes back, so Undo can bring it back",
+                "tags": [
+                    "Memory"
+                ],
+                "parameters": [
+                    {
+                        "name": "fact",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "forgotten": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "text": {
+                                                    "type": "string"
+                                                },
+                                                "source": {
+                                                    "type": "string"
+                                                },
+                                                "created_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "text",
+                                                "source",
+                                                "created_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "forgotten"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/moments": {
+            "get": {
+                "operationId": "moments.index",
+                "tags": [
+                    "Moments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "moments": {
+                                            "type": "array",
+                                            "description": "Soonest first; leave, event, plan or brief.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "kind": {
+                                                        "type": "string"
+                                                    },
+                                                    "at": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "body": {
+                                                        "type": "string"
+                                                    },
+                                                    "link": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "kind",
+                                                    "at",
+                                                    "title",
+                                                    "body",
+                                                    "link"
+                                                ]
+                                            }
+                                        },
+                                        "until": {
+                                            "type": "string",
+                                            "description": "Read again by then at the latest."
+                                        },
+                                        "quiet_from": {
+                                            "type": "string"
+                                        },
+                                        "quiet_to": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "moments",
+                                        "until",
+                                        "quiet_from",
+                                        "quiet_to"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/paperwork/v2/people/{person}/onboarding/draft": {
             "get": {
                 "operationId": "paperwork.v2.onboarding.draft.show",
@@ -8429,6 +8967,98 @@
                 }
             }
         },
+        "/me/profile": {
+            "patch": {
+                "operationId": "profile.update",
+                "summary": "One of the two fields, set to one of its values; why not (422) when it isn't one",
+                "tags": [
+                    "Profile"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "field": {
+                                        "type": "string",
+                                        "enum": [
+                                            "situation",
+                                            "german_level"
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "maxLength": 40
+                                    }
+                                },
+                                "required": [
+                                    "field",
+                                    "value"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "situation": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "enum": [
+                                                "non_eu_employee",
+                                                "eu_employee",
+                                                "student",
+                                                "freelancer",
+                                                "family_reunification",
+                                                "digital_nomad",
+                                                "other",
+                                                null
+                                            ]
+                                        },
+                                        "german_level": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "enum": [
+                                                "none",
+                                                "a1",
+                                                "a2",
+                                                "b1",
+                                                "b2",
+                                                "c1",
+                                                "c2",
+                                                null
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "situation",
+                                        "german_level"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/paperwork/v2/people/{person}/question-preview": {
             "get": {
                 "operationId": "paperwork.v2.questions.preview",
@@ -9073,6 +9703,409 @@
                     },
                     "403": {
                         "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/routines": {
+            "get": {
+                "operationId": "routines.index",
+                "tags": [
+                    "Routines"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "routines": {
+                                            "type": "array",
+                                            "description": "Weekdays 1 (Monday) to 7.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "to_label": {
+                                                        "type": "string"
+                                                    },
+                                                    "from_key": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "weekdays": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "at": {
+                                                        "type": "string"
+                                                    },
+                                                    "remind": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "to_label",
+                                                    "from_key",
+                                                    "weekdays",
+                                                    "at",
+                                                    "remind"
+                                                ]
+                                            }
+                                        },
+                                        "offer": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "description": "What their trips show, to offer, with the trips it rests on (every one to that place in the last three weeks); null when nothing does.",
+                                            "properties": {
+                                                "to_key": {
+                                                    "type": "string"
+                                                },
+                                                "to_label": {
+                                                    "type": "string"
+                                                },
+                                                "from_key": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "weekdays": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "at": {
+                                                    "type": "string"
+                                                },
+                                                "times": {
+                                                    "type": "integer"
+                                                },
+                                                "trips": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "date": {
+                                                                "type": "string"
+                                                            },
+                                                            "weekday": {
+                                                                "type": "integer"
+                                                            },
+                                                            "at": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "date",
+                                                            "weekday",
+                                                            "at"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "to_key",
+                                                "to_label",
+                                                "from_key",
+                                                "weekdays",
+                                                "at",
+                                                "times",
+                                                "trips"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "routines",
+                                        "offer"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "routines.store",
+                "summary": "Yes to the offer, with the days and time as they set them",
+                "tags": [
+                    "Routines"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "to_key": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    },
+                                    "weekdays": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 7
+                                        },
+                                        "minItems": 1
+                                    },
+                                    "at": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "to_key",
+                                    "weekdays",
+                                    "at"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "id"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "That routine isn\u2019t on offer any more."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/routines/dismiss": {
+            "post": {
+                "operationId": "routines.dismiss",
+                "summary": "Not now: that offer isn't made again for a while. Undo deletes the id it gives back",
+                "tags": [
+                    "Routines"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "to_key": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "to_key"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "dismissed": {
+                                            "type": "boolean"
+                                        },
+                                        "id": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "description": "DELETE /routines/{id} takes the no back; null when it wasn't on offer."
+                                        }
+                                    },
+                                    "required": [
+                                        "dismissed",
+                                        "id"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/routines/{routine}": {
+            "patch": {
+                "operationId": "routines.update",
+                "summary": "Its days, its time, or whether it tells them when to leave",
+                "tags": [
+                    "Routines"
+                ],
+                "parameters": [
+                    {
+                        "name": "routine",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "weekdays": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 7
+                                        },
+                                        "minItems": 1
+                                    },
+                                    "at": {
+                                        "type": "string"
+                                    },
+                                    "remind": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "changed": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "changed"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "routines.destroy",
+                "tags": [
+                    "Routines"
+                ],
+                "parameters": [
+                    {
+                        "name": "routine",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "forgotten": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "forgotten"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -9896,6 +10929,87 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/NearbyDeparturesResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/settings": {
+            "put": {
+                "operationId": "userSetting.update",
+                "tags": [
+                    "UserSetting"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "settings": {
+                                        "type": "object",
+                                        "properties": {
+                                            "share_location": {
+                                                "type": "boolean"
+                                            },
+                                            "personalised_content": {
+                                                "type": "boolean"
+                                            },
+                                            "share_anonymised": {
+                                                "type": "boolean"
+                                            },
+                                            "profile_visibility": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "everyone",
+                                                    "partners",
+                                                    "nobody"
+                                                ]
+                                            },
+                                            "personalisation": {
+                                                "type": "boolean"
+                                            },
+                                            "routine_learning": {
+                                                "type": "boolean"
+                                            },
+                                            "composer_ask_first_everyday": {
+                                                "type": "boolean"
+                                            },
+                                            "composer_ask_first_paperwork": {
+                                                "type": "boolean"
+                                            }
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "settings"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "settings": {}
+                                    },
+                                    "required": [
+                                        "settings"
+                                    ]
                                 }
                             }
                         }
@@ -12154,6 +13268,40 @@
                         "type": "boolean",
                         "description": "Personalised suggestions on (Settings), for How we rank."
                     },
+                    "day_line": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "The day in one line, under the date (DayLine): its times marked strong.",
+                        "properties": {
+                            "text": {
+                                "type": "string"
+                            },
+                            "parts": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {
+                                            "type": "string"
+                                        },
+                                        "strong": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "text",
+                                        "strong"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "text",
+                            "parts"
+                        ]
+                    },
                     "rank_paused": {
                         "type": [
                             "object",
@@ -13620,6 +14768,7 @@
                     "revision",
                     "welcome",
                     "personalised",
+                    "day_line",
                     "rank_paused",
                     "weather",
                     "plans",
@@ -13869,8 +15018,8 @@
                     }
                 }
             },
-            "AuthorizationException": {
-                "description": "Authorization error",
+            "ModelNotFoundException": {
+                "description": "Not found",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -13888,8 +15037,8 @@
                     }
                 }
             },
-            "ModelNotFoundException": {
-                "description": "Not found",
+            "AuthorizationException": {
+                "description": "Authorization error",
                 "content": {
                     "application/json": {
                         "schema": {

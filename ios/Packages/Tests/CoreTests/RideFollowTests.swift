@@ -72,6 +72,24 @@ struct RideFollowTests {
         #expect(phase.short == "7′")
     }
 
+    @Test func withoutAFixTheArrowGoesOnWithTheTram() throws {
+        let guide = Guide(trip: Self.trip)
+        // On time at 20:16 the tram is at Fordwerke Mitte (stop 2), heading north.
+        let onTime = try #require(guide.estimate(leg: 1, at: Self.at("20:16"), late: 0))
+        #expect(Guide.metres(onTime.point, Self.onTheTram(2)) < 15)
+        #expect(onTime.course < 5 || onTime.course > 355)
+        // Halfway between Fordwerke Mitte (20:16) and Fordwerke Nord (20:19) at 20:17:30.
+        let between = try #require(guide.estimate(leg: 1, at: Self.at("20:17").addingTimeInterval(30), late: 0))
+        #expect(Guide.metres(between.point, Self.onTheTram(2.5)) < 15)
+        // Three minutes late, at 20:19 it is only at Fordwerke Mitte.
+        let late = try #require(guide.estimate(leg: 1, at: Self.at("20:19"), late: 180))
+        #expect(Guide.metres(late.point, Self.onTheTram(2)) < 15)
+        // Before it leaves, where it boards; a walk has nothing to go on.
+        let early = try #require(guide.estimate(leg: 1, at: Self.at("20:05"), late: 0))
+        #expect(Guide.metres(early.point, Self.onTheTram(0)) < 15)
+        #expect(guide.estimate(leg: 0, at: Self.at("20:10"), late: 0) == nil)
+    }
+
     @Test func waitingAtTheStopForALateTramIsWaitingNotGone() throws {
         var trip = Self.trip
         var legs = trip.legs

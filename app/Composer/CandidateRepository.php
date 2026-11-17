@@ -15,6 +15,7 @@ use App\Services\NearbyPlaces;
 use App\Services\OpeningHoursParser;
 use App\Support\EventEvidence;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -464,6 +465,7 @@ class CandidateRepository
                 $candidateId = $event->recurrence !== null
                     ? "event:{$event->id}:{$occurrence['starts_at']->getTimestamp()}"
                     : "event:{$event->id}";
+                $minutes = self::dayLength($occurrence['starts_at'], $occurrence['ends_at']);
 
                 return new Candidate(
                     id: $candidateId,
@@ -474,11 +476,9 @@ class CandidateRepository
                     veedel: $event->venue?->veedel,
                     category: (string) ($event->category ?? 'event'),
                     outdoor: $this->eventIsOutdoor($event),
-                    // No listed end: the plan still needs a length to schedule around.
-                    typicalDurationMin: $occurrence['ends_at']
-                        ? max(1, (int) $occurrence['starts_at']->diffInMinutes($occurrence['ends_at']))
-                        : 120,
-                    endListed: $occurrence['ends_at'] !== null,
+                    // No listed end for the day: the plan still needs a length to schedule around.
+                    typicalDurationMin: $minutes ?? 120,
+                    endListed: $minutes !== null,
                     costTier: $event->is_free ? 'free' : 'normal',
                     opensAt: null,
                     closesAt: null,
@@ -571,5 +571,26 @@ class CandidateRepository
             ->uniqueStrict()
             ->values()
             ->all();
+    }
+
+    /**
+     * How long an occurrence runs on the day it starts, in minutes; null when that day's end
+     * isn't listed. A run over several days (a fair from 10:00 one day to 15:00 two days later)
+     * is planned as that day's visit, until the clock time it ends; when that time isn't after
+     * it starts, the day's end isn't listed. A run shorter than a day keeps its length.
+     */
+    private static function dayLength(CarbonInterface $start, ?CarbonInterface $end): ?int
+    {
+        if ($end === null) {
+            return null;
+        }
+        $start = CarbonImmutable::instance($start)->setTimezone('Europe/Berlin');
+        $end = CarbonImmutable::instance($end)->setTimezone('Europe/Berlin');
+        if ($end->lessThan($start->addDay())) {
+            return max(1, (int) $start->diffInMinutes($end));
+        }
+        $closes = $start->setTime($end->hour, $end->minute);
+
+        return $closes->greaterThan($start) ? (int) $start->diffInMinutes($closes) : null;
     }
 }

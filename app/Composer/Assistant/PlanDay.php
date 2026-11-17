@@ -8,6 +8,7 @@ use App\Http\Controllers\ComposerController;
 use App\Models\User;
 use App\Places\PlaceCapabilities;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -45,6 +46,15 @@ final class PlanDay
         };
     }
 
+    /**
+     * When a meal is (the 30 Oct grade: "dinner after the park" at 13:30 put dinner at 14:55). The food
+     * stop is planned to land in it; the plan says when it couldn't.
+     */
+    public const MEALS = ['breakfast' => ['08:00', '10:30'], 'brunch' => ['10:00', '13:00'], 'lunch' => ['12:00', '14:30'], 'dinner' => ['18:00', '21:30']];
+
+    /** Kinds a meal is eaten at. */
+    private const FOOD = ['restaurant', 'fast_food', 'cafe', 'bakery', 'food_drink'];
+
     /** Shortest stretch the planner can fill with an activity and the way there. */
     private const MIN_WINDOW_MINUTES = 180;
 
@@ -81,6 +91,7 @@ final class PlanDay
                 'budget' => ['type' => 'string', 'enum' => ['free', 'low', 'normal'], 'description' => '"costs nothing": free; "cheap": low'],
                 'radius_km' => ['type' => 'number', 'description' => 'A distance they named; "nearby" is 2.5'],
                 'stops' => ['type' => 'integer', 'description' => 'How many stops they asked for ("two museums": 2); leave out for a usual day'],
+                'meal' => ['type' => 'string', 'enum' => array_keys(self::MEALS), 'description' => 'The meal they named ("dinner after the park": dinner; "brunch": brunch): the food stop is then planned at that meal\'s time'],
                 'replacing' => ['type' => 'string', 'description' => 'Only when they already have a plan that day and ask for a new one instead: their words asking for it ("plan Sunday again from scratch"); without them their plan stays as it is'],
             ], 'required' => ['day']]];
     }
@@ -90,7 +101,7 @@ final class PlanDay
      * with, or why there's none, in words the AI can pass on.
      *
      * @param  array<string, mixed>  $input
-     * @return array{plan: array<string, mixed>, token: string, origin: ?string}|string
+     * @return array{plan: array<string, mixed>, token: string, origin: ?string, notices: list<string>, meal: ?string}|string
      */
     public function plan(User $user, array $input, CarbonImmutable $now): array|string
     {
@@ -105,6 +116,11 @@ final class PlanDay
         $until = self::clock($input['until'] ?? null, $day)
             ?? (! isset($input['from']) ? $from->addHours(4)->max($day->setTime(20, 0)) : $from->addHours(4));
         $sequence = self::listOf($input['sequence'] ?? [], self::kinds());
+        // A meal they named moves the window so the food stop lands in its time.
+        $meal = self::oneOf($input['meal'] ?? null, array_keys(self::MEALS));
+        if ($meal !== null) {
+            [$from, $until] = self::aroundMeal($meal, $day, $from, $until, $sequence, self::listOf($input['kinds'] ?? [], self::kinds()), isset($input['until']));
+        }
         $moods = self::listOf($input['moods'] ?? [], Constraints::MOODS);
         $areas = self::areas($input['areas'] ?? []);
         // An area it doesn't know is said, never planned somewhere else instead.
@@ -150,7 +166,31 @@ final class PlanDay
             return 'Nothing the planner knows fits that time. Another time, area or kind of place may work.';
         }
 
-        return ['plan' => $body['plan'], 'token' => $body['handoff_token'], 'origin' => $body['origin']['label'] ?? null];
+        return ['plan' => $body['plan'], 'token' => $body['handoff_token'], 'origin' => $body['origin']['label'] ?? null,
+            'notices' => array_values(array_filter(array_column($body['notices'] ?? [], 'text'), 'is_string')), 'meal' => $meal];
+    }
+
+    /**
+     * The window that puts the food stop in the meal's time: the planner fills stops in order from
+     * the start, about an hour and a half each, so the stops before the meal start that much earlier
+     * and those after it end that much later. A later start they gave stays; so does an end they gave,
+     * as long as the meal still fits.
+     *
+     * @param  list<string>  $sequence
+     * @param  list<string>  $kinds
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    public static function aroundMeal(string $meal, CarbonImmutable $day, CarbonImmutable $from, CarbonImmutable $until, array $sequence, array $kinds, bool $untilSaid): array
+    {
+        [$opens, $closes] = array_map(fn (string $at): CarbonImmutable => $day->setTimeFromTimeString($at), self::MEALS[$meal]);
+        $at = collect($sequence)->search(fn (string $kind): bool => in_array($kind, self::FOOD, true));
+        [$before, $after] = $at !== false ? [$at, count($sequence) - 1 - $at]
+            // No order named: anything else they asked for comes first.
+            : [array_diff($kinds, self::FOOD) !== [] ? 1 : 0, 0];
+        $start = $from->max($opens->subMinutes(90 * $before));
+        $end = $untilSaid ? $until->max($opens->addMinutes(90)) : $until->max($closes->addMinutes(90 * $after));
+
+        return [$start, $end];
     }
 
     /** The day they named: today, tomorrow, a weekday (the next one, today included) or a date. */
@@ -170,24 +210,71 @@ final class PlanDay
 
     /**
      * The plan as the AI reads it: its day and stops, by name, kind and Veedel. The person's
-     * own appointments in it stay theirs: the AI only learns a stop is theirs.
+     * own appointments in it stay theirs: the AI only learns a stop is theirs. What the plan
+     * couldn't keep to is said in code (the 30 Oct grade): every stop step-free when that was
+     * needed, prices not listed when it was to be cheap or free, the kinds asked for that it has
+     * none of, and the planner's widening of its picks.
      *
      * @param  array<string, mixed>  $plan
+     * @param  list<string>  $notices  the planner's own notices
+     * @param  ?string  $meal  the meal they named: when its stop is, said in code
      */
-    public static function text(array $plan): string
+    public static function text(array $plan, array $notices = [], ?string $meal = null): string
     {
         $slots = collect($plan['slots']);
         $first = CarbonImmutable::parse($slots->first()['start_at'])->setTimezone('Europe/Berlin');
+        $constraints = $plan['constraints'] ?? [];
+        $stepFree = in_array('step_free', $constraints['needs'] ?? [], true);
+        $budget = in_array($constraints['budget'] ?? null, ['free', 'low'], true);
+        $label = fn (string $category): string => SpotCategory::tryFrom($category)?->label() ?? ucfirst(str_replace('_', ' ', $category));
 
-        return 'A plan for '.$first->format('l j F').":\n".$slots->map(function (array $slot): string {
+        $lines = $slots->map(function (array $slot) use ($stepFree, $budget, $label): string {
             $start = CarbonImmutable::parse($slot['start_at'])->setTimezone('Europe/Berlin')->format('H:i');
             if ($slot['is_appointment'] ?? false) {
                 return "- {$start}: one of their own plans (not shown to you)";
             }
-            $kind = SpotCategory::tryFrom((string) $slot['category'])?->label() ?? ucfirst(str_replace('_', ' ', (string) $slot['category']));
 
-            return "- {$start}".($slot['end_time'] !== null ? "–{$slot['end_time']}" : '').": \"{$slot['name']}\" ({$kind})".(filled($slot['veedel']) ? " in {$slot['veedel']}" : '');
-        })->implode("\n");
+            return "- {$start}".($slot['end_time'] !== null ? "–{$slot['end_time']}" : '').": \"{$slot['name']}\" ({$label((string) $slot['category'])})".(filled($slot['veedel']) ? " in {$slot['veedel']}" : '')
+                // Every stop of a step-free plan is verified step-free (FeasibilityFilter): said, as a place's is.
+                .($stepFree ? '. Step-free access listed' : '')
+                .($budget && ($slot['cost_tier'] ?? 'unknown') === 'unknown' ? '. Price not listed' : '');
+        });
+        // The kinds asked for that no stop is.
+        $asked = array_values(array_unique([...($constraints['sequence'] ?? []), ...($constraints['categories'] ?? [])]));
+        $have = $slots->reject(fn (array $slot): bool => $slot['is_appointment'] ?? false)->pluck('category')->all();
+        // A coarse kind ("food_drink") is met by any of its fine ones, as the planner matches it.
+        $missing = array_values(array_filter($asked, fn (string $kind): bool => array_intersect([$kind, ...SpotCategory::finesForCoarse($kind)], $have) === []));
+        $widened = collect($notices)->contains(fn (string $notice): bool => str_contains($notice, 'widened'));
+
+        return 'A plan for '.$first->format('l j F').":\n".$lines->implode("\n")
+            .($missing !== [] ? "\nNo ".implode(' or ', array_map(fn (string $c): string => mb_strtolower($label($c)), $missing)).' fits that time and place, so the plan has none.' : '')
+            .($widened ? "\nFew places fit exactly, so the planner widened its picks: some stops aren't what was asked." : '')
+            .self::mealLine($slots->all(), $meal, $label);
+    }
+
+    /**
+     * When the meal's stop is, against the meal's time: "The Restaurant at 18:15 is for dinner." or
+     * "The Restaurant is at 15:00, outside dinner time (18:00–21:30)."
+     *
+     * @param  list<array<string, mixed>>  $slots
+     */
+    private static function mealLine(array $slots, ?string $meal, Closure $label): string
+    {
+        if ($meal === null) {
+            return '';
+        }
+        $food = [...self::FOOD, ...SpotCategory::finesForCoarse('food_drink')];
+        $stop = collect($slots)->first(fn (array $slot): bool => ! ($slot['is_appointment'] ?? false) && $slot['category'] !== 'bar' && in_array($slot['category'], $food, true));
+        if ($stop === null) {
+            return '';
+        }
+        $at = CarbonImmutable::parse($stop['start_at'])->setTimezone('Europe/Berlin');
+        [$opens, $closes] = self::MEALS[$meal];
+        $in = $at->format('H:i') >= $opens && $at->format('H:i') <= $closes;
+
+        $kind = mb_strtolower($label((string) $stop['category']));
+
+        return "\nThe {$kind}".($in ? " at {$at->format('H:i')} is for {$meal}." : " is at {$at->format('H:i')}, outside {$meal} time ({$opens}–{$closes}).");
     }
 
     /**

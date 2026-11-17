@@ -68,6 +68,7 @@ struct TodayView: View {
                     if let page = model.page {
                         VStack(alignment: .leading, spacing: 12) {
                             Greeting(page: page, name: session.name, intro: intro)
+                            if let line = page.dayLine { DayLineText(line: line, intro: intro) }
                             Chips(page: page, sheet: $sheet, intro: intro)
                         }
                         ForEach(Self.parts(lead.lead), id: \.self) { part in
@@ -257,6 +258,69 @@ struct Greeting: View {
         .opacity(intro ? 1 : 0).offset(y: intro ? 0 : 10)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The day in one line under the date (canvas "Expadu iPhone: Today's day line", look B · Tinted):
+/// the server's sentence as it is, each time set bold and a little larger on a soft teal tile.
+struct DayLineText: View {
+    let line: TodayPage.DayLine
+    let intro: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The tile's ink: the teal of Travel's focus, a step darker to read on its own tint.
+    static let ink = Color(light: 0x00596A, dark: 0x8FE0EE)
+
+    var body: some View {
+        line.parts.reduce(Text(verbatim: "")) { sentence, part in
+            guard part.strong else { return Text("\(sentence)\(Text(verbatim: part.text))") }
+            // Narrow no-break spaces inside the tile give it room on both sides; being no-break, they
+            // wrap with the time, never leaving a sliver of tile at the end of a line.
+            let time = Text(verbatim: "\u{202F}\(part.text)\u{202F}")
+                .font(.geist(18.5, .bold)).monospacedDigit().foregroundStyle(Self.ink)
+                .customAttribute(TimeTile())
+            return Text("\(sentence)\(time)")
+        }
+        .font(.geist(17.5, .medium))
+        .foregroundStyle(Palette.text)
+        .lineSpacing(5)
+        .textRenderer(TimeTiles())
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+        .contentTransition(.opacity)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: line.text)
+        .opacity(intro ? 1 : 0).offset(y: intro ? 0 : 8)
+        .animation(reduceMotion ? nil : .spring(duration: 0.5, bounce: 0.1).delay(0.12), value: intro)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(line.text)
+    }
+}
+
+/// Marks a time in the day line, for TimeTiles to set on its tile.
+private struct TimeTile: TextAttribute {}
+
+/// Draws the day line, with a rounded tile behind each time. A time can come as several runs (its
+/// spaces may be set in another font), so the runs next to each other on a line make one tile.
+private struct TimeTiles: TextRenderer {
+    func draw(layout: Text.Layout, in context: inout GraphicsContext) {
+        for line in layout {
+            var tiles: [CGRect] = []
+            var current: CGRect?
+            for run in line {
+                if run[TimeTile.self] != nil {
+                    current = current.map { $0.union(run.typographicBounds.rect) } ?? run.typographicBounds.rect
+                } else if let tile = current {
+                    tiles.append(tile)
+                    current = nil
+                }
+            }
+            if let tile = current { tiles.append(tile) }
+            for tile in tiles {
+                context.fill(RoundedRectangle(cornerRadius: 7, style: .continuous).path(in: tile.insetBy(dx: 0, dy: -2)), with: .color(Palette.selectBackground))
+            }
+            for run in line { context.draw(run) }
+        }
     }
 }
 

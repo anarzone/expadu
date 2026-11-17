@@ -247,6 +247,7 @@ struct WhySheet: View {
 struct HowWeRankSheet: View {
     let personalised: Bool
     @Environment(\.dismiss) private var dismiss
+    @Environment(Pages.self) private var pages
     private static let today: [(String, String)] = [
         ("Fits your plan", "Nothing that clashes with a plan whose times are known."),
         ("Near you first", "Within 3 km of your neighbourhood or Home, then the rest, each soonest first. Tomorrow’s only once nothing is left today."),
@@ -275,6 +276,17 @@ struct HowWeRankSheet: View {
                     Text("Events come from koeln.de, the City of Cologne’s open data, KölnTourismus (DatenHub NRW) and a few we add ourselves; exhibitions and all-day attractions are left out. Places come from OpenStreetMap and Overture Maps.")
                         .font(.geist(13.5)).foregroundStyle(Palette.textSoft)
                     LabeledContent("Personalised suggestions", value: personalised ? "On" : "Off").font(.geist(14))
+                    // Off, the same page at its first step.
+                    Button {
+                        dismiss()
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(350))
+                            pages.openKnows()
+                        }
+                    } label: {
+                        Label(personalised ? "See what Expadu knows" : "Turn on personalisation", systemImage: "arrow.right").labelStyle(TrailingIcon())
+                            .font(.geist(15, .semibold)).foregroundStyle(TodayLink.ink)
+                    }
                 }
             }
             .navigationTitle("How we rank")

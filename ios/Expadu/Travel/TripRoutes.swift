@@ -14,6 +14,8 @@ struct TripRoutesView: View {
     let back: () -> Void
     /// Straight back to the Travel board.
     let close: () -> Void
+    /// How far the routes are swiped back (0 to 1), for the page below to show through.
+    var backDrag: Binding<CGFloat>?
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var today
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -101,6 +103,9 @@ struct TripRoutesView: View {
         .onChange(of: planner.sort) { reset() }
         .onChange(of: planner.prefs) { reset() }
         .onChange(of: byBike) { reset() }
+        // From the left edge, a swipe right goes back to the search, the whole screen following the
+        // finger (with a way open, back to All routes: its own).
+        .swipeBack(enabled: details == nil, progress: backDrag) { back() }
     }
 
     /// Whether the answer has a bike route: then the panel has its Transit and Bike tabs.
@@ -234,6 +239,8 @@ extension TripRoutesView {
                             show: { Task { _ = await planner.start(chosen, session.api, today: today) } },
                             add: planner.target == nil ? nil : { Task { await planner.addToPlan(chosen, session.api) } })
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)).combined(with: .opacity))
+                    // From the left edge, a swipe right goes back to All routes.
+                    .swipeBack { withAnimation(.smooth(duration: 0.3)) { details = nil } }
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
@@ -531,8 +538,6 @@ private struct RouteDetail: View {
     let back: () -> Void
     let show: () -> Void
     let add: (() -> Void)?
-    /// Each press of Start trip, for its haptic: felt the moment the finger lifts, before the network answers.
-    @State private var pressed = 0
 
     var body: some View {
         let journey = option.journey
@@ -568,10 +573,8 @@ private struct RouteDetail: View {
             }
             .scrollIndicators(.hidden)
             HStack(spacing: 8) {
-                Button {
-                    pressed += 1
-                    show()
-                } label: {
+                // Felt as the trip opens, at once (the success tick, where the trip screen is shown).
+                Button(action: show) {
                     Label(planner.busy == option.index && !kept ? "Starting…" : "Start trip", systemImage: "arrow.right")
                         .font(.geist(16, .semibold)).frame(maxWidth: .infinity).frame(height: 50)
                 }
@@ -579,7 +582,6 @@ private struct RouteDetail: View {
                 .buttonFace(Palette.action, radius: 14)
                 .foregroundStyle(Palette.onAction)
                 .disabled(journey.cancelled || planner.busy != nil)
-                .sensoryFeedback(.impact(weight: .medium), trigger: pressed)
                 // Couldn't start: felt as well as read.
                 .sensoryFeedback(trigger: planner.startingProblem) { _, now in now == nil ? nil : .error }
                 if let add {

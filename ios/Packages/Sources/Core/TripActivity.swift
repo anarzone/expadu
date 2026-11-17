@@ -44,6 +44,15 @@ public struct TripPhase: Codable, Hashable, Sendable {
         self.delay = delay
     }
 
+    /// Out of date: the app stopped moving it on and the time it was about has passed (the ride it
+    /// named has left). Nothing that may be wrong now (a step, a time, a distance, a tram), only where
+    /// it's going and to open Expadu for where they are.
+    public var outOfDate: TripPhase {
+        TripPhase(kind: kind == .leave ? .leave : .walk, badge: nil, color: nil, symbol: "arrow.clockwise", short: "Open", until: nil,
+                  title: kind == .leave ? "Open Expadu for when to leave" : "Open Expadu for where you are",
+                  detail: "This stopped updating", steps: 0, current: 0, arrive: "")
+    }
+
     /// Before leaving: the Leave card's countdown.
     public static func leave(_ leave: TodayPage.Leave, at: Date) -> TripPhase? {
         guard let leaveTime = leave.leaveTime, let minutes = leave.leaveInMinutes else { return nil }

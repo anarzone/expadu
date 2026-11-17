@@ -959,6 +959,30 @@ public struct TodayPage: Equatable, Sendable {
     public var personalised = false
     /// Their own order waits for a yes to a changed notice.
     public var rankPaused: RankPause?
+    /// The day in one line, under the date (the server's DayLine, written in code from what's on the
+    /// day): its times marked to stand out.
+    public var dayLine: DayLine?
+
+    public struct DayLine: Equatable, Sendable {
+        /// A piece of the line; a time ("08:12") is its own piece, marked strong.
+        public struct Part: Equatable, Sendable {
+            public let text: String
+            public let strong: Bool
+
+            public init(text: String, strong: Bool) {
+                self.text = text
+                self.strong = strong
+            }
+        }
+
+        public let text: String
+        public let parts: [Part]
+
+        public init(text: String, parts: [Part]) {
+            self.text = text
+            self.parts = parts
+        }
+    }
 
     /// The notice that changed since their yes, for the Agree sheet.
     public struct RankPause: Equatable, Sendable {

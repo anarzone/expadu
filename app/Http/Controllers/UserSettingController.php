@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Jobs\RankToday;
 use App\Models\UserSetting;
 use App\Personalisation\PersonalisationWording;
+use App\Personalisation\Routines;
 use App\Personalisation\SignalRecorder;
 use App\Privacy\ProcessingOptIns;
 use App\Privacy\ProcessingPurpose;
 use App\Services\LocationDataRetention;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class UserSettingController extends Controller
 {
@@ -32,6 +34,7 @@ class UserSettingController extends Controller
             'settings.share_anonymised' => ['sometimes', 'boolean'],
             'settings.profile_visibility' => ['sometimes', 'string', 'in:everyone,partners,nobody'],
             'settings.personalisation' => ['sometimes', 'boolean'],
+            'settings.routine_learning' => ['sometimes', 'boolean'],
             'settings.composer_ask_first_everyday' => ['sometimes', 'boolean'],
             'settings.composer_ask_first_paperwork' => ['sometimes', 'boolean'],
         ]);
@@ -49,6 +52,14 @@ class UserSettingController extends Controller
 
             if (($validated['settings']['share_location'] ?? null) === false) {
                 $retention->purgeUser($user->id);
+            }
+            // Routines are learned only with personalisation on.
+            if (($validated['settings']['routine_learning'] ?? null) === true && ($merged['personalisation'] ?? false) !== true) {
+                throw ValidationException::withMessages(['settings.routine_learning' => 'Turn on personalisation first.']);
+            }
+            // Turning routine learning off erases the trips kept for it and the routines.
+            if (($validated['settings']['routine_learning'] ?? null) === false) {
+                app(Routines::class)->erase($user);
             }
             // Turning personalisation off erases what was learned, not just pauses it, and stops Today's AI order.
             if (($validated['settings']['personalisation'] ?? null) === false) {

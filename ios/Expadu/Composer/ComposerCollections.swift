@@ -110,6 +110,8 @@ private struct PlansView: View {
 private struct WeekStrip: View {
     @Environment(ComposerModel.self) private var model
     @Environment(TodayModel.self) private var today
+    /// The week dragged sideways, to the next or the one before: how far.
+    @State private var drag: CGFloat = 0
 
     var body: some View {
         let days = Self.week(of: model.day)
@@ -135,11 +137,22 @@ private struct WeekStrip: View {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
+        // Dragged sideways: the week goes with the finger, then the next week (or springs back).
+        .offset(x: drag)
+        .opacity(1 - min(0.5, abs(drag) / 400))
         .gesture(
-            DragGesture(minimumDistance: 24).onEnded { drag in
-                guard abs(drag.translation.width) > 60, abs(drag.translation.width) > abs(drag.translation.height) else { return }
-                step(drag.translation.width < 0 ? 7 : -7)
-            }
+            DragGesture(minimumDistance: 16)
+                .onChanged { value in
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    drag = value.translation.width * 0.7
+                }
+                .onEnded { value in
+                    let far = abs(value.translation.width) > 60 || abs(value.predictedEndTranslation.width) > 180
+                    withAnimation(Motion.ios(0.3)) {
+                        drag = 0
+                        if far, abs(value.translation.width) > abs(value.translation.height) { step(value.translation.width < 0 ? 7 : -7) }
+                    }
+                }
         )
         .accessibilityElement(children: .contain)
         .accessibilityAdjustableAction { direction in step(direction == .increment ? 7 : -7) }
