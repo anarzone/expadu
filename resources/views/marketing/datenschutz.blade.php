@@ -256,6 +256,15 @@
         from the places and events you open, save, travel to or turn down until you turn it on
         again.
     </p>
+    <p>
+        With personalisation on, you can also pick the kinds of event you would go to (such as
+        music, tours or kids &amp; family) on Today or on What Expadu knows. We keep your picks
+        with your account to put the kinds you picked first on Today until what you open, save
+        and go to says more (Art. 6(1)(a) GDPR). They are not sent to the AI service. You can
+        change them on What Expadu knows at any time; turning personalisation off deletes them.
+        If you turned personalisation on before 18 November 2026, your picks are kept only once
+        you turn it on again.
+    </p>
 
     <h3>What Composer remembers</h3>
     <p>

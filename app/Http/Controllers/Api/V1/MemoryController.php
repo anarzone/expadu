@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\EventCategory;
 use App\Http\Controllers\Controller;
+use App\Personalisation\EventPicks;
 use App\Personalisation\Memory;
 use App\Personalisation\PersonalisationWording;
 use App\Personalisation\TasteFacts;
@@ -21,7 +23,7 @@ class MemoryController extends Controller
     /**
      * Everything Expadu knows about them.
      */
-    public function index(Request $request, TasteFacts $taste): JsonResponse
+    public function index(Request $request, TasteFacts $taste, EventPicks $picks): JsonResponse
     {
         $user = $request->user();
         $personal = $user->personalises();
@@ -34,6 +36,10 @@ class MemoryController extends Controller
             'facts' => $personal ? $this->memory->facts($user) : [],
             /** @var array{categories: list<array{name: string, level: string}>, veedels: list<array{name: string, level: string}>, dayparts: list<string>, week: string|null, signals: int}|null What they tend to like and skip, as Composer reads it; null when off or too little yet. */
             'taste' => $personal ? $taste->for($user) : null,
+            /** @var array{kinds: list<string>, done: bool}|null The kinds of event they picked themselves; null when personalisation isn't on under the wording that names it. */
+            'picks' => $picks->of($user),
+            /** @var list<array{key: string, label: string}> Every kind they can pick, in order. */
+            'pick_kinds' => array_map(fn (string $key) => ['key' => $key, 'label' => EventCategory::from($key)->label()], EventPicks::kinds()),
             'situation' => $user->situation?->value,
             'german_level' => $user->german_level?->value,
             'limit' => Memory::LIMIT,

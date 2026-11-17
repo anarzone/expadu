@@ -14,6 +14,7 @@ use App\Home\TodaySaved;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\TodayResource;
 use App\Models\EventBookmark;
+use App\Personalisation\EventPicks;
 use App\Personalisation\TodayRankPause;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
@@ -34,11 +35,14 @@ class TodayController extends Controller
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
         $user = $request->user();
+        $discovered = $discovery->for($user, shown: true);
 
         return new TodayResource([
             'day' => $day->for($user, CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
             'needs' => $needs->for($user),
-            'discovery' => $discovery->for($user, shown: true),
+            'discovery' => $discovered,
+            // "What would you go to?": the kinds they picked, and whether to ask (EventPicks).
+            'picks' => app(EventPicks::class)->forToday($user, $discovered['today'] ?? [], (bool) ($discovered['learned'] ?? false)),
             'coming_up' => $comingUp->for($user),
             'paperwork' => $paperwork->for($user),
             'saved' => $saved->for($user),

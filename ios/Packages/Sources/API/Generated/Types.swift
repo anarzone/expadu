@@ -424,6 +424,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `PUT /paperwork/v2/people/{person}/processing-restriction`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)`.
     func paperwork_v2_people_processingRestriction(_ input: Operations.Paperwork_v2_people_processingRestriction.Input) async throws -> Operations.Paperwork_v2_people_processingRestriction.Output
+    /// Their picks as they are now. Refused (422) when personalisation isn't on under the wording
+    /// that names picks
+    ///
+    /// - Remark: HTTP `PUT /me/picks`.
+    /// - Remark: Generated from `#/paths//me/picks/put(picks.update)`.
+    func picks_update(_ input: Operations.Picks_update.Input) async throws -> Operations.Picks_update.Output
     /// - Remark: HTTP `GET /paperwork/v2/processes/{process}`.
     /// - Remark: Generated from `#/paths//paperwork/v2/processes/{process}/get(paperwork.v2.processes.show)`.
     func paperwork_v2_processes_show(_ input: Operations.Paperwork_v2_processes_show.Input) async throws -> Operations.Paperwork_v2_processes_show.Output
@@ -1742,6 +1748,20 @@ extension APIProtocol {
     ) async throws -> Operations.Paperwork_v2_people_processingRestriction.Output {
         try await paperwork_v2_people_processingRestriction(Operations.Paperwork_v2_people_processingRestriction.Input(
             path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Their picks as they are now. Refused (422) when personalisation isn't on under the wording
+    /// that names picks
+    ///
+    /// - Remark: HTTP `PUT /me/picks`.
+    /// - Remark: Generated from `#/paths//me/picks/put(picks.update)`.
+    public func picks_update(
+        headers: Operations.Picks_update.Input.Headers = .init(),
+        body: Operations.Picks_update.Input.Body
+    ) async throws -> Operations.Picks_update.Output {
+        try await picks_update(Operations.Picks_update.Input(
             headers: headers,
             body: body
         ))

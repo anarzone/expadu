@@ -2894,6 +2894,78 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/TodayResource/rank_paused`.
             public var rankPaused: Components.Schemas.TodayResource.RankPausedPayload?
+            /// "What would you go to?" (EventPicks): ask while they haven't said Done or Not now; the kinds they picked; whether what they open already says more; each kind with how many are on still today. Null when personalisation isn't on under the wording that names it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayResource/picks`.
+            public struct PicksPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TodayResource/picks/ask`.
+                public var ask: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/TodayResource/picks/picked`.
+                public var picked: [Swift.String]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/picks/learned`.
+                public var learned: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/TodayResource/picks/KindsPayload`.
+                public struct KindsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/picks/KindsPayload/key`.
+                    public var key: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/picks/KindsPayload/label`.
+                    public var label: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/TodayResource/picks/KindsPayload/today`.
+                    public var today: Swift.Int
+                    /// Creates a new `KindsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - key:
+                    ///   - label:
+                    ///   - today:
+                    public init(
+                        key: Swift.String,
+                        label: Swift.String,
+                        today: Swift.Int
+                    ) {
+                        self.key = key
+                        self.label = label
+                        self.today = today
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case key
+                        case label
+                        case today
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/TodayResource/picks/kinds`.
+                public typealias KindsPayload = [Components.Schemas.TodayResource.PicksPayload.KindsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/TodayResource/picks/kinds`.
+                public var kinds: Components.Schemas.TodayResource.PicksPayload.KindsPayload
+                /// Creates a new `PicksPayload`.
+                ///
+                /// - Parameters:
+                ///   - ask:
+                ///   - picked:
+                ///   - learned:
+                ///   - kinds:
+                public init(
+                    ask: Swift.Bool,
+                    picked: [Swift.String],
+                    learned: Swift.Bool,
+                    kinds: Components.Schemas.TodayResource.PicksPayload.KindsPayload
+                ) {
+                    self.ask = ask
+                    self.picked = picked
+                    self.learned = learned
+                    self.kinds = kinds
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case ask
+                    case picked
+                    case learned
+                    case kinds
+                }
+            }
+            /// "What would you go to?" (EventPicks): ask while they haven't said Done or Not now; the kinds they picked; whether what they open already says more; each kind with how many are on still today. Null when personalisation isn't on under the wording that names it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TodayResource/picks`.
+            public var picks: Components.Schemas.TodayResource.PicksPayload?
             /// - Remark: Generated from `#/components/schemas/TodayResource/weather`.
             public struct WeatherPayload: Codable, Hashable, Sendable {
                 /// - Remark: Generated from `#/components/schemas/TodayResource/weather/temperature`.
@@ -4609,6 +4681,7 @@ extension Components {
             ///   - personalised: Personalised suggestions on (Settings), for How we rank.
             ///   - dayLine: The day in one line, under the date (DayLine): its times marked strong.
             ///   - rankPaused:
+            ///   - picks: "What would you go to?" (EventPicks): ask while they haven't said Done or Not now; the kinds they picked; whether what they open already says more; each kind with how many are on still today. Null when personalisation isn't on under the wording that names it.
             ///   - weather:
             ///   - plans:
             ///   - links:
@@ -4632,6 +4705,7 @@ extension Components {
                 personalised: Swift.Bool,
                 dayLine: Components.Schemas.TodayResource.DayLinePayload? = nil,
                 rankPaused: Components.Schemas.TodayResource.RankPausedPayload? = nil,
+                picks: Components.Schemas.TodayResource.PicksPayload? = nil,
                 weather: Components.Schemas.TodayResource.WeatherPayload? = nil,
                 plans: Components.Schemas.TodayResource.PlansPayload,
                 links: Components.Schemas.TodayResource.LinksPayload,
@@ -4655,6 +4729,7 @@ extension Components {
                 self.personalised = personalised
                 self.dayLine = dayLine
                 self.rankPaused = rankPaused
+                self.picks = picks
                 self.weather = weather
                 self.plans = plans
                 self.links = links
@@ -4679,6 +4754,7 @@ extension Components {
                 case personalised
                 case dayLine = "day_line"
                 case rankPaused = "rank_paused"
+                case picks
                 case weather
                 case plans
                 case links
