@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Day\Busy;
 use App\Day\DayLine;
 use App\Day\DayProjection;
 use App\Home\ComingUp;
@@ -35,7 +36,9 @@ class TodayController extends Controller
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
         $user = $request->user();
-        $discovered = $discovery->for($user, shown: true);
+        // When their calendar says they're busy (times only, today and tomorrow), for this answer only.
+        $busy = Busy::from($request, CarbonImmutable::now(DayProjection::TIMEZONE));
+        $discovered = $discovery->for($user, shown: true, busy: $busy);
 
         return new TodayResource([
             'day' => $day->for($user, CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
@@ -56,7 +59,7 @@ class TodayController extends Controller
             // Personalised suggestions on, and whether their order waits for a yes to a changed notice.
             'personalised' => $user->personalises(),
             // The day in one line, from what's on it (in the brief's words, never the AI's).
-            'day_line' => app(DayLine::class)->for($user, CarbonImmutable::now(DayProjection::TIMEZONE)),
+            'day_line' => app(DayLine::class)->for($user, CarbonImmutable::now(DayProjection::TIMEZONE), $busy),
             'rank_paused' => $rankPause->onToday($user),
             // Which listings they've saved, so each idea's bookmark shows it.
             'saved_events' => EventBookmark::query()->where('user_id', $user->id)->get(['event_id', 'occurrence_start'])

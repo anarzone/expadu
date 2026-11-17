@@ -276,6 +276,17 @@
         shown and deleted with it.
     </p>
 
+    <h3>Your calendar (iPhone, opt-in)</h3>
+    <p>
+        If you turn on “Use my calendar on Today” and allow calendar access on your iPhone, the app
+        reads the calendars you choose on your phone to show them in Your day. What is in them
+        (titles, places, notes and who is invited) stays on your phone. Each time you look at
+        Today, the app sends us only when you are busy today and tomorrow, as times, so Today
+        offers ideas only when you are free (Art. 6(1)(a) GDPR, § 25(1) TDDDG). We use these times
+        for that answer and do not keep them. You can turn it off on What Expadu knows or in your
+        iPhone’s settings at any time.
+    </p>
+
     <h3>What Composer remembers</h3>
     <p>
         With personalisation on, you can tell Composer something lasting about yourself, such as
