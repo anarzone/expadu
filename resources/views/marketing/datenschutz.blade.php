@@ -265,6 +265,13 @@
         If you turned personalisation on before 18 November 2026, your picks are kept only once
         you turn it on again.
     </p>
+    <p>
+        To check whether putting Today in order helps, we count each week, across everyone who
+        turned personalisation on, how often the ideas Today showed were opened, saved or added
+        to a plan, by where they stood and why. Only these weekly totals are kept, never
+        anything about one person, and they are worked out from the records described above,
+        which are deleted as described there (Art. 6(1)(a) GDPR).
+    </p>
 
     <h3>What Composer remembers</h3>
     <p>
