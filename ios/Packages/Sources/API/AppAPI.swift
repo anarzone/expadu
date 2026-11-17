@@ -713,6 +713,114 @@ public struct AppAPI: Sendable {
         _ = Self.composerReply(try await composer("PUT", "composer/paperwork-permission", body))
     }
 
+    // MARK: Moments
+
+    /// What the phone schedules as its own notifications for the next 36 hours.
+    public func moments() async throws(APIFailure) -> [Moment] {
+        let raw = try await composer("GET", "moments")
+        let json = (try? JSONSerialization.jsonObject(with: raw.data) as? [String: Any]) ?? [:]
+        guard raw.status == 200, let rows = json["moments"] as? [[String: Any]] else { throw failure(raw.status) }
+        return rows.compactMap { row in
+            guard let id = row["id"] as? String, let kind = row["kind"] as? String, let at = (row["at"] as? String).flatMap(Self.date(from:)),
+                  let title = row["title"] as? String, let body = row["body"] as? String else { return nil }
+            return Moment(id: id, kind: kind, at: at, title: title, body: body, link: row["link"] as? String ?? "/today")
+        }
+    }
+
+    // MARK: Routines
+
+    /// Their routines, the trips kept, and the one to offer now.
+    public func routines() async throws(APIFailure) -> RoutinesState {
+        let raw = try await composer("GET", "routines")
+        guard raw.status == 200, let json = (try? JSONSerialization.jsonObject(with: raw.data)) as? [String: Any] else {
+            throw raw.status == 401 ? .signedOut : failure(raw.status)
+        }
+        let routines = (json["routines"] as? [[String: Any]] ?? []).compactMap { row -> RoutinesState.Routine? in
+            guard let id = row["id"] as? Int, let label = row["to_label"] as? String, let at = row["at"] as? String else { return nil }
+            return RoutinesState.Routine(id: id, toLabel: label, fromKey: row["from_key"] as? String, weekdays: row["weekdays"] as? [Int] ?? [],
+                                         at: at, remind: row["remind"] as? Bool ?? true)
+        }
+        let offer = (json["offer"] as? [String: Any]).flatMap { row -> RoutinesState.Offer? in
+            guard let key = row["to_key"] as? String, let label = row["to_label"] as? String, let at = row["at"] as? String else { return nil }
+            let trips = (row["trips"] as? [[String: Any]] ?? []).compactMap { trip -> RoutinesState.Trip? in
+                guard let date = trip["date"] as? String, let weekday = trip["weekday"] as? Int, let at = trip["at"] as? String else { return nil }
+                return RoutinesState.Trip(date: date, weekday: weekday, at: at)
+            }
+            return RoutinesState.Offer(toKey: key, toLabel: label, fromKey: row["from_key"] as? String, weekdays: row["weekdays"] as? [Int] ?? [],
+                                       at: at, times: row["times"] as? Int ?? trips.count, trips: trips)
+        }
+        return RoutinesState(learning: json["learning"] as? Bool ?? false, tripsKept: json["trips_kept"] as? Int ?? 0, routines: routines, offer: offer)
+    }
+
+    /// Yes to the offer, with the days and time as they set them; the routine's id.
+    public func confirmRoutine(toKey: String, weekdays: [Int], at: String) async throws(APIFailure) -> Int {
+        let raw = try await composer("POST", "routines", ["to_key": toKey, "weekdays": weekdays, "at": at])
+        guard raw.status == 201, let json = (try? JSONSerialization.jsonObject(with: raw.data)) as? [String: Any], let id = json["id"] as? Int else {
+            throw Self.refusal(raw) ?? failure(raw.status)
+        }
+        return id
+    }
+
+    /// Not now: not offered again for a while. The id Undo deletes.
+    public func dismissRoutine(toKey: String) async throws(APIFailure) -> Int? {
+        let raw = try await composer("POST", "routines/dismiss", ["to_key": toKey])
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+        return ((try? JSONSerialization.jsonObject(with: raw.data)) as? [String: Any])?["id"] as? Int
+    }
+
+    /// Whether a routine tells them when to leave.
+    public func remindRoutine(_ id: Int, remind: Bool) async throws(APIFailure) {
+        let raw = try await composer("PATCH", "routines/\(id)", ["remind": remind])
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
+    /// A routine, or a Not now (Undo), gone.
+    public func forgetRoutine(_ id: Int) async throws(APIFailure) {
+        let raw = try await composer("DELETE", "routines/\(id)")
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
+    /// Forget my trips: the trips kept for routines erased; routines stay.
+    public func forgetRoutineTrips() async throws(APIFailure) {
+        let raw = try await composer("DELETE", "routines/trips")
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
+    /// Learn from my trips: on (needs personalisation), or off, which erases the trips and routines.
+    public func setRoutineLearning(_ on: Bool) async throws(APIFailure) {
+        let raw = try await composer("PUT", "settings", ["settings": ["routine_learning": on]])
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
+    // MARK: Notification settings
+
+    /// Which kinds of notification they get, quiet hours and the brief's time.
+    public func notificationSettings() async throws(APIFailure) -> NotificationSettings {
+        let raw = try await composer("GET", "notifications/settings")
+        guard raw.status == 200, let settings = Self.notificationSettings(raw.data) else { throw raw.status == 401 ? .signedOut : failure(raw.status) }
+        return settings
+    }
+
+    /// One change: a kind turned on or off keeps the others.
+    public func saveNotificationSettings(_ change: NotificationSettings.Change) async throws(APIFailure) -> NotificationSettings {
+        let body: [String: Any] = switch change {
+        case let .kind(kind, on): ["preferences": [kind: on]]
+        case let .quietFrom(at): ["quiet_from": at]
+        case let .quietTo(at): ["quiet_to": at]
+        case let .briefAt(at): ["brief_at": at ?? NSNull()]
+        }
+        let raw = try await composer("PUT", "notifications/settings", body)
+        guard raw.status == 200, let settings = Self.notificationSettings(raw.data) else { throw Self.refusal(raw) ?? failure(raw.status) }
+        return settings
+    }
+
+    private static func notificationSettings(_ data: Data) -> NotificationSettings? {
+        guard let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let from = json["quiet_from"] as? String, let to = json["quiet_to"] as? String else { return nil }
+        let preferences = (json["preferences"] as? [String: Any] ?? [:]).compactMapValues { $0 as? Bool }
+        return NotificationSettings(preferences: preferences, quietFrom: from, quietTo: to, briefAt: json["brief_at"] as? String)
+    }
+
     // MARK: What Expadu knows
 
     /// Everything Expadu knows about them.

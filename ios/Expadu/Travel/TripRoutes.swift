@@ -75,6 +75,8 @@ struct TripRoutesView: View {
             .presentationDetents([.height(330)])
             .presentationBackground(Palette.surface)
             .presentationCornerRadius(32)
+            // Asked here, over the reminder they just set, while iOS hasn't asked yet.
+            .notificationAsk()
         }
         .alert("That didn’t work", isPresented: Binding(get: { planner.startingProblem != nil }, set: { if !$0 { planner.startingProblem = nil } })) {
             Button("OK", role: .cancel) {

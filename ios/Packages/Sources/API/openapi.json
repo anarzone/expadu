@@ -7521,6 +7521,126 @@
                 }
             }
         },
+        "/notifications/settings": {
+            "get": {
+                "operationId": "notificationSettings.show",
+                "tags": [
+                    "NotificationSettings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "preferences": {
+                                            "type": "object",
+                                            "description": "Each kind on or off: transit, events, weather, brief and the rest.",
+                                            "additionalProperties": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "quiet_from": {
+                                            "type": "string",
+                                            "description": "Quiet hours start (HH:MM); they may run past midnight."
+                                        },
+                                        "quiet_to": {
+                                            "type": "string",
+                                            "description": "Quiet hours end (HH:MM)."
+                                        },
+                                        "brief_at": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "description": "When the morning brief comes (HH:MM); null: before their first thing of the day."
+                                        }
+                                    },
+                                    "required": [
+                                        "preferences",
+                                        "quiet_from",
+                                        "quiet_to",
+                                        "brief_at"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "notificationSettings.update",
+                "summary": "Change some: a kind turned on or off keeps the others as they were",
+                "tags": [
+                    "NotificationSettings"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateNotificationPreferencesRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "preferences": {
+                                            "type": "object",
+                                            "description": "Each kind on or off: transit, events, weather, brief and the rest.",
+                                            "additionalProperties": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "quiet_from": {
+                                            "type": "string",
+                                            "description": "Quiet hours start (HH:MM); they may run past midnight."
+                                        },
+                                        "quiet_to": {
+                                            "type": "string",
+                                            "description": "Quiet hours end (HH:MM)."
+                                        },
+                                        "brief_at": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "description": "When the morning brief comes (HH:MM); null: before their first thing of the day."
+                                        }
+                                    },
+                                    "required": [
+                                        "preferences",
+                                        "quiet_from",
+                                        "quiet_to",
+                                        "brief_at"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/paperwork/v2/people/{person}/onboarding/draft": {
             "get": {
                 "operationId": "paperwork.v2.onboarding.draft.show",
@@ -9721,6 +9841,14 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
+                                        "learning": {
+                                            "type": "boolean",
+                                            "description": "Routine learning on: their own yes, with personalisation on."
+                                        },
+                                        "trips_kept": {
+                                            "type": "integer",
+                                            "description": "Trips kept for routines (90 days at most)."
+                                        },
                                         "routines": {
                                             "type": "array",
                                             "description": "Weekdays 1 (Monday) to 7.",
@@ -9828,6 +9956,8 @@
                                         }
                                     },
                                     "required": [
+                                        "learning",
+                                        "trips_kept",
                                         "routines",
                                         "offer"
                                     ]
@@ -9987,6 +10117,39 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/routines/trips": {
+            "delete": {
+                "operationId": "routines.forgetTrips",
+                "summary": "Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.\nPermanent (the phone asks first)",
+                "tags": [
+                    "Routines"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "forgotten": {
+                                            "type": "integer",
+                                            "description": "How many trips were erased."
+                                        }
+                                    },
+                                    "required": [
+                                        "forgotten"
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -14833,6 +14996,31 @@
                     "mode"
                 ],
                 "title": "TodayWayRequest"
+            },
+            "UpdateNotificationPreferencesRequest": {
+                "type": "object",
+                "description": "What changed in their notifications, from the web's Settings or the iPhone: toggles merge into the\nsaved ones (one toggle never resets the rest), quiet hours start and end at different times, and a\nset brief time falls outside them, or it would wait until they end.",
+                "properties": {
+                    "preferences": {
+                        "type": "array",
+                        "items": {
+                            "type": "boolean"
+                        }
+                    },
+                    "quiet_from": {
+                        "type": "string"
+                    },
+                    "quiet_to": {
+                        "type": "string"
+                    },
+                    "brief_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "title": "UpdateNotificationPreferencesRequest"
             },
             "UserResource": {
                 "type": "object",

@@ -357,6 +357,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /moments`.
     /// - Remark: Generated from `#/paths//moments/get(moments.index)`.
     func moments_index(_ input: Operations.Moments_index.Input) async throws -> Operations.Moments_index.Output
+    /// - Remark: HTTP `GET /notifications/settings`.
+    /// - Remark: Generated from `#/paths//notifications/settings/get(notificationSettings.show)`.
+    func notificationSettings_show(_ input: Operations.NotificationSettings_show.Input) async throws -> Operations.NotificationSettings_show.Output
+    /// Change some: a kind turned on or off keeps the others as they were
+    ///
+    /// - Remark: HTTP `PUT /notifications/settings`.
+    /// - Remark: Generated from `#/paths//notifications/settings/put(notificationSettings.update)`.
+    func notificationSettings_update(_ input: Operations.NotificationSettings_update.Input) async throws -> Operations.NotificationSettings_update.Output
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
     func paperwork_v2_onboarding_draft_show(_ input: Operations.Paperwork_v2_onboarding_draft_show.Input) async throws -> Operations.Paperwork_v2_onboarding_draft_show.Output
@@ -482,6 +490,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /routines/dismiss`.
     /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.
     func routines_dismiss(_ input: Operations.Routines_dismiss.Input) async throws -> Operations.Routines_dismiss.Output
+    /// Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.
+    /// Permanent (the phone asks first)
+    ///
+    /// - Remark: HTTP `DELETE /routines/trips`.
+    /// - Remark: Generated from `#/paths//routines/trips/delete(routines.forgetTrips)`.
+    func routines_forgetTrips(_ input: Operations.Routines_forgetTrips.Input) async throws -> Operations.Routines_forgetTrips.Output
     /// Its days, its time, or whether it tells them when to leave
     ///
     /// - Remark: HTTP `PATCH /routines/{routine}`.
@@ -1515,6 +1529,24 @@ extension APIProtocol {
     public func moments_index(headers: Operations.Moments_index.Input.Headers = .init()) async throws -> Operations.Moments_index.Output {
         try await moments_index(Operations.Moments_index.Input(headers: headers))
     }
+    /// - Remark: HTTP `GET /notifications/settings`.
+    /// - Remark: Generated from `#/paths//notifications/settings/get(notificationSettings.show)`.
+    public func notificationSettings_show(headers: Operations.NotificationSettings_show.Input.Headers = .init()) async throws -> Operations.NotificationSettings_show.Output {
+        try await notificationSettings_show(Operations.NotificationSettings_show.Input(headers: headers))
+    }
+    /// Change some: a kind turned on or off keeps the others as they were
+    ///
+    /// - Remark: HTTP `PUT /notifications/settings`.
+    /// - Remark: Generated from `#/paths//notifications/settings/put(notificationSettings.update)`.
+    public func notificationSettings_update(
+        headers: Operations.NotificationSettings_update.Input.Headers = .init(),
+        body: Operations.NotificationSettings_update.Input.Body? = nil
+    ) async throws -> Operations.NotificationSettings_update.Output {
+        try await notificationSettings_update(Operations.NotificationSettings_update.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
     public func paperwork_v2_onboarding_draft_show(
@@ -1959,6 +1991,14 @@ extension APIProtocol {
             headers: headers,
             body: body
         ))
+    }
+    /// Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.
+    /// Permanent (the phone asks first)
+    ///
+    /// - Remark: HTTP `DELETE /routines/trips`.
+    /// - Remark: Generated from `#/paths//routines/trips/delete(routines.forgetTrips)`.
+    public func routines_forgetTrips(headers: Operations.Routines_forgetTrips.Input.Headers = .init()) async throws -> Operations.Routines_forgetTrips.Output {
+        try await routines_forgetTrips(Operations.Routines_forgetTrips.Input(headers: headers))
     }
     /// Its days, its time, or whether it tells them when to leave
     ///

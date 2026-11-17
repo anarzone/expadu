@@ -346,6 +346,7 @@ final class TripPlanner {
             let planned = try await api.planTrip(journey: journey, date: Self.day(target.startDate ?? .now), target: target.id, remind: true)
             withAnimation(.snappy) { added[option.index] = planned }
             savedSheet = planned
+            await NotificationAsk.shared.afterReminder(Self.preview(planned, to: target.title), api)
         } catch {
             if case let .refused(text) = error { startingProblem = text } else { startingProblem = "Couldn’t add it (\(error)). Try again in a moment." }
         }
@@ -357,7 +358,18 @@ final class TripPlanner {
             let next = try await api.remindPlannedTrip(kept.id, remind: on)
             savedSheet = next
             if let i = added.first(where: { $0.value.id == kept.id })?.key { added[i] = next }
+            if on, let target { await NotificationAsk.shared.afterReminder(Self.preview(next, to: target.title), api) } else { await Notifier.shared.sync(api) }
         } catch {}
+    }
+
+    /// The reminder as it will arrive, in the server's words for a "leave" moment.
+    static func preview(_ planned: PlannedTrip, to title: String) -> NotificationAsk.Preview {
+        let at = planned.remindAt.flatMap { clock -> Date? in
+            let parts = clock.split(separator: ":").compactMap { Int($0) }
+            guard parts.count == 2 else { return nil }
+            return Calendar.current.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: .now)
+        }
+        return NotificationAsk.Preview(title: "Time to leave for \(title)", body: planned.departTime.map { "Leave at \($0)" } ?? "Time to set off.", at: at)
     }
 
     func undoAdd(_ planned: PlannedTrip, _ api: AppAPI) async {

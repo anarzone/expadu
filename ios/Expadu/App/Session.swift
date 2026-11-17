@@ -50,5 +50,7 @@ final class Session {
     func forget() {
         TokenKeychain.clear()
         stored = nil
+        // Nothing of theirs stays scheduled on the phone.
+        Task { await Notifier.shared.clear() }
     }
 }

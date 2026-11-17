@@ -224,9 +224,17 @@ struct ShellView: View {
         // What Expadu knows, from the account menu, Composer's Remembered card or Today's How we rank.
         .fullScreenCover(isPresented: $pages.knows) {
             KnowsView()
+                // Your routines on it are Today's.
+                .environment(today)
                 // Clear, so the page it opened over shows while it's swiped back (it draws its own).
                 .presentationBackground(.clear)
         }
+        // Settings › Notifications, from the account menu.
+        .fullScreenCover(isPresented: $pages.notifications) {
+            NotificationsView()
+                .presentationBackground(.clear)
+        }
+
         // Started: felt as the trip opens (the routes behind it close in the same moment, so it lives here).
         .sensoryFeedback(.success, trigger: planner.started)
         .fullScreenCover(isPresented: Binding(get: { planner.showTrip && today.page?.trip != nil }, set: { planner.showTrip = $0 })) {
@@ -241,12 +249,24 @@ struct ShellView: View {
         .onChange(of: today.page?.trip, initial: true) { _, trip in
             if let trip { planner.follow(trip) } else { planner.stopFollowing() }
         }
+        // The phone's own notifications from the moments: scheduled at launch, and again on every return.
+        .task {
+            Notifier.shared.start()
+            await Notifier.shared.sync(session.api)
+        }
+        // A tapped notification opens where it links.
+        .onChange(of: Notifier.shared.opened) { _, link in
+            guard let link else { return }
+            Notifier.shared.opened = nil
+            withAnimation(.snappy) { tab = link.hasPrefix("/travel") ? .travel : link.hasPrefix("/paperwork") ? .paperwork : .today }
+        }
         // Back in the app: the day (and the trip) read again at once, so the app and the Lock Screen
         // say the same, never a trip there that has ended.
         .onChange(of: scenePhase) { _, now in
             if now == .background { away = true }
             guard now == .active, away else { return }
             away = false
+            Task { await Notifier.shared.sync(session.api) }
             if today.page != nil { Task { await today.load(session.api, quietly: true) } }
         }
         // Trip sync: the tram they're really on, and the next one when a delay breaks a change.
@@ -603,6 +623,7 @@ struct AccountButton: View {
         Menu {
             Text(session.email)
             Button("What Expadu knows", systemImage: "person.text.rectangle") { pages.openKnows() }
+            Button("Notifications", systemImage: "bell") { pages.openNotifications() }
             Divider()
             Button("Sign out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { Task { await session.signOut() } }
         } label: {
