@@ -33,7 +33,7 @@ final class TodayTaste
     private const KEEP_SECONDS = 600;
 
     /** What a catalogue signal says they liked (a "Not for me" or an impression says nothing here). */
-    private const LIKED = ['detail_viewed', 'saved', 'get_there', 'trip_taken', 'plan_kept_unedited', 'shared', 'more_like_this', 'been_liked'];
+    private const LIKED = ['detail_viewed', 'saved', 'get_there', 'trip_taken', 'plan_kept_unedited', 'added_to_plan', 'shared', 'more_like_this', 'been_liked'];
 
     /**
      * @return array{personal: bool, categories: list<string>, areas: list<string>, stops: list<string>, lines: list<string>, needs: array{opened: list<string>, dismissed: list<string>}}

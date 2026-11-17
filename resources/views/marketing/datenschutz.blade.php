@@ -239,7 +239,7 @@
     <p>
         If you turn on personalisation in your settings, we learn from what you do in the app:
         which places, events, Today alerts, Travel stops and lines and Composer topics you open,
-        search, save, travel to, skip or dismiss, to rank suggestions and put Today in order for
+        search, save, add to your plan, travel to, skip or dismiss, to rank suggestions and put Today in order for
         you (Art. 6(1)(a) GDPR). From Composer we keep only the kind of place and the
         neighbourhood it looked up, never what you wrote; from Travel only the stops and lines
         you picked, never where you are, your Home or an address; nothing from Paperwork. To put
