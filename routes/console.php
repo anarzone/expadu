@@ -157,6 +157,8 @@ Schedule::command('accuracy:daily')->dailyAt('07:00')->withoutOverlapping()->onO
 
 // Personalisation: decayed affinities and place negatives from the signal ledger.
 Schedule::command('signals:aggregate')->dailyAt('04:30')->withoutOverlapping()->onOneServer()->runInBackground();
+// Last week of Today's ideas in totals (WeeklyMeasure), each Monday after the night's aggregate.
+Schedule::command('personalisation:week')->weeklyOn(1, '05:15')->timezone('Europe/Berlin')->withoutOverlapping()->onOneServer()->runInBackground();
 // The taste profile (Haiku), only for people whose facts changed; off unless TASTE_PROFILE_ENABLED.
 Schedule::command('taste:profiles')->dailyAt('04:45')->withoutOverlapping()->onOneServer()->runInBackground();
 
