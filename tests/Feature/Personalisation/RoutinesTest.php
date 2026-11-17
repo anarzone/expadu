@@ -208,6 +208,24 @@ test('🔒 a routine is theirs to change and forget, never anyone else\'s; perso
         ->and(DB::table('routines')->where('subject_key', $subject)->count())->toBe(0);
 });
 
+test('🔒 the phone sees whether learning is on and how many trips are kept; Forget my trips erases theirs only, routines stay', function () {
+    foreach (['2026-11-11 08:05', '2026-11-12 08:15', '2026-11-16 08:10'] as $at) {
+        routineTrip($this->user, $at);
+    }
+    $as = $this->withToken($this->user->createToken('iPhone')->plainTextToken);
+    $as->postJson('/api/v1/routines', ['to_key' => 'place:work', 'weekdays' => [1, 3, 4], 'at' => '08:10'])->assertCreated();
+    $as->getJson('/api/v1/routines')->assertOk()->assertJsonPath('learning', true)->assertJsonPath('trips_kept', 3);
+
+    $other = User::factory()->onboarded()->create();
+    $other->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true, Routines::SETTING => true], 'sixteen_or_older' => true]);
+    UserPlace::factory()->create(['user_id' => $other->id, 'name' => 'Work', 'category' => 'work', 'lat' => 50.9600, 'lng' => 6.9800]);
+    routineTrip($other->fresh(), '2026-11-12 07:50');
+
+    $as->deleteJson('/api/v1/routines/trips')->assertOk()->assertJsonPath('forgotten', 3);
+    $as->getJson('/api/v1/routines')->assertOk()->assertJsonPath('trips_kept', 0)->assertJsonPath('routines.0.to_label', 'Work');
+    expect(DB::table('trip_history')->where('subject_key', Pseudonym::for($other))->count())->toBe(1);
+});
+
 test('🔒 trips are kept 90 days, then pruned', function () {
     routineTrip($this->user, '2026-08-01 08:10');
     routineTrip($this->user, '2026-11-16 08:10');

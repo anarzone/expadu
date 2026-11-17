@@ -14641,6 +14641,89 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.
+    /// Permanent (the phone asks first)
+    ///
+    /// - Remark: HTTP `DELETE /routines/trips`.
+    /// - Remark: Generated from `#/paths//routines/trips/delete(routines.forgetTrips)`.
+    public func routines_forgetTrips(_ input: Operations.Routines_forgetTrips.Input) async throws -> Operations.Routines_forgetTrips.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.Routines_forgetTrips.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/routines/trips",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .delete
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.Routines_forgetTrips.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Operations.Routines_forgetTrips.Output.Ok.Body.JsonPayload.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.AuthenticationException.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Responses.AuthenticationException.Body.JsonPayload.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
     /// Its days, its time, or whether it tells them when to leave
     ///
     /// - Remark: HTTP `PATCH /routines/{routine}`.
