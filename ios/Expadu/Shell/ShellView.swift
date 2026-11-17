@@ -224,6 +224,8 @@ struct ShellView: View {
         // What Expadu knows, from the account menu, Composer's Remembered card or Today's How we rank.
         .fullScreenCover(isPresented: $pages.knows) {
             KnowsView()
+                // Your routines on it are Today's.
+                .environment(today)
                 // Clear, so the page it opened over shows while it's swiped back (it draws its own).
                 .presentationBackground(.clear)
         }

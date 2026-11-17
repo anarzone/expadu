@@ -359,6 +359,8 @@ struct KnowsView: View {
         }
         .card(radius: 18)
 
+        RoutinesSection().padding(.top, 26)
+
         Text("**Never kept or learned:** health, religion or beliefs, sexuality, politics or a union, and places that would say them. Nor exactly where you are: Composer gets only your nearest stop.")
             .font(.geist(13.5)).foregroundStyle(Palette.posterLead).fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 16).padding(.vertical, 13)

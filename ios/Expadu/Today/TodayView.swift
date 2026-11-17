@@ -70,6 +70,14 @@ struct TodayView: View {
                             Greeting(page: page, name: session.name, intro: intro)
                             if let line = page.dayLine { DayLineText(line: line, intro: intro) }
                             Chips(page: page, sheet: $sheet, intro: intro)
+                            // A routine their trips show, offered; once set, what it became.
+                            if let set = model.routineSet {
+                                RoutineSetChip(routine: set)
+                                    .transition(.asymmetric(insertion: .offset(y: -40).combined(with: .scale(scale: 0.92)).combined(with: .opacity), removal: .opacity))
+                            } else if let offer = model.routines?.offer {
+                                RoutineOffer(offer: offer)
+                                    .transition(.asymmetric(insertion: .opacity, removal: .scale(scale: 0.96, anchor: .top).combined(with: .opacity)))
+                            }
                         }
                         ForEach(Self.parts(lead.lead), id: \.self) { part in
                             switch part {
@@ -102,6 +110,9 @@ struct TodayView: View {
         }
         .sensoryFeedback(.impact(weight: .light), trigger: pull > PullMark.reach)
         .task { await model.start(session.api) }
+        .task { await model.loadRoutines(session.api) }
+        // Asked here, over Today, right after a routine was set and while iOS hasn't asked.
+        .notificationAsk()
         .onChange(of: model.phase) { _, phase in
             guard phase == .ready, !intro else { return }
             withAnimation(reduceMotion ? nil : .spring(duration: 0.55, bounce: 0.3)) { intro = true }

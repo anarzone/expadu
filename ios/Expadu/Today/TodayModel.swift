@@ -88,7 +88,7 @@ final class TodayModel {
 
     /// What just changed, for the note; `undo` puts it back.
     struct Note: Equatable, Identifiable {
-        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea), way(String), ride(String), trip(String) }
+        enum Undo: Equatable { case change(String), restore(id: String, date: String), unsave(TodayPage.Idea), signal(TodayPage.Idea), way(String), ride(String), trip(String), routine(Int) }
 
         let id = UUID()
         let text: String
@@ -98,6 +98,10 @@ final class TodayModel {
     }
 
     private(set) var note: Note?
+    /// Routines from their trips: the one to offer, and theirs (GET /routines).
+    var routines: RoutinesState?
+    /// The routine just set from the offer, shown where the offer was.
+    var routineSet: RoutinesState.Routine?
     /// The Leave card's own note (the canvas's .lv-say): what happened to the trip or its way, with Undo.
     private(set) var cardNote: Note?
     /// Each change to the card's way: its values turn over and it glows (lvflip, lvglow).
@@ -388,6 +392,51 @@ final class TodayModel {
             pending.removeValue(forKey: idea.id)?.cancel()
             withAnimation(.snappy) { _ = hidden.remove(idea.id) }
             say(Note(text: "Put back", symbol: "arrow.uturn.backward"))
+        case let .routine(id):
+            // The routine just set, or the Not now just said, taken back: the offer is made again.
+            do throws(APIFailure) {
+                try await api.forgetRoutine(id)
+                withAnimation(Motion.spring) { routineSet = nil }
+                await loadRoutines(api)
+                say(Note(text: "Put back", symbol: "arrow.uturn.backward"))
+            } catch {
+                say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            }
+        }
+    }
+
+    // MARK: Routines
+
+    /// Read with Today: the routine to offer, and theirs.
+    func loadRoutines(_ api: AppAPI) async {
+        guard let fresh = try? await api.routines() else { return }
+        withAnimation(Motion.spring) { routines = fresh }
+    }
+
+    /// Yes to the offer, with the days and time they set: it folds into the routine, with Undo.
+    func confirmRoutine(_ api: AppAPI, _ offer: RoutinesState.Offer, weekdays: [Int], at: String) async -> Bool {
+        do throws(APIFailure) {
+            let id = try await api.confirmRoutine(toKey: offer.toKey, weekdays: weekdays, at: at)
+            withAnimation(Motion.spring) {
+                routineSet = RoutinesState.Routine(id: id, toLabel: offer.toLabel, fromKey: offer.fromKey, weekdays: weekdays, at: at, remind: true)
+                routines?.offer = nil
+            }
+            say(Note(text: "Routine set. I’ll tell you when to leave.", symbol: "bell", undo: .routine(id)))
+            return true
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+            return false
+        }
+    }
+
+    /// Not now: the offer goes for a month, with Undo.
+    func notNowRoutine(_ api: AppAPI, _ offer: RoutinesState.Offer) async {
+        do throws(APIFailure) {
+            let id = try await api.dismissRoutine(toKey: offer.toKey)
+            withAnimation(Motion.spring) { routines?.offer = nil }
+            say(Note(text: "I won’t ask about this one for a month.", symbol: "clock.arrow.circlepath", undo: id.map { .routine($0) }))
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
         }
     }
 
