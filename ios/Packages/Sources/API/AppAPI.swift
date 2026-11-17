@@ -35,7 +35,7 @@ public struct AppAPI: Sendable {
             configuration: Configuration(dateTranscoder: .iso8601),
             transport: URLSessionTransport(),
             // Outermost, so each try goes out with the token as it is then.
-            middlewares: [RetryReads(), middleware]
+            middlewares: [RetryReads(), middleware, BusyTimes()]
         )
         self.device = device
     }
@@ -1324,8 +1324,12 @@ public struct AppAPI: Sendable {
     }
 
     /// Today: the day, when to leave for the next plan (from where the phone is), notes and ideas.
-    public func today(latitude: Double?, longitude: Double?) async throws(APIFailure) -> TodayPage {
-        let output = try await calling { try await client.today_show(query: .init(lat: latitude, lng: longitude)) }
+    /// Today; `busy` is when their own calendar says they're busy, today and tomorrow, as times only
+    /// ("2026-11-18T09:00/2026-11-18T12:30,…"): sent in a header for this answer, never kept.
+    public func today(latitude: Double?, longitude: Double?, busy: String? = nil) async throws(APIFailure) -> TodayPage {
+        let output = try await calling {
+            try await BusyTimes.$value.withValue(busy) { try await client.today_show(query: .init(lat: latitude, lng: longitude)) }
+        }
         switch output {
         case let .ok(ok):
             let today = try body { try ok.body.json }
@@ -1517,6 +1521,25 @@ private struct RetryReads: ClientMiddleware {
                 guard Transient.gateway(answer.0.status.code) else { return answer }
             } catch where Transient.dropped(error) {}
             try await Task.sleep(for: pause)
+        }
+        return try await next(request, body, baseURL)
+    }
+}
+
+/// Their calendar's busy times on Today's request only (Expadu-Busy), set for that one call.
+private struct BusyTimes: ClientMiddleware {
+    @TaskLocal static var value: String?
+
+    func intercept(
+        _ request: HTTPRequest,
+        body: HTTPBody?,
+        baseURL: URL,
+        operationID: String,
+        next: @Sendable (HTTPRequest, HTTPBody?, URL) async throws -> (HTTPResponse, HTTPBody?)
+    ) async throws -> (HTTPResponse, HTTPBody?) {
+        var request = request
+        if operationID == "today.show", let busy = Self.value, let name = HTTPField.Name("Expadu-Busy") {
+            request.headerFields[name] = busy
         }
         return try await next(request, body, baseURL)
     }
