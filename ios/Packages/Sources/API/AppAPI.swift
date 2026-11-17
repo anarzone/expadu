@@ -213,7 +213,8 @@ public struct AppAPI: Sendable {
     public func send(_ signals: [Signal]) async throws(APIFailure) {
         guard !signals.isEmpty else { return }
         let input = Components.Schemas.RecordSignalsRequest(signals: signals.map {
-            .init(action: .init(rawValue: $0.action.rawValue) ?? .impression, surface: .today, itemType: .event, itemId: $0.event, position: $0.position)
+            .init(action: .init(rawValue: $0.action.rawValue) ?? .impression, surface: .init(rawValue: $0.surface.rawValue) ?? .today, itemType: .event,
+                  itemId: $0.event, position: $0.position, dwellSeconds: $0.action == .detailViewed ? $0.seconds : nil)
         })
         let output = try await calling { try await client.signal(body: .json(input)) }
         switch output {
