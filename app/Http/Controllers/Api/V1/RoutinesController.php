@@ -22,6 +22,10 @@ class RoutinesController extends Controller
         $user = $request->user();
 
         return response()->json([
+            /** @var bool Routine learning on: their own yes, with personalisation on. */
+            'learning' => Routines::learns($user),
+            /** @var int Trips kept for routines (90 days at most). */
+            'trips_kept' => $this->routines->tripsKept($user),
             /** @var list<array{id: int, to_label: string, from_key: string|null, weekdays: list<int>, at: string, remind: bool}> Weekdays 1 (Monday) to 7. */
             'routines' => $this->routines->confirmed($user),
             /** @var array{to_key: string, to_label: string, from_key: string|null, weekdays: list<int>, at: string, times: int, trips: list<array{date: string, weekday: int, at: string}>}|null What their trips show, to offer, with the trips it rests on (every one to that place in the last three weeks); null when nothing does. */
@@ -69,6 +73,18 @@ class RoutinesController extends Controller
         abort_unless($this->routines->forget($request->user(), $routine), 404);
 
         return response()->json(['forgotten' => true]);
+    }
+
+    /**
+     * Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.
+     * Permanent (the phone asks first).
+     */
+    public function forgetTrips(Request $request): JsonResponse
+    {
+        return response()->json([
+            /** @var int How many trips were erased. */
+            'forgotten' => $this->routines->forgetTrips($request->user()),
+        ]);
     }
 
     /**

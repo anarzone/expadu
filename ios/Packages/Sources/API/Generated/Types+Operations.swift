@@ -30574,6 +30574,14 @@ public enum Operations {
                 @frozen public enum Body: Sendable, Hashable {
                     /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json`.
                     public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// Routine learning on: their own yes, with personalisation on.
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/learning`.
+                        public var learning: Swift.Bool
+                        /// Trips kept for routines (90 days at most).
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/trips_kept`.
+                        public var tripsKept: Swift.Int
                         /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload`.
                         public struct RoutinesPayloadPayload: Codable, Hashable, Sendable {
                             /// - Remark: Generated from `#/paths/routines/GET/responses/200/content/json/RoutinesPayload/id`.
@@ -30722,16 +30730,24 @@ public enum Operations {
                         /// Creates a new `JsonPayload`.
                         ///
                         /// - Parameters:
+                        ///   - learning: Routine learning on: their own yes, with personalisation on.
+                        ///   - tripsKept: Trips kept for routines (90 days at most).
                         ///   - routines: Weekdays 1 (Monday) to 7.
                         ///   - offer: What their trips show, to offer, with the trips it rests on (every one to that place in the last three weeks); null when nothing does.
                         public init(
+                            learning: Swift.Bool,
+                            tripsKept: Swift.Int,
                             routines: Operations.Routines_index.Output.Ok.Body.JsonPayload.RoutinesPayload,
                             offer: Operations.Routines_index.Output.Ok.Body.JsonPayload.OfferPayload? = nil
                         ) {
+                            self.learning = learning
+                            self.tripsKept = tripsKept
                             self.routines = routines
                             self.offer = offer
                         }
                         public enum CodingKeys: String, CodingKey {
+                            case learning
+                            case tripsKept = "trips_kept"
                             case routines
                             case offer
                         }
@@ -31273,6 +31289,157 @@ public enum Operations {
             /// Unauthenticated
             ///
             /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.
+    /// Permanent (the phone asks first)
+    ///
+    /// - Remark: HTTP `DELETE /routines/trips`.
+    /// - Remark: Generated from `#/paths//routines/trips/delete(routines.forgetTrips)`.
+    public enum Routines_forgetTrips {
+        public static let id: Swift.String = "routines.forgetTrips"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/routines/trips/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_forgetTrips.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Routines_forgetTrips.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Routines_forgetTrips.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.Routines_forgetTrips.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/routines/trips/DELETE/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/routines/trips/DELETE/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// How many trips were erased.
+                        ///
+                        /// - Remark: Generated from `#/paths/routines/trips/DELETE/responses/200/content/json/forgotten`.
+                        public var forgotten: Swift.Int
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - forgotten: How many trips were erased.
+                        public init(forgotten: Swift.Int) {
+                            self.forgotten = forgotten
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case forgotten
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/routines/trips/DELETE/responses/200/content/application\/json`.
+                    case json(Operations.Routines_forgetTrips.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Routines_forgetTrips.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Routines_forgetTrips.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Routines_forgetTrips.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//routines/trips/delete(routines.forgetTrips)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Routines_forgetTrips.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Routines_forgetTrips.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//routines/trips/delete(routines.forgetTrips)/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Components.Responses.AuthenticationException)

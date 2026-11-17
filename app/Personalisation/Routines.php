@@ -236,6 +236,18 @@ final class Routines
         return DB::table('routines')->where('id', $id)->where('subject_key', Pseudonym::for($user))->delete() === 1;
     }
 
+    /** How many of their trips are kept for routines (What Expadu knows says so). */
+    public function tripsKept(User $user): int
+    {
+        return DB::table('trip_history')->where('subject_key', Pseudonym::for($user))->count();
+    }
+
+    /** Their trips, forgotten; the routines they confirmed stay. */
+    public function forgetTrips(User $user): int
+    {
+        return DB::table('trip_history')->where('subject_key', Pseudonym::for($user))->delete();
+    }
+
     /** Everything: trips and routines (personalisation off, the account deleted). */
     public function erase(User|int $user): void
     {

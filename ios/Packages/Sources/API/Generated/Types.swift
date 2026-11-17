@@ -490,6 +490,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /routines/dismiss`.
     /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.
     func routines_dismiss(_ input: Operations.Routines_dismiss.Input) async throws -> Operations.Routines_dismiss.Output
+    /// Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.
+    /// Permanent (the phone asks first)
+    ///
+    /// - Remark: HTTP `DELETE /routines/trips`.
+    /// - Remark: Generated from `#/paths//routines/trips/delete(routines.forgetTrips)`.
+    func routines_forgetTrips(_ input: Operations.Routines_forgetTrips.Input) async throws -> Operations.Routines_forgetTrips.Output
     /// Its days, its time, or whether it tells them when to leave
     ///
     /// - Remark: HTTP `PATCH /routines/{routine}`.
@@ -1985,6 +1991,14 @@ extension APIProtocol {
             headers: headers,
             body: body
         ))
+    }
+    /// Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.
+    /// Permanent (the phone asks first)
+    ///
+    /// - Remark: HTTP `DELETE /routines/trips`.
+    /// - Remark: Generated from `#/paths//routines/trips/delete(routines.forgetTrips)`.
+    public func routines_forgetTrips(headers: Operations.Routines_forgetTrips.Input.Headers = .init()) async throws -> Operations.Routines_forgetTrips.Output {
+        try await routines_forgetTrips(Operations.Routines_forgetTrips.Input(headers: headers))
     }
     /// Its days, its time, or whether it tells them when to leave
     ///

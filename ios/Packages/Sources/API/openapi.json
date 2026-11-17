@@ -9841,6 +9841,14 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
+                                        "learning": {
+                                            "type": "boolean",
+                                            "description": "Routine learning on: their own yes, with personalisation on."
+                                        },
+                                        "trips_kept": {
+                                            "type": "integer",
+                                            "description": "Trips kept for routines (90 days at most)."
+                                        },
                                         "routines": {
                                             "type": "array",
                                             "description": "Weekdays 1 (Monday) to 7.",
@@ -9948,6 +9956,8 @@
                                         }
                                     },
                                     "required": [
+                                        "learning",
+                                        "trips_kept",
                                         "routines",
                                         "offer"
                                     ]
@@ -10107,6 +10117,39 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/routines/trips": {
+            "delete": {
+                "operationId": "routines.forgetTrips",
+                "summary": "Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.\nPermanent (the phone asks first)",
+                "tags": [
+                    "Routines"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "forgotten": {
+                                            "type": "integer",
+                                            "description": "How many trips were erased."
+                                        }
+                                    },
+                                    "required": [
+                                        "forgotten"
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
