@@ -20711,6 +20711,66 @@ public enum Operations {
                         ///
                         /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/taste`.
                         public var taste: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload?
+                        /// The kinds of event they picked themselves; null when personalisation isn't on under the wording that names it.
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/picks`.
+                        public struct PicksPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/picks/kinds`.
+                            public var kinds: [Swift.String]
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/picks/done`.
+                            public var done: Swift.Bool
+                            /// Creates a new `PicksPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - kinds:
+                            ///   - done:
+                            public init(
+                                kinds: [Swift.String],
+                                done: Swift.Bool
+                            ) {
+                                self.kinds = kinds
+                                self.done = done
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case kinds
+                                case done
+                            }
+                        }
+                        /// The kinds of event they picked themselves; null when personalisation isn't on under the wording that names it.
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/picks`.
+                        public var picks: Operations.Memory_index.Output.Ok.Body.JsonPayload.PicksPayload?
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/PickKindsPayload`.
+                        public struct PickKindsPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/PickKindsPayload/key`.
+                            public var key: Swift.String
+                            /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/PickKindsPayload/label`.
+                            public var label: Swift.String
+                            /// Creates a new `PickKindsPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - key:
+                            ///   - label:
+                            public init(
+                                key: Swift.String,
+                                label: Swift.String
+                            ) {
+                                self.key = key
+                                self.label = label
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case key
+                                case label
+                            }
+                        }
+                        /// Every kind they can pick, in order.
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/pick_kinds`.
+                        public typealias PickKindsPayload = [Operations.Memory_index.Output.Ok.Body.JsonPayload.PickKindsPayloadPayload]
+                        /// Every kind they can pick, in order.
+                        ///
+                        /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/pick_kinds`.
+                        public var pickKinds: Operations.Memory_index.Output.Ok.Body.JsonPayload.PickKindsPayload
                         /// - Remark: Generated from `#/paths/memory/GET/responses/200/content/json/situation`.
                         @frozen public enum SituationPayload: String, Codable, Hashable, Sendable, CaseIterable {
                             case nonEuEmployee = "non_eu_employee"
@@ -20750,6 +20810,8 @@ public enum Operations {
                         ///   - personalisationCurrent: On under the wording Settings shows now; false means turn it on again to agree to what it says now.
                         ///   - facts: What Composer remembers, oldest first: told (said to Composer) or added (typed here).
                         ///   - taste: What they tend to like and skip, as Composer reads it; null when off or too little yet.
+                        ///   - picks: The kinds of event they picked themselves; null when personalisation isn't on under the wording that names it.
+                        ///   - pickKinds: Every kind they can pick, in order.
                         ///   - situation:
                         ///   - germanLevel:
                         ///   - limit:
@@ -20758,6 +20820,8 @@ public enum Operations {
                             personalisationCurrent: Swift.Bool,
                             facts: Operations.Memory_index.Output.Ok.Body.JsonPayload.FactsPayload,
                             taste: Operations.Memory_index.Output.Ok.Body.JsonPayload.TastePayload? = nil,
+                            picks: Operations.Memory_index.Output.Ok.Body.JsonPayload.PicksPayload? = nil,
+                            pickKinds: Operations.Memory_index.Output.Ok.Body.JsonPayload.PickKindsPayload,
                             situation: Operations.Memory_index.Output.Ok.Body.JsonPayload.SituationPayload? = nil,
                             germanLevel: Operations.Memory_index.Output.Ok.Body.JsonPayload.GermanLevelPayload? = nil,
                             limit: Operations.Memory_index.Output.Ok.Body.JsonPayload.LimitPayload
@@ -20766,6 +20830,8 @@ public enum Operations {
                             self.personalisationCurrent = personalisationCurrent
                             self.facts = facts
                             self.taste = taste
+                            self.picks = picks
+                            self.pickKinds = pickKinds
                             self.situation = situation
                             self.germanLevel = germanLevel
                             self.limit = limit
@@ -20775,6 +20841,8 @@ public enum Operations {
                             case personalisationCurrent = "personalisation_current"
                             case facts
                             case taste
+                            case picks
+                            case pickKinds = "pick_kinds"
                             case situation
                             case germanLevel = "german_level"
                             case limit
@@ -26426,6 +26494,248 @@ public enum Operations {
             /// Unauthenticated
             ///
             /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/processing-restriction/put(paperwork.v2.people.processing-restriction)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Their picks as they are now. Refused (422) when personalisation isn't on under the wording
+    /// that names picks
+    ///
+    /// - Remark: HTTP `PUT /me/picks`.
+    /// - Remark: Generated from `#/paths//me/picks/put(picks.update)`.
+    public enum Picks_update {
+        public static let id: Swift.String = "picks.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/me/picks/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Picks_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.Picks_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.Picks_update.Input.Headers
+            /// - Remark: Generated from `#/paths/me/picks/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/me/picks/PUT/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/me/picks/PUT/requestBody/json/KindsPayload`.
+                    @frozen public enum KindsPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case music = "music"
+                        case stage = "stage"
+                        case tours = "tours"
+                        case festivals = "festivals"
+                        case kids = "kids"
+                        case party = "party"
+                        case sports = "sports"
+                        case meetPeople = "meet_people"
+                    }
+                    /// - Remark: Generated from `#/paths/me/picks/PUT/requestBody/json/kinds`.
+                    public typealias KindsPayload = [Operations.Picks_update.Input.Body.JsonPayload.KindsPayloadPayload]
+                    /// - Remark: Generated from `#/paths/me/picks/PUT/requestBody/json/kinds`.
+                    public var kinds: Operations.Picks_update.Input.Body.JsonPayload.KindsPayload
+                    /// - Remark: Generated from `#/paths/me/picks/PUT/requestBody/json/done`.
+                    public var done: Swift.Bool
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - kinds:
+                    ///   - done:
+                    public init(
+                        kinds: Operations.Picks_update.Input.Body.JsonPayload.KindsPayload,
+                        done: Swift.Bool
+                    ) {
+                        self.kinds = kinds
+                        self.done = done
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case kinds
+                        case done
+                    }
+                }
+                /// - Remark: Generated from `#/paths/me/picks/PUT/requestBody/content/application\/json`.
+                case json(Operations.Picks_update.Input.Body.JsonPayload)
+            }
+            public var body: Operations.Picks_update.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.Picks_update.Input.Headers = .init(),
+                body: Operations.Picks_update.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/me/picks/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/me/picks/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/me/picks/PUT/responses/200/content/json/picks`.
+                        public struct PicksPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/me/picks/PUT/responses/200/content/json/picks/kinds`.
+                            public var kinds: [Swift.String]
+                            /// - Remark: Generated from `#/paths/me/picks/PUT/responses/200/content/json/picks/done`.
+                            public var done: Swift.Bool
+                            /// Creates a new `PicksPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - kinds:
+                            ///   - done:
+                            public init(
+                                kinds: [Swift.String],
+                                done: Swift.Bool
+                            ) {
+                                self.kinds = kinds
+                                self.done = done
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case kinds
+                                case done
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/me/picks/PUT/responses/200/content/json/picks`.
+                        public var picks: Operations.Picks_update.Output.Ok.Body.JsonPayload.PicksPayload
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - picks:
+                        public init(picks: Operations.Picks_update.Output.Ok.Body.JsonPayload.PicksPayload) {
+                            self.picks = picks
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case picks
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/me/picks/PUT/responses/200/content/application\/json`.
+                    case json(Operations.Picks_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.Picks_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.Picks_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.Picks_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//me/picks/put(picks.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.Picks_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.Picks_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//me/picks/put(picks.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//me/picks/put(picks.update)/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Components.Responses.AuthenticationException)

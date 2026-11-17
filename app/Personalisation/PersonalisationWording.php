@@ -15,10 +15,12 @@ use App\Models\User;
  * 3 (owner, 29 Oct 2026, the consent canvas's board 1): the same, said in full on Settings ›
  *   Privacy (what it never uses, who puts it in order, 90 days), with their word that they're 16
  *   or older. The yes is kept with its date (AGREED_AT).
+ * 4 (owner, 17 Nov 2026: "wording ok"): also the kinds of event they pick themselves ("What would
+ *   you go to?", EventPicks), so Today has an order for them from day one.
  */
 final class PersonalisationWording
 {
-    public const CURRENT = 3;
+    public const CURRENT = 4;
 
     /** Where the version they agreed to is kept with their settings; set by the server, never by a request. */
     public const SETTING = 'personalisation_wording';

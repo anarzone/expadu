@@ -7099,6 +7099,47 @@
                                                 "signals"
                                             ]
                                         },
+                                        "picks": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "description": "The kinds of event they picked themselves; null when personalisation isn't on under the wording that names it.",
+                                            "properties": {
+                                                "kinds": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "done": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "kinds",
+                                                "done"
+                                            ]
+                                        },
+                                        "pick_kinds": {
+                                            "type": "array",
+                                            "description": "Every kind they can pick, in order.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "label": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key",
+                                                    "label"
+                                                ]
+                                            }
+                                        },
                                         "situation": {
                                             "type": [
                                                 "string",
@@ -7141,6 +7182,8 @@
                                         "personalisation_current",
                                         "facts",
                                         "taste",
+                                        "picks",
+                                        "pick_kinds",
                                         "situation",
                                         "german_level",
                                         "limit"
@@ -8763,6 +8806,93 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/me/picks": {
+            "put": {
+                "operationId": "picks.update",
+                "summary": "Their picks as they are now. Refused (422) when personalisation isn't on under the wording\nthat names picks",
+                "tags": [
+                    "Picks"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "kinds": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "music",
+                                                "stage",
+                                                "tours",
+                                                "festivals",
+                                                "kids",
+                                                "party",
+                                                "sports",
+                                                "meet_people"
+                                            ]
+                                        },
+                                        "maxItems": 8,
+                                        "uniqueItems": true
+                                    },
+                                    "done": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "kinds",
+                                    "done"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "picks": {
+                                            "type": "object",
+                                            "properties": {
+                                                "kinds": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "done": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "kinds",
+                                                "done"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "picks"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -13504,6 +13634,55 @@
                             "provider_version"
                         ]
                     },
+                    "picks": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "\"What would you go to?\" (EventPicks): ask while they haven't said Done or Not now; the kinds they picked; whether what they open already says more; each kind with how many are on still today. Null when personalisation isn't on under the wording that names it.",
+                        "properties": {
+                            "ask": {
+                                "type": "boolean"
+                            },
+                            "picked": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "learned": {
+                                "type": "boolean"
+                            },
+                            "kinds": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "key": {
+                                            "type": "string"
+                                        },
+                                        "label": {
+                                            "type": "string"
+                                        },
+                                        "today": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "key",
+                                        "label",
+                                        "today"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "ask",
+                            "picked",
+                            "learned",
+                            "kinds"
+                        ]
+                    },
                     "weather": {
                         "type": [
                             "object",
@@ -14933,6 +15112,7 @@
                     "personalised",
                     "day_line",
                     "rank_paused",
+                    "picks",
                     "weather",
                     "plans",
                     "links",
