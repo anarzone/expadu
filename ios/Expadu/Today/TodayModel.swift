@@ -68,7 +68,8 @@ final class TodayModel {
         }
         self.place = place
         do throws(APIFailure) {
-            var fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude)
+            // Their calendar's busy times only, if they turned it on (MyCalendar): never what's in it.
+            var fresh = try await api.today(latitude: place?.latitude, longitude: place?.longitude, busy: MyCalendar.shared.busyHeader())
             // A trip being started stays shown until the server answers for it.
             if let starting { fresh.trip = starting }
             // The island shows the trip the server has, before the guidance hears of it: one ended

@@ -242,6 +242,8 @@ struct KnowsView: View {
                     } else {
                         off(knows)
                     }
+                    // Its own switch, apart from personalisation: nothing of it is learned or kept.
+                    CalendarSection().padding(.top, 26)
                 } else if let problem = model.problem {
                     Text(problem).font(.geist(15)).foregroundStyle(Palette.conflictText).padding(.horizontal, 4).padding(.top, 10)
                     PaperworkButton(title: "Try again", quiet: true, small: true) { Task { await model.load(session.api) } }.padding(.top, 10)
