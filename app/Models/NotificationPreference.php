@@ -62,6 +62,23 @@ class NotificationPreference extends Model
         ];
     }
 
+    /**
+     * Save what changed: toggles merge into the saved ones, so one toggle never resets the rest.
+     *
+     * @param  array{preferences?: array<string, bool>, quiet_from?: string, quiet_to?: string, brief_at?: string|null}  $changes
+     * @return array{preferences: array<string, bool>, quiet_from: string, quiet_to: string, brief_at: string|null}
+     */
+    public static function saveFor(User $user, array $changes): array
+    {
+        $saved = $user->notificationPreference()->first()?->preferences ?? [];
+        $user->notificationPreference()->updateOrCreate(['user_id' => $user->id], [
+            'preferences' => Arr::except([...$saved, ...($changes['preferences'] ?? [])], self::RETIRED),
+            ...Arr::only($changes, ['quiet_from', 'quiet_to', 'brief_at']),
+        ]);
+
+        return self::stateFor($user);
+    }
+
     /** Whether a time (HH:MM) falls in quiet hours, which may run past midnight. */
     public static function inQuietHours(string $time, string $from, string $to): bool
     {
