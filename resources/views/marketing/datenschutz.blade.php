@@ -10,7 +10,7 @@
     <div class="wrap mk-hero__prose">
     <span class="eyebrow">Privacy</span>
     <h1><span lang="de">Datenschutzerklärung</span> / Privacy policy</h1>
-    <p class="meta">Last updated: 13 November 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
+    <p class="meta">Last updated: 17 November 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
     </div>
 @endsection
 
@@ -102,6 +102,27 @@
         TRIAS service. Requests can include starting-point and destination coordinates, search
         text, travel mode and requested departure or arrival times.
     </p>
+    <h3>The iPhone app</h3>
+    <p>
+        The Expadu app for iPhone uses the same account and the same data as the web app. You can
+        sign in with your e-mail address, with Google or with Apple. With Apple, we receive an
+        identifier from Apple and, if you choose to share it, your e-mail address (or Apple’s
+        private relay address). Legal basis: contract performance (Art. 6(1)(b) GDPR).
+    </p>
+    <p>
+        If you allow location access on your iPhone (while using the app), the app sends your
+        position with the requests that need it: departures near you, routes, and when to leave.
+        It is used for that request only. A trip you start keeps where it started for at most
+        24 hours.
+    </p>
+    <p>
+        While a trip you started is running, the app keeps following your position on the iPhone,
+        even with the screen off; iOS shows this in the status bar. It uses it to tell you where to
+        get off and when a change is at risk. Your position stays on the phone: to work out which
+        tram you’re on, only the stop you left and the time you left it are sent to our server,
+        and they are not kept after the trip.
+    </p>
+
     <h3>Notifications</h3>
     <p>
         The app sends you notices you asked for (an event reminder, when to leave for a trip you
@@ -116,6 +137,16 @@
         or your browser; turning it off in the app deletes the subscription. Legal basis: contract
         performance (Art. 6(1)(b) GDPR), and for push your consent in the browser (Art. 6(1)(a)
         GDPR).
+    </p>
+    <p>
+        On the iPhone, Expadu uses no push service. When you open the app, it asks our server what
+        needs telling in the next 36 hours, and your iPhone schedules those notifications itself:
+        when to leave for a trip you set a reminder on or for a routine you confirmed, an event you
+        asked to be reminded of, a change to something you planned, and the morning brief if you
+        keep it on. A change after you last opened the app (a cancelled tram) reaches you the next
+        time you open it. Which kinds you get, and your quiet hours, are set in the app; whether
+        Expadu may notify you at all is set in your iPhone’s Settings. Legal basis: contract
+        performance (Art. 6(1)(b) GDPR), and your permission on the iPhone.
     </p>
     <p>
         When you open a map, your browser loads map styles and tiles directly from OpenFreeMap.
@@ -226,6 +257,43 @@
         again.
     </p>
 
+    <h3>What Composer remembers</h3>
+    <p>
+        With personalisation on, you can tell Composer something lasting about yourself, such as
+        “I’m vegetarian” or “we have a three-year-old”, or add it yourself on “What Expadu knows”.
+        It is kept under a pseudonymous key. With each message you send Composer, what it
+        remembers about you, what you tend to like and skip, and your situation and German level
+        are sent to Anthropic (Claude Haiku) so its answers fit you; an answer that relied on
+        something you told it says so. Expadu never keeps anything about health, religion or
+        beliefs, sexuality, politics or union membership: Composer refuses to remember it, and so
+        does the screen. You see everything on “What Expadu knows”, can change or forget any of it
+        there, and turning personalisation off erases all of it. Legal basis: your consent
+        (Art. 6(1)(a) GDPR), given when you turn personalisation on, and again with each Composer
+        message.
+    </p>
+
+    <h3>Routines (opt-in)</h3>
+    <p>
+        You can let Expadu learn your routines from the trips you start in the app. This is a
+        separate choice from personalisation: it is off unless you turn it on, and it needs
+        personalisation on. With it on, for each trip you start we keep where it went (the place’s
+        name, or “Home” or “Work”), whether it set off from your Home or Work and nothing else about
+        where it started, and when. Trips to health services, places of worship and LGBTQ+ venues
+        are never kept. Trips are kept under a pseudonymous key for 90 days. When the same trip
+        comes up three times in three weeks at about the same time, the app offers it as a routine
+        (“You often go to Work around 08:10”); it never sets one up without your yes. A routine you
+        confirm tells you when to leave, and you can change, pause or forget it. Turning routine
+        learning off erases the trips and routines kept for it. Legal basis: your consent
+        (Art. 6(1)(a) GDPR).
+    </p>
+
+    <h3>Today’s line about your day</h3>
+    <p>
+        The line under the date on Today is written by our own code from what is on your day: your
+        plans, appointments and trips, or what’s on in the city. No AI writes it, and nothing is
+        sent to anyone for it.
+    </p>
+
     <h3>“Good for laptop work?” answers</h3>
     <p>
         On a place you marked Been there or Saved, you can answer whether it is good for laptop
@@ -245,7 +313,11 @@
         ask us to. An account whose e-mail address is never verified is deleted after 30 days; a
         week before, we send one reminder to that address. Waitlist entries are kept until you
         withdraw or until the launch notification has been sent; an entry that is never confirmed
-        is deleted after 7 days. Location data expires automatically as described above. Server
+        is deleted after 7 days. Location data expires automatically as described above. What
+        Composer remembers is kept until you forget it, turn personalisation off or delete your
+        account. Trips kept for routines are deleted after 90 days and routines when you forget
+        them; both are erased when you turn routine learning or personalisation off. Notifications
+        on the iPhone are scheduled on your phone only, and signing out removes them. Server
         logs rotate on a short schedule; the security log is kept for 90 days.
     </p>
 
