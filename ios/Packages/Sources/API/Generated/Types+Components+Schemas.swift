@@ -4755,6 +4755,45 @@ extension Components {
                 case replace
             }
         }
+        /// What changed in their notifications, from the web's Settings or the iPhone: toggles merge into the
+        /// saved ones (one toggle never resets the rest), quiet hours start and end at different times, and a
+        /// set brief time falls outside them, or it would wait until they end.
+        ///
+        /// - Remark: Generated from `#/components/schemas/UpdateNotificationPreferencesRequest`.
+        public struct UpdateNotificationPreferencesRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/UpdateNotificationPreferencesRequest/preferences`.
+            public var preferences: [Swift.Bool]?
+            /// - Remark: Generated from `#/components/schemas/UpdateNotificationPreferencesRequest/quiet_from`.
+            public var quietFrom: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/UpdateNotificationPreferencesRequest/quiet_to`.
+            public var quietTo: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/UpdateNotificationPreferencesRequest/brief_at`.
+            public var briefAt: Swift.String?
+            /// Creates a new `UpdateNotificationPreferencesRequest`.
+            ///
+            /// - Parameters:
+            ///   - preferences:
+            ///   - quietFrom:
+            ///   - quietTo:
+            ///   - briefAt:
+            public init(
+                preferences: [Swift.Bool]? = nil,
+                quietFrom: Swift.String? = nil,
+                quietTo: Swift.String? = nil,
+                briefAt: Swift.String? = nil
+            ) {
+                self.preferences = preferences
+                self.quietFrom = quietFrom
+                self.quietTo = quietTo
+                self.briefAt = briefAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case preferences
+                case quietFrom = "quiet_from"
+                case quietTo = "quiet_to"
+                case briefAt = "brief_at"
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/UserResource`.
         public struct UserResource: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/UserResource/name`.

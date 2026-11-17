@@ -22047,6 +22047,453 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /notifications/settings`.
+    /// - Remark: Generated from `#/paths//notifications/settings/get(notificationSettings.show)`.
+    public enum NotificationSettings_show {
+        public static let id: Swift.String = "notificationSettings.show"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/notifications/settings/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.NotificationSettings_show.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.NotificationSettings_show.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.NotificationSettings_show.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.NotificationSettings_show.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/notifications/settings/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/notifications/settings/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// Each kind on or off: transit, events, weather, brief and the rest.
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/GET/responses/200/content/json/preferences`.
+                        public struct PreferencesPayload: Codable, Hashable, Sendable {
+                            /// A container of undocumented properties.
+                            public var additionalProperties: [String: Swift.Bool]
+                            /// Creates a new `PreferencesPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - additionalProperties: A container of undocumented properties.
+                            public init(additionalProperties: [String: Swift.Bool] = .init()) {
+                                self.additionalProperties = additionalProperties
+                            }
+                            public init(from decoder: any Swift.Decoder) throws {
+                                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                            }
+                            public func encode(to encoder: any Swift.Encoder) throws {
+                                try encoder.encodeAdditionalProperties(additionalProperties)
+                            }
+                        }
+                        /// Each kind on or off: transit, events, weather, brief and the rest.
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/GET/responses/200/content/json/preferences`.
+                        public var preferences: Operations.NotificationSettings_show.Output.Ok.Body.JsonPayload.PreferencesPayload
+                        /// Quiet hours start (HH:MM); they may run past midnight.
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/GET/responses/200/content/json/quiet_from`.
+                        public var quietFrom: Swift.String
+                        /// Quiet hours end (HH:MM).
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/GET/responses/200/content/json/quiet_to`.
+                        public var quietTo: Swift.String
+                        /// When the morning brief comes (HH:MM); null: before their first thing of the day.
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/GET/responses/200/content/json/brief_at`.
+                        public var briefAt: Swift.String?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - preferences: Each kind on or off: transit, events, weather, brief and the rest.
+                        ///   - quietFrom: Quiet hours start (HH:MM); they may run past midnight.
+                        ///   - quietTo: Quiet hours end (HH:MM).
+                        ///   - briefAt: When the morning brief comes (HH:MM); null: before their first thing of the day.
+                        public init(
+                            preferences: Operations.NotificationSettings_show.Output.Ok.Body.JsonPayload.PreferencesPayload,
+                            quietFrom: Swift.String,
+                            quietTo: Swift.String,
+                            briefAt: Swift.String? = nil
+                        ) {
+                            self.preferences = preferences
+                            self.quietFrom = quietFrom
+                            self.quietTo = quietTo
+                            self.briefAt = briefAt
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case preferences
+                            case quietFrom = "quiet_from"
+                            case quietTo = "quiet_to"
+                            case briefAt = "brief_at"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/notifications/settings/GET/responses/200/content/application\/json`.
+                    case json(Operations.NotificationSettings_show.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.NotificationSettings_show.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.NotificationSettings_show.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.NotificationSettings_show.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//notifications/settings/get(notificationSettings.show)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.NotificationSettings_show.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.NotificationSettings_show.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//notifications/settings/get(notificationSettings.show)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Change some: a kind turned on or off keeps the others as they were
+    ///
+    /// - Remark: HTTP `PUT /notifications/settings`.
+    /// - Remark: Generated from `#/paths//notifications/settings/put(notificationSettings.update)`.
+    public enum NotificationSettings_update {
+        public static let id: Swift.String = "notificationSettings.update"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/notifications/settings/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.NotificationSettings_update.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.NotificationSettings_update.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.NotificationSettings_update.Input.Headers
+            /// - Remark: Generated from `#/paths/notifications/settings/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/notifications/settings/PUT/requestBody/content/application\/json`.
+                case json(Components.Schemas.UpdateNotificationPreferencesRequest)
+            }
+            public var body: Operations.NotificationSettings_update.Input.Body?
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.NotificationSettings_update.Input.Headers = .init(),
+                body: Operations.NotificationSettings_update.Input.Body? = nil
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/notifications/settings/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/notifications/settings/PUT/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// Each kind on or off: transit, events, weather, brief and the rest.
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/PUT/responses/200/content/json/preferences`.
+                        public struct PreferencesPayload: Codable, Hashable, Sendable {
+                            /// A container of undocumented properties.
+                            public var additionalProperties: [String: Swift.Bool]
+                            /// Creates a new `PreferencesPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - additionalProperties: A container of undocumented properties.
+                            public init(additionalProperties: [String: Swift.Bool] = .init()) {
+                                self.additionalProperties = additionalProperties
+                            }
+                            public init(from decoder: any Swift.Decoder) throws {
+                                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                            }
+                            public func encode(to encoder: any Swift.Encoder) throws {
+                                try encoder.encodeAdditionalProperties(additionalProperties)
+                            }
+                        }
+                        /// Each kind on or off: transit, events, weather, brief and the rest.
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/PUT/responses/200/content/json/preferences`.
+                        public var preferences: Operations.NotificationSettings_update.Output.Ok.Body.JsonPayload.PreferencesPayload
+                        /// Quiet hours start (HH:MM); they may run past midnight.
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/PUT/responses/200/content/json/quiet_from`.
+                        public var quietFrom: Swift.String
+                        /// Quiet hours end (HH:MM).
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/PUT/responses/200/content/json/quiet_to`.
+                        public var quietTo: Swift.String
+                        /// When the morning brief comes (HH:MM); null: before their first thing of the day.
+                        ///
+                        /// - Remark: Generated from `#/paths/notifications/settings/PUT/responses/200/content/json/brief_at`.
+                        public var briefAt: Swift.String?
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - preferences: Each kind on or off: transit, events, weather, brief and the rest.
+                        ///   - quietFrom: Quiet hours start (HH:MM); they may run past midnight.
+                        ///   - quietTo: Quiet hours end (HH:MM).
+                        ///   - briefAt: When the morning brief comes (HH:MM); null: before their first thing of the day.
+                        public init(
+                            preferences: Operations.NotificationSettings_update.Output.Ok.Body.JsonPayload.PreferencesPayload,
+                            quietFrom: Swift.String,
+                            quietTo: Swift.String,
+                            briefAt: Swift.String? = nil
+                        ) {
+                            self.preferences = preferences
+                            self.quietFrom = quietFrom
+                            self.quietTo = quietTo
+                            self.briefAt = briefAt
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case preferences
+                            case quietFrom = "quiet_from"
+                            case quietTo = "quiet_to"
+                            case briefAt = "brief_at"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/notifications/settings/PUT/responses/200/content/application\/json`.
+                    case json(Operations.NotificationSettings_update.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.NotificationSettings_update.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.NotificationSettings_update.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.NotificationSettings_update.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//notifications/settings/put(notificationSettings.update)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.NotificationSettings_update.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.NotificationSettings_update.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//notifications/settings/put(notificationSettings.update)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//notifications/settings/put(notificationSettings.update)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authorization error
+            ///
+            /// - Remark: Generated from `#/paths//notifications/settings/put(notificationSettings.update)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.AuthorizationException)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.AuthorizationException {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `GET /paperwork/v2/people/{person}/onboarding/draft`.
     /// - Remark: Generated from `#/paths//paperwork/v2/people/{person}/onboarding/draft/get(paperwork.v2.onboarding.draft.show)`.
     public enum Paperwork_v2_onboarding_draft_show {
