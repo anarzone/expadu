@@ -222,7 +222,10 @@ struct ShellView: View {
                 .presentationBackground(.clear)
         }
         // What Expadu knows, from the account menu, Composer's Remembered card or Today's How we rank.
-        .fullScreenCover(isPresented: $pages.knows) {
+        .fullScreenCover(isPresented: $pages.knows, onDismiss: {
+            // Turned on or off, picks changed: Today as it now is.
+            Task { await today.load(session.api, quietly: true, animated: Motion.spring) }
+        }) {
             KnowsView()
                 // Your routines on it are Today's.
                 .environment(today)

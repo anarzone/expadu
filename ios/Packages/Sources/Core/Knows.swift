@@ -12,6 +12,20 @@ public struct Knows: Equatable, Sendable, Decodable {
     public var situation: String?
     public var germanLevel: String?
     public var limit: Int
+    /// The kinds of event they picked themselves; nil when personalisation isn't on under its wording.
+    public var picks: Picks?
+    /// Every kind they can pick, in order.
+    public var pickKinds: [PickKind] = []
+
+    public struct Picks: Equatable, Sendable, Decodable {
+        public var kinds: [String]
+        public var done: Bool
+    }
+
+    public struct PickKind: Equatable, Sendable, Decodable, Hashable {
+        public var key: String
+        public var label: String
+    }
 
     public struct Fact: Identifiable, Equatable, Sendable, Codable {
         public var id: Int
@@ -43,7 +57,20 @@ public struct Knows: Equatable, Sendable, Decodable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case personalised, current = "personalisation_current", facts, taste, situation, germanLevel = "german_level", limit
+        case personalised, current = "personalisation_current", facts, taste, situation, germanLevel = "german_level", limit, picks, pickKinds = "pick_kinds"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        personalised = try c.decode(Bool.self, forKey: .personalised)
+        current = try c.decode(Bool.self, forKey: .current)
+        facts = try c.decode([Fact].self, forKey: .facts)
+        taste = try c.decodeIfPresent(Taste.self, forKey: .taste)
+        situation = try c.decodeIfPresent(String.self, forKey: .situation)
+        germanLevel = try c.decodeIfPresent(String.self, forKey: .germanLevel)
+        limit = try c.decode(Int.self, forKey: .limit)
+        picks = try c.decodeIfPresent(Picks.self, forKey: .picks)
+        pickKinds = try c.decodeIfPresent([PickKind].self, forKey: .pickKinds) ?? []
     }
 
     public init(personalised: Bool, current: Bool, facts: [Fact], taste: Taste?, situation: String?, germanLevel: String?, limit: Int) {

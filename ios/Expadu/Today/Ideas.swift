@@ -31,6 +31,9 @@ struct Ideas: View {
                 PausedLine(pause: pause, sheet: $sheet).padding(.top, 10)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
+            if let picks = page.picks {
+                PicksPlace(picks: picks)
+            }
             VStack(spacing: 0) {
                 ForEach(Array(model.shownIdeas.prefix(4).enumerated()), id: \.element.id) { index, idea in
                     if index > 0 { Divider().overlay(Palette.border) }
