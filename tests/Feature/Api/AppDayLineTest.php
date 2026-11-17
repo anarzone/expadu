@@ -64,6 +64,16 @@ test('a free day names when the city\'s next event starts, never how many: Today
     expect(app(DayLine::class)->for($this->user, CarbonImmutable::now())['text'])->toBe('Nothing planned. The next event is at 14:00.');
 });
 
+test('a risk to a stop of their plan names the stop, so the plan isn\'t said again after it', function () {
+    $rain = ['kind' => 'plan_rain', 'text' => 'Rain from 18:00 during Stadtgarten walk (17:30–18:30), outdoors.'];
+    $plan = ['kind' => 'plan', 'text' => 'Your plan: 1 stop from 17:30, first Stadtgarten walk.'];
+    $trip = ['kind' => 'trip', 'text' => '08:12 leave for Bürgeramt Kalk.'];
+
+    expect(DayLine::said([$rain, $trip, $plan]))->toBe([$rain, $trip])
+        // With nothing at risk, the plan is said.
+        ->and(DayLine::said([$trip, $plan]))->toBe([$trip, $plan]);
+});
+
 test('a line is cut into pieces with each time its own', function () {
     expect(DayLine::parts('Rain from 16:00. Your walk at 17:30 is outdoors.'))->toBe([
         ['text' => 'Rain from ', 'strong' => false], ['text' => '16:00', 'strong' => true], ['text' => '. Your walk at ', 'strong' => false],
