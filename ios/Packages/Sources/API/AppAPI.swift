@@ -727,6 +727,35 @@ public struct AppAPI: Sendable {
         }
     }
 
+    // MARK: Notification settings
+
+    /// Which kinds of notification they get, quiet hours and the brief's time.
+    public func notificationSettings() async throws(APIFailure) -> NotificationSettings {
+        let raw = try await composer("GET", "notifications/settings")
+        guard raw.status == 200, let settings = Self.notificationSettings(raw.data) else { throw raw.status == 401 ? .signedOut : failure(raw.status) }
+        return settings
+    }
+
+    /// One change: a kind turned on or off keeps the others.
+    public func saveNotificationSettings(_ change: NotificationSettings.Change) async throws(APIFailure) -> NotificationSettings {
+        let body: [String: Any] = switch change {
+        case let .kind(kind, on): ["preferences": [kind: on]]
+        case let .quietFrom(at): ["quiet_from": at]
+        case let .quietTo(at): ["quiet_to": at]
+        case let .briefAt(at): ["brief_at": at ?? NSNull()]
+        }
+        let raw = try await composer("PUT", "notifications/settings", body)
+        guard raw.status == 200, let settings = Self.notificationSettings(raw.data) else { throw Self.refusal(raw) ?? failure(raw.status) }
+        return settings
+    }
+
+    private static func notificationSettings(_ data: Data) -> NotificationSettings? {
+        guard let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let from = json["quiet_from"] as? String, let to = json["quiet_to"] as? String else { return nil }
+        let preferences = (json["preferences"] as? [String: Any] ?? [:]).compactMapValues { $0 as? Bool }
+        return NotificationSettings(preferences: preferences, quietFrom: from, quietTo: to, briefAt: json["brief_at"] as? String)
+    }
+
     // MARK: What Expadu knows
 
     /// Everything Expadu knows about them.

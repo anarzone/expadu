@@ -227,6 +227,12 @@ struct ShellView: View {
                 // Clear, so the page it opened over shows while it's swiped back (it draws its own).
                 .presentationBackground(.clear)
         }
+        // Settings › Notifications, from the account menu.
+        .fullScreenCover(isPresented: $pages.notifications) {
+            NotificationsView()
+                .presentationBackground(.clear)
+        }
+
         // Started: felt as the trip opens (the routes behind it close in the same moment, so it lives here).
         .sensoryFeedback(.success, trigger: planner.started)
         .fullScreenCover(isPresented: Binding(get: { planner.showTrip && today.page?.trip != nil }, set: { planner.showTrip = $0 })) {
@@ -615,6 +621,7 @@ struct AccountButton: View {
         Menu {
             Text(session.email)
             Button("What Expadu knows", systemImage: "person.text.rectangle") { pages.openKnows() }
+            Button("Notifications", systemImage: "bell") { pages.openNotifications() }
             Divider()
             Button("Sign out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { Task { await session.signOut() } }
         } label: {
