@@ -38,6 +38,8 @@ return [
         'saved' => ['weight' => 3.0, 'taste' => true],
         'get_there' => ['weight' => 3.0, 'taste' => true],
         'plan_kept_unedited' => ['weight' => 2.0, 'taste' => true],
+        // Added to their own plan: chosen for a time of their day, as strong as a save.
+        'added_to_plan' => ['weight' => 3.0, 'taste' => true],
         'shared' => ['weight' => 2.0, 'taste' => true],
         'detail_viewed' => ['weight' => 1.0, 'taste' => true],
         // "−2 for that place in that context": a place negative, not a taste.

@@ -6,11 +6,14 @@ use App\Models\ComposerTrace;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
 use App\Personalisation\SignalAction;
+use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
+use App\Personalisation\SignalSurface;
 use App\Places\PlaceIdentity;
 use App\Services\CologneServiceArea;
 use App\Services\GeocodingService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -313,9 +316,9 @@ class WorkspaceStore
     /**
      * @return array<string, mixed> the projected workspace, with `refusal` set when the change could not go in
      */
-    public function command(User $user, array $input): array
+    public function command(User $user, array $input, SignalSurface $surface = SignalSurface::Composer): array
     {
-        return DB::transaction(function () use ($user, $input): array {
+        return DB::transaction(function () use ($user, $input, $surface): array {
             User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
             $row = ComposerWorkspace::query()->firstOrCreate(['user_id' => $user->id], ['state' => $this->initial()]);
             abort_if($row->revision !== $input['revision'], 409, 'Your plan changed in another tab. The latest version has been loaded; review it before trying again.');
@@ -328,7 +331,9 @@ class WorkspaceStore
                 return $this->projectState($this->state($row)) + ['revision' => $row->revision,
                     'refusal' => ['code' => $error->reason, 'message' => $error->getMessage()]];
             }
+            $before = $this->state($row)['plans'] ?? [];
             $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+            $this->learnFromPlans($user, (string) $input['action'], $before, $s['plans'] ?? [], $surface);
             if ($displaced !== null) {
                 app(TasteSignals::class)->swappedAway($user, $displaced);
                 app(SignalRecorder::class)->planSlots($user, SignalAction::StopSwappedOut, [$displaced]);
@@ -339,6 +344,34 @@ class WorkspaceStore
 
             return $this->projectState($s) + ['revision' => $row->revision, 'refusal' => null];
         });
+    }
+
+    /**
+     * What a change to their plans says about them: an event or place they added is their choice
+     * (AddedToPlan, like a save); an Undo of that add takes it back. Personalisation off, or a
+     * sensitive item, records nothing (SignalRecorder).
+     *
+     * @param  array<string, array<string, mixed>>  $before
+     * @param  array<string, array<string, mixed>>  $after
+     */
+    private function learnFromPlans(User $user, string $action, array $before, array $after, SignalSurface $surface): void
+    {
+        if (! in_array($action, ['add', 'undo'], true)) {
+            return;
+        }
+        $slots = fn (array $plans): Collection => collect($plans)->flatMap(fn ($plan): array => (array) ($plan['slots'] ?? []))
+            ->filter(fn ($slot): bool => SignalItemType::parse($slot['id'] ?? null) !== null)->keyBy('id');
+        [$was, $now] = [$slots($before), $slots($after)];
+        $recorder = app(SignalRecorder::class);
+        if ($action === 'add') {
+            $recorder->planSlots($user, SignalAction::AddedToPlan, $now->diffKeys($was)->values()->all(), surface: $surface);
+
+            return;
+        }
+        foreach ($was->diffKeys($now)->keys() as $id) {
+            [$type, $item] = SignalItemType::parse($id);
+            $recorder->addTakenBack($user, $type, $item);
+        }
     }
 
     /**

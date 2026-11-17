@@ -20,6 +20,9 @@ struct EventDetail: View {
     @Environment(Session.self) private var session
     @Environment(TripPlanner.self) private var planner
     @Environment(TodayModel.self) private var today
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var readSince: Date?
+    @State private var readSeconds = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The title in a bar once the poster has scrolled away (.wd.bar).
     @State private var bar = false
@@ -117,7 +120,25 @@ struct EventDetail: View {
                 }
         }
         .task { if plan == nil { await replan() } }
+        // Read for 10 seconds or more: what they opened is learned (with personalisation on). The
+        // clock stops while the app is away.
+        .onAppear { readSince = .now }
+        .onDisappear { reported() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { readSince = readSince ?? .now } else { readSeconds += readSince.map { Int(Date.now.timeIntervalSince($0)) } ?? 0; readSince = nil }
+        }
         .sheet(isPresented: $listingOpen) { if let source = listing.source { SafariView(url: source).ignoresSafeArea() } }
+    }
+
+    /// The time it was read, sent once as it closes.
+    private func reported() {
+        let seconds = readSeconds + (readSince.map { Int(Date.now.timeIntervalSince($0)) } ?? 0)
+        readSince = nil
+        readSeconds = 0
+        guard seconds >= 10 else { return }
+        let api = session.api
+        let id = idea.id
+        Task { try? await api.send([Signal(action: .detailViewed, event: id, surface: .eventSheet, seconds: min(seconds, 86_400))]) }
     }
 
     // MARK: Top

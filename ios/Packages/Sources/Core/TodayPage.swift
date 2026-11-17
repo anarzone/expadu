@@ -1215,17 +1215,25 @@ public struct DayChange: Equatable, Sendable {
     }
 }
 
-/// What only the app sees, for personalisation: an idea shown at a place in the list, or turned down.
+/// What only the app sees, for personalisation: an idea shown at a place in the list, an event read
+/// (10 seconds or more), or one turned down; and where it happened.
 public struct Signal: Equatable, Sendable {
-    public enum Action: String, Sendable { case impression, notForMe = "not_for_me", lessLikeThis = "less_like_this" }
+    public enum Action: String, Sendable { case impression, detailViewed = "detail_viewed", notForMe = "not_for_me", lessLikeThis = "less_like_this" }
+    /// Where: Today's ideas, What's on's list, or an event's own page.
+    public enum Surface: String, Sendable { case today, events, eventSheet = "event_sheet" }
 
     public let action: Action
     public let event: Int
     public let position: Int?
+    public let surface: Surface
+    /// How long it was read, for detailViewed only.
+    public let seconds: Int?
 
-    public init(action: Action, event: Int, position: Int? = nil) {
+    public init(action: Action, event: Int, position: Int? = nil, surface: Surface = .today, seconds: Int? = nil) {
         self.action = action
         self.event = event
         self.position = position
+        self.surface = surface
+        self.seconds = seconds
     }
 }
