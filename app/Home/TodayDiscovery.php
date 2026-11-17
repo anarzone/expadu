@@ -12,6 +12,7 @@ use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Affinities;
 use App\Personalisation\EventPicks;
+use App\Personalisation\Interleaving;
 use App\Personalisation\ListImpressions;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\TasteFacts;
@@ -169,7 +170,17 @@ final class TodayDiscovery
                 $whys += isset($event['why']) ? 1 : 0;
 
                 return $event;
-            })
+            });
+        // Does the order help? Theirs and the usual one drafted into one list (Interleaving),
+        // each idea with the order that put it there; the same for them all day.
+        $draft = Interleaving::on($user)
+            ? Interleaving::draft($candidates->map($eventKey)->all(), $listed->map($eventKey)->all(), Interleaving::seed($user, $now->toDateString()))
+            : null;
+        if ($draft !== null) {
+            $byKey = $listed->keyBy($eventKey);
+            $listed = collect($draft)->map(fn (array $pick) => [...$byKey[$pick['key']], 'team' => $pick['team']]);
+        }
+        $listed = $listed
             ->map(fn (array $event, int $index) => [...$event, 'layout' => match (true) {
                 $index < 2 => 'poster',
                 $index < 5 => 'compact',
@@ -183,8 +194,11 @@ final class TodayDiscovery
         if ($shown) {
             [$policy, $version] = $order === null ? ['rule', self::RULES] : ['haiku', (string) ($order['version'] ?? TodayRanker::VERSION)];
             $version .= $leanings === null ? '' : '+'.self::ARRANGED;
-            $this->impressions->record($user, 'today_events', $now, $policy, $version, $candidates->map($eventKey)->all(),
-                $listed->map(fn (array $event) => ['key' => $eventKey($event), 'layout' => $event['layout'], ...(isset($event['new_for_you']) ? ['pick' => 'new'] : [])])->all());
+            // Drafted from two: the usual order (always RULES) against theirs, each idea with its
+            // order; the version says theirs, "r " for the rules', "h " for the AI's.
+            [$eventsPolicy, $eventsVersion] = $draft === null ? [$policy, $version] : ['interleave', ($policy === 'haiku' ? 'h ' : 'r ').$version];
+            $this->impressions->record($user, 'today_events', $now, $eventsPolicy, $eventsVersion, $candidates->map($eventKey)->all(),
+                $listed->map(fn (array $event) => ['key' => $eventKey($event), 'layout' => $event['layout'], ...(isset($event['new_for_you']) ? ['pick' => 'new'] : []), ...(isset($event['team']) ? ['team' => $event['team']] : [])])->all());
             $this->impressions->record($user, 'today_places', $now, $policy, $version, $places->map($placeKey)->all(),
                 collect($around['places'] ?? [])->map(fn (array $place) => ['key' => $placeKey($place)])->all());
         }
@@ -195,7 +209,8 @@ final class TodayDiscovery
             // A free day's heading (Today decides it's free): "Ideas for
             // this afternoon", or "for tomorrow" when that's all there is.
             'part' => $onlyTomorrow ? 'tomorrow' : ($now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening')),
-            'events' => $listed->all(),
+            // Which order put an idea there is never shown.
+            'events' => $listed->map(fn (array $event) => array_diff_key($event, ['team' => true]))->all(),
             'around' => $around,
             // How many of each kind are still on today, for the kinds they can pick (EventPicks).
             'today' => $events->reject(fn (array $event) => isset($event['day']))

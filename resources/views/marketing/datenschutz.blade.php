@@ -270,7 +270,10 @@
         turned personalisation on, how often the ideas Today showed were opened, saved or added
         to a plan, by where they stood and why. Only these weekly totals are kept, never
         anything about one person, and they are worked out from the records described above,
-        which are deleted as described there (Art. 6(1)(a) GDPR).
+        which are deleted as described there (Art. 6(1)(a) GDPR). While we check, Today may show
+        its ideas as a mix of its usual order and your personal order of the same ideas, to see
+        which one's ideas people open more; which order an idea came from is kept with the list
+        shown and deleted with it.
     </p>
 
     <h3>What Composer remembers</h3>

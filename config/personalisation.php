@@ -59,6 +59,11 @@ return [
 
     // "Shown 3 times, never touched": −0.3, once, from the third showing.
     // Impressions of one item within a showing window count as one showing.
+    // Does the order help? Today's ideas drafted from the usual order and theirs (Interleaving),
+    // counted weekly by opens (WeeklyMeasure). Off until enough people have personalisation on
+    // (owner, 17 Nov 2026: "two orders, opens only, build it now").
+    'interleave' => (bool) env('PERSONALISATION_INTERLEAVE', false),
+
     'ignored_impressions' => [
         'showings' => 3,
         'weight' => -0.3,

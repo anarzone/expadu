@@ -71,6 +71,8 @@ final class WeeklyMeasure
             'picked_kind' => $blank(),
             'policies' => [],
         ];
+        // Drafted lists (Interleaving): each person's opens by the order that put the idea there, by day.
+        $teams = [];
 
         foreach ($seen as $row) {
             $date = $day($row->created_at);
@@ -101,6 +103,9 @@ final class WeeklyMeasure
             $shown = json_decode($list->shown, true) ?: [];
             $baseline = json_decode($list->baseline, true) ?: [];
             $entry = collect($shown)->first(fn (array $item) => str_starts_with((string) ($item['key'] ?? ''), 'e'.$row->item_id.'@'));
+            if (isset($entry['team'])) {
+                $teams[$row->subject_key][$date][$entry['team']] = ($teams[$row->subject_key][$date][$entry['team']] ?? 0) + ($done->contains('opened') ? 1 : 0);
+            }
             if (($entry['pick'] ?? null) === 'new') {
                 $report['new_for_you'] = $add($report['new_for_you']);
             }
@@ -126,7 +131,70 @@ final class WeeklyMeasure
                 ? 'Counts only, not a test: an idea the usual order would have shown but the arrangement pushed out of view could never be tapped, so this favours the arrangement.'
                 : "Too few to say: {$people} ".($people === 1 ? 'person' : 'people').' this week; it needs '.self::ENOUGH_PEOPLE.' or more.',
             ...$report,
+            'interleaving' => $this->votes($teams),
         ];
+    }
+
+    /**
+     * One vote each: a day goes to the order whose ideas they opened more (level, or no opens: no
+     * day); the person to the order that won more days (level: no vote). With enough votes, an
+     * exact sign test says whether one order is preferred more than chance would give.
+     *
+     * @param  array<string, array<string, array<string, int>>>  $teams
+     * @return array<string, mixed>
+     */
+    private function votes(array $teams): array
+    {
+        $votes = [Interleaving::YOURS => 0, Interleaving::USUAL => 0, 'level' => 0];
+        foreach ($teams as $days) {
+            $won = [Interleaving::YOURS => 0, Interleaving::USUAL => 0];
+            foreach ($days as $opens) {
+                $yours = $opens[Interleaving::YOURS] ?? 0;
+                $usual = $opens[Interleaving::USUAL] ?? 0;
+                if ($yours !== $usual) {
+                    $won[$yours > $usual ? Interleaving::YOURS : Interleaving::USUAL]++;
+                }
+            }
+            $votes[$won[Interleaving::YOURS] === $won[Interleaving::USUAL] ? 'level' : ($won[Interleaving::YOURS] > $won[Interleaving::USUAL] ? Interleaving::YOURS : Interleaving::USUAL)]++;
+        }
+        $n = $votes[Interleaving::YOURS] + $votes[Interleaving::USUAL];
+        $p = $n === 0 ? null : self::signTest($n, max($votes[Interleaving::YOURS], $votes[Interleaving::USUAL]));
+        $lead = $votes[Interleaving::YOURS] >= $votes[Interleaving::USUAL] ? 'their own order' : 'the usual order';
+
+        return [
+            'people' => count($teams),
+            'prefer_theirs' => $votes[Interleaving::YOURS],
+            'prefer_usual' => $votes[Interleaving::USUAL],
+            'level' => $votes['level'],
+            'p' => $p === null ? null : round($p, 4),
+            'says' => match (true) {
+                $teams === [] => 'Not running: no drafted lists this week.',
+                $n < self::ENOUGH_PEOPLE => "Too few to say: {$n} ".($n === 1 ? 'vote' : 'votes').' this week; it needs '.self::ENOUGH_PEOPLE.' or more.',
+                $p < 0.05 => "People prefer {$lead}: {$votes[Interleaving::YOURS]} to {$votes[Interleaving::USUAL]} (sign test, p = ".round($p, 3).').',
+                default => "No clear preference yet: {$votes[Interleaving::YOURS]} for their own order, {$votes[Interleaving::USUAL]} for the usual one.",
+            },
+        ];
+    }
+
+    /** Two-sided exact sign test: the chance of a split at least this uneven if neither order were preferred. */
+    private static function signTest(int $n, int $k): float
+    {
+        $tail = 0.0;
+        for ($i = $k; $i <= $n; $i++) {
+            $tail += exp(self::lnChoose($n, $i) - $n * log(2));
+        }
+
+        return min(1.0, 2 * $tail);
+    }
+
+    private static function lnChoose(int $n, int $k): float
+    {
+        $sum = 0.0;
+        for ($i = 1; $i <= $k; $i++) {
+            $sum += log($n - $k + $i) - log($i);
+        }
+
+        return $sum;
     }
 
     /** The person's latest Today list first seen at or before the idea was. */
