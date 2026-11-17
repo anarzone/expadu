@@ -8,12 +8,20 @@ import SwiftUI
 final class Pages {
     /// What Expadu knows about you.
     var knows = false
+    /// Settings › Notifications.
+    var notifications = false
 
     /// Opens it as iOS pushes a page: no rise from the bottom; the page slides in from the right itself.
     func openKnows() {
         var quiet = Transaction()
         quiet.disablesAnimations = true
         withTransaction(quiet) { knows = true }
+    }
+
+    func openNotifications() {
+        var quiet = Transaction()
+        quiet.disablesAnimations = true
+        withTransaction(quiet) { notifications = true }
     }
 }
 
