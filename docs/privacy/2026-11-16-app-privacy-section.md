@@ -1,6 +1,6 @@
 # Privacy policy: the iPhone app's part (draft, 16 Nov 2026)
 
-**Status:** draft for the owner and one lawyer hour. It is not on the site.
+**Status:** on the site since 17 Nov 2026 (owner's OK for the release). A lawyer hour is still advised.
 
 The live policy (`resources/views/marketing/datenschutz.blade.php`, §6 "The Expadu app") describes the web app: browser location, browser push, and personalisation without memory or routines. The text below adds what the iPhone app does. It must be on the site before memory (#494), the iPhone personalisation switch (#495), the "What Expadu knows" screen (#497), moments (#499) or routines (#501) reach production. Until then, those stay on staging.
 
