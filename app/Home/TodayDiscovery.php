@@ -2,6 +2,7 @@
 
 namespace App\Home;
 
+use App\Day\Busy;
 use App\Day\DayItem;
 use App\Day\DayProjection;
 use App\Enums\EventCategory;
@@ -115,9 +116,10 @@ final class TodayDiscovery
 
     /**
      * @param  bool  $shown  the person is about to see it (Today's own render, not the ranker's read): its lists are logged
+     * @param  list<array{0: int, 1: int}>  $busy  when their own calendar says they're busy (Busy): no idea is offered then
      * @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null, today: array<string, int>, learned: bool}
      */
-    public function for(User $user, ?CarbonImmutable $now = null, bool $shown = false): array
+    public function for(User $user, ?CarbonImmutable $now = null, bool $shown = false, array $busy = []): array
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(DayProjection::TIMEZONE);
         $active = collect($this->days->itemsOn($user, $now->format('Y-m-d')))
@@ -128,7 +130,7 @@ final class TodayDiscovery
         $home = $this->home($user);
         // What they turned down ("Not for me") stays off Today while it's hidden.
         $hidden = $user->personalises() ? $this->affinities->for($user) : null;
-        $events = $this->events($now, $active, $home)
+        $events = $this->events($now, $active, $home, $busy)
             ->reject(fn (array $event) => $hidden?->isHidden(SignalItemType::Event->value, (int) $event['id']) ?? false)
             ->values();
         // "Also in ‹area›" is for after today's plan: tomorrow's listings stay out of it.
@@ -399,10 +401,10 @@ final class TodayDiscovery
      * @param  array{name: string, key: string, lat: float, lng: float}|null  $home
      * @return Collection<int, array<string, mixed>>
      */
-    private function events(CarbonImmutable $now, Collection $active, ?array $home): Collection
+    private function events(CarbonImmutable $now, Collection $active, ?array $home, array $busy = []): Collection
     {
         $today = $this->listings($now, $now)
-            ->filter(function (array $listing) use ($now, $active): bool {
+            ->filter(function (array $listing) use ($now, $active, $busy): bool {
                 ['start' => $start, 'end' => $end] = $listing;
                 if ($start < $now->getTimestamp()) {
                     $until = $end ?? ($listing['time_listed'] ? $start + self::NO_END_HOURS * 3600 : null);
@@ -411,7 +413,8 @@ final class TodayDiscovery
                     }
                 }
 
-                return ! $active->contains(fn (DayItem $plan) => $end !== null && $plan->startAt !== null && $plan->endAt !== null
+                return ! Busy::clashes($busy, max($start, $now->getTimestamp()), $end)
+                    && ! $active->contains(fn (DayItem $plan) => $end !== null && $plan->startAt !== null && $plan->endAt !== null
                     && $start < $plan->endAt->getTimestamp() && $end > $plan->startAt->getTimestamp());
             })
             ->values();
@@ -425,7 +428,7 @@ final class TodayDiscovery
         // Late, or with few left to start: tomorrow's too, said to be tomorrow's. One long-running listing
         // used to keep them out all evening.
         $tomorrow = $now->setTimezone('Europe/Berlin')->hour >= self::TOMORROW_FROM_HOUR || $ahead->count() < self::FEW_AHEAD
-            ? $this->nearFirst($this->listings($now, $now->addDay())->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])->values(), $home)
+            ? $this->nearFirst($this->listings($now, $now->addDay())->reject(fn (array $listing) => Busy::clashes($busy, $listing['start'], $listing['end']))->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])->values(), $home)
             : collect();
 
         // One listing imported from two sources is one idea: the same title at the same start shows once.
