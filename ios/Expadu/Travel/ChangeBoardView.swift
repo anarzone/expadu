@@ -9,8 +9,9 @@ import SwiftUI
 /// Under it, Switch trams for me (on: Expadu moves you, with Undo; off: it suggests, with Take it).
 struct ChangeBoardView: View {
     let stop: String
-    let ready: Date
-    let board: ChangeBoard
+    let live: TodayModel.LiveBoard
+    private var ready: Date { live.ready }
+    private var board: ChangeBoard { live.board }
     @Environment(Session.self) private var session
     @Environment(TodayModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -20,12 +21,13 @@ struct ChangeBoardView: View {
         let before = board.runs.filter { $0.departAt < ready }
         let after = board.runs.filter { $0.departAt >= ready }
         VStack(alignment: .leading, spacing: 0) {
-            Text("Any of these takes you on. Tap one to choose it yourself.")
+            Text(live.connection != nil ? "Any of these gets you to your \(live.connection!.line) in time. Tap one to choose it yourself." : "Any of these takes you on. Tap one to choose it yourself.")
                 .font(.geist(12.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 6)
-            ForEach(before) { run in row(run, gone: true, yours: yours) }
+            // The last two that leave before they're there: enough to see what they just missed.
+            ForEach(before.suffix(2)) { run in row(run, gone: true, yours: yours) }
             HStack(spacing: 6) {
-                Text("You get here at \(ready.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute()))")
+                Text("\(live.boarding ? "You get to the stop at" : "You get here at") \(ready.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute()))")
                     .font(.geist(11.5, .bold)).foregroundStyle(.white).lineLimit(1).fixedSize()
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(Color(hex: 0xC23B0E), in: .rect(cornerRadius: 6))
@@ -33,12 +35,15 @@ struct ChangeBoardView: View {
             }
             .padding(.vertical, 4)
             .accessibilityElement(children: .combine)
-            ForEach(after.prefix(4)) { run in row(run, gone: false, yours: yours) }
+            // Four, and always down to theirs and the one after it.
+            ForEach(after.prefix(max(4, (after.firstIndex { $0.id == yours?.id } ?? 0) + 2))) { run in row(run, gone: false, yours: yours) }
             if let suggestion = model.changeSuggestion {
                 HStack(spacing: 10) {
-                    Text(suggestion.gone
-                         ? "You’ll miss your \(yours?.line ?? "tram"). The \(suggestion.run.line) at \(suggestion.run.departTime) gets you there at \(suggestion.run.arriveTime)."
-                         : "The \(suggestion.run.line) at \(suggestion.run.departTime) gets you there sooner, at \(suggestion.run.arriveTime).")
+                    Text(suggestion.reason == .faster
+                         ? "The \(suggestion.run.line) at \(suggestion.run.departTime) gets you there sooner, at \(suggestion.run.arriveTime)."
+                         : TodayModel.why(suggestion.reason, yours: yours, stop: stop, connection: live.connection)
+                            + " The \(suggestion.run.line) at \(suggestion.run.departTime) " + (board.makes(suggestion.run, live.connection) && live.connection != nil
+                                ? "still gets you there at \(live.connection!.thereTime)." : "gets you there at \(suggestion.run.arriveTime)."))
                         .font(.geist(13.5)).foregroundStyle(Color(hex: 0x3A2E00)).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     Button("Take it") { Task { await model.takeRun(session.api, suggestion.run) } }
@@ -73,7 +78,7 @@ struct ChangeBoardView: View {
 
     private func row(_ run: ChangeBoard.Run, gone: Bool, yours: ChangeBoard.Run?) -> some View {
         let mine = run.id == yours?.id
-        let faster = !gone && !mine && !run.cancelled && yours.map { run.arriveAt.addingTimeInterval(60) < $0.arriveAt } == true
+        let faster = live.connection == nil && !gone && !mine && !run.cancelled && yours.map { run.arriveAt.addingTimeInterval(60) < $0.arriveAt } == true
         return Button { Task { await model.takeRun(session.api, run) } } label: {
             HStack(spacing: 10) {
                 Text(run.line).font(.geist(14, .bold)).foregroundStyle(.white)
@@ -86,7 +91,7 @@ struct ChangeBoardView: View {
                         VStack(alignment: .leading, spacing: 3) { HStack(spacing: 6) { leaves(run); late(run) }; tag(mine: mine, faster: faster) }
                         VStack(alignment: .leading, spacing: 3) { leaves(run); late(run); tag(mine: mine, faster: faster) }
                     }
-                    Text(gone ? "Leaves before you get there" : "You’re there at \(run.arriveTime)")
+                    Text(sub(run, gone: gone))
                         .font(.geist(12.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
@@ -98,7 +103,17 @@ struct ChangeBoardView: View {
         }
         .buttonStyle(PressStyle())
         .disabled(gone || run.cancelled || mine)
-        .accessibilityLabel("Tram \(run.line), leaves \(run.departTime)" + (run.delayMin.map { $0 > 0 ? ", \($0) minutes late" : "" } ?? "") + (gone ? ", before you get there" : ", there at \(run.arriveTime)") + (mine ? ", your tram" : faster ? ", faster" : ""))
+        .accessibilityLabel("Tram \(run.line), leaves \(run.departTime)" + (run.delayMin.map { $0 > 0 ? ", \($0) minutes late" : "" } ?? "") + ", " + sub(run, gone: gone) + (mine ? ", your tram" : faster ? ", faster" : ""))
+    }
+
+    /// Under a tram: gone, or with a ride after it, whether it makes that one and how long the change
+    /// is (the room a late tram has); without, when it gets them there.
+    private func sub(_ run: ChangeBoard.Run, gone: Bool) -> String {
+        if gone { return live.boarding ? "Leaves before you get to the stop" : "Leaves before you get there" }
+        guard let connection = live.connection else { return "You’re there at \(run.arriveTime)" }
+        guard board.makes(run, connection) else { return "Too late for the \(connection.line) at \(connection.departTime)" }
+        let wait = max(0, Int(connection.latest.timeIntervalSince(run.arriveAt) / 60))
+        return "There at \(connection.thereTime) · \(wait == 0 ? "just makes the \(connection.line)" : "\(wait) min to change")"
     }
 
     private func leaves(_ run: ChangeBoard.Run) -> some View {

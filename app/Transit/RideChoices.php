@@ -16,7 +16,13 @@ use Carbon\CarbonImmutable;
  *   stop to Rudolfplatz as well as the 146, all before the 12), the last ride up to two minutes later;
  * - `change` (every ride after the first): the minutes to spare for the change, and when that's a
  *   minute or less, the next run on the stretch, how much later it makes them, and on the last ride
- *   when it gets them there.
+ *   when it gets them there;
+ * - `earlier` (the first ride of a way with a change): the soonest run they can still be at the stop
+ *   for, any line, their own too, that leaves before theirs and still makes the change. The router
+ *   keeps the latest run for each arrival, so it hides it: from Appellhofplatz at 19:36 on 18 Nov the
+ *   16 at 19:41 (15 min late) met the same Merkenich 12 at Ebertplatz as the 16 at 19:47 it listed,
+ *   and the owner saw it leave on the board. Leaving earlier gives a late tram room (the owner:
+ *   "earliest you can catch").
  *
  * Best effort: a stretch the engine doesn't answer leaves its rides as they were.
  */
@@ -90,6 +96,8 @@ class RideChoices
                 $legs[$i]['also'] = $this->also($legs[$i], $runs, $ready, $this->latest($legs, $i, $last ? null : $rideIndexes[$k + 1]));
                 if ($k > 0) {
                     $legs[$i]['change'] = $this->change($legs[$i], $runs, $ready, $last ? $journey : null);
+                } elseif (! $last) {
+                    $legs[$i]['earlier'] = $this->earlier($legs[$i], $runs, $ready, $this->latest($legs, $i, $rideIndexes[$k + 1]));
                 }
             }
             $journeys[$j]['legs'] = $legs;
@@ -187,6 +195,43 @@ class RideChoices
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * The soonest run before a way's own first ride that still makes its change, any line: null when
+     * none, or when the ride's other lines already name it (the 18 at 19:39 beside the 16).
+     *
+     * @param  array<string, mixed>  $leg  with its `also` filled in
+     * @param  list<array<string, mixed>>  $runs
+     * @return array{line: string, color: string|null, depart_at: string, depart_time: string, arrive_time: string, delay_min: int|null, trip: string|null, wait_min: int}|null
+     */
+    private function earlier(array $leg, array $runs, CarbonImmutable $ready, CarbonImmutable $latest): ?array
+    {
+        $leaves = CarbonImmutable::parse($leg['depart_at']);
+        $soonestNamed = collect($leg['also'] ?? [])->map(fn (array $also) => CarbonImmutable::parse($also['depart_at']))->push($leaves)->min();
+        $run = collect($runs)
+            ->filter(fn (array $run) => ! $run['cancelled'] && $run['line'] !== ''
+                && CarbonImmutable::parse($run['depart_at'])->gte($ready)
+                && CarbonImmutable::parse($run['depart_at'])->lt($soonestNamed)
+                && CarbonImmutable::parse($run['arrive_at'])->lte($latest))
+            ->sortBy('depart_at')
+            ->first();
+        if ($run === null) {
+            return null;
+        }
+
+        return [
+            'line' => $run['line'],
+            'color' => $run['color'],
+            'depart_at' => $run['depart_at'],
+            'depart_time' => $this->time($run['depart_at']),
+            'arrive_time' => $this->time($run['arrive_at']),
+            'delay_min' => $run['delay_min'] ?? null,
+            // To take it in one tap once the trip is started (trip sync).
+            'trip' => $run['trip'] ?? null,
+            // How long they'd wait for the change: the room a late tram has.
+            'wait_min' => (int) floor(($latest->getTimestamp() - CarbonImmutable::parse($run['arrive_at'])->getTimestamp()) / 60),
+        ];
     }
 
     /**

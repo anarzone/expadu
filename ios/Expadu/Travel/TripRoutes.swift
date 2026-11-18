@@ -417,6 +417,19 @@ private struct RouteRow: View {
                 Label("Also " + also.joined(separator: " · "), systemImage: "arrow.clockwise")
                     .font(.geist(12.5, .medium)).foregroundStyle(Palette.textSoft).monospacedDigit()
             }
+            // An earlier tram to the same change, which the router hides (the owner, 18 Nov: the 16 at 19:41
+            // he saw leave): said plainly, with the room it gives a late tram.
+            if let first, let earlier = first.earlier, journey.transfers > 0 {
+                Label {
+                    Text("Or take the \(earlier.line) at \(earlier.departTime)\(earlier.delayMin.map { $0 > 0 ? " (\($0) min late)" : "" } ?? ""). You get there at the same time, with \(earlier.waitMin) min to change.")
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "clock")
+                }
+                .font(.geist(12.5, .medium)).foregroundStyle(Palette.goodText)
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .background(Palette.goodBackground, in: .rect(cornerRadius: 10))
+            }
             // A change with a minute or less to spare, said where it is; the steps say what comes next if it's missed.
             if let ride = journey.rides.first(where: { $0.change?.worthWarning == true }), let change = ride.change {
                 Label("\(change.spareMin == 0 ? "No minute" : "1 min") to change at \(StopName.short(ride.from.name ?? ""))",

@@ -275,17 +275,26 @@ final class TodayModel {
 
     // MARK: The change as a live board (When your tram is late)
 
-    /// The next change's board, for its ride leg, and when they'll be ready at its stop.
-    private(set) var changeBoard: (leg: Int, ready: Date, board: ChangeBoard)?
+    /// The board on the trip: the ride it's for, when they'll be ready at its stop, the ride after it a
+    /// tram must still make, and whether they're on their way to its stop (the first tram).
+    struct LiveBoard {
+        let leg: Int
+        let ready: Date
+        let connection: ChangeBoard.Connection?
+        let boarding: Bool
+        var board: ChangeBoard
+    }
+
+    private(set) var changeBoard: LiveBoard?
     /// Switch trams for me off: the better tram, offered with "Take it".
-    var changeSuggestion: (run: ChangeBoard.Run, gone: Bool)? {
+    var changeSuggestion: (run: ChangeBoard.Run, reason: ChangeBoard.Reason)? {
         guard let changeBoard, !changeBoard.board.autoSwitch else { return nil }
-        return better(changeBoard.board, ready: changeBoard.ready, leg: changeBoard.leg)
+        return better(changeBoard)
     }
     /// Boards already switched on (by the run), so one isn't switched twice while the trip reloads.
     @ObservationIgnored private var boardSwitched: Set<String> = []
-    /// Changes where they chose a tram by hand: Expadu then only steps in when theirs will be missed,
-    /// never to move them to a faster one they passed over.
+    /// Stops where they chose a tram by hand: Expadu then only steps in when theirs won't do, never to
+    /// move them to a faster one they passed over.
     private var pickedByHand: Set<String> = []
 
     private func handKey(_ leg: Int) -> String? {
@@ -293,28 +302,51 @@ final class TodayModel {
         return legs[leg].from
     }
 
-    private func better(_ board: ChangeBoard, ready: Date, leg: Int) -> (run: ChangeBoard.Run, gone: Bool)? {
-        guard let better = board.better(ready: ready) else { return nil }
-        if !better.gone, let key = handKey(leg), pickedByHand.contains(key) { return nil }
+    private func better(_ live: LiveBoard) -> (run: ChangeBoard.Run, reason: ChangeBoard.Reason)? {
+        guard let better = live.board.better(ready: live.ready, connection: live.connection) else { return nil }
+        if better.reason == .faster, let key = handKey(live.leg), pickedByHand.contains(key) { return nil }
         return better
     }
 
-    /// The next change's board read again, and, with switch trams for me on, the trip moved to a better
-    /// tram than theirs (theirs leaves before they get there, or another gets them there sooner).
+    /// Why they're moved, in a sentence: "Your 16 at 19:47 is cancelled."
+    static func why(_ reason: ChangeBoard.Reason, yours: ChangeBoard.Run?, stop: String, connection: ChangeBoard.Connection?) -> String {
+        let tram = yours.map { "\($0.line) at \($0.departTime)" } ?? "tram"
+        switch reason {
+        case .cancelled: return "Your \(tram) is cancelled."
+        case .missed: return "Your \(tram) leaves before you get to \(stop)."
+        case .late:
+            let late = yours?.delayMin.map { $0 > 0 ? " is running \($0) minutes late, so it" : "" } ?? ""
+            return "Your \(tram)\(late) gets to \(connection?.stop ?? "the change") too late for the \(connection?.line ?? "next tram") at \(connection?.departTime ?? "")."
+        case .faster: return ""
+        }
+    }
+
+    /// The board read again, and, with switch trams for me on, the trip moved to a better tram than
+    /// theirs: the earliest they can catch that still makes the ride after it, or one sooner there.
     func refreshChangeBoard(_ api: AppAPI, here: Guide.Position?) async {
-        guard let trip = page?.trip, let next = trip.nextChange(here: here, at: .now) else {
+        guard let trip = page?.trip, let next = trip.nextBoard(here: here, at: .now) else {
             if changeBoard != nil { withAnimation(Motion.spring) { changeBoard = nil } }
             return
         }
         let leg = trip.legs[next.leg]
-        guard let board = try? await api.tripRideBoard(leg: next.leg, from: leg.from, at: leg.departAt) else { return }
-        withAnimation(Motion.spring) { changeBoard = (next.leg, next.ready, board) }
-        guard board.autoSwitch, let better = better(board, ready: next.ready, leg: next.leg), boardSwitched.insert(better.run.id).inserted else { return }
-        let yours = board.yours
-        let said = better.gone
-            ? "Your \(yours?.line ?? "tram") leaves before you get to \(leg.from). You’re now on the \(better.run.line) at \(better.run.departTime)."
-            : "The \(better.run.line) at \(better.run.departTime) gets you there \(Self.minutesSooner(yours, than: better.run)) sooner, so you’re on it now."
-        await switchToRun(api, better.run, leg: next.leg, said: said)
+        // Walking to it: from when they can be at the stop (two minutes' grace), so an earlier tram that still makes the change shows.
+        guard let board = try? await api.tripRideBoard(leg: next.leg, from: leg.from, at: leg.departAt,
+                                                       since: next.boarding ? next.ready.addingTimeInterval(-120) : nil) else { return }
+        // No trams read (the engine didn't answer in time): no board, rather than an empty one with only its switch.
+        guard !board.runs.isEmpty else {
+            if changeBoard != nil { withAnimation(Motion.spring) { changeBoard = nil } }
+            return
+        }
+        let live = LiveBoard(leg: next.leg, ready: next.ready, connection: next.connection, boarding: next.boarding, board: board)
+        withAnimation(Motion.spring) { changeBoard = live }
+        guard board.autoSwitch, let better = better(live), boardSwitched.insert(better.run.id).inserted else { return }
+        let run = better.run
+        let said = better.reason == .faster
+            ? "The \(run.line) at \(run.departTime) gets you there \(Self.minutesSooner(board.yours, than: run)) sooner, so you’re on it now."
+            : Self.why(better.reason, yours: board.yours, stop: leg.from, connection: next.connection)
+                + " You’re now on the \(run.line) at \(run.departTime)."
+                + (board.makes(run, next.connection) && next.connection != nil ? " You’ll still be there at \(next.connection!.thereTime)." : "")
+        await switchToRun(api, run, leg: next.leg, said: said)
     }
 
     /// A tram on the board taken: tapped, or "Take it". With Undo.
