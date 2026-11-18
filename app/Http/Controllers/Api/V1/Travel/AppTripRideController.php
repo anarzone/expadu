@@ -93,12 +93,15 @@ class AppTripRideController extends Controller
             'leg' => ['required', 'integer', 'min:0', 'max:40'],
             'from' => ['nullable', 'string', 'max:200'],
             'at' => ['nullable', 'date'],
+            // When they can be at the stop, when the phone knows (walking to their first tram).
+            'since' => ['nullable', 'date'],
         ]);
         $trip = $this->trip($request);
 
         return response()->json([
             /** @var list<array{line: string, headsign: string|null, color: string|null, depart_at: string, depart_time: string, arrive_at: string, arrive_time: string, trip: string|null, delay_min: int|null, cancelled: bool, yours: bool}> */
-            'runs' => $sync->board($trip, $this->leg($sync, $trip, $valid), CarbonImmutable::now()),
+            'runs' => $sync->board($trip, $this->leg($sync, $trip, $valid), CarbonImmutable::now(),
+                isset($valid['since']) ? CarbonImmutable::parse($valid['since']) : null),
             /** @var bool Switch trams for me: Expadu moves them to the best tram they can still make (with Undo); off, it only suggests. */
             'auto_switch' => $request->user()->setting('auto_switch_trams') !== false,
         ]);
