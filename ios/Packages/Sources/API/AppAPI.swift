@@ -1197,8 +1197,11 @@ public struct AppAPI: Sendable {
 
     /// A change as a live board: every tram on the ride's stretch, live, the trip's own marked. A read:
     /// asked again when the connection drops.
-    public func tripRideBoard(leg: Int, from: String, at: Date) async throws(APIFailure) -> ChangeBoard {
-        let reply = try await composer("POST", "travel/trip/ride/board", ride(leg, from: from, at: at), retry: true)
+    /// `since`: when they can be at the stop, when the phone knows (walking to their first tram); the board starts there.
+    public func tripRideBoard(leg: Int, from: String, at: Date, since: Date? = nil) async throws(APIFailure) -> ChangeBoard {
+        var body = ride(leg, from: from, at: at)
+        if let since { body["since"] = ISO8601DateFormatter().string(from: since) }
+        let reply = try await composer("POST", "travel/trip/ride/board", body, retry: true)
         guard reply.status == 200, let json = try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any] else { throw .unreachable }
         let runs = ((json["runs"] as? [[String: Any]]) ?? []).compactMap { row -> ChangeBoard.Run? in
             guard let line = row["line"] as? String, let departText = row["depart_at"] as? String, let departAt = Self.date(from: departText),

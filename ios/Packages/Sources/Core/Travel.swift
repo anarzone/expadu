@@ -474,6 +474,20 @@ public struct TripPlan: Sendable {
         public let also: [Also]?
         /// The change onto this ride: the minutes to spare and, when that's a minute or less, the next run.
         public let change: Change?
+        /// On the first ride of a way with a change: the soonest tram they can still catch that makes it too.
+        public let earlier: Earlier?
+
+        public struct Earlier: Decodable, Equatable, Sendable {
+            public let line: String
+            public let color: String?
+            public let departAt: String
+            public let departTime: String
+            public let arriveTime: String
+            public let delayMin: Int?
+            public let trip: String?
+            /// Minutes to change: the room it leaves a late tram.
+            public let waitMin: Int
+        }
 
         public struct Also: Decodable, Equatable, Sendable {
             public let line: String
