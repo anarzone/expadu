@@ -297,12 +297,12 @@ struct KnowsView: View {
             .font(.geist(15)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 4).padding(.bottom, 18)
         if model.justOn {
-            note("On. Tell Composer about yourself, or add it below.")
+            note("It’s on. Tell Composer about yourself, or add something below.")
         }
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Personalisation").font(.geist(16, .semibold)).foregroundStyle(Palette.text)
-                Text("Learns from what you open, save and skip, what you tell Composer and the kinds of event you pick.")
+                Text("Expadu learns from what you open, save and skip, what you tell Composer, and the kinds of event you pick.")
                     .font(.geist(13.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 4)
@@ -346,7 +346,7 @@ struct KnowsView: View {
 
         if let picks = knows.picks, !knows.pickKinds.isEmpty {
             heading("What you picked").padding(.top, 26).padding(.bottom, 4).padding(.horizontal, 4)
-            Text("Today puts these first until what you open, save and go to says more. Tap one to take it out or add it.")
+            Text("Today shows these kinds first. What you open, save and go to soon counts for more. Tap one to add or remove it.")
                 .font(.geist(13.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 4).padding(.bottom, 10)
             VStack(alignment: .leading, spacing: 14) {
@@ -357,7 +357,7 @@ struct KnowsView: View {
                         }
                     }
                 }
-                Text(picks.kinds.isEmpty ? "Nothing picked. Today goes by what you open, save and go to." : "\(picks.kinds.count) picked")
+                Text(picks.kinds.isEmpty ? "You haven’t picked anything. Today goes by what you open, save and go to." : "You’ve picked \(picks.kinds.count).")
                     .font(.geist(13.5, .semibold)).foregroundStyle(Palette.textSoft).contentTransition(.numericText())
             }
             .padding(.horizontal, 14).padding(.top, 16).padding(.bottom, 14)
@@ -376,7 +376,7 @@ struct KnowsView: View {
                 Divider().overlay(Palette.border).padding(.leading, 16)
             }
             Text(knows.taste.map { "Learned from \($0.signals) things you opened, saved or skipped in the last 90 days. It changes as you do." }
-                 ?? "Not enough yet. It learns as you open, save and skip things in Today, Travel and Composer.")
+                 ?? "There isn’t enough yet. Expadu learns as you open, save and skip things in Today, Travel and Composer.")
                 .font(.geist(13)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 16).padding(.vertical, 12)
         }
@@ -389,7 +389,7 @@ struct KnowsView: View {
             Divider().overlay(Palette.border).padding(.leading, 16)
             profileRow("German", field: "german_level", value: knows.germanLevel, options: Knows.germanLevels)
             Divider().overlay(Palette.border).padding(.leading, 16)
-            Text("From your profile. Composer reads it so events in English come first while your German grows.")
+            Text("This comes from your profile. Composer uses it to show events in English first while your German grows.")
                 .font(.geist(13)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 16).padding(.vertical, 12)
         }
@@ -397,7 +397,7 @@ struct KnowsView: View {
 
         RoutinesSection().padding(.top, 26)
 
-        Text("**Never kept or learned:** health, religion or beliefs, sexuality, politics or a union, and places that would say them. Nor exactly where you are: Composer gets only your nearest stop.")
+        Text("**Never kept or learned:** your health, religion or beliefs, sexuality, politics or union membership, or places that would reveal them. Nor exactly where you are: Composer only gets your nearest stop.")
             .font(.geist(13.5)).foregroundStyle(Palette.posterLead).fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 16).padding(.vertical, 13)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -508,15 +508,15 @@ struct KnowsView: View {
     @ViewBuilder
     private func off(_ knows: Knows) -> some View {
         if model.erased {
-            note("Erased. Nothing about you is kept.").padding(.top, 8)
+            note("It’s all erased. Nothing about you is kept.").padding(.top, 8)
         }
         // On under an older wording: the same yes, again, to what it says now.
         let again = knows.personalised && !knows.current
         VStack(alignment: .leading, spacing: 0) {
-            Text(again ? "Personalisation says more now" : "Let Expadu get to know you")
+            Text(again ? "Personalisation has changed" : "Let Expadu get to know you")
                 .font(.posterGrotesque(23)).foregroundStyle(Palette.text).padding(.bottom, 6)
             Text(again ? "It now also keeps the kinds of event you pick on Today. Turn it on again to keep using it."
-                 : "Then Composer and Today answer for you, not for everyone. Off, they still work, just the same for all.")
+                 : "Then Composer and Today answer for you, not for everyone. If it’s off, they still work, just the same for everyone.")
                 .font(.geist(15)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true).padding(.bottom, 10)
             ForEach(["What you open, save and skip in Today, Travel and Composer", "What you tell Composer about yourself, like “I’m vegetarian”", "The kinds of event you pick, like music or tours", "Your situation and German level"], id: \.self) { use in
                 HStack(alignment: .top, spacing: 12) {
@@ -526,7 +526,7 @@ struct KnowsView: View {
                 }
                 .padding(.vertical, 6)
             }
-            Text("Never: health, religion or beliefs, sexuality, politics or a union, or exactly where you are. Today is put in order for you by Claude Haiku (Anthropic). Kept 90 days, all of it on this page; turning it off erases it.")
+            Text("It never uses your health, religion or beliefs, sexuality, politics or union membership, or exactly where you are. Today is put in order for you by Claude Haiku (Anthropic). Everything is kept for 90 days, and you can see all of it on this page. Turning it off erases it.")
                 .font(.geist(13.5)).foregroundStyle(Palette.posterLead).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 14).padding(.vertical, 12)
                 .background(Palette.quiet, in: .rect(cornerRadius: 14))

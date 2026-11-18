@@ -155,7 +155,7 @@ struct TripEnd: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(trip.to).font(.geist(16, .semibold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
                 if let there = trip.arriveTime {
-                    Text(trip.startTime == nil ? "You’re there" : "Starts · you’re there at \(there)").font(.geist(13)).foregroundStyle(Palette.textSoft)
+                    Text(trip.startTime == nil ? "You’re there" : "You’ll be there at \(there)").font(.geist(13)).foregroundStyle(Palette.textSoft)
                 }
             }
         }
@@ -383,7 +383,7 @@ struct BringCard: View {
                                 .buttonStyle(PressStyle())
                                 .disabled(busy != nil)
                         }
-                        Text("From your Paperwork record. Ticking here ticks it there.")
+                        Text("This list comes from your Paperwork record. Ticking something here ticks it there too.")
                             .font(.geist(12)).foregroundStyle(Palette.textSoft).padding(.top, 4)
                     } else if let problem {
                         Text(problem).font(.geist(13.5)).foregroundStyle(Palette.conflictText).padding(.vertical, 6)

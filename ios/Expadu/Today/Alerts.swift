@@ -95,7 +95,7 @@ struct AlertsSheet: View {
                         Text(filter == "all" ? "Nothing needs you right now." : "Nothing here right now.")
                             .font(.geist(15)).foregroundStyle(Palette.textSoft).padding(.horizontal, 4).padding(.top, 6)
                     }
-                    Text("Today shows only what touches your plans. Everything else stays here.")
+                    Text("Today only shows alerts that affect your plans. Everything else stays here.")
                         .font(.geist(12)).foregroundStyle(Palette.textSoft).padding(.horizontal, 4).padding(.top, 6)
                 }
                 .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 40)

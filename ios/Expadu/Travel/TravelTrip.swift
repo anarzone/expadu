@@ -135,7 +135,7 @@ struct TravelTrip: View {
                     dismiss()
                 }
             }
-        } message: { Text("The live steps stop. The trip stays on your day.") }
+        } message: { Text("Live directions stop, but the trip stays on your day.") }
         .onAppear {
             planner.follow(trip)
             if let view = planner.tripOpens { mapOn = view == .map; planner.tripOpens = nil }
@@ -393,7 +393,7 @@ struct TravelTrip: View {
                     // One list: each ride's stops fold into its step (Show stops), not a second list under it.
                     StepList(steps: steps, current: current, legs: trip.legs, stopsOpen: true, live: liveStop(current: current, now: now))
                     Text(trip.legs.contains(where: \.rides)
-                         ? "We’ll tell you one stop before. Your phone buzzes here, even with the screen off (with notifications on). The trip ends by itself."
+                         ? "We’ll tell you one stop before you get off. Your phone buzzes here even with the screen off, as long as notifications are on. The trip ends by itself."
                          : "It moves on by itself as you go. The trip ends by itself.")
                         .font(.geist(12.5)).foregroundStyle(Palette.textSoft).padding(.top, 12)
                 }

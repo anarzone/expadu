@@ -162,7 +162,7 @@ struct SignInView: View {
         case .create:
             label("Willkommen in Köln")
             heading("New in Cologne? Start here.")
-            if let problem { ProblemMessage(text: problem) } else { lead("Free to start. Cologne, for now.") }
+            if let problem { ProblemMessage(text: problem) } else { lead("It’s free to start. For now it covers Cologne.") }
             social
             PosterField(label: "Name", text: $name, focus: $focus, field: .name, content: .name)
             emailField

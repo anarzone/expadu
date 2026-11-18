@@ -80,7 +80,7 @@ final class Moments
 
                 return ['id' => "leave:{$trip->id}:{$trip->depart_at->getTimestamp()}", 'kind' => 'leave', 'at' => $trip->remindAt()->setTimezone('Europe/Berlin')->max($now),
                     'title' => "Time to leave for {$trip->title}",
-                    'body' => "Leave at {$shared['depart_time']}".($ride !== null ? ' · '.PlannedTrip::rideName($ride)." at {$ride['time']}" : ''),
+                    'body' => "Leave at {$shared['depart_time']}".($ride !== null ? ' to catch '.lcfirst(PlannedTrip::rideName($ride))." at {$ride['time']}." : '.'),
                     'link' => '/travel'];
             })->all();
     }
@@ -121,7 +121,7 @@ final class Moments
 
                 return ['id' => "event:{$reminder->id}:{$start->getTimestamp()}", 'kind' => 'event', 'at' => CarbonImmutable::parse($reminder->remind_at)->setTimezone('Europe/Berlin'),
                     'title' => $event->title_en ?: $event->title,
-                    'body' => ($event->location_name ? "At {$event->location_name}. " : '')."Starts at {$start->format('H:i')}.",
+                    'body' => "It starts at {$start->format('H:i')}".($event->location_name ? " at {$event->location_name}." : '.'),
                     'link' => WhatsOn::eventUrl($event->id, $start)];
             })->values()->all();
     }

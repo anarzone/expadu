@@ -212,7 +212,7 @@ struct AddPlaceSheet: View {
                         }
                         .card(radius: 22)
                         if shown.isEmpty {
-                            Text("No available matches for this day. Try another kind or date.").font(.geist(14)).foregroundStyle(Palette.textSoft)
+                            Text("Nothing is available on this day. Try another kind or date.").font(.geist(14)).foregroundStyle(Palette.textSoft)
                         }
                         Text("\(shown.count == 1 ? "1 option" : "\(shown.count) options") · Availability is checked again when you add one.")
                             .font(.geist(13)).foregroundStyle(Palette.textSoft)
@@ -311,7 +311,7 @@ struct StartSheet: View {
             SheetHead(title: "Starting point")
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Where Composer plans new days from. Plans you have stay as they are; a place in your message still counts.")
+                    Text("Composer plans new days starting from here. Plans you already have stay as they are, and a place you mention in your message still counts.")
                         .font(.geist(14)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 10) {
                         Image(systemName: "mappin").font(.system(size: 15, weight: .semibold)).foregroundStyle(Palette.action)

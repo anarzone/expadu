@@ -209,7 +209,7 @@ test('an AI pick says which of their leanings it matches, as code reads them', f
     $event = app(TodayDiscovery::class)->for($user->fresh(), discoveryNoon())['events'][0];
 
     expect($event['why'])->toBe('You lean to music')
-        ->and($event['reasons'])->toBe(['You lean to music, from what you open, save and go to.', 'You lean to what’s on in Ehrenfeld.']);
+        ->and($event['reasons'])->toBe(['You often go for music, judging by what you open, save and go to.', 'You often go for what’s on in Ehrenfeld.']);
 });
 
 test('with no order (personalisation off, or not ranked yet), Today keeps its own order', function () {
@@ -312,7 +312,7 @@ test('with no AI order, what they lean to comes first, two of a kind at most amo
 
     // Music first, but only two of it among the six; the third gig waits after them.
     expect($events->pluck('title')->take(2)->all())->toBe(['Gig 1', 'Gig 2'])
-        ->and($events[0]['why'])->toBe('You lean to music.')
+        ->and($events[0]['why'])->toBe('You often go for music.')
         // Third: a kind they've shown nothing for.
         ->and($events[2]['title'])->toBe('Tour')->and($events[2]['why'])->toBe(TodayDiscovery::NEW_WHY)
         ->and($events->pluck('title')->last())->toBe('Gig 3')
@@ -359,7 +359,7 @@ test('day one: the kinds they picked come first, each saying so, with one New fo
     $events = collect($found['events']);
 
     expect($events->pluck('title')->take(2)->all())->toBe(['Gig 1', 'Walk'])
-        ->and($events[0]['why'])->toBe('You picked music.')
+        ->and($events[0]['why'])->toBe('You said you like music.')
         ->and($events[2]['title'])->toBe('Play')->and($events[2]['why'])->toBe(TodayDiscovery::NEW_WHY)
         ->and($found['today'])->toMatchArray(['music' => 2, 'tours' => 1, 'stage' => 1, 'kids' => 1])
         ->and($found['learned'])->toBeFalse();

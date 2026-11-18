@@ -84,7 +84,7 @@ private struct PlansView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Nothing planned. Room for anything.").font(.geist(18, .bold)).foregroundStyle(Palette.text)
+                    Text("Nothing planned yet. There’s room for anything.").font(.geist(18, .bold)).foregroundStyle(Palette.text)
                     Text("Start with an idea, or ask Composer to help shape this day.").font(.geist(14.5)).foregroundStyle(Palette.textSoft)
                         .fixedSize(horizontal: false, vertical: true)
                     PaperworkButton(title: "Plan \(ComposerModel.short(day) == "today" ? "today" : ComposerModel.short(day)) with Composer", symbol: "sparkle", small: true) {

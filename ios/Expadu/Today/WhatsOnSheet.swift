@@ -363,7 +363,7 @@ struct WhatsOnSheet: View {
             }
             .buttonStyle(PressStyle())
             .padding(.top, 18).padding(.bottom, 10)
-            Text("From the city's public listings. Saving one isn't a booking.")
+            Text("These come from the city’s public listings. Saving an event doesn’t book it.")
                 .font(.geist(12)).foregroundStyle(Palette.textSoft).frame(maxWidth: .infinity)
         }
     }

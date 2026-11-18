@@ -182,7 +182,7 @@ struct PausedLine: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "clock").font(.system(size: 13, weight: .semibold))
-            Text("In the usual order until you agree to a change.").font(.geist(13)).fixedSize(horizontal: false, vertical: true)
+            Text("Ideas are in the usual order until you agree to a change.").font(.geist(13)).fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)
             Button("Review") { sheet = .agree(pause) }.font(.geist(13, .semibold)).foregroundStyle(TodayLink.ink)
             Button("Not now") { Task { await model.orderLater(session.api) } }.font(.geist(13, .semibold)).foregroundStyle(Palette.textSoft)
@@ -252,10 +252,10 @@ struct HowWeRankSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(Pages.self) private var pages
     private static let today: [(String, String)] = [
-        ("Fits your plan", "Nothing that clashes with a plan whose times are known."),
-        ("Near you first", "Within 3 km of your neighbourhood or Home, then the rest, each soonest first. Tomorrow’s only once nothing is left today."),
-        ("What you lean towards, if you turned it on", "Put in order from what you open, save and turn down. It never hides one. Off: everyone sees the same order."),
-        ("What you turned down", "An event you said isn’t for you stays off."),
+        ("Fits your plan", "Ideas never clash with a plan whose times are known."),
+        ("Near you first", "Events within 3 km of your neighbourhood or home come first, then the rest, soonest first. Tomorrow’s events only show once nothing is left today."),
+        ("What you lean towards, if you turned it on", "Ideas are put in order from what you open, save and turn down. Nothing is ever hidden. With it off, everyone sees the same order."),
+        ("What you turned down", "An event you said isn’t for you stays off Today."),
     ]
 
     var body: some View {
@@ -273,7 +273,7 @@ struct HowWeRankSheet: View {
                     }
                 }
                 Section("What’s on") { Text("Soonest first, unless you pick evening first or closest first.").font(.geist(14)) }
-                Section("Around here") { Text("Nearest first.").font(.geist(14)) }
+                Section("Around here") { Text("The closest places come first.").font(.geist(14)) }
                 Section {
                     Label("Nobody pays to be listed or placed higher.", systemImage: "xmark.circle").font(.geist(14))
                     Text("Events come from koeln.de, the City of Cologne’s open data, KölnTourismus (DatenHub NRW) and a few we add ourselves; exhibitions and all-day attractions are left out. Places come from OpenStreetMap and Overture Maps.")

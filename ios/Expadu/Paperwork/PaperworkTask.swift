@@ -160,7 +160,7 @@ struct PaperworkTaskPage: View {
         } else if process.guidanceState == "review_required" {
             VStack(alignment: .leading, spacing: 10) {
                 Text("The guidance for this task changed.").font(.geist(15.5, .semibold)).foregroundStyle(Palette.text)
-                Text("Read the updated steps below. Your recorded progress stays; confirm to keep going with the new steps.")
+                Text("Read the updated steps below. Your progress so far stays. Confirm to keep going with the new steps.")
                     .font(.geist(14)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 PaperworkButton(title: "Use the updated steps", small: true, working: model.busy == "review") {
                     Task {
@@ -269,7 +269,7 @@ struct PaperworkTaskPage: View {
         } else if item.status == "waiting" {
             "This task is with the office. Review your checklist or update your progress when something changes."
         } else if let submission, item.stepId.hasSuffix("submit.complete") {
-            "You recorded your submission on \(PaperworkWords.date(submission.date)). The task waits for the office; mark this step finished when you hear back."
+            "You recorded your submission on \(PaperworkWords.date(submission.date)). Now the task waits for the office. Mark this step finished when you hear back."
         } else {
             (process.workflow == "blocked" ? "You reported a hold-up\(note.map { ": \($0.prefix(1).lowercased() + $0.dropFirst())" } ?? ""). " : "")
                 + (item.hasPapers ? "Check what you have. Mark each document ready once you’ve checked it for this task." : "Read the official information, then tick this step when you’ve done it.")

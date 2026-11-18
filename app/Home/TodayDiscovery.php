@@ -78,7 +78,7 @@ final class TodayDiscovery
     /** Code's whys at most, as the AI's: the first picks' that hold. */
     private const WHYS = 3;
 
-    public const NEW_WHY = 'New for you: something besides your usual.';
+    public const NEW_WHY = 'New for you: something a bit different from your usual.';
 
     /** From this hour, tomorrow's listings join today's. */
     private const TOMORROW_FROM_HOUR = 21;
@@ -163,11 +163,11 @@ final class TodayDiscovery
         $listed = self::arranged(self::ranked($candidates, $order['events'] ?? null, $order['why'] ?? [], $eventKey), $leanings, $order !== null)
             ->map(function (array $event) use ($reasons, &$whys): array {
                 if (isset($event['new_for_you'])) {
-                    return [...$event, 'why' => self::NEW_WHY, 'reasons' => ['Something different from what you picked and usually open, so Today doesn’t only repeat what you like.']];
+                    return [...$event, 'why' => self::NEW_WHY, 'reasons' => ['It’s a bit different from what you usually pick and open, so Today doesn’t only show more of the same.']];
                 }
                 // No why from the AI (or no AI order): the first leaning it matches, in code's words.
                 if (! isset($event['why']) && $reasons !== null && $whys < self::WHYS && ($first = $reasons($event)[0] ?? null) !== null) {
-                    $event['why'] = str_replace(', from what you open, save and go to.', '.', $first);
+                    $event['why'] = str_replace(', judging by what you open, save and go to.', '.', $first);
                 }
                 $whys += isset($event['why']) ? 1 : 0;
 
@@ -374,14 +374,14 @@ final class TodayDiscovery
 
             return array_values(array_filter([
                 match (true) {
-                    $kind !== null && in_array($kind, $kinds, true) => "You lean to {$kind}, from what you open, save and go to.",
-                    $kind !== null && in_array($kind, $picked, true) => "You picked {$kind}.",
-                    $kind !== null && in_array($kind, $lately, true) => "You looked at {$kind} lately.",
+                    $kind !== null && in_array($kind, $kinds, true) => "You often go for {$kind}, judging by what you open, save and go to.",
+                    $kind !== null && in_array($kind, $picked, true) => "You said you like {$kind}.",
+                    $kind !== null && in_array($kind, $lately, true) => "You looked at {$kind} recently.",
                     default => null,
                 },
                 match (true) {
-                    is_string($area) && in_array($area, $areas, true) => "You lean to what’s on in {$area}.",
-                    is_string($area) && in_array($area, $recent['areas'], true) => "You looked at {$area} lately.",
+                    is_string($area) && in_array($area, $areas, true) => "You often go for what’s on in {$area}.",
+                    is_string($area) && in_array($area, $recent['areas'], true) => "You looked at {$area} recently.",
                     default => null,
                 },
             ]));
