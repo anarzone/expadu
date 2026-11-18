@@ -426,6 +426,19 @@ public struct TodayPage: Equatable, Sendable {
             return TimeInterval(max(0, legs[leg].delayMin ?? 0) * 60)
         }
 
+        /// The next change ahead, for its live board (When your tram is late): the ride it changes to, and
+        /// when they'll be ready at its stop. On a ride, as late as the phone measured it runs; before it,
+        /// the leg's own times (which already carry the live delay). Nil with no change ahead.
+        public func nextChange(here: Guide.Position?, at date: Date) -> (leg: Int, ready: Date)? {
+            let rides = legs.indices.filter { legs[$0].rides }
+            let onBoard = here.flatMap { $0.ride?.onBoard == true && legs.indices.contains($0.leg) && legs[$0.leg].rides ? $0.leg : nil }
+            guard let current = onBoard ?? rides.first(where: { legs[$0].arriveAt > date }),
+                  let next = rides.first(where: { $0 > current }) else { return nil }
+            let late = onBoard == current ? self.late(here: here, at: date) : 0
+            let change = legs[(current + 1)..<next].reduce(0) { $0 + $1.minutes }
+            return (next, legs[current].arriveAt.addingTimeInterval(late + Double(change) * 60))
+        }
+
         /// Trip sync: on a ride (the phone moving with it), as late as it runs, the next ride it changes to
         /// can't be caught: getting in plus the change comes more than a minute after that one leaves (as
         /// late as the board says it runs), and it hasn't long gone. Which ride, and when they'll be ready

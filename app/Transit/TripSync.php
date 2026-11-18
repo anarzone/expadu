@@ -27,6 +27,12 @@ final class TripSync
 
     private const SEPARATION_MINUTES = 2.0;
 
+    /** The board starts this long before the ride was planned to leave (an earlier tram can still be caught). */
+    private const BOARD_BEFORE_MINUTES = 8;
+
+    /** How many runs the board shows at most. */
+    private const BOARD_RUNS = 6;
+
     /** How long Undo can put the old trip back. */
     private const UNDO_MINUTES = 30;
 
@@ -195,6 +201,45 @@ final class TripSync
 
         return $next === null ? null
             : $this->switchTo($trip, $legIndex, $next['line'], CarbonImmutable::parse($next['depart_at']), $next['trip']);
+    }
+
+    /**
+     * The change as a live board (the canvas "When your tram is late", owner 18 Nov 2026: "build it"):
+     * every run of a ride's stretch, any line, leaving from a little before the ride was planned for
+     * an hour, as live as the feed knows them, soonest first. The one the trip is on is marked.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function board(ActiveTrip $trip, int $legIndex, CarbonImmutable $now): array
+    {
+        $leg = $this->ride($trip, $legIndex);
+        $engine = $this->engine();
+        if ($leg === null || $engine === null) {
+            return [];
+        }
+        $from = new GeoPoint((float) $leg['from']['lat'], (float) $leg['from']['lng']);
+        $to = new GeoPoint((float) $leg['to']['lat'], (float) $leg['to']['lng']);
+        $planned = CarbonImmutable::parse($leg['depart_at'] ?? $now->toIso8601String());
+        $at = $planned->subMinutes(self::BOARD_BEFORE_MINUTES)->max($now->subMinutes(self::BOARD_BEFORE_MINUTES));
+        $runs = $engine->withTimeBudget(4.0)->directRides([['from' => $from, 'to' => $to, 'at' => $at]])[0] ?? [];
+        usort($runs, fn (array $a, array $b) => $a['depart_at'] <=> $b['depart_at']);
+        $seen = [];
+        $board = [];
+        foreach ($runs as $run) {
+            // One run once: the router can offer the same tram twice (another walk to the stop).
+            $key = $run['trip'] ?? $run['line'].'@'.$run['depart_at'];
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $board[] = [...$this->run($run), 'arrive_at' => $run['arrive_at'], 'delay_min' => $run['delay_min'] ?? null,
+                'cancelled' => (bool) $run['cancelled'], 'yours' => $this->isPlanned($leg, $run)];
+            if (count($board) >= self::BOARD_RUNS) {
+                break;
+            }
+        }
+
+        return $board;
     }
 
     /** Puts back the trip a switch replaced; false when Undo has run out or isn't theirs. */

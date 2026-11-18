@@ -391,7 +391,17 @@ struct TravelTrip: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     // One list: each ride's stops fold into its step (Show stops), not a second list under it.
-                    StepList(steps: steps, current: current, legs: trip.legs, stopsOpen: true, live: liveStop(current: current, now: now))
+                    StepList(steps: steps, current: current, legs: trip.legs, stopsOpen: true, live: liveStop(current: current, now: now),
+                             board: today.changeBoard.map { board in
+                                 (board.leg, AnyView(ChangeBoardView(stop: trip.legs[board.leg].from, ready: board.ready, board: board.board)))
+                             })
+                        // The next change's board, read again while the trip is open: as trams run late it moves.
+                        .task(id: trip.legs.map(\.departTime).joined()) {
+                            while !Task.isCancelled {
+                                await today.refreshChangeBoard(session.api, here: planner.follower.here)
+                                try? await Task.sleep(for: .seconds(45))
+                            }
+                        }
                     Text(trip.legs.contains(where: \.rides)
                          ? "We’ll tell you one stop before you get off. Your phone buzzes here even with the screen off, as long as notifications are on. The trip ends by itself."
                          : "It moves on by itself as you go. The trip ends by itself.")
