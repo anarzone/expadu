@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Personalisation\LeaveNotice;
 use App\Personalisation\Routines;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 /**
  * Routines learned from trips, on the phone: the ones they confirmed, and the one to offer now
@@ -24,6 +26,8 @@ class RoutinesController extends Controller
         return response()->json([
             /** @var bool Routine learning on: their own yes, with personalisation on. */
             'learning' => Routines::learns($user),
+            /** @var bool Noticing when they leave Home or Work (LeaveNotice): its own yes, with routine learning on. */
+            'noticing' => LeaveNotice::on($user),
             /** @var int Trips kept for routines (90 days at most). */
             'trips_kept' => $this->routines->tripsKept($user),
             /** @var list<array{id: int, to_label: string, from_key: string|null, weekdays: list<int>, at: string, remind: bool}> Weekdays 1 (Monday) to 7. */
@@ -100,5 +104,39 @@ class RoutinesController extends Controller
             /** @var int|null DELETE /routines/{id} takes the no back; null when it wasn't on offer. */
             'id' => $id,
         ]);
+    }
+
+    /**
+     * They just left their Home or Work: what to tell them now, when a routine of theirs runs (204
+     * when none does). The phone sends only which place, never where it is.
+     */
+    public function leaving(Request $request, LeaveNotice $notice): JsonResponse|Response
+    {
+        $validated = $request->validate(['from' => ['required', 'string', 'in:home,work']]);
+        $note = $notice->leaving($request->user(), $validated['from'], CarbonImmutable::now());
+        if ($note === null) {
+            return response()->noContent();
+        }
+
+        return response()->json([
+            /** @var array{title: string, body: string, link: string} */
+            'notice' => $note,
+        ]);
+    }
+
+    /**
+     * A trip the phone noticed, from one of their places to the other: kept for routines like one
+     * started in the app. Refused (422) when noticing isn't on.
+     */
+    public function noticed(Request $request, LeaveNotice $notice): JsonResponse
+    {
+        $validated = $request->validate([
+            'from' => ['required', 'string', 'in:home,work'],
+            'to' => ['required', 'string', 'in:home,work', 'different:from'],
+            'left_at' => ['required', 'date', 'before_or_equal:now', 'after:-1 day'],
+        ]);
+        $kept = $notice->noticed($request->user(), $validated['from'], $validated['to'], CarbonImmutable::parse($validated['left_at']));
+
+        return $kept ? response()->json(['kept' => true], 201) : response()->json(['message' => 'Turn on noticing when you leave home or work first.'], 422);
     }
 }

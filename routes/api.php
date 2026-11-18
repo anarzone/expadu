@@ -79,6 +79,9 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
         Route::get('routines', [RoutinesController::class, 'index'])->middleware('verified');
         Route::post('routines', [RoutinesController::class, 'store'])->middleware(['verified', 'throttle:60,1']);
         Route::post('routines/dismiss', [RoutinesController::class, 'dismiss'])->middleware(['verified', 'throttle:60,1']);
+        // Leaving Home or Work, as the phone noticed it (LeaveNotice): what to say now, and a trip to keep.
+        Route::get('routines/leaving', [RoutinesController::class, 'leaving'])->middleware(['verified', 'throttle:30,1']);
+        Route::post('routines/noticed', [RoutinesController::class, 'noticed'])->middleware(['verified', 'throttle:30,1']);
         Route::delete('routines/trips', [RoutinesController::class, 'forgetTrips'])->middleware('verified');
         Route::patch('routines/{routine}', [RoutinesController::class, 'update'])->whereNumber('routine')->middleware(['verified', 'throttle:60,1']);
         Route::delete('routines/{routine}', [RoutinesController::class, 'destroy'])->whereNumber('routine')->middleware('verified');
