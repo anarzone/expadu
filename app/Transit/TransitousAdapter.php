@@ -1595,7 +1595,7 @@ class TransitousAdapter implements RouteService
      * out of time comes back empty.
      *
      * @param  list<array{from: GeoPoint, to: GeoPoint, at: CarbonImmutable}>  $stretches
-     * @return list<list<array{line: string, headsign: string|null, color: string|null, depart_at: string, arrive_at: string, cancelled: bool, trip: string|null}>>
+     * @return list<list<array{line: string, headsign: string|null, color: string|null, depart_at: string, arrive_at: string, cancelled: bool, trip: string|null, delay_min: int|null}>>
      */
     public function directRides(array $stretches): array
     {
@@ -1645,6 +1645,10 @@ class TransitousAdapter implements RouteService
                     'cancelled' => (bool) ($legs[0]['cancelled'] ?? false),
                     // The run itself: the planned one late, or another (trip sync tells them apart).
                     'trip' => isset($legs[0]['tripId']) ? (string) $legs[0]['tripId'] : null,
+                    // How late it leaves, from the live feed; null without live data for it.
+                    'delay_min' => ($legs[0]['realTime'] ?? false) && isset($legs[0]['scheduledStartTime'])
+                        ? (int) round((CarbonImmutable::parse($legs[0]['startTime'])->getTimestamp() - CarbonImmutable::parse($legs[0]['scheduledStartTime'])->getTimestamp()) / 60)
+                        : null,
                 ];
             }
 

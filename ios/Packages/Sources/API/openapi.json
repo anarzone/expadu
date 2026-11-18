@@ -5885,6 +5885,143 @@
                 }
             }
         },
+        "/travel/trip/ride/board": {
+            "post": {
+                "operationId": "appTripRide.board",
+                "summary": "A change as a live board: every tram on the ride's stretch from a little before it was planned,\nlive as the feed knows them, the trip's own marked; and whether Expadu switches trams for them\n(the auto_switch_trams setting)",
+                "tags": [
+                    "AppTripRide"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "leg": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 40
+                                    },
+                                    "from": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 200
+                                    },
+                                    "at": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date-time"
+                                    }
+                                },
+                                "required": [
+                                    "leg"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runs": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "line": {
+                                                        "type": "string"
+                                                    },
+                                                    "headsign": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "color": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "depart_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "depart_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "arrive_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "arrive_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "trip": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "delay_min": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "cancelled": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "yours": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "line",
+                                                    "headsign",
+                                                    "color",
+                                                    "depart_at",
+                                                    "depart_time",
+                                                    "arrive_at",
+                                                    "arrive_time",
+                                                    "trip",
+                                                    "delay_min",
+                                                    "cancelled",
+                                                    "yours"
+                                                ]
+                                            }
+                                        },
+                                        "auto_switch": {
+                                            "type": "boolean",
+                                            "description": "Switch trams for me: Expadu moves them to the best tram they can still make (with Undo); off, it only suggests."
+                                        }
+                                    },
+                                    "required": [
+                                        "runs",
+                                        "auto_switch"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/day/command": {
             "post": {
                 "operationId": "day.command",
@@ -11418,6 +11555,9 @@
                                                 "type": "boolean"
                                             },
                                             "leave_notice": {
+                                                "type": "boolean"
+                                            },
+                                            "auto_switch_trams": {
                                                 "type": "boolean"
                                             },
                                             "composer_ask_first_everyday": {

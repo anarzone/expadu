@@ -16223,6 +16223,308 @@ public enum Operations {
             }
         }
     }
+    /// A change as a live board: every tram on the ride's stretch from a little before it was planned,
+    /// live as the feed knows them, the trip's own marked; and whether Expadu switches trams for them
+    /// (the auto_switch_trams setting)
+    ///
+    /// - Remark: HTTP `POST /travel/trip/ride/board`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/board/post(appTripRide.board)`.
+    public enum AppTripRide_board {
+        public static let id: Swift.String = "appTripRide.board"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_board.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.AppTripRide_board.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.AppTripRide_board.Input.Headers
+            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody/json/leg`.
+                    public var leg: Swift.Int
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody/json/from`.
+                    public var from: Swift.String?
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody/json/at`.
+                    public var at: Foundation.Date?
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - leg:
+                    ///   - from:
+                    ///   - at:
+                    public init(
+                        leg: Swift.Int,
+                        from: Swift.String? = nil,
+                        at: Foundation.Date? = nil
+                    ) {
+                        self.leg = leg
+                        self.from = from
+                        self.at = at
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case leg
+                        case from
+                        case at
+                    }
+                }
+                /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody/content/application\/json`.
+                case json(Operations.AppTripRide_board.Input.Body.JsonPayload)
+            }
+            public var body: Operations.AppTripRide_board.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.AppTripRide_board.Input.Headers = .init(),
+                body: Operations.AppTripRide_board.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload`.
+                        public struct RunsPayloadPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/line`.
+                            public var line: Swift.String
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/headsign`.
+                            public var headsign: Swift.String?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/color`.
+                            public var color: Swift.String?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/depart_at`.
+                            public var departAt: Swift.String
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/depart_time`.
+                            public var departTime: Swift.String
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/arrive_at`.
+                            public var arriveAt: Swift.String
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/arrive_time`.
+                            public var arriveTime: Swift.String
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/trip`.
+                            public var trip: Swift.String?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/delay_min`.
+                            public var delayMin: Swift.Int?
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/cancelled`.
+                            public var cancelled: Swift.Bool
+                            /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/RunsPayload/yours`.
+                            public var yours: Swift.Bool
+                            /// Creates a new `RunsPayloadPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - line:
+                            ///   - headsign:
+                            ///   - color:
+                            ///   - departAt:
+                            ///   - departTime:
+                            ///   - arriveAt:
+                            ///   - arriveTime:
+                            ///   - trip:
+                            ///   - delayMin:
+                            ///   - cancelled:
+                            ///   - yours:
+                            public init(
+                                line: Swift.String,
+                                headsign: Swift.String? = nil,
+                                color: Swift.String? = nil,
+                                departAt: Swift.String,
+                                departTime: Swift.String,
+                                arriveAt: Swift.String,
+                                arriveTime: Swift.String,
+                                trip: Swift.String? = nil,
+                                delayMin: Swift.Int? = nil,
+                                cancelled: Swift.Bool,
+                                yours: Swift.Bool
+                            ) {
+                                self.line = line
+                                self.headsign = headsign
+                                self.color = color
+                                self.departAt = departAt
+                                self.departTime = departTime
+                                self.arriveAt = arriveAt
+                                self.arriveTime = arriveTime
+                                self.trip = trip
+                                self.delayMin = delayMin
+                                self.cancelled = cancelled
+                                self.yours = yours
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case line
+                                case headsign
+                                case color
+                                case departAt = "depart_at"
+                                case departTime = "depart_time"
+                                case arriveAt = "arrive_at"
+                                case arriveTime = "arrive_time"
+                                case trip
+                                case delayMin = "delay_min"
+                                case cancelled
+                                case yours
+                            }
+                        }
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/runs`.
+                        public typealias RunsPayload = [Operations.AppTripRide_board.Output.Ok.Body.JsonPayload.RunsPayloadPayload]
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/runs`.
+                        public var runs: Operations.AppTripRide_board.Output.Ok.Body.JsonPayload.RunsPayload
+                        /// Switch trams for me: Expadu moves them to the best tram they can still make (with Undo); off, it only suggests.
+                        ///
+                        /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/json/auto_switch`.
+                        public var autoSwitch: Swift.Bool
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - runs:
+                        ///   - autoSwitch: Switch trams for me: Expadu moves them to the best tram they can still make (with Undo); off, it only suggests.
+                        public init(
+                            runs: Operations.AppTripRide_board.Output.Ok.Body.JsonPayload.RunsPayload,
+                            autoSwitch: Swift.Bool
+                        ) {
+                            self.runs = runs
+                            self.autoSwitch = autoSwitch
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case runs
+                            case autoSwitch = "auto_switch"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/responses/200/content/application\/json`.
+                    case json(Operations.AppTripRide_board.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.AppTripRide_board.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.AppTripRide_board.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.AppTripRide_board.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/board/post(appTripRide.board)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.AppTripRide_board.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.AppTripRide_board.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Validation error
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/board/post(appTripRide.board)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Components.Responses.ValidationException)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            public var unprocessableContent: Components.Responses.ValidationException {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthenticated
+            ///
+            /// - Remark: Generated from `#/paths//travel/trip/ride/board/post(appTripRide.board)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.AuthenticationException)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.AuthenticationException {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
     /// go in comes back 422 with why, and nothing changes
@@ -35944,6 +36246,8 @@ public enum Operations {
                         public var routineLearning: Swift.Bool?
                         /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/leave_notice`.
                         public var leaveNotice: Swift.Bool?
+                        /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/auto_switch_trams`.
+                        public var autoSwitchTrams: Swift.Bool?
                         /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/composer_ask_first_everyday`.
                         public var composerAskFirstEveryday: Swift.Bool?
                         /// - Remark: Generated from `#/paths/settings/PUT/requestBody/json/settings/composer_ask_first_paperwork`.
@@ -35958,6 +36262,7 @@ public enum Operations {
                         ///   - personalisation:
                         ///   - routineLearning:
                         ///   - leaveNotice:
+                        ///   - autoSwitchTrams:
                         ///   - composerAskFirstEveryday:
                         ///   - composerAskFirstPaperwork:
                         public init(
@@ -35968,6 +36273,7 @@ public enum Operations {
                             personalisation: Swift.Bool? = nil,
                             routineLearning: Swift.Bool? = nil,
                             leaveNotice: Swift.Bool? = nil,
+                            autoSwitchTrams: Swift.Bool? = nil,
                             composerAskFirstEveryday: Swift.Bool? = nil,
                             composerAskFirstPaperwork: Swift.Bool? = nil
                         ) {
@@ -35978,6 +36284,7 @@ public enum Operations {
                             self.personalisation = personalisation
                             self.routineLearning = routineLearning
                             self.leaveNotice = leaveNotice
+                            self.autoSwitchTrams = autoSwitchTrams
                             self.composerAskFirstEveryday = composerAskFirstEveryday
                             self.composerAskFirstPaperwork = composerAskFirstPaperwork
                         }
@@ -35989,6 +36296,7 @@ public enum Operations {
                             case personalisation
                             case routineLearning = "routine_learning"
                             case leaveNotice = "leave_notice"
+                            case autoSwitchTrams = "auto_switch_trams"
                             case composerAskFirstEveryday = "composer_ask_first_everyday"
                             case composerAskFirstPaperwork = "composer_ask_first_paperwork"
                         }

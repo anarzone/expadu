@@ -146,6 +146,8 @@ Route::prefix('v1')->middleware('throttle:app-api')->group(function () {
             Route::post('trip/ride', [AppTripRideController::class, 'switch'])->middleware('throttle:journey');
             Route::post('trip/ride/next', [AppTripRideController::class, 'next'])->middleware('throttle:journey');
             Route::post('trip/ride/undo', [AppTripRideController::class, 'undo'])->middleware('throttle:journey');
+            // A change as a live board: every tram on the ride's stretch, live (When your tram is late).
+            Route::post('trip/ride/board', [AppTripRideController::class, 'board'])->middleware('throttle:journey');
         });
         // Getting there (an event's details): the ways, and I'm on my way on one of them.
         Route::post('journey/plan', [JourneyController::class, 'plan'])->middleware(['verified', 'throttle:journey']);
