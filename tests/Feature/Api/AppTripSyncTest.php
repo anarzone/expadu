@@ -164,3 +164,34 @@ test('a tram the router has no way on from is said so, and the trip stays', func
         ->postJson('/api/v1/travel/trip/ride', ['leg' => 1, 'line' => '18', 'depart_at' => ($this->at)('17:42')])->assertUnprocessable();
     expect(ActiveTrip::query()->where('user_id', $this->person->id)->value('journey')['legs'][1]['line'])->toBe('16');
 });
+
+test('a change as a live board: every tram on the stretch once, soonest first, the trip’s own marked, live delays said', function () {
+    fakeRuns([
+        ['18', '2026-11-16T16:42:00Z', '2026-11-16T16:48:00Z', 'run-18-1742'],
+        ['16', '2026-11-16T16:38:00Z', '2026-11-16T16:44:00Z', 'run-16-1736'],
+        ['16', '2026-11-16T16:38:00Z', '2026-11-16T16:44:00Z', 'run-16-1736'],
+        ['16', '2026-11-16T16:46:00Z', '2026-11-16T16:52:00Z', 'run-16-1746'],
+    ]);
+
+    $board = $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/board', ['leg' => 1, 'from' => 'Köln Ebertplatz', 'at' => ($this->at)('17:36')])
+        ->assertOk()->assertJsonPath('auto_switch', true)->json('runs');
+
+    expect(collect($board)->map(fn (array $run) => $run['line'].' '.$run['depart_time'].($run['yours'] ? ' (yours)' : ''))->all())
+        ->toBe(['16 17:38 (yours)', '18 17:42', '16 17:46'])
+        ->and($board[1]['arrive_time'])->toBe('17:48')
+        ->and($board[0])->toHaveKeys(['delay_min', 'cancelled', 'arrive_at', 'trip']);
+});
+
+test('switch trams for me is theirs to turn off, and the board says so', function () {
+    fakeRuns([['16', '2026-11-16T16:38:00Z', '2026-11-16T16:44:00Z', 'run-16-1736']]);
+    $this->actingAs($this->person)->putJson('/user-settings', ['settings' => ['auto_switch_trams' => false]])->assertOk();
+
+    app('auth')->forgetGuards();
+    $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/board', ['leg' => 1])->assertOk()->assertJsonPath('auto_switch', false);
+});
+
+test('🔒 the board is only for your own running trip', function () {
+    $this->postJson('/api/v1/travel/trip/ride/board', ['leg' => 1])->assertUnauthorized();
+    $someone = User::factory()->onboarded()->create()->createToken('iPhone')->plainTextToken;
+    $this->withToken($someone)->postJson('/api/v1/travel/trip/ride/board', ['leg' => 1])->assertNotFound();
+});

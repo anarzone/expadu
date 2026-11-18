@@ -257,6 +257,13 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /travel/trip/ride/undo`.
     /// - Remark: Generated from `#/paths//travel/trip/ride/undo/post(appTripRide.undo)`.
     func appTripRide_undo(_ input: Operations.AppTripRide_undo.Input) async throws -> Operations.AppTripRide_undo.Output
+    /// A change as a live board: every tram on the ride's stretch from a little before it was planned,
+    /// live as the feed knows them, the trip's own marked; and whether Expadu switches trams for them
+    /// (the auto_switch_trams setting)
+    ///
+    /// - Remark: HTTP `POST /travel/trip/ride/board`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/board/post(appTripRide.board)`.
+    func appTripRide_board(_ input: Operations.AppTripRide_board.Input) async throws -> Operations.AppTripRide_board.Output
     /// One change to the day, as the web's Today makes it (ComposerWorkspaceController::update):
     /// the new revision and what changed, so the app can say so with an Undo; a change that can't
     /// go in comes back 422 with why, and nothing changes
@@ -1243,6 +1250,21 @@ extension APIProtocol {
         body: Operations.AppTripRide_undo.Input.Body
     ) async throws -> Operations.AppTripRide_undo.Output {
         try await appTripRide_undo(Operations.AppTripRide_undo.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// A change as a live board: every tram on the ride's stretch from a little before it was planned,
+    /// live as the feed knows them, the trip's own marked; and whether Expadu switches trams for them
+    /// (the auto_switch_trams setting)
+    ///
+    /// - Remark: HTTP `POST /travel/trip/ride/board`.
+    /// - Remark: Generated from `#/paths//travel/trip/ride/board/post(appTripRide.board)`.
+    public func appTripRide_board(
+        headers: Operations.AppTripRide_board.Input.Headers = .init(),
+        body: Operations.AppTripRide_board.Input.Body
+    ) async throws -> Operations.AppTripRide_board.Output {
+        try await appTripRide_board(Operations.AppTripRide_board.Input(
             headers: headers,
             body: body
         ))
