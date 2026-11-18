@@ -42,7 +42,7 @@ struct ComposerColumn: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("An advertising column with today’s posters")
         .accessibilityValue(posters.indices.contains(front) ? "\(posters[front].head). \(posters[front].cta)" : "")
-        .accessibilityHint("Swipe up or down to turn it; double-tap to ask the poster in front.")
+        .accessibilityHint("Swipe up or down to turn it. Double-tap to ask about the poster in front.")
         .accessibilityAddTraits(.isButton)
         .accessibilityAdjustableAction { direction in
             let count = max(posters.count, 1)

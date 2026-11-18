@@ -287,6 +287,20 @@
         iPhone’s settings at any time.
     </p>
 
+    <h3>Noticing when you leave home or work (iPhone, opt-in)</h3>
+    <p>
+        If you turn on “Notice when I leave home or work” and let the app use your location
+        “Always”, your iPhone watches two places only: the home and work you saved in Expadu.
+        It tells the app when you arrive at or leave one of them, and nothing else: not where you
+        are and not where you go. When you leave on a day and at a time you usually make a trip,
+        the app asks us for your next connection and shows it to you. When you go from one of
+        these places to the other, we keep that trip (which place, and the time you left) for 90
+        days to learn your routines, like a trip you start in the app (Art. 6(1)(a) GDPR,
+        § 25(1) TDDDG). It works only while learning from your trips is on. Turning it off
+        deletes the trips it noticed; you can also take back the location permission in your
+        iPhone’s settings.
+    </p>
+
     <h3>What Composer remembers</h3>
     <p>
         With personalisation on, you can tell Composer something lasting about yourself, such as

@@ -68,10 +68,10 @@ struct NotificationsView: View {
 
     /// The kinds they choose, in the board's order: its key on the server, its name and what it means.
     private static let kinds: [(key: String, label: String, sub: String)] = [
-        ("events", "Events you asked about", "When you tapped Remind me on one"),
-        ("transit", "Changes to your plans", "A delay or cancellation that changes what to do, an hour before"),
+        ("events", "Events you asked about", "When you tap Remind me on an event"),
+        ("transit", "Changes to your plans", "An hour before, if a delay or cancellation changes your plans"),
         ("weather", "Rain on your plans", "Only for something outdoors you planned"),
-        ("brief", "Morning brief", "One line about your day, on days with something on"),
+        ("brief", "Morning brief", "One line about your day, on days you have something on"),
     ]
     private static let briefTimes: [String?] = [nil, "07:00", "07:30", "08:00", "08:30", "09:00"]
     private static let quietStarts = ["20:00", "21:00", "21:30", "22:00", "22:30", "23:00", "00:00"]
@@ -89,7 +89,7 @@ struct NotificationsView: View {
                     .font(.posterGrotesque(32)).tracking(-0.4).foregroundStyle(Palette.text)
                     .padding(.top, 14).padding(.horizontal, 4).padding(.bottom, 6)
                     .accessibilityAddTraits(.isHeader)
-                Text("Only as many as you need: when something you planned needs you to act.")
+                Text("Only as many as you need: when something you planned needs you to do something.")
                     .font(.geist(15)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 4).padding(.bottom, 16)
 
@@ -161,7 +161,7 @@ struct NotificationsView: View {
     @ViewBuilder
     private func kinds(_ settings: NotificationSettings) -> some View {
         VStack(spacing: 0) {
-            row(label: "When to leave", sub: "For each trip you set Remind me on, 5 min before") {
+            row(label: "When to leave", sub: "5 minutes before each trip you set a reminder for") {
                 Text("On each trip").font(.geist(14)).foregroundStyle(Palette.textSoft)
             }
             ForEach(Self.kinds, id: \.key) { kind in
@@ -213,7 +213,7 @@ struct NotificationsView: View {
         Text("Only the trips you set Remind me on come through quiet hours.")
             .font(.geist(13)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 4).padding(.top, 8)
-        Text("Expadu sets these up on your iPhone each time you open it. A change after that (a cancelled tram) reaches you the next time you open Expadu.")
+        Text("Expadu sets these up on your iPhone each time you open it. If something changes after that, like a cancelled tram, you’ll hear about it the next time you open Expadu.")
             .font(.geist(13)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 4).padding(.top, 18)
     }
@@ -319,7 +319,7 @@ struct NotificationAskSheet: View {
             Text("So I can tell you when to leave")
                 .font(.posterGrotesque(24)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
-            Text("\(preview.at.map { "At \(TodayPage.clock($0)), even" } ?? "Even") with Expadu closed. Your iPhone asks you next. Only what you ask for comes; the rest you choose in Notifications.")
+            Text("\(preview.at.map { "At \(TodayPage.clock($0)), even" } ?? "Even") with Expadu closed. Your iPhone will ask you next. You only get what you ask for, and you choose the rest in Notifications.")
                 .font(.geist(15)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 6)
             lockScreen.padding(.top, 14)

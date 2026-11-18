@@ -95,7 +95,7 @@ struct TripCard: View {
                     planner.stopFollowing()
                 }
             }
-        } message: { Text("The live steps stop. The trip stays on your day.") }
+        } message: { Text("Live directions stop, but the trip stays on your day.") }
     }
 
     private func card(_ live: TodayPage.Live, at date: Date) -> some View {

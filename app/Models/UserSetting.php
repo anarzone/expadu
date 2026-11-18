@@ -28,6 +28,7 @@ class UserSetting extends Model
             'personalisation' => false,
             // Learn routines from the trips they start (Routines): its own opt-in, only with personalisation on.
             'routine_learning' => false,
+            'leave_notice' => false,
             // Composer asks before it changes something (owner, 23 Oct 2026): not for everyday
             // changes (a saved place, My day, Home), at first for Paperwork. Undo works either way.
             'composer_ask_first_everyday' => false,

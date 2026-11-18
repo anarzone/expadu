@@ -59,12 +59,15 @@ public struct RoutinesState: Equatable, Sendable {
     }
 
     public var learning: Bool
+    /// Noticing when they leave home or work: on, on Expadu's side.
+    public var noticing: Bool
     public var tripsKept: Int
     public var routines: [Routine]
     public var offer: Offer?
 
-    public init(learning: Bool, tripsKept: Int, routines: [Routine], offer: Offer?) {
+    public init(learning: Bool, noticing: Bool = false, tripsKept: Int, routines: [Routine], offer: Offer?) {
         self.learning = learning
+        self.noticing = noticing
         self.tripsKept = tripsKept
         self.routines = routines
         self.offer = offer

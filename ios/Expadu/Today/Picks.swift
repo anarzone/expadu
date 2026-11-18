@@ -52,14 +52,14 @@ struct PickWall: View {
                 }
             }
             .animation(.snappy, value: picked.count >= askAtLeast)
-            Text("Pick 3 or more · \(Text(picked.count >= askAtLeast ? "\(picked.count) picked" : "\(picked.count) of 3 picked").fontWeight(.semibold).foregroundStyle(Palette.text))")
+            Text("Pick at least 3. \(Text(picked.count >= askAtLeast ? "You’ve picked \(picked.count)." : "You’ve picked \(picked.count) of 3.").fontWeight(.semibold).foregroundStyle(Palette.text))")
                 .font(.geist(13.5)).foregroundStyle(Palette.textSoft)
                 .contentTransition(.numericText())
                 .padding(.bottom, 12)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 12) {
                 ForEach(Array(picks.kinds.enumerated()), id: \.element.id) { index, kind in
                     PickTile(label: kind.label, on: picked.contains(kind.key), tilt: PickTile.tilts[index % PickTile.tilts.count],
-                             count: kind.today == 0 ? "none today" : "\(kind.today) on today") {
+                             count: kind.today == 0 ? "None today" : "\(kind.today) today") {
                         model.togglePick(session.api, kind.key)
                     }
                 }
@@ -90,8 +90,8 @@ struct PicksLine: View {
                     }
                 }
                 .accessibilityHidden(true)
-                Text(picks.learned ? "Sorted by what you picked and what you open"
-                     : "Sorted by what you picked: \(ListFormatter.localizedString(byJoining: labels))")
+                Text(picks.learned ? "Ideas are sorted by what you picked and what you open."
+                     : "Ideas are sorted by what you picked: \(ListFormatter.localizedString(byJoining: labels)).")
                     .font(.geist(13.5)).foregroundStyle(Palette.text).multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)

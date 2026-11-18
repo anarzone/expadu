@@ -182,8 +182,8 @@ struct PaperworkCard: View {
                             // What the record really says: "Get started" only with no record at all.
                             let words: (String, String, String) = switch status {
                             case "clear": ("YOUR PAPERWORK", "Nothing to do right now", "Your tasks and documents are in Paperwork.")
-                            case "paused": ("YOUR PAPERWORK", "Paperwork is paused", "You stopped it using your record. Open Paperwork to turn it back on.")
-                            case "unconfirmed": ("YOUR PAPERWORK", "Confirm your email first", "Paperwork opens your record once your address is confirmed.")
+                            case "paused": ("YOUR PAPERWORK", "Paperwork is paused", "You stopped Paperwork from using your record. Open Paperwork to turn it back on.")
+                            case "unconfirmed": ("YOUR PAPERWORK", "Confirm your email first", "Paperwork opens your record once your email address is confirmed.")
                             default: ("SETTLING IN?", "Get started when you’re ready", "A few questions, then your steps for Cologne.")
                             }
                             Text(words.0).font(.geist(12.5, .semibold)).tracking(0.4).foregroundStyle(Palette.textSoft)

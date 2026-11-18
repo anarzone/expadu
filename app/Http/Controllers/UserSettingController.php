@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\RankToday;
 use App\Models\UserSetting;
+use App\Personalisation\LeaveNotice;
 use App\Personalisation\PersonalisationWording;
 use App\Personalisation\Routines;
 use App\Personalisation\SignalRecorder;
@@ -35,6 +36,7 @@ class UserSettingController extends Controller
             'settings.profile_visibility' => ['sometimes', 'string', 'in:everyone,partners,nobody'],
             'settings.personalisation' => ['sometimes', 'boolean'],
             'settings.routine_learning' => ['sometimes', 'boolean'],
+            'settings.leave_notice' => ['sometimes', 'boolean'],
             'settings.composer_ask_first_everyday' => ['sometimes', 'boolean'],
             'settings.composer_ask_first_paperwork' => ['sometimes', 'boolean'],
         ]);
@@ -56,6 +58,17 @@ class UserSettingController extends Controller
             // Routines are learned only with personalisation on.
             if (($validated['settings']['routine_learning'] ?? null) === true && ($merged['personalisation'] ?? false) !== true) {
                 throw ValidationException::withMessages(['settings.routine_learning' => 'Turn on personalisation first.']);
+            }
+            // Noticing when they leave Home or Work needs routine learning on; off erases what it noticed.
+            if (($validated['settings']['leave_notice'] ?? null) === true && (($merged['routine_learning'] ?? false) !== true || ($merged['personalisation'] ?? false) !== true)) {
+                throw ValidationException::withMessages(['settings.leave_notice' => 'Turn on learning from your trips first.']);
+            }
+            if (($validated['settings']['leave_notice'] ?? null) === false) {
+                app(LeaveNotice::class)->forget($user);
+            }
+            // Routine learning off: noticing goes with it.
+            if (($validated['settings']['routine_learning'] ?? null) === false || ($validated['settings']['personalisation'] ?? null) === false) {
+                $merged['leave_notice'] = false;
             }
             // Turning routine learning off erases the trips kept for it and the routines.
             if (($validated['settings']['routine_learning'] ?? null) === false) {

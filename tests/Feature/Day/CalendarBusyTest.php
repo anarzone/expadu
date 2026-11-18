@@ -51,7 +51,7 @@ test('no idea is offered while they’re busy, and the day line says until when'
     $busy = todayWithBusy($user, '2026-11-18T08:30/2026-11-18T12:30,2026-11-18T12:35/2026-11-18T17:00');
     expect(collect($busy->json('ideas'))->pluck('title')->all())->toBe(['Evening gig'])
         // Two stretches five minutes apart read as one.
-        ->and($busy->json('day_line.text'))->toStartWith('Busy until 17:00.')
+        ->and($busy->json('day_line.text'))->toStartWith('You’re busy until 17:00.')
         ->and(collect($busy->json('day_line.parts'))->where('strong', true)->pluck('text')->all())->toContain('17:00');
 });
 

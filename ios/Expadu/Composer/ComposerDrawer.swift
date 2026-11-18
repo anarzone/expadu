@@ -240,7 +240,7 @@ struct ComposerSettings: View {
                                 }
                                 .frame(minHeight: 36)
                             } else {
-                                Text("Composer answers from Expadu’s own information right now; nothing you type is sent on.")
+                                Text("Right now Composer answers from Expadu’s own information. Nothing you type is sent anywhere else.")
                                     .font(.geist(14.5)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
                             }
                         } else {

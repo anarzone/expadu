@@ -492,14 +492,14 @@ final class TodayModel {
     /// Less like this: its kind lower from tomorrow, nothing hidden; sent once Undo has passed.
     func lessLikeThis(_ api: AppAPI, idea: TodayPage.Idea) {
         later(api, Signal(action: .lessLikeThis, event: idea.id), for: idea)
-        say(Note(text: "Noted. Fewer like this from tomorrow.", symbol: "minus.circle", undo: .signal(idea)))
+        say(Note(text: "Got it. You’ll see fewer like this from tomorrow.", symbol: "minus.circle", undo: .signal(idea)))
     }
 
     /// Not for me: off Today at once.
     func notForMe(_ api: AppAPI, idea: TodayPage.Idea) {
         hidden.insert(idea.id)
         later(api, Signal(action: .notForMe, event: idea.id), for: idea)
-        say(Note(text: "Taken off Today.", symbol: "xmark.circle", undo: .signal(idea)))
+        say(Note(text: "It’s off Today now.", symbol: "xmark.circle", undo: .signal(idea)))
     }
 
     private func later(_ api: AppAPI, _ signal: Signal, for idea: TodayPage.Idea) {
@@ -536,7 +536,7 @@ final class TodayModel {
         } else if page?.leave == nil {
             say(Note(text: "Nothing to leave for right now. Open an event’s Getting there to start a trip.", symbol: "info.circle"))
         } else {
-            say(Note(text: "No way there was found for now. Try again in a moment.", symbol: "exclamationmark.circle", problem: true))
+            say(Note(text: "We couldn’t find a way there right now. Try again in a moment.", symbol: "exclamationmark.circle", problem: true))
         }
     }
 
@@ -620,7 +620,7 @@ final class TodayModel {
         await load(api, quietly: true, animated: Motion.ios(0.5))
         // Cleared only once the card is gone, so it leaves still showing the finish.
         Task { try? await Task.sleep(for: .seconds(0.7)); finishing = nil }
-        let text = arrived ? "You made it." : page?.leave?.leaveTime.map { "Trip ended. Leave at \($0) still stands." } ?? "Trip ended."
+        let text = arrived ? "You made it." : page?.leave?.leaveTime.map { "Trip ended. Your leave time of \($0) still stands." } ?? "Trip ended."
         // In the Leave card when there is one; otherwise the line over the bar.
         if page?.leave?.isKnown == true {
             cardFlips += 1
@@ -639,7 +639,7 @@ final class TodayModel {
             let rides = way.legs.filter(\.rides).map { $0.name.prefix(1).lowercased() + $0.name.dropFirst() }
             let how = way.lines.isEmpty ? (way.mode == "bike" ? "by bike" : "on foot") : rides.isEmpty ? way.lines.map { "line \($0.line)" }.joined(separator: ", then ") : rides.joined(separator: ", then ")
             cardFlips += 1
-            sayInCard(Note(text: "Changed: leave at \(way.leaveTime), \(how).", symbol: "arrow.triangle.branch", undo: .way(undo)))
+            sayInCard(Note(text: "Changed: now leave at \(way.leaveTime), \(how).", symbol: "arrow.triangle.branch", undo: .way(undo)))
             return nil
         } catch {
             await load(api, quietly: true)
@@ -650,7 +650,7 @@ final class TodayModel {
     func agree(_ api: AppAPI, to pause: TodayPage.RankPause) async -> Bool {
         do throws(APIFailure) {
             try await api.agreeToOrder(pause)
-            say(Note(text: "Agreed. Today is in your order again in a minute.", symbol: "checkmark.circle.fill"))
+            say(Note(text: "Thanks. Today will be in your order again in a minute.", symbol: "checkmark.circle.fill"))
             withAnimation(.snappy) { pauseSetAside = true }
             return true
         } catch {

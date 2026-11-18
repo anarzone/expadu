@@ -651,7 +651,7 @@ private struct ConditionsCard: View {
     private var liveText: String {
         guard let journey = current?.journey else { return "—" }
         let live = journey.rides.filter { $0.realtime == true }
-        if live.isEmpty { return "Timetable times on this route: no live reading." }
+        if live.isEmpty { return "This route shows timetable times. There are no live times for it." }
         let late = live.compactMap(\.delayMin).max() ?? 0
         let cancelled = journey.rides.contains { $0.cancelled == true }
         return cancelled ? "A ride on this route is cancelled." : late >= 2 ? "Running \(late) min late now." : "Running on time."
