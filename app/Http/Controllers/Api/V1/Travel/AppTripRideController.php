@@ -82,6 +82,28 @@ class AppTripRideController extends Controller
         return response()->json([...$switched, 'trip' => $trip->fresh()?->toShared()]);
     }
 
+    /**
+     * A change as a live board: every tram on the ride's stretch from a little before it was planned,
+     * live as the feed knows them, the trip's own marked; and whether Expadu switches trams for them
+     * (the auto_switch_trams setting).
+     */
+    public function board(Request $request, TripSync $sync): JsonResponse
+    {
+        $valid = $request->validate([
+            'leg' => ['required', 'integer', 'min:0', 'max:40'],
+            'from' => ['nullable', 'string', 'max:200'],
+            'at' => ['nullable', 'date'],
+        ]);
+        $trip = $this->trip($request);
+
+        return response()->json([
+            /** @var list<array{line: string, headsign: string|null, color: string|null, depart_at: string, depart_time: string, arrive_at: string, arrive_time: string, trip: string|null, delay_min: int|null, cancelled: bool, yours: bool}> */
+            'runs' => $sync->board($trip, $this->leg($sync, $trip, $valid), CarbonImmutable::now()),
+            /** @var bool Switch trams for me: Expadu moves them to the best tram they can still make (with Undo); off, it only suggests. */
+            'auto_switch' => $request->user()->setting('auto_switch_trams') !== false,
+        ]);
+    }
+
     public function undo(Request $request, TripSync $sync): JsonResponse
     {
         $valid = $request->validate(['undo' => ['required', 'uuid']]);

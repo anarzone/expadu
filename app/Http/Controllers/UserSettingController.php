@@ -37,6 +37,7 @@ class UserSettingController extends Controller
             'settings.personalisation' => ['sometimes', 'boolean'],
             'settings.routine_learning' => ['sometimes', 'boolean'],
             'settings.leave_notice' => ['sometimes', 'boolean'],
+            'settings.auto_switch_trams' => ['sometimes', 'boolean'],
             'settings.composer_ask_first_everyday' => ['sometimes', 'boolean'],
             'settings.composer_ask_first_paperwork' => ['sometimes', 'boolean'],
         ]);
