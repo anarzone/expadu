@@ -9975,6 +9975,10 @@
                                             "type": "boolean",
                                             "description": "Routine learning on: their own yes, with personalisation on."
                                         },
+                                        "noticing": {
+                                            "type": "boolean",
+                                            "description": "Noticing when they leave Home or Work (LeaveNotice): its own yes, with routine learning on."
+                                        },
                                         "trips_kept": {
                                             "type": "integer",
                                             "description": "Trips kept for routines (90 days at most)."
@@ -10087,6 +10091,7 @@
                                     },
                                     "required": [
                                         "learning",
+                                        "noticing",
                                         "trips_kept",
                                         "routines",
                                         "offer"
@@ -10240,6 +10245,144 @@
                                     "required": [
                                         "dismissed",
                                         "id"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/routines/leaving": {
+            "get": {
+                "operationId": "routines.leaving",
+                "summary": "They just left their Home or Work: what to tell them now, when a routine of theirs runs (204\nwhen none does). The phone sends only which place, never where it is",
+                "tags": [
+                    "Routines"
+                ],
+                "parameters": [
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "home",
+                                "work"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "notice": {
+                                            "type": "object",
+                                            "properties": {
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "body": {
+                                                    "type": "string"
+                                                },
+                                                "link": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "title",
+                                                "body",
+                                                "link"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "notice"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No content"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/routines/noticed": {
+            "post": {
+                "operationId": "routines.noticed",
+                "summary": "A trip the phone noticed, from one of their places to the other: kept for routines like one\nstarted in the app. Refused (422) when noticing isn't on",
+                "tags": [
+                    "Routines"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "from": {
+                                        "type": "string",
+                                        "enum": [
+                                            "home",
+                                            "work"
+                                        ]
+                                    },
+                                    "to": {
+                                        "type": "string",
+                                        "enum": [
+                                            "home",
+                                            "work"
+                                        ]
+                                    },
+                                    "left_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    }
+                                },
+                                "required": [
+                                    "from",
+                                    "to",
+                                    "left_at"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "kept": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "kept"
                                     ]
                                 }
                             }
@@ -11272,6 +11415,9 @@
                                                 "type": "boolean"
                                             },
                                             "routine_learning": {
+                                                "type": "boolean"
+                                            },
+                                            "leave_notice": {
                                                 "type": "boolean"
                                             },
                                             "composer_ask_first_everyday": {

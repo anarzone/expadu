@@ -496,6 +496,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /routines/dismiss`.
     /// - Remark: Generated from `#/paths//routines/dismiss/post(routines.dismiss)`.
     func routines_dismiss(_ input: Operations.Routines_dismiss.Input) async throws -> Operations.Routines_dismiss.Output
+    /// They just left their Home or Work: what to tell them now, when a routine of theirs runs (204
+    /// when none does). The phone sends only which place, never where it is
+    ///
+    /// - Remark: HTTP `GET /routines/leaving`.
+    /// - Remark: Generated from `#/paths//routines/leaving/get(routines.leaving)`.
+    func routines_leaving(_ input: Operations.Routines_leaving.Input) async throws -> Operations.Routines_leaving.Output
+    /// A trip the phone noticed, from one of their places to the other: kept for routines like one
+    /// started in the app. Refused (422) when noticing isn't on
+    ///
+    /// - Remark: HTTP `POST /routines/noticed`.
+    /// - Remark: Generated from `#/paths//routines/noticed/post(routines.noticed)`.
+    func routines_noticed(_ input: Operations.Routines_noticed.Input) async throws -> Operations.Routines_noticed.Output
     /// Forget my trips: the trips kept for routines are erased; the routines they confirmed stay.
     /// Permanent (the phone asks first)
     ///
@@ -2008,6 +2020,34 @@ extension APIProtocol {
         body: Operations.Routines_dismiss.Input.Body
     ) async throws -> Operations.Routines_dismiss.Output {
         try await routines_dismiss(Operations.Routines_dismiss.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// They just left their Home or Work: what to tell them now, when a routine of theirs runs (204
+    /// when none does). The phone sends only which place, never where it is
+    ///
+    /// - Remark: HTTP `GET /routines/leaving`.
+    /// - Remark: Generated from `#/paths//routines/leaving/get(routines.leaving)`.
+    public func routines_leaving(
+        query: Operations.Routines_leaving.Input.Query,
+        headers: Operations.Routines_leaving.Input.Headers = .init()
+    ) async throws -> Operations.Routines_leaving.Output {
+        try await routines_leaving(Operations.Routines_leaving.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// A trip the phone noticed, from one of their places to the other: kept for routines like one
+    /// started in the app. Refused (422) when noticing isn't on
+    ///
+    /// - Remark: HTTP `POST /routines/noticed`.
+    /// - Remark: Generated from `#/paths//routines/noticed/post(routines.noticed)`.
+    public func routines_noticed(
+        headers: Operations.Routines_noticed.Input.Headers = .init(),
+        body: Operations.Routines_noticed.Input.Body
+    ) async throws -> Operations.Routines_noticed.Output {
+        try await routines_noticed(Operations.Routines_noticed.Input(
             headers: headers,
             body: body
         ))
