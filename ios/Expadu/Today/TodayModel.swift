@@ -332,6 +332,11 @@ final class TodayModel {
         // Walking to it: from when they can be at the stop (two minutes' grace), so an earlier tram that still makes the change shows.
         guard let board = try? await api.tripRideBoard(leg: next.leg, from: leg.from, at: leg.departAt,
                                                        since: next.boarding ? next.ready.addingTimeInterval(-120) : nil) else { return }
+        // No trams read (the engine didn't answer in time): no board, rather than an empty one with only its switch.
+        guard !board.runs.isEmpty else {
+            if changeBoard != nil { withAnimation(Motion.spring) { changeBoard = nil } }
+            return
+        }
         let live = LiveBoard(leg: next.leg, ready: next.ready, connection: next.connection, boarding: next.boarding, board: board)
         withAnimation(Motion.spring) { changeBoard = live }
         guard board.autoSwitch, let better = better(live), boardSwitched.insert(better.run.id).inserted else { return }
