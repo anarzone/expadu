@@ -138,3 +138,54 @@ test('another line that gets there later but still in time for the next ride is 
     // The 7 gets there at 13:43, in time to walk to the 12; the 1 at 13:46 is too late.
     expect(collect($legs[1]['also'])->pluck('line')->all())->toBe(['7']);
 });
+
+test('the soonest tram that still makes the change is named before the way\'s own, its own line too', function () {
+    // The owner, 18 Nov at 19:36: the way's 16 at 19:47 to Ebertplatz for the Merkenich 12 at 20:04; the
+    // 16 at 19:41 (15 min late) meets the same 12, and the 16 at 19:57 too, but leaves later.
+    $journey = ['arrive_at' => '2026-11-13T20:28:00+01:00', 'legs' => [
+        choiceLeg('walk', null, '', 'Köln Appellhofplatz', '19:46', '19:47'),
+        choiceLeg('tram', '16', 'Köln Appellhofplatz', 'Köln Ebertplatz', '19:47', '19:52'),
+        choiceLeg('walk', null, 'Köln Ebertplatz', 'Köln Ebertplatz', '19:52', '19:54'),
+        choiceLeg('tram', '12', 'Köln Ebertplatz', 'Köln Merkenich Mitte', '20:04', '20:24'),
+        choiceLeg('walk', null, 'Köln Merkenich Mitte', '', '20:24', '20:28'),
+    ]];
+    $choices = choicesWith([
+        'köln appellhofplatz|köln ebertplatz' => [
+            choiceRun('16', '19:37', '19:42'), // gone before they're at the stop (19:37 + a minute's walk)
+            choiceRun('18', '19:40', '19:45', cancelled: true),
+            ['line' => '16', 'headsign' => null, 'color' => '#00A3A6', 'cancelled' => false, 'delay_min' => 15, 'trip' => 'late-16',
+                'depart_at' => '2026-11-13T19:41:00+01:00', 'arrive_at' => '2026-11-13T19:46:00+01:00'],
+            choiceRun('16', '19:47', '19:52'),
+            choiceRun('18', '19:50', '19:55'),
+            choiceRun('16', '20:05', '20:10'), // too late for the 12
+        ],
+        'köln ebertplatz|köln merkenich mitte' => [choiceRun('12', '20:04', '20:24')],
+    ]);
+
+    $legs = $choices->add([$journey], 3.0, CarbonImmutable::parse('2026-11-13T19:37:00+01:00'))[0]['legs'];
+
+    expect($legs[1]['earlier'])->toMatchArray([
+        'line' => '16', 'depart_time' => '19:41', 'delay_min' => 15, 'trip' => 'late-16',
+        // In at 19:46, and the change may start until 20:02 (the 12 at 20:04, a 2-minute walk).
+        'wait_min' => 16,
+    ])
+        ->and($legs[3])->not->toHaveKey('earlier');
+});
+
+test('no earlier tram is named when none makes the change, or the other lines already name it', function () {
+    $journey = ['arrive_at' => '2026-11-13T20:28:00+01:00', 'legs' => [
+        choiceLeg('tram', '16', 'Köln Appellhofplatz', 'Köln Ebertplatz', '19:47', '19:52'),
+        choiceLeg('walk', null, 'Köln Ebertplatz', 'Köln Ebertplatz', '19:52', '19:54'),
+        choiceLeg('tram', '12', 'Köln Ebertplatz', 'Köln Merkenich Mitte', '20:04', '20:24'),
+    ]];
+    $choices = choicesWith([
+        'köln appellhofplatz|köln ebertplatz' => [choiceRun('18', '19:43', '19:48'), choiceRun('16', '19:47', '19:52')],
+        'köln ebertplatz|köln merkenich mitte' => [choiceRun('12', '20:04', '20:24')],
+    ]);
+
+    $legs = $choices->add([$journey], 3.0, CarbonImmutable::parse('2026-11-13T19:37:00+01:00'))[0]['legs'];
+
+    // The 18 at 19:43 is already beside the 16 ("16 at 19:47 or 18 at 19:43").
+    expect(collect($legs[0]['also'])->pluck('line')->all())->toBe(['18'])
+        ->and($legs[0]['earlier'])->toBeNull();
+});
