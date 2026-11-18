@@ -30,8 +30,11 @@ final class TripSync
     /** The board starts this long before the ride was planned to leave (an earlier tram can still be caught). */
     private const BOARD_BEFORE_MINUTES = 8;
 
-    /** How many runs the board shows at most. */
-    private const BOARD_RUNS = 6;
+    /** Asked from when they can be at the stop (the first tram), never further back than this before theirs. */
+    private const BOARD_SINCE_MAX_MINUTES = 40;
+
+    /** How many runs the board shows at most (theirs always among them). */
+    private const BOARD_RUNS = 8;
 
     /** How long Undo can put the old trip back. */
     private const UNDO_MINUTES = 30;
@@ -210,7 +213,7 @@ final class TripSync
      *
      * @return list<array<string, mixed>>
      */
-    public function board(ActiveTrip $trip, int $legIndex, CarbonImmutable $now): array
+    public function board(ActiveTrip $trip, int $legIndex, CarbonImmutable $now, ?CarbonImmutable $since = null): array
     {
         $leg = $this->ride($trip, $legIndex);
         $engine = $this->engine();
@@ -220,7 +223,11 @@ final class TripSync
         $from = new GeoPoint((float) $leg['from']['lat'], (float) $leg['from']['lng']);
         $to = new GeoPoint((float) $leg['to']['lat'], (float) $leg['to']['lng']);
         $planned = CarbonImmutable::parse($leg['depart_at'] ?? $now->toIso8601String());
-        $at = $planned->subMinutes(self::BOARD_BEFORE_MINUTES)->max($now->subMinutes(self::BOARD_BEFORE_MINUTES));
+        // From when they can be at the stop when the phone says so (the first tram: the 16 at 19:41 for the
+        // 12 the 16 at 19:47 meets), else a little before theirs.
+        $at = $since !== null
+            ? $since->max($planned->subMinutes(self::BOARD_SINCE_MAX_MINUTES))->min($planned->subMinutes(self::BOARD_BEFORE_MINUTES))
+            : $planned->subMinutes(self::BOARD_BEFORE_MINUTES)->max($now->subMinutes(self::BOARD_BEFORE_MINUTES));
         $runs = $engine->withTimeBudget(4.0)->directRides([['from' => $from, 'to' => $to, 'at' => $at]])[0] ?? [];
         usort($runs, fn (array $a, array $b) => $a['depart_at'] <=> $b['depart_at']);
         $seen = [];
@@ -234,12 +241,15 @@ final class TripSync
             $seen[$key] = true;
             $board[] = [...$this->run($run), 'arrive_at' => $run['arrive_at'], 'delay_min' => $run['delay_min'] ?? null,
                 'cancelled' => (bool) $run['cancelled'], 'yours' => $this->isPlanned($leg, $run)];
-            if (count($board) >= self::BOARD_RUNS) {
-                break;
-            }
+        }
+        // The first runs, and theirs when it comes later (the board marks it).
+        $shown = array_slice($board, 0, self::BOARD_RUNS);
+        $yours = collect($board)->first(fn (array $run) => $run['yours']);
+        if ($yours !== null && ! collect($shown)->contains(fn (array $run) => $run['yours'])) {
+            $shown[self::BOARD_RUNS - 1] = $yours;
         }
 
-        return $board;
+        return $shown;
     }
 
     /** Puts back the trip a switch replaced; false when Undo has run out or isn't theirs. */

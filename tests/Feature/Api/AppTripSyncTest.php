@@ -182,6 +182,23 @@ test('a change as a live board: every tram on the stretch once, soonest first, t
         ->and($board[0])->toHaveKeys(['delay_min', 'cancelled', 'arrive_at', 'trip']);
 });
 
+test('the first tram’s board starts from when they can be at the stop, and always shows theirs', function () {
+    // Walking to their 16 at 17:38: every two minutes a tram before it, more than the board shows.
+    $runs = [];
+    for ($m = 10; $m <= 36; $m += 2) {
+        $runs[] = ['18', sprintf('2026-11-16T16:%02d:00Z', $m), sprintf('2026-11-16T16:%02d:00Z', $m + 6), "run-18-17{$m}"];
+    }
+    fakeRuns([...$runs, ['16', '2026-11-16T16:38:00Z', '2026-11-16T16:44:00Z', 'run-16-1736']]);
+
+    $board = $this->withToken($this->token)->postJson('/api/v1/travel/trip/ride/board', ['leg' => 1, 'since' => ($this->at)('17:10')])
+        ->assertOk()->json('runs');
+
+    expect($board)->toHaveCount(8)
+        ->and($board[0]['depart_time'])->toBe('17:10')
+        ->and(collect($board)->last()['yours'])->toBeTrue()
+        ->and(collect($board)->last()['depart_time'])->toBe('17:38');
+});
+
 test('switch trams for me is theirs to turn off, and the board says so', function () {
     fakeRuns([['16', '2026-11-16T16:38:00Z', '2026-11-16T16:44:00Z', 'run-16-1736']]);
     $this->actingAs($this->person)->putJson('/user-settings', ['settings' => ['auto_switch_trams' => false]])->assertOk();
