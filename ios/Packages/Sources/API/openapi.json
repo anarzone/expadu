@@ -5917,6 +5917,14 @@
                                             "null"
                                         ],
                                         "format": "date-time"
+                                    },
+                                    "since": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date-time",
+                                        "description": "When they can be at the stop, when the phone knows (walking to their first tram)."
                                     }
                                 },
                                 "required": [
