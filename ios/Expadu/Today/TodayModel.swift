@@ -273,6 +273,87 @@ final class TodayModel {
         }
     }
 
+    // MARK: The change as a live board (When your tram is late)
+
+    /// The next change's board, for its ride leg, and when they'll be ready at its stop.
+    private(set) var changeBoard: (leg: Int, ready: Date, board: ChangeBoard)?
+    /// Switch trams for me off: the better tram, offered with "Take it".
+    var changeSuggestion: (run: ChangeBoard.Run, gone: Bool)? {
+        guard let changeBoard, !changeBoard.board.autoSwitch else { return nil }
+        return better(changeBoard.board, ready: changeBoard.ready, leg: changeBoard.leg)
+    }
+    /// Boards already switched on (by the run), so one isn't switched twice while the trip reloads.
+    @ObservationIgnored private var boardSwitched: Set<String> = []
+    /// Changes where they chose a tram by hand: Expadu then only steps in when theirs will be missed,
+    /// never to move them to a faster one they passed over.
+    private var pickedByHand: Set<String> = []
+
+    private func handKey(_ leg: Int) -> String? {
+        guard let legs = page?.trip?.legs, legs.indices.contains(leg) else { return nil }
+        return legs[leg].from
+    }
+
+    private func better(_ board: ChangeBoard, ready: Date, leg: Int) -> (run: ChangeBoard.Run, gone: Bool)? {
+        guard let better = board.better(ready: ready) else { return nil }
+        if !better.gone, let key = handKey(leg), pickedByHand.contains(key) { return nil }
+        return better
+    }
+
+    /// The next change's board read again, and, with switch trams for me on, the trip moved to a better
+    /// tram than theirs (theirs leaves before they get there, or another gets them there sooner).
+    func refreshChangeBoard(_ api: AppAPI, here: Guide.Position?) async {
+        guard let trip = page?.trip, let next = trip.nextChange(here: here, at: .now) else {
+            if changeBoard != nil { withAnimation(Motion.spring) { changeBoard = nil } }
+            return
+        }
+        let leg = trip.legs[next.leg]
+        guard let board = try? await api.tripRideBoard(leg: next.leg, from: leg.from, at: leg.departAt) else { return }
+        withAnimation(Motion.spring) { changeBoard = (next.leg, next.ready, board) }
+        guard board.autoSwitch, let better = better(board, ready: next.ready, leg: next.leg), boardSwitched.insert(better.run.id).inserted else { return }
+        let yours = board.yours
+        let said = better.gone
+            ? "Your \(yours?.line ?? "tram") leaves before you get to \(leg.from). You’re now on the \(better.run.line) at \(better.run.departTime)."
+            : "The \(better.run.line) at \(better.run.departTime) gets you there \(Self.minutesSooner(yours, than: better.run)) sooner, so you’re on it now."
+        await switchToRun(api, better.run, leg: next.leg, said: said)
+    }
+
+    /// A tram on the board taken: tapped, or "Take it". With Undo.
+    func takeRun(_ api: AppAPI, _ run: ChangeBoard.Run) async {
+        guard let changeBoard else { return }
+        boardSwitched.insert(run.id)
+        if let key = handKey(changeBoard.leg) { pickedByHand.insert(key) }
+        await switchToRun(api, run, leg: changeBoard.leg, said: "You’re now on the \(run.line) at \(run.departTime).")
+    }
+
+    /// Switch trams for me, on or off: kept on Expadu's side; the board follows at once.
+    func setAutoSwitch(_ api: AppAPI, _ on: Bool) async {
+        changeBoard?.board.autoSwitch = on
+        do throws(APIFailure) {
+            try await api.setAutoSwitchTrams(on)
+        } catch {
+            changeBoard?.board.autoSwitch = !on
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
+    private func switchToRun(_ api: AppAPI, _ run: ChangeBoard.Run, leg: Int, said: String) async {
+        guard let legs = page?.trip?.legs, legs.indices.contains(leg) else { return }
+        let tripLeg = legs[leg]
+        let ride = AppAPI.TripRide(line: run.line, color: run.color, departAt: run.departAtText, departTime: run.departTime, arriveTime: run.arriveTime, trip: run.trip)
+        do throws(APIFailure) {
+            let switched = try await api.tripRideSwitch(leg: leg, from: tripLeg.from, at: tripLeg.departAt, to: ride)
+            await rideSwitched(api, switched, said: said)
+            changeBoard = nil
+        } catch {
+            say(Note(text: Self.words(error), symbol: "exclamationmark.circle", problem: true))
+        }
+    }
+
+    private static func minutesSooner(_ yours: ChangeBoard.Run?, than run: ChangeBoard.Run) -> String {
+        let minutes = max(1, Int(((yours?.arriveAt ?? run.arriveAt).timeIntervalSince(run.arriveAt) / 60).rounded()))
+        return minutes == 1 ? "1 minute" : "\(minutes) minutes"
+    }
+
     /// A change a delay broke: the next tram there, taken for them, with Undo.
     func catchNext(_ api: AppAPI, leg: TodayPage.Trip.Leg, index: Int, readyAt: Date) async {
         let key = "next|\(leg.from)|\(leg.departTime)"
