@@ -1134,6 +1134,10 @@ public struct AppAPI: Sendable {
         public let arriveTime: String
         public let trip: String?
 
+        public init(line: String, color: String?, departAt: String, departTime: String, arriveTime: String, trip: String?) {
+            self.line = line; self.color = color; self.departAt = departAt; self.departTime = departTime; self.arriveTime = arriveTime; self.trip = trip
+        }
+
         init?(_ json: [String: Any]) {
             guard let line = json["line"] as? String, let departAt = json["depart_at"] as? String,
                   let departTime = json["depart_time"] as? String, let arriveTime = json["arrive_time"] as? String else { return nil }
@@ -1189,6 +1193,29 @@ public struct AppAPI: Sendable {
         body["ready_at"] = ISO8601DateFormatter().string(from: readyAt)
         let reply = try await composer("POST", "travel/trip/ride/next", body)
         return try switched(reply)
+    }
+
+    /// A change as a live board: every tram on the ride's stretch, live, the trip's own marked. A read:
+    /// asked again when the connection drops.
+    public func tripRideBoard(leg: Int, from: String, at: Date) async throws(APIFailure) -> ChangeBoard {
+        let reply = try await composer("POST", "travel/trip/ride/board", ride(leg, from: from, at: at), retry: true)
+        guard reply.status == 200, let json = try? JSONSerialization.jsonObject(with: reply.data) as? [String: Any] else { throw .unreachable }
+        let runs = ((json["runs"] as? [[String: Any]]) ?? []).compactMap { row -> ChangeBoard.Run? in
+            guard let line = row["line"] as? String, let departText = row["depart_at"] as? String, let departAt = Self.date(from: departText),
+                  let arriveText = row["arrive_at"] as? String, let arriveAt = Self.date(from: arriveText),
+                  let departTime = row["depart_time"] as? String, let arriveTime = row["arrive_time"] as? String else { return nil }
+            return ChangeBoard.Run(line: line, color: row["color"] as? String, headsign: row["headsign"] as? String, departAt: departAt,
+                                   departAtText: departText, departTime: departTime, arriveAt: arriveAt, arriveTime: arriveTime,
+                                   delayMin: row["delay_min"] as? Int, cancelled: row["cancelled"] as? Bool ?? false,
+                                   yours: row["yours"] as? Bool ?? false, trip: row["trip"] as? String)
+        }
+        return ChangeBoard(runs: runs, autoSwitch: json["auto_switch"] as? Bool ?? true)
+    }
+
+    /// Switch trams for me: on, Expadu moves them to the best tram they can still make; off, it suggests.
+    public func setAutoSwitchTrams(_ on: Bool) async throws(APIFailure) {
+        let raw = try await composer("PUT", "settings", ["settings": ["auto_switch_trams": on]])
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
     }
 
     public func tripRideUndo(_ undo: String) async throws(APIFailure) {

@@ -28,6 +28,8 @@ struct StepList: View {
     /// On a ride: the stop it comes to next (by the phone, or the clock as late as it runs); the ones
     /// before it passed. The step is the ride's.
     var live: (step: Int, next: String?)?
+    /// The next change as a live board, shown on the ride it changes to (When your tram is late).
+    var board: (leg: Int, view: AnyView)?
     /// Rides whose stops were folded (or opened) by hand, against `stopsOpen`.
     @State private var toggled: Set<Int> = []
 
@@ -76,7 +78,9 @@ struct StepList: View {
                                 if !leg.also.isEmpty {
                                     Text("Or the \(leg.also.joined(separator: " or the "))").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
                                 }
-                                if let change = leg.change, change.tight {
+                                if let board, step.leg == board.leg {
+                                    board.view.padding(.top, 6)
+                                } else if let change = leg.change, change.tight {
                                     Label(missed(change), systemImage: "exclamationmark.triangle")
                                         .font(.geist(12.5, .semibold)).foregroundStyle(Palette.warnText)
                                         .padding(.top, 2)
