@@ -16254,25 +16254,33 @@ public enum Operations {
                     public var from: Swift.String?
                     /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody/json/at`.
                     public var at: Foundation.Date?
+                    /// When they can be at the stop, when the phone knows (walking to their first tram).
+                    ///
+                    /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody/json/since`.
+                    public var since: Foundation.Date?
                     /// Creates a new `JsonPayload`.
                     ///
                     /// - Parameters:
                     ///   - leg:
                     ///   - from:
                     ///   - at:
+                    ///   - since: When they can be at the stop, when the phone knows (walking to their first tram).
                     public init(
                         leg: Swift.Int,
                         from: Swift.String? = nil,
-                        at: Foundation.Date? = nil
+                        at: Foundation.Date? = nil,
+                        since: Foundation.Date? = nil
                     ) {
                         self.leg = leg
                         self.from = from
                         self.at = at
+                        self.since = since
                     }
                     public enum CodingKeys: String, CodingKey {
                         case leg
                         case from
                         case at
+                        case since
                     }
                 }
                 /// - Remark: Generated from `#/paths/travel/trip/ride/board/POST/requestBody/content/application\/json`.
