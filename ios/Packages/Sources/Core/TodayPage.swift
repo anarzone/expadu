@@ -426,17 +426,49 @@ public struct TodayPage: Equatable, Sendable {
             return TimeInterval(max(0, legs[leg].delayMin ?? 0) * 60)
         }
 
-        /// The next change ahead, for its live board (When your tram is late): the ride it changes to, and
-        /// when they'll be ready at its stop. On a ride, as late as the phone measured it runs; before it,
-        /// the leg's own times (which already carry the live delay). Nil with no change ahead.
-        public func nextChange(here: Guide.Position?, at date: Date) -> (leg: Int, ready: Date)? {
+        /// The ride a live board is for (When your tram is late), when they'll be ready at its stop, and
+        /// the ride after it a tram there must still make:
+        /// - walking to a ride or waiting at its stop, with a fix the phone trusts: that ride, from when
+        ///   they get to the stop (the first tram, the owner 18 Nov: "earliest you can catch");
+        /// - else the next change ahead: on a ride, as late as the phone measured it runs; before it, the
+        ///   leg's own times (which already carry the live delay).
+        /// Nil with no ride to board ahead.
+        public func nextBoard(here: Guide.Position?, at date: Date) -> (leg: Int, ready: Date, connection: ChangeBoard.Connection?, boarding: Bool)? {
             let rides = legs.indices.filter { legs[$0].rides }
             let onBoard = here.flatMap { $0.ride?.onBoard == true && legs.indices.contains($0.leg) && legs[$0.leg].rides ? $0.leg : nil }
+            if onBoard == nil, let here, here.trusted(at: date), legs.indices.contains(here.leg) {
+                if legs[here.leg].rides {
+                    // At its stop: theirs counts as caught until it's well gone (boarding, the phone hasn't moved yet).
+                    let ride = legs[here.leg]
+                    let ready = date.timeIntervalSince(ride.departAt) > Guide.leftStopSeconds ? date : min(date, ride.departAt)
+                    return (here.leg, ready, connection(after: here.leg), true)
+                }
+                if let ride = rides.first(where: { $0 > here.leg }) {
+                    // The rest of this walk at an easy pace, the walks after it, and a minute's benefit of the doubt.
+                    let after = legs[(here.leg + 1)..<ride].reduce(0) { $0 + $1.minutes }
+                    let ready = date.addingTimeInterval(here.metresLeft / Self.walkMetresPerMinute * 60 + Double(after) * 60 - 60)
+                    return (ride, ready, connection(after: ride), true)
+                }
+            }
             guard let current = onBoard ?? rides.first(where: { legs[$0].arriveAt > date }),
                   let next = rides.first(where: { $0 > current }) else { return nil }
             let late = onBoard == current ? self.late(here: here, at: date) : 0
             let change = legs[(current + 1)..<next].reduce(0) { $0 + $1.minutes }
-            return (next, legs[current].arriveAt.addingTimeInterval(late + Double(change) * 60))
+            return (next, legs[current].arriveAt.addingTimeInterval(late + Double(change) * 60), connection(after: next), false)
+        }
+
+        /// On foot, as the board counts it.
+        static let walkMetresPerMinute = 75.0
+
+        /// The ride after this one, as a tram on this one's board must make it. A change within one stop
+        /// counts a minute, not the timetable's six (see RideChoices on the server).
+        func connection(after ride: Int) -> ChangeBoard.Connection? {
+            guard let next = legs.indices.first(where: { $0 > ride && legs[$0].rides }) else { return nil }
+            let walks = legs[(ride + 1)..<next]
+            let across = walks.allSatisfy { $0.from == $0.to } ? 1 : walks.reduce(0) { $0 + $1.minutes }
+            let leg = legs[next]
+            return ChangeBoard.Connection(line: leg.line ?? "", departTime: leg.departTime, stop: leg.from,
+                                          latest: leg.departAt.addingTimeInterval(-Double(across) * 60), thereTime: legs.last?.arriveTime ?? "")
         }
 
         /// Trip sync: on a ride (the phone moving with it), as late as it runs, the next ride it changes to
