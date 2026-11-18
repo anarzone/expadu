@@ -46,6 +46,8 @@ struct RoutinesSection: View {
                 .padding(.horizontal, 16).padding(.vertical, 14)
 
                 if let state, state.learning {
+                    Divider().overlay(Palette.border)
+                    LeaveNoticeRow()
                     ForEach(state.routines) { routine in
                         Divider().overlay(Palette.border)
                         row(routine).transition(.opacity.combined(with: .move(edge: .top)))

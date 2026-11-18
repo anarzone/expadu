@@ -750,7 +750,7 @@ public struct AppAPI: Sendable {
             return RoutinesState.Offer(toKey: key, toLabel: label, fromKey: row["from_key"] as? String, weekdays: row["weekdays"] as? [Int] ?? [],
                                        at: at, times: row["times"] as? Int ?? trips.count, trips: trips)
         }
-        return RoutinesState(learning: json["learning"] as? Bool ?? false, tripsKept: json["trips_kept"] as? Int ?? 0, routines: routines, offer: offer)
+        return RoutinesState(learning: json["learning"] as? Bool ?? false, noticing: json["noticing"] as? Bool ?? false, tripsKept: json["trips_kept"] as? Int ?? 0, routines: routines, offer: offer)
     }
 
     /// Yes to the offer, with the days and time as they set them; the routine's id.
@@ -791,6 +791,29 @@ public struct AppAPI: Sendable {
     public func setRoutineLearning(_ on: Bool) async throws(APIFailure) {
         let raw = try await composer("PUT", "settings", ["settings": ["routine_learning": on]])
         guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
+    /// Notice when I leave home or work: on (needs learning from trips), or off, which erases the trips it noticed.
+    public func setLeaveNotice(_ on: Bool) async throws(APIFailure) {
+        let raw = try await composer("PUT", "settings", ["settings": ["leave_notice": on]])
+        guard raw.status == 200 else { throw Self.refusal(raw) ?? failure(raw.status) }
+    }
+
+    /// What to tell them as they leave home or work, when a routine of theirs runs now; nil when none does.
+    public func leaving(from place: String) async throws(APIFailure) -> (title: String, body: String, link: String)? {
+        let raw = try await composer("GET", "routines/leaving?from=\(place)")
+        if raw.status == 204 { return nil }
+        guard raw.status == 200, let json = (try? JSONSerialization.jsonObject(with: raw.data)) as? [String: Any],
+              let note = json["notice"] as? [String: Any], let title = note["title"] as? String, let body = note["body"] as? String else {
+            throw failure(raw.status)
+        }
+        return (title, body, note["link"] as? String ?? "/travel")
+    }
+
+    /// A trip the phone noticed from one of their places to the other: which place, and when they left.
+    public func noticedTrip(from: String, to: String, leftAt: Date) async throws(APIFailure) {
+        let raw = try await composer("POST", "routines/noticed", ["from": from, "to": to, "left_at": ISO8601DateFormatter().string(from: leftAt)])
+        guard raw.status == 201 else { throw Self.refusal(raw) ?? failure(raw.status) }
     }
 
     // MARK: Notification settings

@@ -11,6 +11,8 @@ struct ExpaduApp: App {
 
     init() {
         Typeface.register()
+        // Woken by iOS for a crossing (or opened): watching home and work again, when it's on.
+        LeaveWatcher.shared.resume()
     }
 
     var body: some Scene {
