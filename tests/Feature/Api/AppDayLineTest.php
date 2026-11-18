@@ -42,7 +42,7 @@ test('a busy day says so, with how many more', function () {
 
     $text = app(DayLine::class)->for($this->user, CarbonImmutable::now())['text'];
 
-    expect($text)->toStartWith('A busy one. ')->toContain('Bürgeramt Kalk')->toEndWith('And 2 more.');
+    expect($text)->toStartWith('A busy day. ')->toContain('Bürgeramt Kalk')->toEndWith('Plus 2 more.');
 });
 
 test('a free day says what\'s on in the city instead, and the phone gets it with Today', function () {
@@ -50,18 +50,18 @@ test('a free day says what\'s on in the city instead, and the phone gets it with
 
     $line = $as->getJson('/api/v1/today')->assertOk()->json('day_line');
 
-    expect($line['text'])->toStartWith('Nothing planned');
+    expect($line['text'])->toStartWith('You have nothing planned');
 });
 
 test('a free day names when the city\'s next event starts, never how many: Today\'s events box counts those', function () {
     Event::factory()->create(['starts_at' => CarbonImmutable::parse('2026-11-17 09:30', 'Europe/Berlin'), 'ends_at' => CarbonImmutable::parse('2026-11-17 11:00', 'Europe/Berlin')]);
     Event::factory()->create(['starts_at' => CarbonImmutable::parse('2026-11-17 14:00', 'Europe/Berlin'), 'ends_at' => CarbonImmutable::parse('2026-11-17 16:00', 'Europe/Berlin')]);
 
-    expect(app(DayLine::class)->for($this->user, CarbonImmutable::now())['text'])->toBe('Nothing planned. The next event is at 09:30.');
+    expect(app(DayLine::class)->for($this->user, CarbonImmutable::now())['text'])->toBe('You have nothing planned. The next event in Cologne starts at 09:30.');
 
     // Later in the day, the next one from then.
     $this->travelTo(CarbonImmutable::parse('2026-11-17 10:00', 'Europe/Berlin'));
-    expect(app(DayLine::class)->for($this->user, CarbonImmutable::now())['text'])->toBe('Nothing planned. The next event is at 14:00.');
+    expect(app(DayLine::class)->for($this->user, CarbonImmutable::now())['text'])->toBe('You have nothing planned. The next event in Cologne starts at 14:00.');
 });
 
 test('a risk to a stop of their plan names the stop, so the plan isn\'t said again after it', function () {

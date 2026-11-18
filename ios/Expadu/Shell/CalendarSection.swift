@@ -19,7 +19,7 @@ struct CalendarSection: View {
                 HStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Use my calendar on Today").font(.geist(16, .semibold)).foregroundStyle(Palette.text)
-                        Text("Your day shows what’s in it, and ideas fit around it. Only when you’re busy leaves this phone, never what.")
+                        Text("Your day shows what’s in your calendar, and ideas fit around it. Only the times you’re busy leave this phone, never what you’re doing.")
                             .font(.geist(13.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 4)
@@ -38,7 +38,7 @@ struct CalendarSection: View {
 
                 if calendar.reading {
                     Divider().overlay(Palette.border)
-                    Text("CALENDARS IT READS").font(.geist(12.5, .bold)).tracking(0.3).foregroundStyle(Palette.textSoft)
+                    Text("CALENDARS EXPADU READS").font(.geist(12.5, .bold)).tracking(0.3).foregroundStyle(Palette.textSoft)
                         .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 2)
                     ForEach(calendar.sources) { source in
                         Button { withAnimation(.snappy) { calendar.toggle(source) } } label: {
@@ -66,7 +66,7 @@ struct CalendarSection: View {
                 }
             }
             .card(radius: 18)
-            Text("Stays on this phone: titles, places, notes and who’s invited. Sent with each look at Today: when you’re busy today and tomorrow, as times only, never kept.")
+            Text("What stays on this phone: titles, places, notes and who’s invited. What Expadu gets each time you open Today: the times you’re busy today and tomorrow. It doesn’t keep them.")
                 .font(.geist(13)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 4).padding(.top, 8)
         }
@@ -97,9 +97,9 @@ struct CalendarAskSheet: View {
             Text("Fit Today around your calendar")
                 .font(.posterGrotesque(24)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 14).accessibilityAddTraits(.isHeader)
-            Text("Your day shows what’s in your calendar, and ideas only come where you’re free. iPhone asks for full access, which is how calendars are read; Expadu never adds or changes anything.")
+            Text("Your day shows what’s in your calendar, and ideas only come when you’re free. Your iPhone will ask for full access, because that’s the only way an app can read a calendar. Expadu never adds or changes anything.")
                 .font(.geist(15)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true).padding(.top, 8)
-            Text("What’s in it stays on this phone. Only when you’re busy is sent, and never kept.")
+            Text("What’s in your calendar stays on this phone. Only the times you’re busy are sent, and Expadu doesn’t keep them.")
                 .font(.geist(14)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true).padding(.top, 6)
             Spacer(minLength: 12)
             Button {

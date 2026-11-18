@@ -191,7 +191,7 @@ struct PullMark: View {
         switch refresh {
         case .idle: "Pull to check again"
         case .busy: "Checking your day…"
-        case let .done(clock): "Up to date · \(clock)"
+        case let .done(clock): "Updated at \(clock)"
         }
     }
 }

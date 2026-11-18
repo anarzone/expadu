@@ -34,7 +34,7 @@ final class DayLine
 
         $text = match (true) {
             $items->isEmpty() => $this->free($now),
-            $items->count() >= self::BUSY => 'A busy one. '.$items[0]['text'].' And '.($items->count() - 1).' more.',
+            $items->count() >= self::BUSY => 'A busy day. '.$items[0]['text'].' Plus '.($items->count() - 1).' more.',
             $items->count() === 2 => $items[0]['text'].' Then '.lcfirst($items[1]['text']),
             default => $items[0]['text'],
         };
@@ -42,8 +42,8 @@ final class DayLine
         $stretch = Busy::nextStretch($busy, $now);
         if ($stretch !== null) {
             $time = fn (int $at): string => CarbonImmutable::createFromTimestamp($at, 'Europe/Berlin')->format('H:i');
-            $busyText = $stretch[0] <= $now->getTimestamp() ? 'Busy until '.$time($stretch[1]).'.' : 'Busy '.$time($stretch[0]).'–'.$time($stretch[1]).'.';
-            $text = $busyText.' '.($items->isEmpty() ? 'Free after that.' : $text);
+            $busyText = $stretch[0] <= $now->getTimestamp() ? 'You’re busy until '.$time($stretch[1]).'.' : 'You’re busy from '.$time($stretch[0]).' to '.$time($stretch[1]).'.';
+            $text = $busyText.' '.($items->isEmpty() ? 'You’re free after that.' : $text);
         }
 
         return ['text' => $text, 'parts' => self::parts($text)];
@@ -74,11 +74,11 @@ final class DayLine
         // The occurrences that start from now until midnight.
         $events = Event::occurringBetween($now, $now->endOfDay());
         if ($events->isEmpty()) {
-            return 'Nothing planned today.';
+            return 'You have nothing planned today.';
         }
         $next = $events->min(fn (array $o) => $o['starts_at'])->setTimezone('Europe/Berlin');
 
-        return 'Nothing planned. The next event is at '.$next->format('H:i').'.';
+        return 'You have nothing planned. The next event in Cologne starts at '.$next->format('H:i').'.';
     }
 
     /**

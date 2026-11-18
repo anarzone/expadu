@@ -58,7 +58,7 @@ test('a planned way with its reminder on is "time to leave" five minutes before,
         ->json('moments'))->where('kind', 'leave')->values()->all();
 
     expect($moments)->toHaveCount(1)
-        ->and($moments[0])->toMatchArray(['kind' => 'leave', 'title' => 'Time to leave for Blue Card appointment', 'body' => 'Leave at 18:30 · Tram 4 at 18:34', 'link' => '/travel'])
+        ->and($moments[0])->toMatchArray(['kind' => 'leave', 'title' => 'Time to leave for Blue Card appointment', 'body' => 'Leave at 18:30 to catch tram 4 at 18:34.', 'link' => '/travel'])
         ->and(CarbonImmutable::parse($moments[0]['at'])->setTimezone('Europe/Berlin')->format('H:i'))->toBe('18:25')
         ->and($moments[0]['id'])->toBe("leave:{$trip->id}:".$trip->depart_at->getTimestamp());
 });
@@ -69,7 +69,7 @@ test('an event they asked to be reminded of comes when they asked, unless they t
 
     $moments = collect($this->as->getJson('/api/v1/moments')->assertOk()->json('moments'))->where('kind', 'event')->values()->all();
     expect($moments)->toHaveCount(1)
-        ->and($moments[0])->toMatchArray(['kind' => 'event', 'title' => 'Jazz im Stadtgarten', 'body' => 'At Stadtgarten. Starts at 20:00.']);
+        ->and($moments[0])->toMatchArray(['kind' => 'event', 'title' => 'Jazz im Stadtgarten', 'body' => 'It starts at 20:00 at Stadtgarten.']);
 
     $this->user->notificationPreference()->updateOrCreate(['user_id' => $this->user->id], ['preferences' => [...NotificationPreference::defaults(), 'events' => false]]);
     app('auth')->forgetGuards();

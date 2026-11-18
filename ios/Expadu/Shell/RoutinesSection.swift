@@ -33,7 +33,7 @@ struct RoutinesSection: View {
                 HStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Learn from my trips").font(.geist(16, .semibold)).foregroundStyle(Palette.text)
-                        Text("Keeps the trips you start for 90 days to spot your usual ones. Never health services or places of worship; of where you start, only whether it’s Home or Work.")
+                        Text("Expadu keeps the trips you start for 90 days to spot the ones you make often. It never keeps trips to health services or places of worship. Of where you start, it only notes whether it’s home or work.")
                             .font(.geist(13.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 4)
@@ -53,7 +53,7 @@ struct RoutinesSection: View {
                     if let forgetting {
                         Divider().overlay(Palette.border)
                         HStack {
-                            Text("Forgot To \(forgetting.toLabel)").font(.geist(14)).foregroundStyle(Palette.textSoft)
+                            Text("Forgot your routine to \(forgetting.toLabel)").font(.geist(14)).foregroundStyle(Palette.textSoft)
                             Spacer()
                             Button("Undo") { undoForget() }.font(.geist(15, .bold)).foregroundStyle(Palette.text).frame(minHeight: 44)
                         }
@@ -62,13 +62,13 @@ struct RoutinesSection: View {
                     }
                     if state.routines.isEmpty && forgetting == nil {
                         Divider().overlay(Palette.border)
-                        Text("No routines yet. When the same trip comes up three times, Today offers it.")
+                        Text("No routines yet. When you make the same trip three times, Today will offer it as a routine.")
                             .font(.geist(14)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 16).padding(.vertical, 12)
                     }
                     Divider().overlay(Palette.border)
                     HStack(spacing: 10) {
-                        Text(state.tripsKept == 0 ? "No trips kept." : "\(state.tripsKept) trips kept from the last 90 days.")
+                        Text(state.tripsKept == 0 ? "No trips are kept." : "\(state.tripsKept) trips are kept from the last 90 days.")
                             .font(.geist(13.5)).foregroundStyle(Palette.textSoft).monospacedDigit().contentTransition(.numericText())
                         Spacer(minLength: 4)
                         if state.tripsKept > 0 {
@@ -81,7 +81,7 @@ struct RoutinesSection: View {
             }
             .card(radius: 18)
             .animation(.snappy, value: state)
-            Text("Turning it off erases the trips kept and your routines.")
+            Text("Turning it off erases your kept trips and your routines.")
                 .font(.geist(13)).foregroundStyle(Palette.textSoft).padding(.horizontal, 4).padding(.top, 8)
         }
         .task {
@@ -94,7 +94,7 @@ struct RoutinesSection: View {
             }
             Button("Keep them", role: .cancel) { if ask == .off { withAnimation(.snappy) { switchOn = true } } }
         } message: { ask in
-            Text(ask == .off ? "The trips kept and your routines are erased. This can’t be undone." : "The trips kept are erased; your routines stay. This can’t be undone.")
+            Text(ask == .off ? "Your kept trips and your routines will be erased. This can’t be undone." : "Your kept trips will be erased, but your routines stay. This can’t be undone.")
         }
         .alert("That didn’t go through", isPresented: Binding(get: { problem != nil }, set: { if !$0 { problem = nil } })) {
             Button("OK", role: .cancel) {}

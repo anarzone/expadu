@@ -278,7 +278,7 @@ private struct ComposerTripCard: View {
                 .padding(12)
             }
             .card(radius: 22)
-            Text(trip.trip.basis == "live" ? "Times from KVB, live where the feed has them." : "Timetable times; live times show on the day.")
+            Text(trip.trip.basis == "live" ? "Times from KVB, live where the feed has them." : "These are timetable times. Live times show on the day.")
                 .font(.geist(12.5)).foregroundStyle(Palette.textSoft)
         }
     }
@@ -330,7 +330,7 @@ private struct EventsCard: View {
             }
             .scrollIndicators(.hidden)
             .scrollClipDisabled()
-            Text("From Stadt Köln listings. Adding one isn’t a booking.").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
+            Text("These come from the City of Cologne’s listings. Adding one doesn’t book it.").font(.geist(12.5)).foregroundStyle(Palette.textSoft)
         }
     }
 

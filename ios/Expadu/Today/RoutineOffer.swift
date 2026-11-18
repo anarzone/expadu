@@ -63,7 +63,7 @@ struct RoutineOffer: View {
             dayPucks.padding(.top, 12)
             grid.padding(.top, 8)
 
-            Text("Each dot is a trip you started; across a day, the last three weeks. Drag the glass to your time, tap a day to leave it out.")
+            Text("Each dot is a trip you started in the last three weeks. Drag the glass to your usual time, and tap a day to leave it out.")
                 .font(.geist(12.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 9).padding(.horizontal, 2)
 
