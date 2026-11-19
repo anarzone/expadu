@@ -1826,7 +1826,7 @@ final class AssistantTools
                 ], 'required' => ['which', 'place']]],
             ['name' => 'add_to_day', 'description' => 'Adds a place or listing to their plans for a day, at a time that fits its hours, or the time they say.',
                 'input_schema' => ['type' => 'object', 'properties' => [
-                    'item' => ['type' => 'string', 'description' => 'its id in [brackets] from your lookups ("spot:…", "e…@…"), else a place\'s name'],
+                    'item' => ['type' => 'string', 'description' => 'its id in [brackets] from your lookups or from what you showed before ("spot:…", "e…@…"), else a place\'s name'],
                     'area' => ['type' => 'string', 'description' => 'a Veedel they named with the place, optional'],
                     'day' => $day,
                     'start' => ['type' => 'string', 'description' => 'HH:MM, optional'], 'end' => ['type' => 'string', 'description' => 'HH:MM, optional'],
