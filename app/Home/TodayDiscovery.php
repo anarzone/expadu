@@ -133,9 +133,12 @@ final class TodayDiscovery
         $home = $this->home($user);
         // What they turned down ("Not for me") stays off Today while it's hidden.
         $hidden = $user->personalises() ? $this->affinities->for($user) : null;
-        $events = $this->events($now, $active, $home, $busy)
+        // The whole day's, so the kinds they lean to can come from later in it (leanedLater); the rest
+        // of the page reads the first ones, and the ones past those for those turned down.
+        $day = $this->events($now, $active, $home, $busy)
             ->reject(fn (array $event) => $hidden?->isHidden(SignalItemType::Event->value, (int) $event['id']) ?? false)
             ->values();
+        $events = $day->take(self::LISTED + self::SPARE_FOR_HIDDEN)->values();
         // "Also in ‹area›" is for after today's plan: tomorrow's listings stay out of it.
         $around = $this->around($user, $now, $active, $events->reject(fn (array $event) => isset($event['day'])))
             // No plan stop with a place to go by: open now near their Veedel or Home.
@@ -162,7 +165,10 @@ final class TodayDiscovery
         // The soonest and nearest, and with their leanings, the kinds they picked or lean to from
         // later in the day too: a few hundred listings a day, and only the first eleven were ever
         // ordered, so a pick of "sports" rarely met a match (owner's test, 19 Nov 2026).
-        $candidates = $pool->take(self::LISTED)->concat(self::leanedLater($pool->slice(self::LISTED), $leanings))->values();
+        // Only what is still to start today: tomorrow's and what's already running never lead (the audit, 3 Nov 2026).
+        $later = $day->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->slice(self::LISTED)
+            ->filter(fn (array $event): bool => ! isset($event['day']) && CarbonImmutable::parse($event['occurrence_start'])->greaterThanOrEqualTo($now));
+        $candidates = $pool->take(self::LISTED)->concat(self::leanedLater($later, $leanings))->values();
         // Each AI pick with a why also says which of their leanings it matches, as code reads
         // them (reasons()): "Why am I seeing this?" shows those, the why only words one.
         $reasons = $order === null && $leanings === null ? null : $this->reasons($user);
@@ -345,6 +351,19 @@ final class TodayDiscovery
      * @param  array{strong: list<string>, some: list<string>, avoid: list<string>, picked?: list<string>}|null  $leanings
      * @return Collection<int, array<string, mixed>>
      */
+    /** A kind of listing as a sentence says it: "You said you like meeting people", not "like meet people". */
+    private static function inWords(string $kind): string
+    {
+        return match ($kind) {
+            'meet people' => 'meeting people',
+            'kids & family' => 'things for kids and families',
+            'stage & comedy' => 'stage and comedy',
+            'festivals & markets' => 'festivals and markets',
+            'party' => 'parties',
+            default => $kind,
+        };
+    }
+
     public static function leanedLater(Collection $later, ?array $leanings): Collection
     {
         $wanted = array_values(array_diff([...($leanings['picked'] ?? []), ...($leanings['strong'] ?? []), ...($leanings['some'] ?? [])], $leanings['avoid'] ?? []));
@@ -411,9 +430,9 @@ final class TodayDiscovery
 
             return array_values(array_filter([
                 match (true) {
-                    $kind !== null && in_array($kind, $kinds, true) => "You often go for {$kind}, judging by what you open, save and go to.",
-                    $kind !== null && in_array($kind, $picked, true) => "You said you like {$kind}.",
-                    $kind !== null && in_array($kind, $lately, true) => "You looked at {$kind} recently.",
+                    $kind !== null && in_array($kind, $kinds, true) => 'You often go for '.self::inWords($kind).', judging by what you open, save and go to.',
+                    $kind !== null && in_array($kind, $picked, true) => 'You said you like '.self::inWords($kind).'.',
+                    $kind !== null && in_array($kind, $lately, true) => 'You looked at '.self::inWords($kind).' recently.',
                     default => null,
                 },
                 match (true) {
@@ -469,10 +488,10 @@ final class TodayDiscovery
             : collect();
 
         // One listing imported from two sources is one idea: the same title at the same start shows once.
-        // Today shows eleven at most, so only the first eleven are dressed.
+        // All of them, in this order: Today takes its first ones, and the kinds someone leans to from the rest.
         return $ahead->concat($tomorrow)->concat($running)
             ->unique(fn (array $event): string => mb_strtolower(trim((string) $event['title'])).'|'.$event['occurrence_start'])
-            ->take(self::LISTED + self::SPARE_FOR_HIDDEN)->values();
+            ->values();
     }
 
     /**
