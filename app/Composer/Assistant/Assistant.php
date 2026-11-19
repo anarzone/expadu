@@ -248,8 +248,10 @@ final class Assistant
                     $places[] = $suggested['lines'][] = "\"{$place['name']}\" (place".(isset($place['area']) ? " in {$place['area']}" : '')
                         .($today && isset($place['hours']) ? ', '.$place['hours'].(isset($place['hours_on']) ? " on {$place['hours_on']}" : '') : '').')';
                 }
-                $shown = [...array_map(fn (array $e): string => "\"{$e['title']}\" (listing)", $m['events'] ?? []),
-                    ...$places,
+                // With the id a tool takes, so "add the first one" adds that listing, not a place of its name (owner's
+                // test, 19 Nov 2026: "Santa's Christmas Market isn't among Expadu's places").
+                $shown = [...array_map(fn (array $e): string => "\"{$e['title']}\" (listing".(preg_match('/^event:(\d+):(\d+)$/', (string) ($e['candidate'] ?? ''), $c) === 1 ? " [e{$c[1]}@{$c[2]}]" : '').')', $m['events'] ?? []),
+                    ...array_map(fn (string $line, array $place): string => substr($line, 0, -1)." [spot:{$place['id']}])", $places, array_values($m['places'] ?? [])),
                     ...(isset($m['destination']['name']) ? ['the way'.(isset($m['start']['name']) ? " from \"{$m['start']['name']}\"" : '')." to \"{$m['destination']['name']}\"".(isset($m['destination']['area']) ? " in {$m['destination']['area']}" : '')] : [])];
                 $text .= $shown !== [] ? ' Shown: '.implode(', ', $shown).'.' : '';
             }

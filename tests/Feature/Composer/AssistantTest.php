@@ -584,8 +584,20 @@ test('🔒 what was shown today reaches the AI with its hours, and yesterday\'s 
     $place = ['id' => 7, 'name' => 'Starbucks', 'area' => 'Neustadt-Süd', 'hours' => 'Open until 19:30'];
     $shown = fn (string $at): string => Assistant::history([['role' => 'assistant', 'text' => 'x', 'created_at' => $at, 'places' => [$place]]])['turns'][0]['text'];
 
-    expect($shown(now()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd, Open until 19:30)')
-        ->and($shown(now()->subDay()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd)')->not->toContain('19:30');
+    expect($shown(now()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd, Open until 19:30 [spot:7])')
+        ->and($shown(now()->subDay()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd [spot:7])')->not->toContain('19:30');
+});
+
+test('what was shown before reaches the AI with the id a tool takes, so "add the first one" adds that listing', function () {
+    // The owner's test, 19 Nov 2026: "Add the first one to my plan" after tonight's listings found no place of its name.
+    $turn = Assistant::history([['role' => 'assistant', 'text' => 'Tonight:', 'events' => [
+        ['id' => 1294, 'title' => "Santa's Christmas Market", 'candidate' => 'event:1294:1795111200'],
+        ['id' => 731, 'title' => 'SONIC CHESS CLUB', 'candidate' => 'event:731'],
+    ]]])['turns'][0]['text'];
+
+    expect($turn)->toContain('"Santa\'s Christmas Market" (listing [e1294@1795111200])')
+        // A listing without a time to plan it at says no id.
+        ->toContain('"SONIC CHESS CLUB" (listing)');
 });
 
 test('a failed call after lookups keeps the places they found', function () {

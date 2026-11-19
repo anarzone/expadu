@@ -221,7 +221,7 @@ test('grounding includes capped descriptive quality and safe travel facts inside
     Http::assertSent(function (Request $request): bool {
         $content = $request['messages'][0]['content'];
 
-        return str_contains($request['system'], 'UNTRUSTED DATA')
+        return str_contains(collect($request['system'])->pluck('text')->implode(' '), 'UNTRUSTED DATA')
             && str_contains($content, 'untrusted_candidates')
             && str_contains($content, 'travel_band')
             && strlen($content) < 6000;

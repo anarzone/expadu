@@ -64,7 +64,7 @@ test('classifier treats scraped source fields as untrusted data', function () {
     app(AnthropicEventClassifier::class)->classify($event);
 
     Http::assertSent(function (Request $request): bool {
-        $system = (string) $request->data()['system'];
+        $system = collect($request->data()['system'])->pluck('text')->implode(' ');
         $message = (string) $request->data()['messages'][0]['content'];
 
         return str_contains($system, 'untrusted')
