@@ -357,6 +357,12 @@ struct Band: View {
                             }
                         }
                     }
+                } else if run.minutes(from: now) <= 0 {
+                    // Leaving now: said, not "00" (the owner, 19 Nov 2026).
+                    Text("now").font(.geist(17, .bold)).foregroundStyle(grey || run.cancelled ? Color(hex: 0xBDB39F) : Color(hex: 0xFFF6E3))
+                        .padding(.horizontal, 10).frame(height: 40)
+                        .background(LinearGradient(colors: [Color(hex: 0x2A2620), Color(hex: 0x1B1812)], startPoint: .top, endPoint: .bottom), in: .rect(cornerRadius: 5))
+                        .accessibilityHidden(true)
                 } else {
                     HStack(spacing: 2) {
                         ForEach(Array(String(format: "%02d", run.minutes(from: now)).enumerated()), id: \.offset) { _, digit in

@@ -30,8 +30,8 @@ struct ChangeBoardView: View {
                 Text("\(live.boarding ? "You get to the stop at" : "You get here at") \(ready.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute()))")
                     .font(.geist(11.5, .bold)).foregroundStyle(.white).lineLimit(1).fixedSize()
                     .padding(.horizontal, 7).padding(.vertical, 3)
-                    .background(Color(hex: 0xC23B0E), in: .rect(cornerRadius: 6))
-                Line().stroke(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])).foregroundStyle(Color(hex: 0xC23B0E)).frame(height: 1.5)
+                    .background(Palette.action, in: .rect(cornerRadius: 6))
+                Line().stroke(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])).foregroundStyle(Palette.action).frame(height: 1.5)
             }
             .padding(.vertical, 4)
             .accessibilityElement(children: .combine)
@@ -44,16 +44,16 @@ struct ChangeBoardView: View {
                          : TodayModel.why(suggestion.reason, yours: yours, stop: stop, connection: live.connection)
                             + " The \(suggestion.run.line) at \(suggestion.run.departTime) " + (board.makes(suggestion.run, live.connection) && live.connection != nil
                                 ? "still gets you there at \(live.connection!.thereTime)." : "gets you there at \(suggestion.run.arriveTime)."))
-                        .font(.geist(13.5)).foregroundStyle(Color(hex: 0x3A2E00)).fixedSize(horizontal: false, vertical: true)
+                        .font(.geist(13.5)).foregroundStyle(Palette.warnText).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
                     Button("Take it") { Task { await model.takeRun(session.api, suggestion.run) } }
-                        .font(.geist(14, .semibold)).foregroundStyle(.white)
+                        .font(.geist(14, .semibold)).foregroundStyle(Palette.onInk)
                         .padding(.horizontal, 12).frame(minHeight: 40)
                         .background(Palette.text, in: .rect(cornerRadius: 12))
                         .buttonStyle(PressStyle())
                 }
                 .padding(10)
-                .background(Color(hex: 0xFFF4D6), in: .rect(cornerRadius: 12))
+                .background(Palette.warnBackground, in: .rect(cornerRadius: 12))
                 .padding(.top, 6)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
@@ -97,7 +97,7 @@ struct ChangeBoardView: View {
                 Spacer(minLength: 0)
             }
             .padding(.vertical, 6).padding(.horizontal, 6)
-            .background(mine ? Color(hex: 0xEEF6EA) : .clear, in: .rect(cornerRadius: 10))
+            .background(mine ? Palette.goodBackground : .clear, in: .rect(cornerRadius: 10))
             .opacity(gone || run.cancelled ? 0.45 : 1)
             .contentShape(.rect)
         }
@@ -123,7 +123,7 @@ struct ChangeBoardView: View {
 
     @ViewBuilder private func late(_ run: ChangeBoard.Run) -> some View {
         if !run.cancelled, let late = run.delayMin, late > 0 {
-            Text("\(late) min late").font(.geist(12.5, .semibold)).foregroundStyle(Color(hex: 0xC23B0E)).lineLimit(1).fixedSize()
+            Text("\(late) min late").font(.geist(12.5, .semibold)).foregroundStyle(Palette.conflictText).lineLimit(1).fixedSize()
         }
     }
 
@@ -132,8 +132,8 @@ struct ChangeBoardView: View {
             Text("Your tram").font(.geist(11.5, .bold)).foregroundStyle(.white).lineLimit(1).fixedSize()
                 .padding(.horizontal, 7).padding(.vertical, 3).background(Color(hex: 0x17603A), in: .rect(cornerRadius: 6))
         } else if faster {
-            Text("Faster").font(.geist(11.5, .bold)).foregroundStyle(Color(hex: 0x7A5A00)).lineLimit(1).fixedSize()
-                .padding(.horizontal, 7).padding(.vertical, 3).background(Color(hex: 0xFFF1C2), in: .rect(cornerRadius: 6))
+            Text("Faster").font(.geist(11.5, .bold)).foregroundStyle(Palette.warnText).lineLimit(1).fixedSize()
+                .padding(.horizontal, 7).padding(.vertical, 3).background(Palette.warnBackground, in: .rect(cornerRadius: 6))
         }
     }
 
