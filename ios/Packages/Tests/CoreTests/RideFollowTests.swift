@@ -238,4 +238,26 @@ struct RideFollowTests {
         let standing = try #require(guide.position(of: Self.onTheTram(0), at: Self.at("19:55"), after: 0))
         #expect(Self.trip.live(at: Self.at("19:55"), here: standing).waiting)
     }
+
+    /// Ahead of plan never carries the trip past a tram that hasn't left: the owner, 19 Nov, on an
+    /// earlier 12 to Friesenplatz, read "You're there" at 16:20 with the 4 at 16:34 still to come.
+    @Test func earlyNeverPassesATramStillToCome() {
+        let walk = TodayPage.Trip.Leg(mode: "walk", line: nil, color: nil, headsign: nil, from: "Your location", to: "Merkenich Mitte", departAt: Self.at("15:56"), arriveAt: Self.at("16:00"),
+                                      departTime: "15:56", arriveTime: "16:00", minutes: 4, stops: nil, polyline: nil)
+        let twelve = TodayPage.Trip.Leg(mode: "tram", line: "12", color: "#8CB437", headsign: "Zollstock", from: "Merkenich Mitte", to: "Friesenplatz", departAt: Self.at("16:00"), arriveAt: Self.at("16:30"),
+                                        departTime: "16:00", arriveTime: "16:30", minutes: 30, stops: 14, polyline: nil)
+        let four = TodayPage.Trip.Leg(mode: "tram", line: "4", color: "#E3007B", headsign: "Schlebusch", from: "Friesenplatz", to: "Appellhofplatz", departAt: Self.at("16:34"), arriveAt: Self.at("16:36"),
+                                      departTime: "16:34", arriveTime: "16:36", minutes: 2, stops: 1, polyline: nil)
+        let there = TodayPage.Trip.Leg(mode: "walk", line: nil, color: nil, headsign: nil, from: "Appellhofplatz", to: "Cafe Nova", departAt: Self.at("16:36"), arriveAt: Self.at("16:40"),
+                                       departTime: "16:36", arriveTime: "16:40", minutes: 4, stops: nil, polyline: nil)
+        let trip = TodayPage.Trip(to: "Cafe Nova", arriveTime: "16:40", startTime: nil, legs: [walk, twelve, four, there])
+        // 20 minutes ahead of the timetable, at 16:20: the clock alone would read 16:40, "there".
+        let live = trip.live(at: Self.at("16:20"), late: -20 * 60)
+        let steps = trip.steps
+        #expect(live.label != "Arrived")
+        #expect(steps.indices.contains(live.current + 1))
+        #expect(steps[live.current + 1].kind == .ride && steps[live.current + 1].time == "16:34")
+        // Once the 4 has left, they're on it.
+        #expect(steps[trip.live(at: Self.at("16:35"), late: -1 * 60).current].kind != .there)
+    }
 }
