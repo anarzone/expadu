@@ -33,6 +33,7 @@ Which kinds you get, and your quiet hours, are set in the app. Whether Expadu ma
 With personalisation on, you can tell Composer something lasting about yourself, such as "I'm vegetarian" or "we have a three-year-old". You can also add it yourself on "What Expadu knows". Composer keeps it under a pseudonymous key. With each message you send it, Composer then sends to Anthropic (Claude Haiku):
 - what it remembers about you;
 - what you tend to like and skip;
+- the kinds of things you picked as what you like ("sports", "meeting people");
 - your situation and German level.
 
 This is so its answers fit you. An answer that relied on something you told it says so ("From what you told me: Vegetarian").
