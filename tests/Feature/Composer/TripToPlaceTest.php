@@ -144,6 +144,22 @@ test('🔒 "work" is their own saved place, never in a link, and said so when it
     expect($reply)->not->toContain('This might work')->not->toContain('50.95')->not->toContain('6.91');
 });
 
+test('home is the place saved as Home, whatever it is called', function () {
+    // The owner's test, 19 Nov 2026: Home saved as "Causemannstraße 109", and "how do I get home?" said it wasn't saved.
+    $user = User::factory()->onboarded()->create();
+    $this->mock(RouteService::class, function ($mock): void {
+        $mock->shouldReceive('withTimeBudget')->andReturnSelf();
+        $mock->shouldReceive('plan')->andReturn(new JourneyResult([], 'motis'));
+        $mock->shouldReceive('geocode')->andReturn([]);
+    });
+    $user->places()->create(['name' => 'Causemannstraße 109', 'address' => 'Causemannstraße 109', 'category' => 'home', 'lat' => 51.023, 'lng' => 6.95, 'sort_order' => 0]);
+    $user->refresh();
+
+    $reply = app(TripAnswers::class)->toPlace($user, ['place' => 'home', 'from' => 'Neumarkt'], CarbonImmutable::parse('2026-11-19 12:00', 'Europe/Berlin'));
+
+    expect($reply['text'] ?? '')->not->toContain('don’t have your home saved');
+});
+
 test('🔒 a way to a saved place is marked by its key, so the card\'s link never holds its point', function () {
     $user = User::factory()->onboarded()->create();
     $user->places()->create(['name' => 'Home', 'category' => 'home', 'address' => 'Somewhere 1', 'lat' => 51.02, 'lng' => 6.95, 'sort_order' => 1]);
