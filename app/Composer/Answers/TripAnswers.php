@@ -261,8 +261,11 @@ final class TripAnswers
     {
         $key = Destinations::key((string) preg_replace('/^(?:my|the|our|mein|meine|meinem|meiner)\s+/iu', '', trim($named)));
         $key = self::OWN_WORDS[$key] ?? $key;
+        // Home and Work by what they are, whatever they're called ("Causemannstraße 109" is their home: owner's test, 19 Nov 2026).
         $place = $user->places->first(fn (UserPlace $place): bool => $place->lat !== null && $place->lng !== null
-            && (self::OWN_WORDS[Destinations::key($place->name)] ?? Destinations::key($place->name)) === $key);
+            && in_array($key, ['home', 'work'], true) && $place->category === $key)
+            ?? $user->places->first(fn (UserPlace $place): bool => $place->lat !== null && $place->lng !== null
+                && (self::OWN_WORDS[Destinations::key($place->name)] ?? Destinations::key($place->name)) === $key);
         if ($place !== null) {
             return ['name' => $place->name, 'area' => null, 'kind' => null, 'point' => new GeoPoint($place->lat, $place->lng), 'spot' => null, 'own' => true, 'key' => in_array($place->category, ['home', 'work'], true) ? $place->category : 'other'];
         }
