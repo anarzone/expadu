@@ -288,6 +288,35 @@ test('🔒 the kinds they picked in Expadu are in what Composer knows, with the 
     expect(Http::recorded()[1][0]->body())->not->toContain('[u3]');
 });
 
+test('🔒 "I\'ll remember that" is never said when nothing was remembered', function () {
+    // The owner's test, 19 Nov 2026: "I'll remember that you and your partner are going to Karneval", with nothing kept.
+    $user = User::factory()->onboarded()->create();
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
+    $jazz = assistantJazz();
+    $id = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['search_events', ['day' => 'today']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [
+            ['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id]],
+            ['text' => 'I’ll remember that you love jazz.', 'uses' => []],
+        ], 'show' => [$id]]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [
+            ['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id]],
+            ['text' => 'I’ll remember that you love jazz.', 'uses' => []],
+        ], 'show' => [$id]]]]))
+        // Sent back once more, it says it again: the last word keeps only what holds.
+        ->push(assistantTurn([['answer', ['sentences' => [
+            ['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id]],
+            ['text' => 'I’ll remember that you love jazz.', 'uses' => []],
+        ], 'show' => [$id]]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'I love jazz, anything tonight?');
+
+    expect($reply['lead'])->toBe('Jazz im Stadtgarten starts at 20:00.')
+        ->and(DB::table('user_facts')->count())->toBe(0);
+});
+
 test('🔒 without the opt-in nothing about them is given and remember keeps nothing', function () {
     $user = User::factory()->onboarded()->create(['german_level' => GermanLevel::A1]);
     Http::fake(['processor.example.test/*' => Http::sequence()
