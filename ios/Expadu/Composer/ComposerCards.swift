@@ -29,7 +29,92 @@ struct ComposerCard: View {
         case let .planChanges(changes): PlanChangesCard(changes: changes)
         case let .handoff(handoff): HandoffCard(handoff: handoff)
         case let .permission(permission): PermissionCard(permission: permission, question: question)
+        case let .words(writing): WritingCard(writing: writing)
         }
+    }
+}
+
+/// Words Composer wrote for them (the canvas "Composer helps with words"): what it is, the words themselves to
+/// copy or share, for a German draft what it says in English, and that Expadu's AI wrote it.
+private struct WritingCard: View {
+    let writing: ComposerBlock.Writing
+    @State private var inEnglish = false
+    @State private var copied = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var kind: (label: String, symbol: String, tint: Color) {
+        switch writing.kind {
+        case "draft": (writing.language == "de" ? "DRAFT · GERMAN" : "DRAFT", "envelope", Color(hex: 0x8A5A00))
+        case "translate": (writing.language == "de" ? "TRANSLATED · GERMAN" : "TRANSLATED · ENGLISH", "character.bubble", Palette.goodText)
+        default: ("EXPLAINED", "book", Color(hex: 0x1F4F99))
+        }
+    }
+
+    var body: some View {
+        let kind = kind
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: kind.symbol).font(.system(size: 16, weight: .semibold)).foregroundStyle(kind.tint)
+                    .frame(width: 36, height: 36).background(kind.tint.opacity(0.12), in: .rect(cornerRadius: 11))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(kind.label).font(.geist(12, .bold)).tracking(0.3).foregroundStyle(Palette.textSoft)
+                    Text(writing.title).font(.geist(15.5, .semibold)).foregroundStyle(Palette.text).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if let english = writing.english, !english.isEmpty {
+                Picker("Show the draft in", selection: $inEnglish) {
+                    Text("German, to send").tag(false)
+                    Text("What it says").tag(true)
+                }
+                .pickerStyle(.segmented)
+                Text(inEnglish ? english : writing.text)
+                    .modifier(WritingBody())
+                    .id(inEnglish)
+                    .transition(.opacity)
+            } else {
+                Text(writing.text).modifier(WritingBody())
+            }
+            HStack(spacing: 8) {
+                Button {
+                    // Always the words to use: the German draft, whichever is shown.
+                    UIPasteboard.general.string = writing.text
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { copied = true }
+                    Task {
+                        try? await Task.sleep(for: .seconds(1.8))
+                        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { copied = false }
+                    }
+                } label: {
+                    Label(copied ? "Copied" : (writing.kind == "draft" && writing.language == "de" ? "Copy the German text" : "Copy"),
+                          systemImage: copied ? "checkmark" : "doc.on.doc")
+                        .font(.geist(15, .semibold)).foregroundStyle(Palette.onAction)
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                }
+                .buttonFace(copied ? Palette.goodText : Palette.action, radius: 14)
+                .sensoryFeedback(.success, trigger: copied) { _, now in now }
+                ShareLink(item: writing.text) {
+                    Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.text)
+                        .frame(width: 46, height: 46).background(Palette.quiet, in: .rect(cornerRadius: 14))
+                }
+                .accessibilityLabel(writing.kind == "draft" ? "Share or send by email" : "Share")
+            }
+            Label(writing.note, systemImage: "info.circle")
+                .font(.geist(12.5)).foregroundStyle(Palette.textSoft).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .card(radius: 20)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: inEnglish)
+    }
+}
+
+private struct WritingBody: ViewModifier {
+    func body(content: Content) -> some View {
+        content.font(.geist(15)).foregroundStyle(Palette.text).lineSpacing(3)
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(Palette.quiet.opacity(0.6), in: .rect(cornerRadius: 14))
     }
 }
 
