@@ -72,6 +72,9 @@ final class TodayDiscovery
     /** At most this many of one kind among those shown. */
     private const PER_KIND = 2;
 
+    /** Listings of the kinds they lean to brought in from later in the day, beyond the first LISTED. */
+    private const LEANED_LATER = 6;
+
     /** Where the one "New for you" goes: third, the first after the two posters. */
     private const NEW_AT = 2;
 
@@ -153,11 +156,15 @@ final class TodayDiscovery
         // and the event "Also in ‹area›" suggests is in none.
         $eventKey = fn (array $event) => 'e'.$event['id'].'@'.CarbonImmutable::parse($event['occurrence_start'])->getTimestamp();
         $placeKey = fn (array $place) => 'p'.$place['id'];
-        $candidates = $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(self::LISTED)->values();
-        // Each AI pick with a why also says which of their leanings it matches, as code reads
-        // them (reasons()): "Why am I seeing this?" shows those, the why only words one.
         // What they lean to, as code reads it: the rules over either order, and code's own whys.
         $leanings = $user->personalises() ? $this->leanings($user) : null;
+        $pool = $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->values();
+        // The soonest and nearest, and with their leanings, the kinds they picked or lean to from
+        // later in the day too: a few hundred listings a day, and only the first eleven were ever
+        // ordered, so a pick of "sports" rarely met a match (owner's test, 19 Nov 2026).
+        $candidates = $pool->take(self::LISTED)->concat(self::leanedLater($pool->slice(self::LISTED), $leanings))->values();
+        // Each AI pick with a why also says which of their leanings it matches, as code reads
+        // them (reasons()): "Why am I seeing this?" shows those, the why only words one.
         $reasons = $order === null && $leanings === null ? null : $this->reasons($user);
         $whys = 0;
         $listed = self::arranged(self::ranked($candidates, $order['events'] ?? null, $order['why'] ?? [], $eventKey), $leanings, $order !== null)
@@ -294,7 +301,10 @@ final class TodayDiscovery
                     $k !== null && (in_array($k, $leanings['some'], true) || in_array($k, $leanings['lately'], true) || in_array($k, $picked, true)) => 2,
                     default => 0,
                 } + (is_string($area) && in_array($area, $leanings['areas'], true) ? 1 : 0)
-                  - ($k !== null && in_array($k, $leanings['avoid'], true) ? 4 : 0);
+                  - ($k !== null && in_array($k, $leanings['avoid'], true) ? 4 : 0)
+                  // Children's listings only for those who picked them or open them: after their picks,
+                  // someone who chose others without kids gets none first (owner's test, 19 Nov 2026).
+                  - ($k !== null && $k === TasteFacts::categoryLabel('kids') && $picked !== [] && ! in_array($k, [...$picked, ...$leanings['strong'], ...$leanings['some'], ...$leanings['lately']], true) ? 3 : 0);
             };
             $events = $events->values()->map(fn (array $event, int $index): array => [$event, $score($event), $index])
                 ->sort(fn (array $a, array $b): int => [$b[1], $a[2]] <=> [$a[1], $b[2]])
@@ -325,6 +335,33 @@ final class TodayDiscovery
         }
 
         return $events->values();
+    }
+
+    /**
+     * From later in the day, the listings of kinds they picked or lean to (strong or some), never
+     * an avoided kind: up to LEANED_LATER, each kind at most PER_KIND, soonest first as they came.
+     *
+     * @param  Collection<int, array<string, mixed>>  $later
+     * @param  array{strong: list<string>, some: list<string>, avoid: list<string>, picked?: list<string>}|null  $leanings
+     * @return Collection<int, array<string, mixed>>
+     */
+    public static function leanedLater(Collection $later, ?array $leanings): Collection
+    {
+        $wanted = array_values(array_diff([...($leanings['picked'] ?? []), ...($leanings['strong'] ?? []), ...($leanings['some'] ?? [])], $leanings['avoid'] ?? []));
+        if ($wanted === []) {
+            return collect();
+        }
+        $count = [];
+
+        return $later->filter(function (array $event) use ($wanted, &$count): bool {
+            $kind = TasteFacts::categoryLabel((string) ($event['category'] ?? ''));
+            if ($kind === null || ! in_array($kind, $wanted, true) || ($count[$kind] ?? 0) >= self::PER_KIND) {
+                return false;
+            }
+            $count[$kind] = ($count[$kind] ?? 0) + 1;
+
+            return true;
+        })->take(self::LEANED_LATER)->values();
     }
 
     /**
