@@ -34,9 +34,12 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk del .build-deps
 
 # ── Stage 2: Composer dependencies ───────────────────────────────────────────
-FROM composer:2 AS composer-build
+# The app's own PHP (8.4), with Composer copied in: composer:2 ships the newest PHP (8.6 on
+# 19 Nov 2026), which the locked packages don't allow, and the release build failed.
+FROM php:8.4-cli-alpine AS composer-build
 
-RUN apk add --no-cache icu-dev && docker-php-ext-install intl
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN apk add --no-cache git unzip icu-dev libzip-dev && docker-php-ext-install intl zip
 
 WORKDIR /app
 

@@ -514,7 +514,12 @@ public struct TodayPage: Equatable, Sendable {
             // phone, the clock (as late as the live board says).
             let timetable = date.addingTimeInterval(-late)
             let clock = Self.current(steps, at: timetable)
-            let current = guided.map { min($0, steps.count - 1) }.map { steps[$0].kind == .walk ? $0 : max($0, clock) } ?? clock
+            let ahead = guided.map { min($0, steps.count - 1) }.map { steps[$0].kind == .walk ? $0 : max($0, clock) } ?? clock
+            // Ahead of the timetable (an earlier tram than planned) moves the clock on, but never onto a ride
+            // that hasn't left yet, unless the phone puts them on it: at the change they wait for it (the owner,
+            // 19 Nov: "You're there" at Friesenplatz at 16:20, the 4 at 16:34 still to come, its board faded).
+            let waiting = steps.indices.first { $0 > (guided ?? -1) && $0 <= ahead && steps[$0].kind == .ride && steps[$0].at > date }
+            let current = waiting.map { max(0, $0 - 1) } ?? ahead
             let k = min(picked ?? current, steps.count - 1)
             let step = steps[k]
             let last = k == steps.count - 1

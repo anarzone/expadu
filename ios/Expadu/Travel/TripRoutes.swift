@@ -30,6 +30,8 @@ struct TripRoutesView: View {
     @State private var panelDrag: CGFloat = 0
     @State private var screenHeight: CGFloat = 874
     @State private var undo: PlannedTrip?
+    /// The route whose notice line is open (KVB's words under it).
+    @State private var noticeOpen: Int?
 
     var body: some View {
         let options = shown(planner.options)
@@ -182,7 +184,12 @@ struct TripRoutesView: View {
                 }
                 Button { whenOpen = true } label: { tool(icon: "clock", text: planner.whenLabel, chevron: false) }
                     .buttonStyle(PressStyle())
-                Button { withAnimation(.smooth) { conditions.toggle() } } label: { tool(icon: "checkmark", text: "Today’s conditions", chevron: false) }
+                // Its tick turns to a warning when a KVB notice touches these ways.
+                let noticed = planner.answer.map { answer in answer.journeys.contains { !answer.notices(on: $0).isEmpty } } ?? false
+                Button { withAnimation(.smooth) { conditions.toggle() } } label: {
+                    tool(icon: noticed ? "exclamationmark.triangle" : "checkmark", text: "Today’s conditions", chevron: false,
+                         tint: noticed ? (planner.answer?.headline != nil ? Palette.conflictText : Palette.warnText) : nil)
+                }
                     .buttonStyle(PressStyle())
             }
             .padding(.horizontal, 12)
@@ -191,13 +198,13 @@ struct TripRoutesView: View {
         .sensoryFeedback(.selection, trigger: planner.sort)
     }
 
-    private func tool(icon: String, text: String, chevron: Bool) -> some View {
+    private func tool(icon: String, text: String, chevron: Bool, tint: Color? = nil) -> some View {
         HStack(spacing: 5) {
             Image(systemName: icon).font(.system(size: 13, weight: .semibold))
             Text(text).font(.geist(14, .semibold))
             if chevron { Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold)) }
         }
-        .foregroundStyle(Palette.text)
+        .foregroundStyle(tint ?? Palette.text)
         .padding(.horizontal, 12).frame(height: 38)
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
         .frame(minHeight: 44)
@@ -235,6 +242,7 @@ extension TripRoutesView {
             }
             if let chosen {
                 RouteDetail(planner: planner, option: chosen, also: row?.also ?? [], lines: row?.lines ?? [],
+                            notice: planner.answer?.notices(on: chosen.journey).first,
                             kept: planner.added[chosen.index] != nil, best: chosen.index == options.first?.index,
                             back: { withAnimation(.smooth(duration: 0.3)) { details = nil } },
                             // One tap: a trip already running is replaced, said on the new one with Undo (never a question).
@@ -246,6 +254,11 @@ extension TripRoutesView {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
+                        // A major problem on a line they'd ride: the one headline, above the routes.
+                        if let headline = planner.answer?.headline {
+                            NoticeHeadline(notice: headline, othersFirst: options.contains { planner.trouble($0.journey) == 0 })
+                                .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 10)
+                        }
                         let rows = listRows(options)
                         ForEach(Array(rows.routes.enumerated()), id: \.element.option.id) { i, row in
                             routeButton(row.option, also: row.also, lines: row.lines, options: options)
@@ -297,13 +310,24 @@ extension TripRoutesView {
 
     /// Best for you first, then the rest in the order they leave: a list that reads down the clock.
     private func routeButton(_ option: TripPlanner.Option, also: [String], lines: [[LegStrip.Line]], options: [TripPlanner.Option]) -> some View {
-        Button {
-            withAnimation(.smooth(duration: 0.3)) { picked = option.index; details = option.index }
-        } label: {
-            RouteRow(planner: planner, option: option, best: !byBike && option.index == options.first?.index && planner.sort == .best,
-                     selected: picked == option.index, also: also, lines: lines)
+        let notice = planner.answer?.notices(on: option.journey).first
+        let missed = option.journey.missed
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.smooth(duration: 0.3)) { picked = option.index; details = option.index }
+            } label: {
+                // Never "Best" for a way in trouble (all of them on the broken line, or a missed change).
+                RouteRow(planner: planner, option: option, best: !byBike && option.index == options.first?.index && planner.sort == .best && planner.trouble(option.journey) == 0,
+                         selected: picked == option.index, also: also, lines: lines, notice: notice)
+            }
+            .buttonStyle(PressStyle())
+            // Why it's late, affected or misses its change, in one line under it; tapped, KVB's words.
+            if notice != nil || missed != nil {
+                RouteNoticeLine(notice: notice, missed: missed,
+                                open: Binding(get: { noticeOpen == option.index }, set: { noticeOpen = $0 ? option.index : nil }))
+                    .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
+            }
         }
-        .buttonStyle(PressStyle())
     }
 
     /// One row of the list: a route, its later runs, and the other lines on each of its rides.
@@ -322,7 +346,12 @@ extension TripRoutesView {
     /// Another order (Earliest arrival, Least walking…) lists every run as it sorts them.
     private func listRows(_ options: [TripPlanner.Option]) -> (routes: [Row], later: [TripPlanner.Option]) {
         guard planner.sort == .best, let first = options.first else { return (options.map { Row(option: $0, also: [], lines: []) }, []) }
-        let departs: (TripPlanner.Option, TripPlanner.Option) -> Bool = { ($0.journey.departDate ?? .distantFuture) < ($1.journey.departDate ?? .distantFuture) }
+        // In trouble last (missed change, a major line problem), then by when it leaves.
+        let departs: (TripPlanner.Option, TripPlanner.Option) -> Bool = { a, b in
+            let ta = planner.trouble(a.journey), tb = planner.trouble(b.journey)
+            if ta != tb { return ta < tb }
+            return (a.journey.departDate ?? .distantFuture) < (b.journey.departDate ?? .distantFuture)
+        }
         var order: [String] = []
         var runs: [String: [TripPlanner.Option]] = [:]
         for option in options {
@@ -379,6 +408,8 @@ private struct RouteRow: View {
     var also: [String] = []
     /// Per ride, the other lines the row's later runs take.
     var lines: [[LegStrip.Line]] = []
+    /// KVB's notice on a line it rides, the major one first.
+    var notice: TripPlan.Disruption? = nil
 
     var body: some View {
         let journey = option.journey
@@ -443,6 +474,8 @@ private struct RouteRow: View {
             }
         }
         .foregroundStyle(Palette.text)
+        // A way that misses its change is shown faded, under the ones that work.
+        .opacity(journey.missed != nil ? 0.62 : 1)
         .padding(.horizontal, 16).padding(.vertical, 12)
         .background(selected ? Palette.quiet.opacity(0.6) : .clear)
         .contentShape(.rect)
@@ -451,7 +484,11 @@ private struct RouteRow: View {
 
     @ViewBuilder
     private func status(_ journey: TripPlan.Journey) -> some View {
-        if journey.cancelled {
+        if journey.missed != nil {
+            Text("Misses its change").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText).lineLimit(1)
+        } else if notice?.major == true {
+            Text("Affected").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
+        } else if journey.cancelled {
             Text("Cancelled").font(.geist(13, .semibold)).foregroundStyle(Palette.conflictText)
         } else if let late = journey.rides.compactMap({ $0.realtime == true ? $0.delayMin : nil }).max(), late >= 2 {
             Text("\(late) min late").font(.geist(13, .semibold)).foregroundStyle(Palette.warnText)
@@ -548,6 +585,8 @@ private struct RouteDetail: View {
     /// As its row said them: the later runs, and the first ride's other lines.
     let also: [String]
     let lines: [[LegStrip.Line]]
+    /// KVB's notice on a line it rides: on that ride's step.
+    let notice: TripPlan.Disruption?
     let kept: Bool
     let best: Bool
     let back: () -> Void
@@ -583,10 +622,18 @@ private struct RouteDetail: View {
             Divider()
             ScrollView {
                 // The same step list as the trip screen, Today and Composer (Show stops, live lateness).
-                StepList(steps: TodayPage.Step.of(journey.tripLegs, to: planner.destination?.name ?? "", start: nil), legs: journey.tripLegs)
+                StepList(steps: TodayPage.Step.of(journey.tripLegs, to: planner.destination?.name ?? "", start: nil), legs: journey.tripLegs,
+                         board: noticeBoard(journey))
                     .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 12)
             }
             .scrollIndicators(.hidden)
+            if let missed = journey.missed {
+                Label("Misses its change: the \(missed.after) gets to \(missed.stop.isEmpty ? "the change" : missed.stop) after the \(missed.line) leaves. Pick another way.",
+                      systemImage: "exclamationmark.triangle")
+                    .font(.geist(13.5, .medium)).foregroundStyle(Palette.conflictText)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 16).padding(.top, 10)
+            }
             HStack(spacing: 8) {
                 // Felt as the trip opens, at once (the success tick, where the trip screen is shown).
                 Button(action: show) {
@@ -596,7 +643,7 @@ private struct RouteDetail: View {
                 .buttonStyle(PressStyle())
                 .buttonFace(Palette.action, radius: 14)
                 .foregroundStyle(Palette.onAction)
-                .disabled(journey.cancelled || planner.busy != nil)
+                .disabled(journey.cancelled || journey.missed != nil || planner.busy != nil)
                 // Couldn't start: felt as well as read.
                 .sensoryFeedback(trigger: planner.startingProblem) { _, now in now == nil ? nil : .error }
                 if let add {
@@ -615,6 +662,13 @@ private struct RouteDetail: View {
             .defersSystemGestures(on: .bottom)
         }
         .foregroundStyle(Palette.text)
+    }
+
+    /// The notice on the step it's about: the first ride on one of its lines.
+    private func noticeBoard(_ journey: TripPlan.Journey) -> (leg: Int, view: AnyView)? {
+        guard let notice, let lines = notice.lines,
+              let leg = journey.legs.firstIndex(where: { $0.isRide && lines.contains($0.line ?? "") }) else { return nil }
+        return (leg, AnyView(NoticeCard(notice: notice)))
     }
 }
 
