@@ -134,7 +134,9 @@ final class DayActions implements ComposerAction
             'day' => $made['plan'] === null ? null : array_map(fn (array $slot): array => ['time' => self::span($slot), 'what' => (string) $slot['name'],
                 'new' => in_array($slot['id'], array_column(array_filter($change['rows'], fn (array $r): bool => in_array($r['kind'], ['added', 'replaced'], true)), 'id'), true)],
                 $made['plan']['slots']),
-            'said' => $title.(isset($prepared['about']) ? " ({$prepared['about']})" : '').'.', 'undo' => ['change' => $change['id'], 'date' => $prepared['date'], 'name' => $prepared['name'], 'was' => $prepared['was'] ?? null]],
+            // The day's date with it, so "moved it on Saturday, 21 November" stands (the card says the title).
+            'said' => $title.' ('.CarbonImmutable::parse($prepared['date'], 'Europe/Berlin')->locale('en')->isoFormat('dddd D MMMM').')'
+                .(isset($prepared['about']) ? " ({$prepared['about']})" : '').'.', 'undo' => ['change' => $change['id'], 'date' => $prepared['date'], 'name' => $prepared['name'], 'was' => $prepared['was'] ?? null]],
             fn ($v) => $v !== null);
     }
 

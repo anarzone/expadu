@@ -72,7 +72,9 @@ final class Memory
             return 'Expadu never keeps anything about health, religion or beliefs, sexuality, politics or a union.';
         }
         $facts = $this->facts($user);
-        if (collect($facts)->contains(fn (array $fact): bool => mb_strtolower($fact['text']) === mb_strtolower($text))) {
+        // The same fact again, also with a note in brackets ("Has a partner (already known)").
+        $bare = fn (string $words): string => trim(mb_strtolower((string) preg_replace('/\s*\([^)]*\)/u', '', $words)), " .\t");
+        if (collect($facts)->contains(fn (array $fact): bool => $bare($fact['text']) === $bare($text))) {
             return 'Already remembered.';
         }
         if (count($facts) >= self::LIMIT) {

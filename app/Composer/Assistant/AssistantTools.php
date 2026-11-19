@@ -34,6 +34,7 @@ use App\Models\SpotFeedback;
 use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
+use App\Personalisation\EventPicks;
 use App\Personalisation\Memory;
 use App\Personalisation\SignalRecorder;
 use App\Personalisation\TasteFacts;
@@ -278,6 +279,11 @@ final class AssistantTools
         if ($german !== null) {
             $lines[] = $this->line('u2', 'German: '.($german === 'none' ? 'none yet' : strtoupper($german)));
         }
+        // The kinds of things they picked in Expadu as what they're into (Today uses them too).
+        $picked = app(EventPicks::class)->labels($this->user);
+        if ($picked !== []) {
+            $lines[] = $this->line('u3', 'Into (they picked it): '.implode(', ', $picked));
+        }
         $taste = $this->taste !== null ? $this->myTaste() : '';
         if ($taste !== '' && ! str_starts_with($taste, 'Not enough')) {
             $lines[] = $taste;
@@ -384,6 +390,8 @@ final class AssistantTools
                     'near' => ['type' => 'string', 'description' => 'a square, stop or place they named'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only indoor places'],
                     'free' => ['type' => 'boolean', 'description' => 'only places with no fee listed'],
+                    'from' => ['type' => 'string', 'description' => 'HH:MM: when the time they asked about starts ("in the afternoon": 13:00), optional; else the plan\'s own hours'],
+                    'until' => ['type' => 'string', 'description' => 'HH:MM: when the time they asked about ends, optional'],
                 ], 'required' => ['day']]],
             ...($writes ? [['name' => 'help_with_words', 'description' => 'Writes words for them, shown as a card they can copy: a translation of a German word, sentence, letter or form into plain English (or of what they say into German); an explanation in plain words of what a German letter, form or word is and what it asks them to do, or of how an everyday thing works in Germany and Cologne (Pfand, Kölsch, Karneval, quiet Sundays, how a ticket like the Deutschlandticket is used, what\'s polite), from what you know; or a short message or email for them to send themselves (to a landlord, a neighbour, an office), in German unless they ask otherwise. Write the words yourself in text, as they\'ll use them. Use only what they told you: never add a date, deadline, amount, fee, name or number that isn\'t in their message, and never say what the law requires of them, whether they must, or by when (for that, guidance, and Paperwork works it out from their situation). Your sentences then only say what the card is.',
                 'input_schema' => ['type' => 'object', 'properties' => [
@@ -861,12 +869,15 @@ final class AssistantTools
         $searched = $this->searchPlaces([...array_intersect_key($input, array_flip(['area', 'near', 'indoors', 'free'])), 'kinds' => $kinds]);
         $found = array_values(array_diff(array_keys($this->places), $before));
         $inPlan = array_column($plan['slots'] ?? [], 'id');
+        // The time they asked about, when it's wider than the plan's own ("something on Saturday" for an evening plan).
+        $hours = fn (string $key): ?CarbonImmutable => is_string($input[$key] ?? null) && preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $input[$key]) === 1
+            ? $day->setTimeFromTimeString($input[$key]) : null;
         // Each as it is on that day, its hours that day's (the search reads today's).
         $onDay = $found === [] ? collect() : collect($this->catalogue->byIds(array_values(array_unique(array_map(fn (string $id): string => explode('#', $id)[0], $found))), $day))->keyBy('id');
         $options = [];
         foreach ($found as $id) {
             $place = $onDay[explode('#', $id)[0]] ?? null;
-            $fit = $place !== null && count($options) < $count && ! in_array($id, $inPlan, true) ? app(PlanFit::class)->for($place, $plan, $day) : null;
+            $fit = $place !== null && count($options) < $count && ! in_array($id, $inPlan, true) ? app(PlanFit::class)->for($place, $plan, $day, $hours('from'), $hours('until')) : null;
             if ($fit !== null) {
                 $options[$id] = $fit;
             }
@@ -965,15 +976,19 @@ final class AssistantTools
         }
 
         return 'Their plan for '.CarbonImmutable::parse($date, 'Europe/Berlin')->isoFormat('dddd D MMMM').', made in this conversation, as it is now:'."\n"
-            .collect($plan['slots'])->sortBy('start_at')->map(function (array $slot): string {
-                $time = ($slot['start_time'] ?? '').(($slot['end_time'] ?? null) !== null ? "–{$slot['end_time']}" : '');
-                if (($slot['is_appointment'] ?? false) || in_array($slot['type'] ?? null, ['personal', 'appointment'], true)) {
-                    return "- {$time}: one of their own plans (not shown to you)";
-                }
-                $kind = SpotCategory::tryFrom((string) ($slot['category'] ?? ''))?->label() ?? ucfirst(str_replace('_', ' ', (string) ($slot['category'] ?? '')));
+            .collect($plan['slots'])->sortBy('start_at')->map(fn (array $slot): string => self::slotLine($slot))->implode("\n");
+    }
 
-                return "- {$time}: \"{$slot['name']}\" ({$kind})".(filled($slot['veedel'] ?? null) ? " in {$slot['veedel']}" : '').self::hoursThatDay($slot);
-            })->implode("\n");
+    /** One stop of a plan as the assistant reads it: its time, name, kind and Veedel; their own plans unnamed. */
+    private static function slotLine(array $slot): string
+    {
+        $time = ($slot['start_time'] ?? '').(($slot['end_time'] ?? null) !== null ? "–{$slot['end_time']}" : '');
+        if (($slot['is_appointment'] ?? false) || in_array($slot['type'] ?? null, ['personal', 'appointment'], true)) {
+            return "- {$time}: one of their own plans (not shown to you)";
+        }
+        $kind = SpotCategory::tryFrom((string) ($slot['category'] ?? ''))?->label() ?? ucfirst(str_replace('_', ' ', (string) ($slot['category'] ?? '')));
+
+        return "- {$time}: \"{$slot['name']}\" ({$kind})".(filled($slot['veedel'] ?? null) ? " in {$slot['veedel']}" : '').self::hoursThatDay($slot);
     }
 
     /** A stop's listed hours on its plan's day ("listed open 12:00–17:00 that day"), so "is it open then?" is answered from them. */
@@ -1174,6 +1189,12 @@ final class AssistantTools
             'veedel' => $place['area'] ?? app(UserLocationService::class)->veedelAt($place['point']->lat, $place['point']->lng)];
     }
 
+    /** Whether a time is now: open_at is said to the minute ("15:11" while it's 15:11:40), so within five minutes of it. */
+    private function isNow(CarbonImmutable $at): bool
+    {
+        return abs($at->diffInSeconds($this->now, false)) < 300;
+    }
+
     private function searchPlaces(array $input): string
     {
         $day = $this->askedDay($input['day'] ?? null);
@@ -1357,7 +1378,7 @@ final class AssistantTools
         $before = $found->take(Assistant::PLACES_SHOWN)->takeWhile(fn (Candidate $c): bool => isset($this->earlier['spot'][(int) substr($c->id, 5)]))->count();
         $same = $before > 0 && ($before === min(Assistant::PLACES_SHOWN, $found->count()) || $again)
             ? $this->line('s'.(++$this->count), 'The same places as shown before'.($before < min(Assistant::PLACES_SHOWN, $found->count()) ? ' (the first '.$before.'; the others are new)' : '').'. The nearest: '
-                .self::placeText($found->first(), $at, $at->equalTo($this->now), $stepFree, $this->parks[$found->first()->id]['has'] ?? null, $free, $this->parks[$found->first()->id]['matched'] ?? null, $day))."\n"
+                .self::placeText($found->first(), $at, $this->isNow($at), $stepFree, $this->parks[$found->first()->id]['has'] ?? null, $free, $this->parks[$found->first()->id]['matched'] ?? null, $day))."\n"
             : '';
 
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
@@ -1391,7 +1412,7 @@ final class AssistantTools
             }, 'lat' => $lat, 'lng' => $lng];
 
             // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
-            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null, $free, $this->parks[$c->id]['matched'] ?? null, $day)
+            return $this->line($c->id, self::placeText($c, $at, $this->isNow($at), $stepFree, $this->parks[$c->id]['has'] ?? null, $free, $this->parks[$c->id]['matched'] ?? null, $day)
                 // To work there: what its sources say of laptops, and that nothing is listed when nothing is.
                 .($work ? ' '.self::laptopSaid($c) : '')
                 // Near a place they named: how far from it, so "near Neumarkt" is said as found.
@@ -1721,8 +1742,12 @@ final class AssistantTools
         $day = PlanDay::dayOf($input['day'] ?? null, $this->now);
         $kept = $day === null ? null : app(WorkspaceStore::class)->plan($this->user, $day->toDateString());
         if (($kept['slots'] ?? []) !== [] && ! $this->theySaid((string) ($input['replacing'] ?? ''))) {
-            return $this->line('n'.(++$this->count), 'They have a plan for '.$day->isoFormat('dddd').' already, and it stays as it is. To suggest more for it, use suggest_for_day; '
-                .'to change it, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only. Only when they ask for a whole new plan instead, plan_day again with replacing (their words asking for it).');
+            // What's in it, and things they could add to it straight away: asking "shall I suggest more?" helps no one.
+            $stops = collect($kept['slots'])->sortBy('start_at')->map(fn (array $slot): string => self::slotLine($slot))->implode("\n");
+            $note = $this->line('n'.(++$this->count), 'They have a plan for '.$day->isoFormat('dddd D MMMM').' already, and it stays as it is. Its stops:'."\n".$stops."\n"
+                .'Below are things they could add to it; show them. To change it instead, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only. Only when they ask for a whole new plan instead, plan_day again with replacing (their words asking for it).');
+
+            return $note."\n".$this->suggestForDay(array_intersect_key($input, array_flip(['day', 'area', 'near', 'indoors', 'free', 'from', 'until'])));
         }
         $planned = app(PlanDay::class)->plan($this->user, $input, $this->now);
         // Why there's no plan, under an id like any result, so the answer can say it.
@@ -1770,7 +1795,9 @@ final class AssistantTools
             'english' => ($input['language'] ?? 'en') === 'de' && $english !== '' ? $english : null,
             'note' => 'Written by Expadu’s AI from what you told it. Check it before you use it.'];
 
-        return $this->line($id, ['translate' => 'A translation', 'explain' => 'An explanation', 'draft' => 'A draft']["{$kind}"].' written for them, shown as a card to copy: '.mb_strtolower(trim((string) ($input['title'] ?? ''))).'.');
+        return $this->line($id, ['translate' => 'A translation', 'explain' => 'An explanation', 'draft' => 'A draft']["{$kind}"].' written for them, shown as a card to copy: '.mb_strtolower(trim((string) ($input['title'] ?? ''))).'. It says: '
+            // What it says, so a sentence citing it may say it too ("Kölsch is served cold").
+            .($english !== '' ? $english : $text));
     }
 
     private function whoToAsk(array $input): string

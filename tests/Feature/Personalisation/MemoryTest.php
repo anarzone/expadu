@@ -56,6 +56,8 @@ test('a fact is kept in its own words, once; at the limit nothing is dropped for
 
     expect($memory->remember($user, '  vegetarian. '))->text->toBe('Vegetarian')
         ->and($memory->remember($user, 'VEGETARIAN'))->toBe('Already remembered.')
+        // ...also with a note of the AI's own in brackets (owner's test, 19 Nov 2026).
+        ->and($memory->remember($user, 'Vegetarian (already known; mentioned again)'))->toBe('Already remembered.')
         ->and($memory->remember($user, str_repeat('a', Memory::LENGTH + 1)))->toContain('too long');
 
     foreach (range(2, Memory::LIMIT) as $i) {

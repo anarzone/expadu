@@ -22,15 +22,17 @@ final class PlanFit
 
     /**
      * @param  array<string, mixed>|null  $plan  the day's plan as kept (WorkspaceStore::plan), or none
+     * @param  ?CarbonImmutable  $from  when the time they asked about starts, if they said: it may be earlier than the plan's own
+     * @param  ?CarbonImmutable  $until  when it ends, if they said: it may be later than the plan's own
      * @return array{start: string, end: string, after: ?string}|null
      */
-    public function for(Candidate $place, ?array $plan, CarbonImmutable $day): ?array
+    public function for(Candidate $place, ?array $plan, CarbonImmutable $day, ?CarbonImmutable $from = null, ?CarbonImmutable $until = null): ?array
     {
         $day = $day->setTimezone('Europe/Berlin')->startOfDay();
         $now = CarbonImmutable::now('Europe/Berlin');
         $window = isset($plan['constraints']) ? Constraints::fromArray($plan['constraints']) : null;
-        $earliest = ($window?->windowStart ?? $day->setTime(self::FROM, 0))->max($day->isSameDay($now) ? $now : $day);
-        $latest = ($window?->windowEnd ?? $day)->max($day->setTime(self::UNTIL, 0))->min($day->setTime(self::LAST, 0));
+        $earliest = ($from ?? $window?->windowStart ?? $day->setTime(self::FROM, 0))->max($day->isSameDay($now) ? $now : $day);
+        $latest = ($until ?? ($window?->windowEnd ?? $day)->max($day->setTime(self::UNTIL, 0)))->min($day->setTime(self::LAST, 0));
         $slots = collect($plan['slots'] ?? [])->sortBy('start_at')->values()->all();
 
         $before = null;

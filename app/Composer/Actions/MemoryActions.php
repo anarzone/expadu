@@ -41,14 +41,14 @@ final class MemoryActions implements ComposerAction
                 throw new ActionRefused($kept);
             }
 
-            return ['title' => "Remembered: {$kept['text']}", 'link' => self::link(), 'said' => 'Remembered it.', 'undo' => ['id' => $kept['id']]];
+            return ['title' => "Remembered: {$kept['text']}", 'link' => self::link(), 'said' => "Remembered that they said: {$kept['text']}.", 'undo' => ['id' => $kept['id']]];
         }
         $fact = $this->memory->forget($user, (int) $prepared['fact']['id']);
         if ($fact === null) {
             throw new ActionRefused('That is already forgotten.');
         }
 
-        return ['title' => "Forgotten: {$fact['text']}", 'link' => self::link(), 'said' => 'Forgot it.', 'undo' => ['fact' => $fact]];
+        return ['title' => "Forgotten: {$fact['text']}", 'link' => self::link(), 'said' => "Forgot that they said: {$fact['text']}.", 'undo' => ['fact' => $fact]];
     }
 
     public function undo(User $user, string $action, array $undo, CarbonImmutable $now): array

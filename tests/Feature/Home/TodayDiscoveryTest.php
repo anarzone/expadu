@@ -319,6 +319,25 @@ test('with no AI order, what they lean to comes first, two of a kind at most amo
         ->and($events->pluck('title')->sort()->values()->all())->toBe(['Gig 1', 'Gig 2', 'Gig 3', 'Kids', 'Play', 'Tour']);
 });
 
+test('a kind they picked is found even when two dozen listings start before it', function () {
+    // The owner's test, 19 Nov 2026: Today read only the day's first listings, so a pick of sports
+    // never met the match that started later.
+    $this->travelTo(discoveryNoon());
+    $user = learnedFrom(User::factory()->create(['veedel' => 'Ehrenfeld']), saved: []);
+    expect(app(EventPicks::class)->save($user, ['sports'], true))->not->toBeNull();
+    foreach (range(0, 24) as $i) {
+        tonight("Tour {$i}", sprintf('13:%02d', $i), 'tours');
+    }
+    tonight('Match', '21:00', 'sports');
+    // Already running, and tomorrow's: neither is brought forward.
+    discoveryEvent('Morning run', '2026-10-26 09:00', null, '2026-10-26 23:00')->update(['category' => 'sports']);
+    discoveryEvent('Tomorrow match', '2026-10-27 19:00')->update(['category' => 'sports']);
+
+    $titles = collect(app(TodayDiscovery::class)->for($user, discoveryNoon())['events'])->pluck('title');
+
+    expect($titles->first())->toBe('Match')->and($titles)->not->toContain('Morning run')->not->toContain('Tomorrow match');
+});
+
 test('a kind they turned down goes last, and nothing is dropped', function () {
     $this->travelTo(discoveryNoon());
     $user = learnedFrom(User::factory()->create(['veedel' => 'Ehrenfeld']), saved: ['music', 'music'], notForMe: ['party', 'party', 'party']);

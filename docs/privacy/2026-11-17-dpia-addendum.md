@@ -64,6 +64,13 @@ The owner decided on 17 Nov 2026 that no lawyer will be involved ("no lawyer wil
 - **Wrong legal advice.** Composer may not say what the law requires, whether they must, or by when; that stays with the checked guides and Paperwork. A code check rejects any number in the AI's text (a date, an amount, a deadline) that wasn't in their own message, and has the text written again.
 - **AI-generated text passed on as their own** (AI Act Art. 50). Every card says Expadu's AI wrote it. The person sends it themselves; Composer sends nothing.
 
+## B3. Composer knows the kinds you picked (built 19 Nov 2026)
+
+**What changes.** With personalisation on, Composer's message to Anthropic also carries the kinds of things the person picked on Today as what they like (for example "sports, meet people"). Today already used them to order its ideas.
+- **Sent to Anthropic:** a new item, though not a new kind of data. It is what the person told Expadu they like, next to what Expadu learned they like. Sent with personalisation on and Composer's go-ahead only, never without (covered by a test).
+- **The notice** names it: "the kinds of things you picked as what you like". Cautious reading: "what you tend to like" describes what was learned from use, not what was declared, so the declared picks get their own words. Its version changes with it, and the app shows the current wording with each request, as for B2.
+- **Risk:** low. The kinds are the app's own event kinds, none of them special-category (Art. 9). The picks are erased when personalisation is turned off, as before.
+
 ## C. The draft's open points, decided
 
 1. **Memory, with each message: consent or contract?** Consent stays. Cautious reading: the facts are optional and personal, and Composer works without them, so they are not necessary for the contract (Art. 6(1)(b) read narrowly, as the EDPB does).

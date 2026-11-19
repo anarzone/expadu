@@ -14,6 +14,7 @@ use App\Models\FavouriteStop;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Personalisation\EventPicks;
 use App\Personalisation\Memory;
 use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingConsentStore;
@@ -258,11 +259,62 @@ test('🔒 "I\'m vegetarian" is remembered with Undo and reaches the next conver
     $this->postJson('/composer/workspace', ['revision' => $revision, 'action' => 'fresh'])->assertOk();
     $next = assistantAsk($this, 'anything tonight?');
 
-    expect(Http::recorded()[2][0]->body())->toContain('What you know about them:')->toContain('[k1] Vegetarian')->toContain('[u2] German: A1')
+    // What was kept is in what the model reads back, so "I'll remember you're vegetarian" stands.
+    expect(Http::recorded()[1][0]->body())->toContain('Remembered that they said: Vegetarian.')
+        ->and(Http::recorded()[2][0]->body())->toContain('What you know about them:')->toContain('[k1] Vegetarian')->toContain('[u2] German: A1')
         ->and($next['lead'])->toBe('Jazz im Stadtgarten starts at 20:00. You’re vegetarian, so eat before you go.')
         // Said under the answer, from what they told Composer.
         ->and($next['told'])->toBe(['Vegetarian'])
         ->and($told)->not->toHaveKey('told');
+});
+
+test('🔒 the kinds they picked in Expadu are in what Composer knows, with the opt-in only', function () {
+    $user = User::factory()->onboarded()->create();
+    $this->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk();
+    $user = $user->fresh();
+    expect(app(EventPicks::class)->save($user, ['sports', 'meet_people'], true))->not->toBeNull();
+    $this->actingAs($user);
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Hello.', 'uses' => []]], 'show' => []]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Hello.', 'uses' => []]], 'show' => []]]]))]);
+
+    assistantAsk($this, 'hi');
+    expect(Http::recorded()[0][0]->body())->toMatch('/\[u3\] Into \(they picked it\): [^"]*sports/i');
+
+    $this->putJson('/user-settings', ['settings' => ['personalisation' => false]])->assertOk();
+    $revision = $this->getJson('/composer/workspace')->json('revision');
+    $this->postJson('/composer/workspace', ['revision' => $revision, 'action' => 'fresh'])->assertOk();
+    assistantAsk($this, 'hi');
+    expect(Http::recorded()[1][0]->body())->not->toContain('[u3]');
+});
+
+test('🔒 "I\'ll remember that" is never said when nothing was remembered', function () {
+    // The owner's test, 19 Nov 2026: "I'll remember that you and your partner are going to Karneval", with nothing kept.
+    $user = User::factory()->onboarded()->create();
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
+    $jazz = assistantJazz();
+    $id = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['search_events', ['day' => 'today']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [
+            ['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id]],
+            ['text' => 'I’ll remember that you love jazz.', 'uses' => []],
+        ], 'show' => [$id]]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [
+            ['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id]],
+            ['text' => 'I’ll remember that you love jazz.', 'uses' => []],
+        ], 'show' => [$id]]]]))
+        // Sent back once more, it says it again: the last word keeps only what holds.
+        ->push(assistantTurn([['answer', ['sentences' => [
+            ['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id]],
+            ['text' => 'I’ll remember that you love jazz.', 'uses' => []],
+        ], 'show' => [$id]]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'I love jazz, anything tonight?');
+
+    expect($reply['lead'])->toBe('Jazz im Stadtgarten starts at 20:00.')
+        ->and(DB::table('user_facts')->count())->toBe(0);
 });
 
 test('🔒 without the opt-in nothing about them is given and remember keeps nothing', function () {

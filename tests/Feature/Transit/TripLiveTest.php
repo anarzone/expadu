@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Requests\Concerns\StoredJourney;
 use App\Transit\NearbyStation;
 use App\Transit\TripLive;
 use Carbon\CarbonImmutable;
@@ -87,4 +88,26 @@ test('a planned way is live only where a board says so, and a delay only the rou
 
     expect($live['legs'][0])->toMatchArray(['realtime' => true, 'delay_min' => 2, 'depart_time' => '19:46'])
         ->and($live['legs'][2])->toMatchArray(['realtime' => false, 'delay_min' => null, 'depart_time' => '19:55']);
+});
+
+test('a late tram shortens the change after it, so the way still holds together', function () {
+    // The owner's route, 19 Nov 2026: the 12 a little late, the change walk at Ebertplatz moved past
+    // the 16's departure, and starting the way said "A journey step has invalid times".
+    $boards = boardsWith(['Appellhofplatz' => ['18', liveRun('2026-11-12T19:44:00+01:00', delay: 4)]]);
+
+    $live = (new TripLive($boards))->confirm(liveJourney(), CarbonImmutable::parse('2026-11-12T19:40:00+01:00'));
+
+    expect($live['legs'][1]['depart_time'])->toBe('19:54')->and($live['legs'][1]['arrive_time'])->toBe('19:55')
+        ->and($live['legs'][2]['depart_time'])->toBe('19:55')
+        ->and($live)->not->toHaveKey('missed')
+        ->and(StoredJourney::problem($live))->toBeNull();
+});
+
+test('a tram so late the next one has gone says which change it misses, in words', function () {
+    $boards = boardsWith(['Appellhofplatz' => ['18', liveRun('2026-11-12T19:44:00+01:00', delay: 8)]]);
+
+    $live = (new TripLive($boards))->confirm(liveJourney(), CarbonImmutable::parse('2026-11-12T19:40:00+01:00'));
+
+    expect($live['missed'])->toBe(['line' => '12', 'stop' => 'Ebertplatz', 'after' => '18', 'late_min' => 8])
+        ->and(StoredJourney::problem($live))->toBe('The 18 is running 8 min late, so this way misses the 12 at Ebertplatz. Pick another way.');
 });
