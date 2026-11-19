@@ -50,6 +50,20 @@ The owner decided on 17 Nov 2026 that no lawyer will be involved ("no lawyer wil
 
 **Not yet allowed:** shipping to the App Store needs the paid Apple account, and App Review must see the feature that justifies "Always". Notes and a screen recording go with the review.
 
+## B2. Composer helps with words (built 19 Nov 2026)
+
+**What changes.** Composer may now translate, explain a German word, letter or form in plain words, explain how everyday things work in Germany, and draft a message for the person to send themselves. The owner approved the canvas "Expadu iPhone: Composer helps with words" on 19 Nov ("build it").
+- **Sent to Anthropic:** nothing new by kind. What the person types was already sent under Composer's consent (`composer_assist`). The new part is what they may now paste: a line of a letter, a word from a form.
+- **What comes back:** the AI's text, shown on a card marked "Written by Expadu's AI from what you told it. Check it before you use it." It stays in their conversation like any answer, and is deleted with it.
+- **The notice** gains one line, "what Composer writes for you when you ask it to translate, explain or draft something, from what you wrote". Its version changes with it, and the app shows the current wording with each request.
+
+**Basis.** Unchanged: consent (Art. 6(1)(a) GDPR), given per request with the notice shown.
+
+**Risks and measures**
+- **A pasted letter can hold other people's data or special categories** (a doctor's letter, the Ausländerbehörde). The person chooses what to paste, and nothing is kept beyond the conversation. Reading taken: no new basis is needed, because pasting is their own act under the same consent. Residual: medium, so the notice and the ask screen keep saying what is sent.
+- **Wrong legal advice.** Composer may not say what the law requires, whether they must, or by when; that stays with the checked guides and Paperwork. A code check rejects any number in the AI's text (a date, an amount, a deadline) that wasn't in their own message, and has the text written again.
+- **AI-generated text passed on as their own** (AI Act Art. 50). Every card says Expadu's AI wrote it. The person sends it themselves; Composer sends nothing.
+
 ## C. The draft's open points, decided
 
 1. **Memory, with each message: consent or contract?** Consent stays. Cautious reading: the facts are optional and personal, and Composer works without them, so they are not necessary for the contract (Art. 6(1)(b) read narrowly, as the EDPB does).

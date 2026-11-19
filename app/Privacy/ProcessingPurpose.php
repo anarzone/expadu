@@ -45,6 +45,7 @@ enum ProcessingPurpose: string
         'transit_notices' => 'public transport notices',
         'paperwork_guide_titles' => 'the titles of our reviewed paperwork guides',
         'plans_composed' => 'the plans our planner puts together for you',
+        'words_written_for_you' => 'what Composer writes for you when you ask it to translate, explain or draft something, from what you wrote',
         'notes_that_your_own_cards_are_shown' => 'that Composer is showing you one of your own cards, never what is on it',
         'changes_you_ask_for' => 'the changes you ask Composer to make (a saved place or event, a reminder, your plans, Home or Work, a favourite stop, how you travel, your alerts and notifications, your step-free need, your profile except your email, something to remember or forget about you), and whether they were made',
         'your_taste_if_personalised' => 'what you tend to like and skip, what you asked Composer to remember about you, and your situation and German level, if you turned on personalisation',

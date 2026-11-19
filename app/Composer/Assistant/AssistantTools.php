@@ -113,7 +113,7 @@ final class AssistantTools
     public const CATEGORIES = [
         'where_am_i' => 'your_nearest_stop_and_veedel', 'departures' => 'departures', 'plan_trip' => 'trips_to_places_you_name',
         'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'find_place' => 'places_listed', 'compare_places' => 'trips_to_places_you_name', 'weather' => 'weather',
-        'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'who_to_ask' => 'places_listed', 'my_places' => 'your_saved_places_names', 'my_saved' => 'your_saved_places_names',
+        'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'who_to_ask' => 'places_listed', 'help_with_words' => 'words_written_for_you', 'my_places' => 'your_saved_places_names', 'my_saved' => 'your_saved_places_names',
         'paperwork' => 'notes_that_your_own_cards_are_shown', 'my_trip' => 'notes_that_your_own_cards_are_shown',
         'my_next' => 'notes_that_your_own_cards_are_shown', 'open_in_app' => 'notes_that_your_own_cards_are_shown',
         'my_taste' => 'your_taste_if_personalised', 'my_day' => 'your_plans_if_personalised',
@@ -212,6 +212,9 @@ final class AssistantTools
 
     private int $count = 0;
 
+    /** The app shows the words card (help_with_words): only then is the tool offered. */
+    public bool $writes = false;
+
     public function __construct(
         private User $user,
         private CarbonImmutable $now,
@@ -305,7 +308,7 @@ final class AssistantTools
      * @param  bool  $weather  whether there is weather to look at (without it, no weather tool, so no "the weather is unavailable")
      * @return list<array<string, mixed>> the tools, as the Messages API takes them
      */
-    public static function definitions(bool $personal = false, bool $weather = true, bool $paperwork = false): array
+    public static function definitions(bool $personal = false, bool $weather = true, bool $paperwork = false, bool $writes = false): array
     {
         $kinds = self::kindsWithPlaces();
         $none = ['type' => 'object', 'properties' => (object) []];
@@ -382,6 +385,14 @@ final class AssistantTools
                     'indoors' => ['type' => 'boolean', 'description' => 'only indoor places'],
                     'free' => ['type' => 'boolean', 'description' => 'only places with no fee listed'],
                 ], 'required' => ['day']]],
+            ...($writes ? [['name' => 'help_with_words', 'description' => 'Writes words for them, shown as a card they can copy: a translation of a German word, sentence, letter or form into plain English (or of what they say into German); an explanation in plain words of what a German letter, form or word is and what it asks them to do, or of how an everyday thing works in Germany and Cologne (Pfand, Kölsch, Karneval, quiet Sundays, how a ticket like the Deutschlandticket is used, what\'s polite), from what you know; or a short message or email for them to send themselves (to a landlord, a neighbour, an office), in German unless they ask otherwise. Write the words yourself in text, as they\'ll use them. Use only what they told you: never add a date, deadline, amount, fee, name or number that isn\'t in their message, and never say what the law requires of them, whether they must, or by when (for that, guidance, and Paperwork works it out from their situation). Your sentences then only say what the card is.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'kind' => ['type' => 'string', 'enum' => ['translate', 'explain', 'draft']],
+                    'title' => ['type' => 'string', 'description' => 'what it is, a few words: "Email to your landlord", "What the Finanzamt letter asks"'],
+                    'text' => ['type' => 'string', 'description' => 'the result, as they\'ll use it, at most 1,200 characters: for translate, the translation itself, never the words they gave; for explain, two to four plain sentences on what it is and what it asks of them; for draft, the whole message ready to send, with [name] or [address] where theirs goes'],
+                    'language' => ['type' => 'string', 'enum' => ['de', 'en'], 'description' => 'the language the text is in'],
+                    'english' => ['type' => 'string', 'description' => 'always when the text is German (a draft or a translation into German): what it says, in plain English, so they can check it before sending; leave out when the text is English'],
+                ], 'required' => ['kind', 'title', 'text', 'language']]]] : []),
             ['name' => 'who_to_ask', 'description' => 'Who to ask for an everyday thing you can\'t answer yourself, from Expadu\'s own checked list, with its official link as a card: a pharmacy at night, a doctor now or finding one, something lost, ticket prices, a rent deposit or a landlord, someone to talk to.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'topic' => ['type' => 'string', 'enum' => array_keys((array) config('who_to_ask'))],
@@ -446,6 +457,7 @@ final class AssistantTools
                 'swap_in_day' => $this->swapInDay($input),
                 'guidance' => $this->guidance($input),
                 'who_to_ask' => $this->whoToAsk($input),
+                'help_with_words' => $this->writeWords($input),
                 'paperwork' => match (true) {
                     $this->paperwork => $this->paperworkRecord(),
                     // The card asking for their permission says what's needed: no pointer to Paperwork above it.
@@ -1731,6 +1743,36 @@ final class AssistantTools
     }
 
     /** Reviewed paperwork guides matching the words: their titles, as Composer's guidance lists them. */
+    /**
+     * Words written for them (owner's test, 19 Nov 2026: no translation, no letter explained, no email to the
+     * landlord), as a card to copy. Its text is the AI's own, so it's kept from adding what they didn't say: every
+     * number in it (a date, an amount, a deadline, a paragraph) must be in their own messages.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    private function writeWords(array $input): string
+    {
+        $text = trim(mb_substr((string) ($input['text'] ?? ''), 0, 1200));
+        $kind = in_array($input['kind'] ?? null, ['translate', 'explain', 'draft'], true) ? (string) $input['kind'] : null;
+        if ($text === '' || $kind === null) {
+            return 'Nothing written: give the kind and the words.';
+        }
+        $theirs = implode("\n", [(string) ($this->asked['now'] ?? ''), ...array_map('strval', (array) ($this->asked['before'] ?? []))]);
+        $english = trim(mb_substr((string) ($input['english'] ?? ''), 0, 1200));
+        preg_match_all('/\d+(?:[.,:\/]\d+)*/u', $text."\n".$english, $numbers);
+        $added = array_values(array_filter(array_unique($numbers[0]), fn (string $n): bool => ! str_contains($theirs, $n)));
+        if ($added !== []) {
+            return 'Not written: it has numbers that aren\'t in their message ('.implode(', ', array_slice($added, 0, 3)).'). Write it again with only what they said, or leave a gap like [date] for them to fill in.';
+        }
+        $id = 'w'.(++$this->count);
+        $this->cards[$id] = ['type' => 'words', 'kind' => $kind, 'title' => mb_substr(trim((string) ($input['title'] ?? '')), 0, 80),
+            'text' => $text, 'language' => ($input['language'] ?? 'en') === 'de' ? 'de' : 'en',
+            'english' => ($input['language'] ?? 'en') === 'de' && $english !== '' ? $english : null,
+            'note' => 'Written by Expadu’s AI from what you told it. Check it before you use it.'];
+
+        return $this->line($id, ['translate' => 'A translation', 'explain' => 'An explanation', 'draft' => 'A draft']["{$kind}"].' written for them, shown as a card to copy: '.mb_strtolower(trim((string) ($input['title'] ?? ''))).'.');
+    }
+
     private function whoToAsk(array $input): string
     {
         $entry = config('who_to_ask.'.(string) ($input['topic'] ?? ''));
