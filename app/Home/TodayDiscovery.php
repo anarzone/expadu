@@ -165,7 +165,9 @@ final class TodayDiscovery
         // The soonest and nearest, and with their leanings, the kinds they picked or lean to from
         // later in the day too: a few hundred listings a day, and only the first eleven were ever
         // ordered, so a pick of "sports" rarely met a match (owner's test, 19 Nov 2026).
-        $later = $day->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->slice(self::LISTED);
+        // Only what is still to start today: tomorrow's and what's already running never lead (the audit, 3 Nov 2026).
+        $later = $day->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->slice(self::LISTED)
+            ->filter(fn (array $event): bool => ! isset($event['day']) && CarbonImmutable::parse($event['occurrence_start'])->greaterThanOrEqualTo($now));
         $candidates = $pool->take(self::LISTED)->concat(self::leanedLater($later, $leanings))->values();
         // Each AI pick with a why also says which of their leanings it matches, as code reads
         // them (reasons()): "Why am I seeing this?" shows those, the why only words one.

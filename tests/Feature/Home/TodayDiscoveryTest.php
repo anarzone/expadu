@@ -329,10 +329,13 @@ test('a kind they picked is found even when two dozen listings start before it',
         tonight("Tour {$i}", sprintf('13:%02d', $i), 'tours');
     }
     tonight('Match', '21:00', 'sports');
+    // Already running, and tomorrow's: neither is brought forward.
+    discoveryEvent('Morning run', '2026-10-26 09:00', null, '2026-10-26 23:00')->update(['category' => 'sports']);
+    discoveryEvent('Tomorrow match', '2026-10-27 19:00')->update(['category' => 'sports']);
 
     $titles = collect(app(TodayDiscovery::class)->for($user, discoveryNoon())['events'])->pluck('title');
 
-    expect($titles->first())->toBe('Match');
+    expect($titles->first())->toBe('Match')->and($titles)->not->toContain('Morning run')->not->toContain('Tomorrow match');
 });
 
 test('a kind they turned down goes last, and nothing is dropped', function () {
