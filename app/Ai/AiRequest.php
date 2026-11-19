@@ -8,6 +8,11 @@ namespace App\Ai;
  * comparing models (the --model, --effort, --max-tokens and --think options of the eval commands) sets
  * `ai.override` for its own process, and every request then runs on that model and effort; the
  * app never sets it.
+ *
+ * It also marks the end of the fixed instructions for the prompt cache when the caller marked
+ * nothing: the tools and system prompt are the same on every call of a kind (an event to
+ * classify, a notice to rewrite), so later calls read them at a tenth of the price. Without it
+ * only Composer cached, and the account's hit rate stood at 1% (owner, 19 Nov 2026).
  */
 final class AiRequest
 {
@@ -33,6 +38,7 @@ final class AiRequest
             }
         }
         $model = (string) ($body['model'] ?? '');
+        $body = self::cached($body);
 
         // Disabled thinking: Sonnet 5.5 never takes it, Haiku 5.5 only up to high effort.
         $effort = $body['output_config']['effort'] ?? null;
@@ -57,6 +63,32 @@ final class AiRequest
                 is_array($body['system'] ?? null) => [...$body['system'], ['type' => 'text', 'text' => $line]],
                 default => $line,
             };
+        }
+
+        return $body;
+    }
+
+    /**
+     * The fixed instructions marked for the prompt cache, before a per-round line is added after them
+     * (that line differs from round to round, so it stays outside what's cached). Left alone when the
+     * caller marked something itself (Composer), or there's no system prompt. Too short a prefix
+     * (under the model's minimum) simply isn't cached: no error, no cost.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    private static function cached(array $body): array
+    {
+        if (isset($body['cache_control']) || str_contains((string) json_encode([$body['system'] ?? null, $body['tools'] ?? null, $body['messages'] ?? null]), '"cache_control"')) {
+            return $body;
+        }
+        if (is_string($body['system'] ?? null) && trim($body['system']) !== '') {
+            $body['system'] = [['type' => 'text', 'text' => $body['system'], 'cache_control' => ['type' => 'ephemeral']]];
+        } elseif (is_array($body['system'] ?? null) && $body['system'] !== []) {
+            $last = array_key_last($body['system']);
+            if (is_array($body['system'][$last]) && ($body['system'][$last]['type'] ?? null) === 'text') {
+                $body['system'][$last]['cache_control'] = ['type' => 'ephemeral'];
+            }
         }
 
         return $body;
