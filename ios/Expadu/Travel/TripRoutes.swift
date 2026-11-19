@@ -747,20 +747,90 @@ private struct ConditionsCard: View {
     }
 }
 
-/// While the planner works: what's being checked, on flaps.
+/// While the planner works (the canvas "Finding your routes", option C, owner 19 Nov 2026): the way
+/// draws itself from where they are to where they go, and what's checked ticks off in words.
 private struct LoadingCard: View {
     let step: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let checks = [("Looking for the ways there", "Found the ways there"),
+                                 ("Checking live times", "Checked live times"),
+                                 ("Checking KVB notices and the weather", "Checked KVB notices and the weather")]
 
     var body: some View {
-        VStack(spacing: 12) {
-            FlapWord(text: ["KVB", "LIVE", "RAIN"][min(step, 2)].padding(toLength: 5, withPad: " ", startingAt: 0), small: true)
-            Text(step == 0 ? "Checking today’s conditions…" : "Checking the live runs…").font(.geist(17, .bold))
+        VStack(spacing: 14) {
+            TimelineView(.animation(paused: reduceMotion)) { timeline in
+                RouteDrawing(progress: reduceMotion ? 1 : Self.progress(timeline.date))
+            }
+            .frame(width: 300, height: 54)
+            .accessibilityHidden(true)
+            Text("Finding your routes…").font(.geist(17, .bold))
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Self.checks.indices, id: \.self) { i in
+                    let done = i < step
+                    HStack(spacing: 8) {
+                        ZStack {
+                            Circle().fill(done ? Palette.goodText : i == step ? Palette.border : Palette.quiet)
+                            if done {
+                                Image(systemName: "checkmark").font(.system(size: 9, weight: .heavy)).foregroundStyle(.white)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                        }
+                        .frame(width: 18, height: 18)
+                        Text(done ? Self.checks[i].1 : Self.checks[i].0)
+                            .font(.geist(14)).foregroundStyle(i <= step ? Palette.text : Palette.textSoft)
+                            .contentTransition(.opacity)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .animation(reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.3), value: step)
         }
         .foregroundStyle(Palette.text)
         .frame(maxWidth: .infinity)
         .padding(22)
         .background(Palette.surface, in: .rect(cornerRadius: 22))
         .shadow(color: .black.opacity(0.2), radius: 20, y: 12)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// 0 to 1 over the first 70% of each 2.1 s, eased, then held: the way drawn, then drawn again.
+    private static func progress(_ date: Date) -> Double {
+        let t = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.1) / 2.1
+        let u = min(1, t / 0.7)
+        return u < 0.5 ? 4 * u * u * u : 1 - pow(-2 * u + 2, 3) / 2
+    }
+}
+
+/// The way from here (a ring) past a stop to there (the destination's orange), drawn up to `progress`.
+private struct RouteDrawing: View {
+    let progress: Double
+
+    private static let path: Path = {
+        var p = Path()
+        p.move(to: CGPoint(x: 14, y: 40))
+        p.addCurve(to: CGPoint(x: 140, y: 14), control1: CGPoint(x: 70, y: 40), control2: CGPoint(x: 80, y: 14))
+        p.addCurve(to: CGPoint(x: 286, y: 22), control1: CGPoint(x: 200, y: 14), control2: CGPoint(x: 230, y: 40))
+        return p
+    }()
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Self.path.trim(from: 0, to: progress)
+                .stroke(Palette.text, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            Circle().fill(Palette.surface).overlay(Circle().stroke(Palette.text, lineWidth: 3))
+                .frame(width: 12, height: 12).position(x: 14, y: 40)
+            Circle().fill(Palette.text).frame(width: 10, height: 10)
+                .scaleEffect(progress >= 0.5 ? 1 : 0.4).opacity(progress >= 0.5 ? 1 : 0)
+                .animation(progress >= 0.5 ? .spring(duration: 0.3) : nil, value: progress >= 0.5)
+                .position(x: 140, y: 14)
+            Circle().fill(Palette.action).frame(width: 14, height: 14)
+                .scaleEffect(progress >= 1 ? 1 : 0.4).opacity(progress >= 1 ? 1 : 0)
+                .animation(progress >= 1 ? .spring(duration: 0.3) : nil, value: progress >= 1)
+                .position(x: 286, y: 22)
+        }
+        .frame(width: 300, height: 54)
     }
 }
 

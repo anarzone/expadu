@@ -105,20 +105,31 @@ final class TripSync
                 $departAt, $line, $tripId,
             );
         } catch (\Throwable) {
-            return null;
-        }
-        if ($way === null) {
-            return null;
+            $way = null;
         }
 
-        // Its own steps up to the stop (none, or a minute or two from the stop's place to the stop) add
-        // nothing: they are at the stop, or on the tram already.
-        $on = $way->legs;
-        while ($on !== [] && $on[0]->mode === 'walk' && $on[0]->durationMin <= 2) {
-            array_shift($on);
-        }
-        if ($on === []) {
-            return null;
+        if ($way !== null) {
+            // Its own steps up to the stop (none, or a minute or two from the stop's place to the stop) add
+            // nothing: they are at the stop, or on the tram already.
+            $on = $way->legs;
+            while ($on !== [] && $on[0]->mode === 'walk' && $on[0]->durationMin <= 2) {
+                array_shift($on);
+            }
+            if ($on === []) {
+                return null;
+            }
+            $on = array_map(fn (Leg $l) => $l->toArray(), $on);
+            $arriveAt = $way->arriveAt;
+        } else {
+            // The router plans only the best ways, so a run that gets them there no sooner than the next
+            // (the 16 at 18:07 when the 18 at 18:09 meets the same 12) is never among them (owner, 19 Nov
+            // 2026: "That tram can't be followed from here"). That run itself, then: its stretch from the
+            // board's own timetable, and the rest of the way as it was, when it still makes the change.
+            $spliced = $this->spliced($trip, $engine, $legIndex, $line, $departAt, $tripId);
+            if ($spliced === null) {
+                return null;
+            }
+            [$on, $arriveAt] = $spliced;
         }
         $old = $trip->journey;
         // What came before: the walk to the stop happened that much earlier or later too, when this is the
@@ -127,19 +138,19 @@ final class TripSync
         $before = array_slice($old['legs'], 0, $legIndex);
         $ridden = collect($before)->contains(fn (array $l) => ! in_array($l['mode'], ['walk', 'bike'], true));
         if (! $ridden) {
-            $shift = $on[0]->departAt->getTimestamp() - CarbonImmutable::parse($old['legs'][$legIndex]['depart_at'])->getTimestamp();
+            $shift = CarbonImmutable::parse($on[0]['depart_at'])->getTimestamp() - CarbonImmutable::parse($old['legs'][$legIndex]['depart_at'])->getTimestamp();
             $before = array_map(fn (array $l) => $this->shifted($l, $shift), $before);
         }
-        $legs = [...$before, ...array_map(fn (Leg $l) => $l->toArray(), $on)];
+        $legs = [...$before, ...$on];
         $rides = array_values(array_filter($legs, fn (array $l) => ! in_array($l['mode'], ['walk', 'bike'], true)));
         $departs = CarbonImmutable::parse($legs[0]['depart_at']);
         $journey = [
             ...$old,
             'depart_at' => $departs->toIso8601String(),
             'depart_time' => $departs->format('H:i'),
-            'arrive_at' => $way->arriveAt->toIso8601String(),
-            'arrive_time' => $way->arriveAt->format('H:i'),
-            'duration_min' => (int) round(($way->arriveAt->getTimestamp() - $departs->getTimestamp()) / 60),
+            'arrive_at' => $arriveAt->toIso8601String(),
+            'arrive_time' => $arriveAt->setTimezone(config('app.timezone'))->format('H:i'),
+            'duration_min' => (int) round(($arriveAt->getTimestamp() - $departs->getTimestamp()) / 60),
             'transfers' => max(0, count($rides) - 1),
             'lines' => array_values(array_filter(array_map(fn (array $l) => $l['line'], $rides))),
             'legs' => $legs,
@@ -154,9 +165,81 @@ final class TripSync
         return [
             'undo' => $undo,
             'line' => $line,
-            'depart_time' => $on[0]->departAt->format('H:i'),
-            'arrive_time' => $way->arriveAt->format('H:i'),
+            'depart_time' => CarbonImmutable::parse($on[0]['depart_at'])->setTimezone(config('app.timezone'))->format('H:i'),
+            'arrive_time' => $arriveAt->setTimezone(config('app.timezone'))->format('H:i'),
         ];
+    }
+
+    /**
+     * The trip from that ride on with that run in its place: the run's stretch as the board times it
+     * (the same stops, any line), and the legs after it as they were, when it gets to the change in time
+     * for the walk there and the next ride. Null when the run isn't on the board or misses the change.
+     *
+     * @return array{0: list<array<string, mixed>>, 1: CarbonImmutable}|null
+     */
+    private function spliced(ActiveTrip $trip, TransitousAdapter $engine, int $legIndex, string $line, CarbonImmutable $departAt, ?string $tripId): ?array
+    {
+        $leg = $this->ride($trip, $legIndex);
+        if ($leg === null) {
+            return null;
+        }
+        try {
+            $runs = $engine->withTimeBudget(4.0)->directRides([[
+                'from' => new GeoPoint((float) $leg['from']['lat'], (float) $leg['from']['lng']),
+                'to' => new GeoPoint((float) $leg['to']['lat'], (float) $leg['to']['lng']),
+                'at' => $departAt->subMinutes(2),
+            ]])[0] ?? [];
+        } catch (\Throwable) {
+            return null;
+        }
+        $run = collect($runs)->first(fn (array $r) => ! ($r['cancelled'] ?? false) && (($tripId !== null && ($r['trip'] ?? null) === $tripId)
+            || ($r['line'] === $line && abs(CarbonImmutable::parse($r['depart_at'])->getTimestamp() - $departAt->getTimestamp()) <= 90)));
+        if ($run === null) {
+            return null;
+        }
+        $depart = CarbonImmutable::parse($run['depart_at']);
+        $arrive = CarbonImmutable::parse($run['arrive_at']);
+        $delay = isset($run['delay_min']) ? (int) $run['delay_min'] : null;
+        $time = fn (CarbonImmutable $at) => $at->setTimezone(config('app.timezone'))->format('H:i');
+        $ride = [
+            ...$leg,
+            'line' => $run['line'], 'headsign' => $run['headsign'] ?? ($leg['headsign'] ?? null), 'color' => $run['color'] ?? ($leg['color'] ?? null),
+            'depart_at' => $depart->toIso8601String(), 'depart_time' => $time($depart),
+            'arrive_at' => $arrive->toIso8601String(), 'arrive_time' => $time($arrive),
+            // The run's own timetable, so the boards follow this tram from now on, not the one it replaced.
+            'scheduled_depart_at' => $depart->subMinutes(max(0, $delay ?? 0))->toIso8601String(),
+            'scheduled_arrive_at' => $arrive->subMinutes(max(0, $delay ?? 0))->toIso8601String(),
+            'trip_id' => $run['trip'] ?? null, 'delay_min' => $delay, 'realtime' => $delay !== null, 'cancelled' => false,
+            'duration_min' => (int) round(($arrive->getTimestamp() - $depart->getTimestamp()) / 60),
+        ];
+        unset($ride['also'], $ride['change'], $ride['earlier']);
+
+        // What comes after, as it was: it holds when the walk on still reaches the next ride before it leaves.
+        // The walk starts when this run gets in; a change within one stop takes no minutes of its own.
+        $after = array_slice($trip->journey['legs'], $legIndex + 1);
+        $at = $arrive;
+        foreach ($after as $i => $next) {
+            if (! in_array($next['mode'] ?? 'walk', ['walk', 'bike'], true)) {
+                if ($at->gt(CarbonImmutable::parse($next['depart_at']))) {
+                    return null;
+                }
+                break;
+            }
+            $sameStop = ($next['distance_m'] ?? null) === 0 || (($next['from']['name'] ?? null) !== null && ($next['from']['name'] ?? null) === ($next['to']['name'] ?? null));
+            $ends = $at->addMinutes($sameStop ? 0 : (int) ($next['duration_min'] ?? 0));
+            $nextRide = collect(array_slice($after, $i + 1))->first(fn (array $l) => ! in_array($l['mode'] ?? 'walk', ['walk', 'bike'], true));
+            if ($nextRide === null) {
+                // The walk to the end: from when they get in, as long as it took.
+                $ends = $at->addMinutes((int) ($next['duration_min'] ?? 0));
+            }
+            $after[$i] = [...$next, 'depart_at' => $at->toIso8601String(), 'depart_time' => $time($at),
+                'arrive_at' => $ends->toIso8601String(), 'arrive_time' => $time($ends)];
+            $at = $ends;
+        }
+        $last = end($after);
+        $arriveAt = is_array($last) && isset($last['arrive_at']) ? CarbonImmutable::parse($last['arrive_at']) : $arrive;
+
+        return [[$ride, ...$after], $arriveAt];
     }
 
     /**
