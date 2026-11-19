@@ -1189,6 +1189,12 @@ final class AssistantTools
             'veedel' => $place['area'] ?? app(UserLocationService::class)->veedelAt($place['point']->lat, $place['point']->lng)];
     }
 
+    /** Whether a time is now: open_at is said to the minute ("15:11" while it's 15:11:40), so within five minutes of it. */
+    private function isNow(CarbonImmutable $at): bool
+    {
+        return abs($at->diffInSeconds($this->now, false)) < 300;
+    }
+
     private function searchPlaces(array $input): string
     {
         $day = $this->askedDay($input['day'] ?? null);
@@ -1372,7 +1378,7 @@ final class AssistantTools
         $before = $found->take(Assistant::PLACES_SHOWN)->takeWhile(fn (Candidate $c): bool => isset($this->earlier['spot'][(int) substr($c->id, 5)]))->count();
         $same = $before > 0 && ($before === min(Assistant::PLACES_SHOWN, $found->count()) || $again)
             ? $this->line('s'.(++$this->count), 'The same places as shown before'.($before < min(Assistant::PLACES_SHOWN, $found->count()) ? ' (the first '.$before.'; the others are new)' : '').'. The nearest: '
-                .self::placeText($found->first(), $at, $at->equalTo($this->now), $stepFree, $this->parks[$found->first()->id]['has'] ?? null, $free, $this->parks[$found->first()->id]['matched'] ?? null, $day))."\n"
+                .self::placeText($found->first(), $at, $this->isNow($at), $stepFree, $this->parks[$found->first()->id]['has'] ?? null, $free, $this->parks[$found->first()->id]['matched'] ?? null, $day))."\n"
             : '';
 
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
@@ -1406,7 +1412,7 @@ final class AssistantTools
             }, 'lat' => $lat, 'lng' => $lng];
 
             // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
-            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null, $free, $this->parks[$c->id]['matched'] ?? null, $day)
+            return $this->line($c->id, self::placeText($c, $at, $this->isNow($at), $stepFree, $this->parks[$c->id]['has'] ?? null, $free, $this->parks[$c->id]['matched'] ?? null, $day)
                 // To work there: what its sources say of laptops, and that nothing is listed when nothing is.
                 .($work ? ' '.self::laptopSaid($c) : '')
                 // Near a place they named: how far from it, so "near Neumarkt" is said as found.
@@ -1789,7 +1795,9 @@ final class AssistantTools
             'english' => ($input['language'] ?? 'en') === 'de' && $english !== '' ? $english : null,
             'note' => 'Written by Expadu’s AI from what you told it. Check it before you use it.'];
 
-        return $this->line($id, ['translate' => 'A translation', 'explain' => 'An explanation', 'draft' => 'A draft']["{$kind}"].' written for them, shown as a card to copy: '.mb_strtolower(trim((string) ($input['title'] ?? ''))).'.');
+        return $this->line($id, ['translate' => 'A translation', 'explain' => 'An explanation', 'draft' => 'A draft']["{$kind}"].' written for them, shown as a card to copy: '.mb_strtolower(trim((string) ($input['title'] ?? ''))).'. It says: '
+            // What it says, so a sentence citing it may say it too ("Kölsch is served cold").
+            .($english !== '' ? $english : $text));
     }
 
     private function whoToAsk(array $input): string
