@@ -591,11 +591,12 @@ test('🔒 what was shown today reaches the AI with its hours, and yesterday\'s 
 test('what was shown before reaches the AI with the id a tool takes, so "add the first one" adds that listing', function () {
     // The owner's test, 19 Nov 2026: "Add the first one to my plan" after tonight's listings found no place of its name.
     $turn = Assistant::history([['role' => 'assistant', 'text' => 'Tonight:', 'events' => [
-        ['id' => 1294, 'title' => "Santa's Christmas Market", 'candidate' => 'event:1294:1795111200'],
+        ['id' => 1294, 'title' => "Santa's Christmas Market", 'candidate' => 'event:1294:1795111200', 'venue' => ['name' => 'MediaPark Köln', 'veedel' => 'Neustadt-Nord']],
         ['id' => 731, 'title' => 'SONIC CHESS CLUB', 'candidate' => 'event:731'],
     ]]])['turns'][0]['text'];
 
-    expect($turn)->toContain('"Santa\'s Christmas Market" (listing [e1294@1795111200])')
+    // ...and where it is, so "when do we leave for it?" plans the way to the place.
+    expect($turn)->toContain('"Santa\'s Christmas Market" (listing at "MediaPark Köln" in Neustadt-Nord [e1294@1795111200])')
         // A listing without a time to plan it at says no id.
         ->toContain('"SONIC CHESS CLUB" (listing)');
 });
