@@ -14,6 +14,7 @@ use App\Models\FavouriteStop;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Personalisation\EventPicks;
 use App\Personalisation\Memory;
 use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingConsentStore;
@@ -258,11 +259,33 @@ test('🔒 "I\'m vegetarian" is remembered with Undo and reaches the next conver
     $this->postJson('/composer/workspace', ['revision' => $revision, 'action' => 'fresh'])->assertOk();
     $next = assistantAsk($this, 'anything tonight?');
 
-    expect(Http::recorded()[2][0]->body())->toContain('What you know about them:')->toContain('[k1] Vegetarian')->toContain('[u2] German: A1')
+    // What was kept is in what the model reads back, so "I'll remember you're vegetarian" stands.
+    expect(Http::recorded()[1][0]->body())->toContain('Remembered that they said: Vegetarian.')
+        ->and(Http::recorded()[2][0]->body())->toContain('What you know about them:')->toContain('[k1] Vegetarian')->toContain('[u2] German: A1')
         ->and($next['lead'])->toBe('Jazz im Stadtgarten starts at 20:00. You’re vegetarian, so eat before you go.')
         // Said under the answer, from what they told Composer.
         ->and($next['told'])->toBe(['Vegetarian'])
         ->and($told)->not->toHaveKey('told');
+});
+
+test('🔒 the kinds they picked in Expadu are in what Composer knows, with the opt-in only', function () {
+    $user = User::factory()->onboarded()->create();
+    $this->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk();
+    $user = $user->fresh();
+    expect(app(EventPicks::class)->save($user, ['sports', 'meet_people'], true))->not->toBeNull();
+    $this->actingAs($user);
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Hello.', 'uses' => []]], 'show' => []]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Hello.', 'uses' => []]], 'show' => []]]]))]);
+
+    assistantAsk($this, 'hi');
+    expect(Http::recorded()[0][0]->body())->toMatch('/\[u3\] Into \(they picked it\): [^"]*sports/i');
+
+    $this->putJson('/user-settings', ['settings' => ['personalisation' => false]])->assertOk();
+    $revision = $this->getJson('/composer/workspace')->json('revision');
+    $this->postJson('/composer/workspace', ['revision' => $revision, 'action' => 'fresh'])->assertOk();
+    assistantAsk($this, 'hi');
+    expect(Http::recorded()[1][0]->body())->not->toContain('[u3]');
 });
 
 test('🔒 without the opt-in nothing about them is given and remember keeps nothing', function () {
