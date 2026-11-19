@@ -96,7 +96,7 @@ final class Assistant
     private const SYSTEM = <<<'TXT'
         You are Composer, the assistant in Expadu, an app for people new to Cologne. Answer every message: look things up with the tools, then answer with the answer tool, in English.
 
-        You look things up and change things of theirs only through the tools; each tool's description says what it does. You can't book, buy or order anything, send messages, tell jokes, or answer general-knowledge, legal or visa questions yourself.
+        You look things up and change things of theirs only through the tools; each tool's description says what it does. You can't book, buy or order anything, send messages for them, tell jokes, or answer general-knowledge, legal or visa questions yourself.
 
         {CAN}
 
@@ -138,6 +138,17 @@ final class Assistant
         TXT;
 
     /** Added for people who turned personalisation on. */
+    /** What Composer can do with the words card, added to CAN when the app shows it. */
+    public const CAN_WORDS = ' It can also translate German, explain a letter, form or word in plain words, explain how everyday things work in Germany and Cologne, and draft a message or email for them to send themselves.';
+
+    /**
+     * Added when the app shows the words card (`cards` has `words`; owner, 19 Nov 2026: "build it"). An app that
+     * can't show it never gets the tool, so it never says "here's a draft" with nothing under it.
+     */
+    private const WORDS = <<<'TXT'
+        You can translate, explain German words, letters and forms in plain words, explain how everyday things work in Germany and Cologne (Pfand, Kölsch, Karneval, quiet Sundays, how tickets are used, what's polite), and draft messages and emails for them to send themselves: with help_with_words. Whenever what you write is German, give what it says in English too (english), so they can check it before they send it. A question with both a what and a where ("What's Kölsch, and where can I try one?"): help_with_words for the what and the lookup for the where, in the same round. "Is my Deutschlandticket valid on the S-Bahn?", "can I take my bike on the tram?": everyday questions about how things are used, so help_with_words, never a paperwork guide.
+        TXT;
+
     private const PERSONAL = <<<'TXT'
         This person turned personalisation on. What you know about them is at the top of their message: what they asked you to remember ([k] ids), what they tend to like and skip ([t] [a] [h] [w] ids) and their situation and German level ([u] ids). Use it in every answer without being asked: a vegetarian gets vegetarian places, a family with a toddler gets places for small children, someone with little German gets events in English. A sentence that relies on it cites those ids in uses. You may also look at their own plans today and tomorrow (my_day). Prefer what fits them and leaves their plans free, and never suggest what they skip.
         - When they tell you a lasting fact about themselves (what they eat, their children, how they get around, their hours, what they love or avoid), call remember with it in a few words, in the same round as the lookups, and say "I'll remember that." in the answer. When they say something you know is wrong or no longer so, or ask you to forget it, call forget with its k id (and remember the new fact when it changed). Never remember anything about health, religion or beliefs, sexuality, politics or a union.
@@ -165,7 +176,7 @@ final class Assistant
     private const LEANS = '/^(or|and|but|so|then|it|it\'s|its|they|they\'re|their|both|neither|these|those)\b|\b(also|the same|that one)\b/iu';
 
     /** Cards of the person's own and questions back: shown whenever they were looked up. */
-    private const ALWAYS_SHOWN = '/^(pw|pp|trip|next|c\d+|x\d+p?|o\d+b?)$/';
+    private const ALWAYS_SHOWN = '/^(pw|pp|trip|next|c\d+|x\d+p?|o\d+b?|w\d+)$/';
 
     /** The last answer as written, before the checks (composer:eval reads what was dropped). */
     public ?array $written = null;
@@ -294,6 +305,8 @@ final class Assistant
             $personal ? app(TasteFacts::class)->for($user) : null,
             $personal ? app(AroundNow::class)->day($user, $plans, $now) : [],
             $progress, $history['suggested'], $plans, $paperwork !== null, $text);
+        // The words card only for an app that shows it (the iPhone says so in `cards`).
+        $tools->writes = in_array('words', (array) request()->input('cards', []), true);
         try {
             $weather = ($this->weather->getCurrentWeather()['available'] ?? false) === true;
         } catch (Throwable) {
@@ -380,11 +393,12 @@ final class Assistant
                     'model' => (string) config('services.llm.model'),
                     'max_tokens' => 1200,
                     'output_config' => ['effort' => (string) config('services.llm.effort', 'low')],
-                    'tools' => [...AssistantTools::definitions($tools->personal(), $weather, $tools->paperwork()), self::ANSWER],
+                    'tools' => [...AssistantTools::definitions($tools->personal(), $weather, $tools->paperwork(), $tools->writes), self::ANSWER],
                     // It must use a tool each round; the last round, the answer.
                     'tool_choice' => $last ? ['type' => 'tool', 'name' => 'answer'] : ['type' => 'any'],
                     // composer:eval --system tries other instructions (AiRequest's eval override).
-                    'system' => [['type' => 'text', 'text' => (string) (config('ai.override.composer_system') ?? str_replace('{CAN}', self::CAN, self::SYSTEM)), 'cache_control' => ['type' => 'ephemeral']],
+                    'system' => [['type' => 'text', 'text' => (string) (config('ai.override.composer_system') ?? str_replace('{CAN}', self::CAN.($tools->writes ? self::CAN_WORDS : ''), self::SYSTEM)), 'cache_control' => ['type' => 'ephemeral']],
+                        ...($tools->writes ? [['type' => 'text', 'text' => self::WORDS]] : []),
                         ...($tools->personal() ? [['type' => 'text', 'text' => self::PERSONAL]] : []),
                         ...($tools->paperwork() ? [['type' => 'text', 'text' => self::PAPERWORK]] : [])],
                     'messages' => $messages,
@@ -455,7 +469,7 @@ final class Assistant
      */
     private function built(array $answer, AssistantTools $tools, CarbonImmutable $now, string $known = ''): ?array
     {
-        $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '')."\n".$known."\n".self::CAN;
+        $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '')."\n".$known."\n".self::CAN.($tools->writes ? self::CAN_WORDS : '');
         // A listing or place named in a sentence is cited by it, whether or not the AI said so.
         $names = [...array_map(fn (array $o): array => array_filter([$o['event']->title, $o['event']->title_en]), $tools->events),
             ...array_map(fn (Candidate $c): array => [$c->name], $tools->places)];
