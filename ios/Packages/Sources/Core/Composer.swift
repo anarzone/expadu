@@ -239,6 +239,8 @@ public enum ComposerBlock: Decodable, Equatable, Sendable {
     case planChanges(PlanChanges)
     case handoff(Handoff)
     case permission(Permission)
+    /// Words Composer wrote for them: a translation, an explanation or a draft to send themselves.
+    case words(Writing)
 
     enum Kind: String, CodingKey { case type }
     enum Keys: String, CodingKey { case text, board, events, places, facts, query, id }
@@ -264,8 +266,22 @@ public enum ComposerBlock: Decodable, Equatable, Sendable {
         case "plan_changes": self = .planChanges(try PlanChanges(from: decoder))
         case "handoff": self = .handoff(try Handoff(from: decoder))
         case "permission": self = .permission(try Permission(from: decoder))
+        case "words": self = .words(try Writing(from: decoder))
         default: throw DecodingError.dataCorruptedError(forKey: .type, in: try decoder.container(keyedBy: Kind.self), debugDescription: "Unknown card \(type)")
         }
+    }
+
+    /// Words written for them (owner, 19 Nov 2026: "build it"), to copy or share. A German draft carries what it
+    /// says in English, so they can check it before sending.
+    public struct Writing: Decodable, Equatable, Sendable {
+        /// translate, explain or draft.
+        public let kind: String
+        public let title: String
+        public let text: String
+        public let english: String?
+        /// de or en: the language of `text`.
+        public let language: String
+        public let note: String
     }
 
     /// Where they are, as the answer knew it.

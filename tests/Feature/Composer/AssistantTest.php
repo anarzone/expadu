@@ -660,3 +660,51 @@ test('who to ask comes from the checked list, shown with its official link, and 
         }
     }
 });
+
+test('the words card: a German draft to copy, with what it says in English, only for an app that shows it', function () {
+    // The owner's test, 19 Nov 2026: "Can you write a short German email to my landlord?" got "I can't write or send emails".
+    $user = User::factory()->onboarded()->create();
+    $draft = "Betreff: Heizung im Badezimmer defekt\n\nSehr geehrte/r [name],\n\ndie Heizung im Badezimmer funktioniert seit Montag nicht mehr.";
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['help_with_words', ['kind' => 'draft', 'title' => 'Email to your landlord', 'text' => $draft, 'language' => 'de',
+            'english' => "Subject: Bathroom heating broken\n\nDear [name],\n\nthe heating in the bathroom hasn't worked since Monday."]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Here is the email to your landlord.', 'uses' => ['w1']]], 'show' => ['w1']]]]))]);
+
+    $this->actingAs($user);
+    $answer = assistantAsk($this, 'Can you write a short German email to my landlord? The heating in the bathroom hasn’t worked since Monday.', ['cards' => ['words']]);
+    $card = collect($answer['blocks'])->firstWhere('type', 'words');
+
+    expect($card)->toMatchArray(['kind' => 'draft', 'title' => 'Email to your landlord', 'text' => $draft, 'language' => 'de'])
+        ->and($card['english'])->toContain('Dear [name]')
+        ->and($card['note'])->toContain('Written by Expadu’s AI');
+    Http::assertSent(fn (Request $request): bool => collect($request['tools'] ?? [])->contains('name', 'help_with_words')
+        && collect($request['system'])->pluck('text')->contains(fn (string $t): bool => str_contains($t, 'help_with_words')));
+});
+
+test('🔒 an app that can’t show the words card never gets the tool', function () {
+    $user = User::factory()->onboarded()->create();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['answer', ['sentences' => [], 'show' => []]]]))]);
+
+    $this->actingAs($user);
+    assistantAsk($this, 'Translate “Kündigung” please.');
+
+    Http::assertSent(fn (Request $request): bool => ! collect($request['tools'] ?? [])->contains('name', 'help_with_words')
+        && ! str_contains(json_encode($request['system']), 'help_with_words'));
+});
+
+test('🔒 words with a date, amount or deadline they didn’t give are sent back, never shown', function () {
+    $user = User::factory()->onboarded()->create();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['help_with_words', ['kind' => 'explain', 'title' => 'What the letter asks', 'language' => 'en',
+            'text' => 'The tax office asks for your 2025 return by 31.07.2026, or a late fee of 25 euros.']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [], 'show' => []]]]))]);
+
+    $this->actingAs($user);
+    $answer = assistantAsk($this, 'What does “Aufforderung zur Abgabe der Einkommensteuererklärung 2025” mean?', ['cards' => ['words']]);
+
+    expect(collect($answer['blocks'] ?? [])->firstWhere('type', 'words'))->toBeNull();
+    // The tool said so, naming what wasn't theirs (2025 was in their message; the deadline and fee weren't).
+    Http::assertSent(fn (Request $request): bool => str_contains(json_encode($request['messages'] ?? []), 'Not written: it has numbers that aren')
+        && str_contains(json_encode($request['messages'] ?? []), '31.07.2026'));
+});

@@ -578,7 +578,8 @@ public struct AppAPI: Sendable {
     /// Composer answers the last message: with the go-ahead to send it on (`processing`) when the
     /// notice was shown, and where they are, so the answer starts there.
     public func composerAsk(latitude: Double?, longitude: Double?, from label: String?, place: Int? = nil, processing: ComposerProcessing?) async throws(APIFailure) -> ComposerReply {
-        var body: [String: Any] = ["page": "Composer"]
+        // The cards this app can show beyond the first ones (the server offers their tools only then).
+        var body: [String: Any] = ["page": "Composer", "cards": ["words"]]
         if let latitude, let longitude { body["lat"] = latitude; body["lng"] = longitude }
         if let label { body["from_label"] = label }
         // One of their own places: its point is read on the server.

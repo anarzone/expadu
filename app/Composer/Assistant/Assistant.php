@@ -87,14 +87,24 @@ final class Assistant
     /** Places shown: every one the answer names gets its card (coordinator's preview check, 23 Oct 2026). */
     public const PLACES_SHOWN = 6;
 
+    /**
+     * What Composer can do, said back when they greet it or ask (owner's test, 19 Nov 2026: "What can you help
+     * me with?" got "Just ask in your own words."). Its sentences hold against this: it's in what's always known.
+     */
+    public const CAN = 'What you can do for them: find places to go (cafés, restaurants, bars, parks, places to work from with Wi-Fi) and what\'s on in Cologne (concerts, markets, exhibitions, comedy); plan a day or an evening and add things to their plans; show the way by tram, bus or train, the next departures and KVB disruptions; add appointments and set reminders; remember what they tell you about themselves; and show their Paperwork steps and Expadu\'s guides to German paperwork.';
+
     private const SYSTEM = <<<'TXT'
         You are Composer, the assistant in Expadu, an app for people new to Cologne. Answer every message: look things up with the tools, then answer with the answer tool, in English.
 
-        You look things up and change things of theirs only through the tools; each tool's description says what it does. You can't book, buy or order anything, send messages, tell jokes, or answer general-knowledge, legal or visa questions yourself.
+        You look things up and change things of theirs only through the tools; each tool's description says what it does. You can't book, buy or order anything, send messages for them, tell jokes, or answer general-knowledge, legal or visa questions yourself.
+
+        {CAN}
 
         How to work:
+        - A greeting, or "what can you do?", "how can you help me?", "what is this?": answer from What you can do, without a lookup, in two or three sentences that name what matters most to someone new to Cologne, and end with one thing they could ask you now ("What's on tonight?").
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
         - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. One kind of place for a meal or a drink ("brunch on Sunday", "dinner tonight", "a bar"): search_places, with open_at for the time. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "A place to work", "somewhere with my laptop": search_places with to_work and kinds cafe, library and coworking; a kind they name ("coworking", "a café to work in") alone, with to_work. For children ("my kid", "for the kids"): search_places with for_children, and the activity they named. A follow-up ("I prefer coffee shops") keeps the area they asked about. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
+        - "When do we need to leave for it?", "when should we go?", "how long to get there?" about a place or listing just talked about or in their plans: plan_trip to it, and your first sentence says when to leave and when they get there; when it's in their plans later and they want to be reminded, plan_trip_for_later. my_trip only when they ask about their trip under way or their next appointment.
         - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("no", "nope", "something else", "not these"), look again with leave_out_earlier, their words in asking_for_others, and suggest something of another kind or in another area. Asking the same again, or narrowing ("I prefer coffee shops"), isn't turning down: search again without leave_out_earlier, in the same area. When asked again ("try again", "again") and the results are the same places as before, your first sentence says so and names the nearest with what's listed of it ("Same public pitches as before; the closest is the one in Merkenich, open-air, no fee listed."); then offer something else in one short clause at most. Mention step-free access only when they asked for it. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs. When they widen where to look ("generally in Cologne", "anywhere", "in the whole city"), search again with whole_city, the rest as before.
         - "Which is closer, X or Y?", "which is quicker to get to?": compare_places, then say which; never ask which branch. "Tram or S-Bahn, which is quicker?": plan_trip once for each way, with by, then say which, with both times. "Not more than a 10 minute walk", "those are too far": search_places with max_walk_minutes.
         - What you showed earlier, with its hours, is in the conversation above: a question about those same places ("which one is open latest?", "are any of those open now?") is answered from it, without looking again. Anything else, "try again" and "show me more" among them, looks again.
@@ -128,6 +138,17 @@ final class Assistant
         TXT;
 
     /** Added for people who turned personalisation on. */
+    /** What Composer can do with the words card, added to CAN when the app shows it. */
+    public const CAN_WORDS = ' It can also translate German, explain a letter, form or word in plain words, explain how everyday things work in Germany and Cologne, and draft a message or email for them to send themselves.';
+
+    /**
+     * Added when the app shows the words card (`cards` has `words`; owner, 19 Nov 2026: "build it"). An app that
+     * can't show it never gets the tool, so it never says "here's a draft" with nothing under it.
+     */
+    private const WORDS = <<<'TXT'
+        You can translate, explain German words, letters and forms in plain words, explain how everyday things work in Germany and Cologne (Pfand, Kölsch, Karneval, quiet Sundays, how tickets are used, what's polite), and draft messages and emails for them to send themselves: with help_with_words. Whenever what you write is German, give what it says in English too (english), so they can check it before they send it. A question with both a what and a where ("What's Kölsch, and where can I try one?"): help_with_words for the what and the lookup for the where, in the same round. "Is my Deutschlandticket valid on the S-Bahn?", "can I take my bike on the tram?": everyday questions about how things are used, so help_with_words, never a paperwork guide.
+        TXT;
+
     private const PERSONAL = <<<'TXT'
         This person turned personalisation on. What you know about them is at the top of their message: what they asked you to remember ([k] ids), what they tend to like and skip ([t] [a] [h] [w] ids) and their situation and German level ([u] ids). Use it in every answer without being asked: a vegetarian gets vegetarian places, a family with a toddler gets places for small children, someone with little German gets events in English. A sentence that relies on it cites those ids in uses. You may also look at their own plans today and tomorrow (my_day). Prefer what fits them and leaves their plans free, and never suggest what they skip.
         - When they tell you a lasting fact about themselves (what they eat, their children, how they get around, their hours, what they love or avoid), call remember with it in a few words, in the same round as the lookups, and say "I'll remember that." in the answer. When they say something you know is wrong or no longer so, or ask you to forget it, call forget with its k id (and remember the new fact when it changed). Never remember anything about health, religion or beliefs, sexuality, politics or a union.
@@ -155,7 +176,7 @@ final class Assistant
     private const LEANS = '/^(or|and|but|so|then|it|it\'s|its|they|they\'re|their|both|neither|these|those)\b|\b(also|the same|that one)\b/iu';
 
     /** Cards of the person's own and questions back: shown whenever they were looked up. */
-    private const ALWAYS_SHOWN = '/^(pw|pp|trip|next|c\d+|x\d+p?|o\d+b?)$/';
+    private const ALWAYS_SHOWN = '/^(pw|pp|trip|next|c\d+|x\d+p?|o\d+b?|w\d+)$/';
 
     /** The last answer as written, before the checks (composer:eval reads what was dropped). */
     public ?array $written = null;
@@ -241,7 +262,7 @@ final class Assistant
                 }
                 // With the id a tool takes, so "add the first one" adds that listing, not a place of its name (owner's
                 // test, 19 Nov 2026: "Santa's Christmas Market isn't among Expadu's places").
-                $shown = [...array_map(fn (array $e): string => "\"{$e['title']}\" (listing".(preg_match('/^event:(\d+):(\d+)$/', (string) ($e['candidate'] ?? ''), $c) === 1 ? " [e{$c[1]}@{$c[2]}]" : '').')', $m['events'] ?? []),
+                $shown = [...array_map(fn (array $e): string => "\"{$e['title']}\" (listing".(isset($e['venue']['name']) ? " at \"{$e['venue']['name']}\"".(isset($e['venue']['veedel']) ? " in {$e['venue']['veedel']}" : '') : '').(preg_match('/^event:(\d+):(\d+)$/', (string) ($e['candidate'] ?? ''), $c) === 1 ? " [e{$c[1]}@{$c[2]}]" : '').')', $m['events'] ?? []),
                     ...array_map(fn (string $line, array $place): string => substr($line, 0, -1)." [spot:{$place['id']}])", $places, array_values($m['places'] ?? [])),
                     ...(isset($m['destination']['name']) ? ['the way'.(isset($m['start']['name']) ? " from \"{$m['start']['name']}\"" : '')." to \"{$m['destination']['name']}\"".(isset($m['destination']['area']) ? " in {$m['destination']['area']}" : '')] : [])];
                 $text .= $shown !== [] ? ' Shown: '.implode(', ', $shown).'.' : '';
@@ -284,6 +305,8 @@ final class Assistant
             $personal ? app(TasteFacts::class)->for($user) : null,
             $personal ? app(AroundNow::class)->day($user, $plans, $now) : [],
             $progress, $history['suggested'], $plans, $paperwork !== null, $text);
+        // The words card only for an app that shows it (the iPhone says so in `cards`).
+        $tools->writes = in_array('words', (array) request()->input('cards', []), true);
         try {
             $weather = ($this->weather->getCurrentWeather()['available'] ?? false) === true;
         } catch (Throwable) {
@@ -370,11 +393,12 @@ final class Assistant
                     'model' => (string) config('services.llm.model'),
                     'max_tokens' => 1200,
                     'output_config' => ['effort' => (string) config('services.llm.effort', 'low')],
-                    'tools' => [...AssistantTools::definitions($tools->personal(), $weather, $tools->paperwork()), self::ANSWER],
+                    'tools' => [...AssistantTools::definitions($tools->personal(), $weather, $tools->paperwork(), $tools->writes), self::ANSWER],
                     // It must use a tool each round; the last round, the answer.
                     'tool_choice' => $last ? ['type' => 'tool', 'name' => 'answer'] : ['type' => 'any'],
                     // composer:eval --system tries other instructions (AiRequest's eval override).
-                    'system' => [['type' => 'text', 'text' => (string) (config('ai.override.composer_system') ?? self::SYSTEM), 'cache_control' => ['type' => 'ephemeral']],
+                    'system' => [['type' => 'text', 'text' => (string) (config('ai.override.composer_system') ?? str_replace('{CAN}', self::CAN.($tools->writes ? self::CAN_WORDS : ''), self::SYSTEM)), 'cache_control' => ['type' => 'ephemeral']],
+                        ...($tools->writes ? [['type' => 'text', 'text' => self::WORDS]] : []),
                         ...($tools->personal() ? [['type' => 'text', 'text' => self::PERSONAL]] : []),
                         ...($tools->paperwork() ? [['type' => 'text', 'text' => self::PAPERWORK]] : [])],
                     'messages' => $messages,
@@ -445,7 +469,7 @@ final class Assistant
      */
     private function built(array $answer, AssistantTools $tools, CarbonImmutable $now, string $known = ''): ?array
     {
-        $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '')."\n".$known;
+        $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '')."\n".$known."\n".self::CAN.($tools->writes ? self::CAN_WORDS : '');
         // A listing or place named in a sentence is cited by it, whether or not the AI said so.
         $names = [...array_map(fn (array $o): array => array_filter([$o['event']->title, $o['event']->title_en]), $tools->events),
             ...array_map(fn (Candidate $c): array => [$c->name], $tools->places)];
