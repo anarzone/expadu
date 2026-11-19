@@ -40,6 +40,36 @@ final class StoredJourney
     }
 
     /**
+     * A way whose late ride now gets in after the next one leaves (TripLive), in words: which change it
+     * misses and why, so they pick another way knowing what happened. Read from its rides' times, so it
+     * holds whatever the app sends back.
+     *
+     * @param  array<string, mixed>  $journey
+     */
+    public static function missed(array $journey): ?string
+    {
+        $previous = null;
+        foreach ($journey['legs'] ?? [] as $leg) {
+            if (! is_array($leg) || in_array($leg['mode'] ?? 'walk', ['walk', 'bike'], true) || ! filled($leg['line'] ?? null)) {
+                continue;
+            }
+            $depart = DepartureTime::parse($leg['depart_at'] ?? null);
+            $in = $previous === null ? null : DepartureTime::parse($previous['arrive_at'] ?? null);
+            if ($depart !== null && $in !== null && $in->greaterThan($depart)) {
+                $late = (int) ($previous['delay_min'] ?? 0);
+                $city = (string) config('geocoding.search_default.city', 'Köln');
+                $stop = trim((string) preg_replace('/^'.preg_quote($city, '/').'\s+/u', '', (string) ($leg['from']['name'] ?? '')));
+
+                return "The {$previous['line']} is running ".($late > 0 ? "{$late} min " : '')."late, so this way misses the {$leg['line']}"
+                    .($stop !== '' ? " at {$stop}" : '').'. Pick another way.';
+            }
+            $previous = $leg;
+        }
+
+        return null;
+    }
+
+    /**
      * What's wrong with it, in the person's words, or null.
      *
      * @param  array<string, mixed>  $journey
@@ -54,6 +84,10 @@ final class StoredJourney
         $arrive = DepartureTime::parse($journey['arrive_at']);
         if ($depart === null || $arrive === null || $arrive->lessThanOrEqualTo($depart)) {
             return 'This route has invalid times. Find a fresh route.';
+        }
+
+        if (($missed = self::missed($journey)) !== null) {
+            return $missed;
         }
 
         $previous = $depart;
