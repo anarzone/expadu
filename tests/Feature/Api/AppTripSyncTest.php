@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Requests\Concerns\StoredJourney;
 use App\Models\ActiveTrip;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -211,4 +212,78 @@ test('🔒 the board is only for your own running trip', function () {
     $this->postJson('/api/v1/travel/trip/ride/board', ['leg' => 1])->assertUnauthorized();
     $someone = User::factory()->onboarded()->create()->createToken('iPhone')->plainTextToken;
     $this->withToken($someone)->postJson('/api/v1/travel/trip/ride/board', ['leg' => 1])->assertNotFound();
+});
+
+/**
+ * The owner's way home, 19 Nov 2026: the 18 at 18:09 from Appellhofplatz to Ebertplatz, a change
+ * within the stop, the 12 at 18:22 home. MOTIS plans only the best ways (the 18 at 18:09), while
+ * the stretch's timetable (searchWindow) has every run: the 16 at 18:07, the 18, the 16 at 18:17.
+ */
+function ownersWayHome(object $test): void
+{
+    $at = fn (string $hm) => CarbonImmutable::parse("2026-11-16T{$hm}:00+01:00")->toIso8601String();
+    $test->travelTo(CarbonImmutable::parse('2026-11-16T18:02:00+01:00'));
+    $merkenich = ['name' => 'Köln Merkenich Mitte', 'lat' => 51.0244, 'lng' => 6.9530, 'stop_id' => 'vrs-gtfs_416'];
+    $leg = fn (string $mode, ?string $line, array $from, array $to, string $dep, string $arr, ?string $trip = null, int $metres = 300) => [
+        'mode' => $mode, 'line' => $line, 'from' => $from, 'to' => $to, 'depart_at' => $at($dep), 'arrive_at' => $at($arr),
+        'depart_time' => $dep, 'arrive_time' => $arr, 'trip_id' => $trip, 'polyline' => null, 'intermediate_stops' => [],
+        'distance_m' => $mode === 'walk' ? $metres : null,
+        'duration_min' => (int) ((strtotime("2026-11-16 {$arr}") - strtotime("2026-11-16 {$dep}")) / 60),
+    ];
+    $test->person->activeTrip()->update(['journey' => [
+        'depart_at' => $at('18:05'), 'arrive_at' => $at('18:48'), 'depart_time' => '18:05', 'arrive_time' => '18:48',
+        'duration_min' => 43, 'transfers' => 1, 'mode' => 'transit', 'lines' => ['18', '12'],
+        'legs' => [
+            $leg('walk', null, ['name' => '', 'lat' => 50.9389, 'lng' => 6.9489], $test->appellhofplatz, '18:05', '18:09'),
+            $leg('tram', '18', $test->appellhofplatz, $test->ebertplatz, '18:09', '18:15', 'run-18-1809'),
+            $leg('walk', null, $test->ebertplatz, $test->ebertplatz, '18:15', '18:21', null, 0),
+            $leg('tram', '12', $test->ebertplatz, $merkenich, '18:22', '18:44', 'run-12-1822'),
+            $leg('walk', null, $merkenich, ['name' => '', 'lat' => 51.0227, 'lng' => 6.9491], '18:44', '18:48'),
+        ],
+    ]]);
+    $run = fn (string $line, string $dep, string $arr, string $trip) => [
+        'startTime' => $dep, 'endTime' => $arr, 'duration' => 360, 'transfers' => 0,
+        'legs' => [['mode' => 'TRAM', 'routeShortName' => $line, 'tripId' => $trip, 'startTime' => $dep, 'endTime' => $arr, 'duration' => 360,
+            'from' => ['name' => 'Köln Appellhofplatz', 'stopId' => 'vrs-gtfs_7', 'lat' => 50.9395, 'lon' => 6.9531],
+            'to' => ['name' => 'Köln Ebertplatz', 'stopId' => 'vrs-gtfs_35', 'lat' => 50.9497, 'lon' => 6.9573]]],
+    ];
+    $timetable = [
+        $run('16', '2026-11-16T17:07:00Z', '2026-11-16T17:13:00Z', 'run-16-1807'),
+        $run('18', '2026-11-16T17:09:00Z', '2026-11-16T17:15:00Z', 'run-18-1809'),
+        $run('16', '2026-11-16T17:17:00Z', '2026-11-16T17:23:00Z', 'run-16-1817'),
+    ];
+    Http::swap(new Factory);
+    Http::fake(fn ($request) => str_contains($request->url(), 'motis.test')
+        // The stretch's timetable, or the router's best ways (only the 18: same arrival, leaves later).
+        ? Http::response(['itineraries' => str_contains($request->url(), 'searchWindow') ? $timetable : [$timetable[1]]])
+        : Http::response([], 404));
+}
+
+test('any tram on the board can be taken, also one the router leaves out of its best ways', function () {
+    ownersWayHome($this);
+
+    $this->withToken($this->token)
+        ->postJson('/api/v1/travel/trip/ride', ['leg' => 1, 'line' => '16', 'depart_at' => '2026-11-16T18:07:00+01:00', 'trip' => 'run-16-1807'])
+        ->assertOk()->assertJson(['line' => '16', 'depart_time' => '18:07', 'arrive_time' => '18:48']);
+
+    $journey = ActiveTrip::query()->where('user_id', $this->person->id)->value('journey');
+    expect(collect($journey['legs'])->map(fn ($l) => trim(($l['line'] ?? $l['mode']).' '.$l['depart_time'].'–'.$l['arrive_time']))->all())->toBe([
+        'walk 18:03–18:07', '16 18:07–18:13', 'walk 18:13–18:13', '12 18:22–18:44', 'walk 18:44–18:48',
+    ])
+        // It follows that tram from now on: its own run and timetable, not the 18's.
+        ->and($journey['legs'][1]['trip_id'])->toBe('run-16-1807')
+        ->and($journey['legs'][1]['scheduled_depart_at'])->toStartWith('2026-11-16T18:07')
+        ->and($journey['lines'])->toBe(['16', '12'])
+        // And it is a way the app can show and start again.
+        ->and(StoredJourney::problem($journey))->toBeNull();
+});
+
+test('a tram too late for the change is not taken, and the trip stays as it was', function () {
+    ownersWayHome($this);
+
+    // The 16 at 18:17 gets to Ebertplatz at 18:23, after the 12 at 18:22 has gone.
+    $this->withToken($this->token)
+        ->postJson('/api/v1/travel/trip/ride', ['leg' => 1, 'line' => '16', 'depart_at' => '2026-11-16T18:17:00+01:00', 'trip' => 'run-16-1817'])
+        ->assertUnprocessable();
+    expect(ActiveTrip::query()->where('user_id', $this->person->id)->value('journey')['legs'][1]['line'])->toBe('18');
 });
