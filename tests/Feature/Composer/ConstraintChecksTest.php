@@ -161,7 +161,12 @@ test('a meal they named moves the window so its stop lands in the meal\'s time; 
         // A later start they gave is theirs.
         ->and($window(PlanDay::aroundMeal('dinner', $day, $at('19:00'), $at('23:00'), ['park', 'restaurant'], [], true)))->toBe(['19:00', '23:00'])
         // Brunch with a museum named, no order: the museum first.
-        ->and($window(PlanDay::aroundMeal('brunch', $day, $at('09:00'), $at('13:00'), [], ['cafe', 'museum'], false)))->toBe(['09:00', '13:00']);
+        ->and($window(PlanDay::aroundMeal('brunch', $day, $at('09:00'), $at('13:00'), [], ['cafe', 'museum'], false)))->toBe(['09:00', '13:00'])
+        // The owner's Saturday (19 Nov 2026): a café, something active, then dinner. The restaurant is dinner, not
+        // the café: two stops before it, dinner at 18:00 (it was planned 18:00–20:00 with the café as dinner).
+        ->and($window(PlanDay::aroundMeal('dinner', $day, $at('10:00'), $at('20:00'), ['cafe', 'sports_centre', 'restaurant'], [], false)))->toBe(['15:00', '21:30'])
+        // Brunch at a café before a restaurant later: the café is the brunch.
+        ->and($window(PlanDay::aroundMeal('brunch', $day, $at('09:00'), $at('20:00'), ['cafe', 'museum', 'restaurant'], [], false)))->toBe(['10:00', '20:00']);
 });
 
 test('the plan says when the meal\'s stop is, against the meal\'s time', function () {

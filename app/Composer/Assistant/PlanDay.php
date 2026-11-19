@@ -91,7 +91,7 @@ final class PlanDay
                 'budget' => ['type' => 'string', 'enum' => ['free', 'low', 'normal'], 'description' => '"costs nothing": free; "cheap": low'],
                 'radius_km' => ['type' => 'number', 'description' => 'A distance they named; "nearby" is 2.5'],
                 'stops' => ['type' => 'integer', 'description' => 'How many stops they asked for ("two museums": 2); leave out for a usual day'],
-                'meal' => ['type' => 'string', 'enum' => array_keys(self::MEALS), 'description' => 'The meal they named ("dinner after the park": dinner; "brunch": brunch): the food stop is then planned at that meal\'s time'],
+                'meal' => ['type' => 'string', 'enum' => array_keys(self::MEALS), 'description' => 'The meal they named anywhere in what they asked ("dinner after the park": dinner; "brunch": brunch; "a café in the morning, … and dinner": dinner): always set it when they name one, or the food stop lands at whatever time the stops before it end. The food stop is then planned at that meal\'s time'],
                 'replacing' => ['type' => 'string', 'description' => 'Only when they already have a plan that day and ask for a new one instead: their words asking for it ("plan Sunday again from scratch"); without them their plan stays as it is'],
             ], 'required' => ['day']]];
     }
@@ -183,7 +183,14 @@ final class PlanDay
     public static function aroundMeal(string $meal, CarbonImmutable $day, CarbonImmutable $from, CarbonImmutable $until, array $sequence, array $kinds, bool $untilSaid): array
     {
         [$opens, $closes] = array_map(fn (string $at): CarbonImmutable => $day->setTimeFromTimeString($at), self::MEALS[$meal]);
-        $at = collect($sequence)->search(fn (string $kind): bool => in_array($kind, self::FOOD, true));
+        // The stop that is the meal: for dinner or lunch a restaurant before a café, for breakfast or brunch a café
+        // or bakery ("a café in the morning, something active, then dinner": the café isn't dinner; owner's test,
+        // 19 Nov 2026, planned 18:00–20:00 with one stop).
+        $fits = in_array($meal, ['breakfast', 'brunch'], true) ? ['cafe', 'bakery'] : ['restaurant', 'fast_food', 'food_drink'];
+        $at = collect($sequence)->search(fn (string $kind): bool => in_array($kind, $fits, true));
+        if ($at === false) {
+            $at = collect($sequence)->search(fn (string $kind): bool => in_array($kind, self::FOOD, true));
+        }
         [$before, $after] = $at !== false ? [$at, count($sequence) - 1 - $at]
             // No order named: anything else they asked for comes first.
             : [array_diff($kinds, self::FOOD) !== [] ? 1 : 0, 0];
