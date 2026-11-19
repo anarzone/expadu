@@ -75,6 +75,11 @@ class StartTripRequest extends FormRequest
             $same = $active !== null && $active->journey == $journey
                 && $active->destination == $this->input('destination')
                 && $active->origin == $this->input('origin');
+            if (($missed = StoredJourney::missed($journey)) !== null) {
+                $validator->errors()->add('journey', $missed);
+
+                return;
+            }
             $previous = $depart;
             $boardingChecked = false;
             foreach ($journey['legs'] as $index => $leg) {
