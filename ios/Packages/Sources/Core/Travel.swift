@@ -534,6 +534,16 @@ public struct TripPlan: Sendable {
         public let lines: [String]
         public let legs: [Leg]
         public let tight: Bool?
+        /// A late ride now gets in after the next one leaves (the server's live times): which change it misses.
+        public let missed: Missed?
+
+        public struct Missed: Decodable, Equatable, Sendable {
+            /// The ride it misses, where, and the late one before it.
+            public let line: String
+            public let stop: String
+            public let after: String
+            public let lateMin: Int
+        }
 
         public var departDate: Date? { TravelJSON.date(departAt) }
         public var arriveDate: Date? { TravelJSON.date(arriveAt) }
@@ -558,13 +568,37 @@ public struct TripPlan: Sendable {
     }
 
     public struct Disruption: Decodable, Equatable, Sendable {
-        public struct Brief: Decodable, Equatable, Sendable { public let headline: String? }
+        public struct Brief: Decodable, Equatable, Sendable {
+            public let headline: String?
+            public let text: String?
+        }
         public let title: String
         public let lines: [String]?
+        /// On a line the ways ride ("ways"), or only on one serving From or To ("ends").
         public let on: String?
+        /// "major" (a line problem: the headline) or "minor" (everyday: in place on the route).
+        public let scale: String?
         public let brief: Brief?
+        /// KVB's own words (German).
+        public let details: String?
+        /// When KVB posted it.
+        public let since: String?
 
         public var headline: String { brief?.headline ?? title }
+        public var major: Bool { scale == "major" }
+        /// In plain English: Expadu's brief, else KVB's title.
+        public var plain: String { brief?.text ?? brief?.headline ?? title }
+        /// "15:12", when KVB posted it.
+        public var sinceTime: String? { since.flatMap(TravelJSON.date).map { $0.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute()) } }
+        /// Said on a route's row: "Line 12: some trams run late", unless it names its line already.
+        public var short: String {
+            let line = lines?.first.map { "Line \($0): " } ?? ""
+            let text = headline
+            if line.isEmpty || text.lowercased().contains("line \(lines?.first ?? "")".lowercased()) { return text }
+            // "Some trams…" reads on after the colon in lower case; "KVB…" keeps its capitals.
+            let second = text.dropFirst().first
+            return line + (second?.isLowercase == true ? text.prefix(1).lowercased() + text.dropFirst() : text)
+        }
     }
 
     public struct Hour: Decodable, Equatable, Sendable {
@@ -615,6 +649,15 @@ public struct TripPlan: Sendable {
             degraded: json["degraded"] as? Bool ?? false
         )
     }
+
+    /// KVB's notices on the lines a way rides (never only one at its From or To), the major ones first.
+    public func notices(on journey: Journey) -> [Disruption] {
+        let lines = Set(journey.rides.compactMap(\.line))
+        return disruptions.filter { $0.on != "ends" && !Set($0.lines ?? []).isDisjoint(with: lines) }.sorted { $0.major && !$1.major }
+    }
+
+    /// The one headline above the ways (agreed 22 Oct 2026: at most one): a major problem on a line they ride.
+    public var headline: Disruption? { disruptions.first { $0.major && $0.on != "ends" } }
 
     /// The same plan with its ways as the boards run them (the second request's `live`, in the plan's order).
     public func live(_ journeys: [Journey]) -> TripPlan {

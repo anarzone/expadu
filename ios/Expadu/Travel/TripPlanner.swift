@@ -301,6 +301,7 @@ final class TripPlanner {
             }
         }
         let sorted = all.sorted { a, b in
+            if trouble(a.journey) != trouble(b.journey) { return trouble(a.journey) < trouble(b.journey) }
             let order = penalty(a) - penalty(b)
             if order != 0 { return order < 0 }
             if byDeadline, fit(a) != fit(b) { return fit(a) < fit(b) }
@@ -323,6 +324,14 @@ final class TripPlanner {
             seen.insert(way)
         }
         return different + again
+    }
+
+    /// How much trouble a way is in, for its place in the list (the canvas "KVB notices on your routes",
+    /// owner 19 Nov 2026): 2 misses its change (last), 1 rides a line with a major problem (after the
+    /// rest), 0 neither. Whatever the order asked for.
+    func trouble(_ journey: TripPlan.Journey) -> Int {
+        if journey.missed != nil { return 2 }
+        return answer?.notices(on: journey).contains(where: \.major) == true ? 1 : 0
     }
 
     /// Minutes to spare before the plan they're going to, when there is one.
