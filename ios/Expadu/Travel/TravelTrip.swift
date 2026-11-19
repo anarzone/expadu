@@ -148,6 +148,17 @@ struct TravelTrip: View {
         }
         // A new route (re-planned here or on Today) is the one followed from now on.
         .onChange(of: trip) { planner.follow(trip) }
+        // What a tap on the change board did ("You're now on the 3 at 16:28", or why it couldn't), said
+        // here where they tapped, not only on Today underneath (the owner, 19 Nov: "didn't work").
+        .overlay(alignment: .bottom) {
+            if let note = today.note {
+                NoteBar(note: note)
+                    .padding(.horizontal, 16).padding(.bottom, 24)
+                    .transition(.offset(y: 30).combined(with: .opacity))
+                    .id(note.id)
+            }
+        }
+        .animation(reduceMotion ? nil : .spring(duration: 0.5, bounce: 0.35), value: today.note)
         // New routes from here (a missed tram, off the way): the list over the trip, to pick one.
         .fullScreenCover(isPresented: Binding(get: { planner.newRoutes }, set: { if !$0 { closeNewRoutes() } })) {
             TripRoutesView(planner: planner, back: closeNewRoutes, close: closeNewRoutes)
