@@ -540,7 +540,8 @@ class ScrapeEvents extends Command
             (bool) preg_match('/theater|theatre|comedy|kabarett|musical|oper\b|opera|lesung|zirkus|circus/iu', $text) => EventCategory::Stage,
             (bool) preg_match('/konzert|concert|jazz|\bdj\b|orchester|chor\b/iu', $text) => EventCategory::Music,
             (bool) preg_match('/party|clubbing/iu', $text) => EventCategory::Party,
-            (bool) preg_match('/sport|lauf|\brun\b|yoga|fitness|schwimm/iu', $text) => EventCategory::Sports,
+            // Whole words or word ends: not "Anlaufstelle" (a job fair) or "Transport".
+            (bool) preg_match('/(?<!tran)sport|\blauf|lauf\b|marathon|\brun\b|yoga|fitness|schwimm|fußball|football|basketball|volleyball|handball/iu', $text) => EventCategory::Sports,
             default => EventCategory::Other,
         })->value;
     }
