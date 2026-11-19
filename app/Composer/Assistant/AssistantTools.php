@@ -316,7 +316,7 @@ final class AssistantTools
                 'input_schema' => ['type' => 'object', 'properties' => ['stop' => ['type' => 'string', 'description' => 'a KVB stop name, optional']]]],
             ['name' => 'plan_trip', 'description' => 'The way to a place by bus, tram and train, from where the person is or from the start they name, with Expadu\'s place finder. When a name fits several places, it says so and you ask which (show the choice). Also answers "how far is it?". To keep the way to a plan on their day, with a reminder when to leave ("plan the way there and remind me"), use plan_trip_for_later instead.',
                 'input_schema' => ['type' => 'object', 'properties' => [
-                    'to' => ['type' => 'string', 'description' => 'the place as they named it, e.g. Cafe Nova, Hauptbahnhof, Rheinpark'],
+                    'to' => ['type' => 'string', 'description' => 'the place as they named it, e.g. Cafe Nova, Hauptbahnhof, Rheinpark; for a listing, the place it\'s at (Santa\'s Christmas Market at MediaPark Köln: MediaPark Köln)'],
                     'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, or a square, stop or place they said it is near ("near Neumarkt"), optional'],
                     'from' => ['type' => 'string', 'description' => 'the start they named ("from Neumarkt"); never their home Veedel unless they said it. Leave out to start from where they are'],
                     'from_area' => ['type' => 'string', 'description' => 'a Veedel they named with the start, optional'],
@@ -1826,7 +1826,7 @@ final class AssistantTools
                 ], 'required' => ['which', 'place']]],
             ['name' => 'add_to_day', 'description' => 'Adds a place or listing to their plans for a day, at a time that fits its hours, or the time they say.',
                 'input_schema' => ['type' => 'object', 'properties' => [
-                    'item' => ['type' => 'string', 'description' => 'its id in [brackets] from your lookups or from what you showed before ("spot:…", "e…@…"), else a place\'s name'],
+                    'item' => ['type' => 'string', 'description' => 'its id in [brackets] from your lookups or from what you showed before ("spot:…", "e…@…"), else a place\'s name; a listing by its name needs search_events first, for its id'],
                     'area' => ['type' => 'string', 'description' => 'a Veedel they named with the place, optional'],
                     'day' => $day,
                     'start' => ['type' => 'string', 'description' => 'HH:MM, optional'], 'end' => ['type' => 'string', 'description' => 'HH:MM, optional'],
