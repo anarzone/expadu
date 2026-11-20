@@ -158,12 +158,14 @@ struct ComposerDrawer: View {
                     open = false
                 }
             } label: {
-                Label("New question", systemImage: "plus").labelStyle(Tight())
+                Label("New", systemImage: "plus").labelStyle(Tight())
                     .font(.geist(16.5, .semibold)).foregroundStyle(Color(light: 0xFFF8E6, dark: 0x15130E))
                     .padding(.leading, 16).padding(.trailing, 20).frame(height: 48)
                     .buttonFace(Color(light: 0x211D15, dark: 0xFFFDF8), radius: 16)
             }
             .buttonStyle(PressStyle())
+            // VoiceOver says what's new.
+            .accessibilityLabel("New question")
         }
         .padding(.leading, 18).padding(.trailing, 16).padding(.bottom, 0)
         .frame(width: 322)
