@@ -435,7 +435,7 @@ class GtfsDepartureService
      */
     private function routeIndex(string $stopName): array
     {
-        $key = 'gtfs_route_index:v1:'.Cache::get(self::GENERATION_KEY, 0).':'.self::serviceDay()->format('Ymd').':'.md5(mb_strtolower($stopName));
+        $key = 'gtfs_route_index:v2:'.Cache::get(self::GENERATION_KEY, 0).':'.self::serviceDay()->format('Ymd').':'.md5(mb_strtolower($stopName));
 
         return Cache::remember($key, 21600, function () use ($stopName): array {
             $stopIds = $this->stopsNamed($stopName)->pluck('stop_id');
@@ -485,6 +485,22 @@ class GtfsDepartureService
                 ->get(['st.trip_id', 'st.stop_sequence', 's.stop_name'])
                 ->groupBy('trip_id');
 
+            // "via" names the big stops further on, the ones riders change at (owner, 20 Nov 2026: "via
+            // Fordwerke Nord" said nothing): served by 3+ tram or train lines, or 5+ lines in all.
+            $onward = collect($ways)->flatten(1)->flatMap(fn (array $way) => ($after[$way['run']->trip_id] ?? collect())
+                ->filter(fn (object $stop) => (int) $stop->stop_sequence > (int) $way['run']->stop_sequence)
+                ->pluck('stop_name'))->unique()->values();
+            $hubs = $onward->isEmpty() ? [] : DB::table('gtfs_stops as s')
+                ->join('gtfs_stop_times as st', 'st.stop_id', '=', 's.stop_id')
+                ->join('gtfs_trips as t', 't.trip_id', '=', 'st.trip_id')
+                ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
+                ->whereIn('s.stop_name', $onward->all())
+                ->groupBy('s.stop_name')
+                ->selectRaw('s.stop_name, count(distinct case when r.route_type in (0, 1, 2) or r.route_type between 100 and 199 or r.route_type between 400 and 599 or r.route_type between 900 and 999 then r.route_short_name end) as rail, count(distinct r.route_short_name) as lines')
+                ->get()
+                ->filter(fn (object $row) => (int) $row->rail >= 3 || (int) $row->lines >= 5)
+                ->pluck('stop_name')->flip()->all();
+
             $index = [];
             foreach ($ways as $line => $headsigns) {
                 foreach ($headsigns as $headsign => $way) {
@@ -492,11 +508,13 @@ class GtfsDepartureService
                     $index[$line][$headsign] = [
                         'direction' => $run->direction_id !== null ? (int) $run->direction_id : null,
                         'via' => ($after[$run->trip_id] ?? collect())
-                            ->filter(fn (object $stop) => (int) $stop->stop_sequence > (int) $run->stop_sequence)
+                            ->filter(fn (object $stop) => (int) $stop->stop_sequence > (int) $run->stop_sequence
+                                && isset($hubs[$stop->stop_name]))
+                            ->pluck('stop_name')->unique()
                             ->take(2)
                             // VRS names carry the city prefix ("Köln Heumarkt") — noise on
                             // a board that is already inside Cologne.
-                            ->map(fn (object $stop) => (string) preg_replace('/^Köln[ -]/u', '', (string) $stop->stop_name))
+                            ->map(fn (string $name) => (string) preg_replace('/^Köln[ -]/u', '', $name))
                             ->values()
                             ->all(),
                         'end' => $way['end'],
