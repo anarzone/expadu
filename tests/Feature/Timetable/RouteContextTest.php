@@ -13,26 +13,39 @@ beforeEach(function () {
         ['stop_id' => 'HM1', 'stop_name' => 'Köln Heumarkt', 'stop_lat' => 50.9358, 'stop_lng' => 6.9601, 'location_type' => 0],
         ['stop_id' => 'DM1', 'stop_name' => 'Deutz/Messe', 'stop_lat' => 50.9410, 'stop_lng' => 6.9750, 'location_type' => 0],
         ['stop_id' => 'RP1', 'stop_name' => 'Rudolfplatz', 'stop_lat' => 50.9360, 'stop_lng' => 6.9340, 'location_type' => 0],
+        // A small stop on the way: only the 1 stops there.
+        ['stop_id' => 'GM1', 'stop_name' => 'Köln Gürzenichstr.', 'stop_lat' => 50.9361, 'stop_lng' => 6.9530, 'location_type' => 0],
     ]);
     DB::table('gtfs_routes')->insert([
-        'route_id' => 'R1', 'route_short_name' => '1', 'route_long_name' => 'Stadtbahn 1', 'route_type' => 0, 'route_color' => 'E2001A',
+        ['route_id' => 'R1', 'route_short_name' => '1', 'route_long_name' => 'Stadtbahn 1', 'route_type' => 0, 'route_color' => 'E2001A'],
+        ['route_id' => 'R7', 'route_short_name' => '7', 'route_long_name' => 'Stadtbahn 7', 'route_type' => 0, 'route_color' => 'E2001A'],
+        ['route_id' => 'R9', 'route_short_name' => '9', 'route_long_name' => 'Stadtbahn 9', 'route_type' => 0, 'route_color' => 'E2001A'],
     ]);
     DB::table('gtfs_trips')->insert([
         // Eastbound toward Bensberg — GTFS headsign carries the city prefix.
         ['trip_id' => 'T-east', 'route_id' => 'R1', 'service_id' => 'S', 'trip_headsign' => 'Köln Bensberg', 'direction_id' => 0],
         // Westbound toward Weiden.
         ['trip_id' => 'T-west', 'route_id' => 'R1', 'service_id' => 'S', 'trip_headsign' => 'Weiden West', 'direction_id' => 1],
+        // The 7 and the 9 make Heumarkt, Deutz/Messe and Rudolfplatz big stops (three tram lines each).
+        ['trip_id' => 'T-7', 'route_id' => 'R7', 'service_id' => 'S', 'trip_headsign' => 'Zündorf', 'direction_id' => 0],
+        ['trip_id' => 'T-9', 'route_id' => 'R9', 'service_id' => 'S', 'trip_headsign' => 'Königsforst', 'direction_id' => 0],
     ]);
     DB::table('gtfs_stop_times')->insert([
         ['trip_id' => 'T-east', 'stop_id' => 'NM1', 'arrival_time' => '10:00:00', 'departure_time' => '10:00:00', 'stop_sequence' => 1],
-        ['trip_id' => 'T-east', 'stop_id' => 'HM1', 'arrival_time' => '10:02:00', 'departure_time' => '10:02:00', 'stop_sequence' => 2],
-        ['trip_id' => 'T-east', 'stop_id' => 'DM1', 'arrival_time' => '10:05:00', 'departure_time' => '10:05:00', 'stop_sequence' => 3],
+        ['trip_id' => 'T-east', 'stop_id' => 'GM1', 'arrival_time' => '10:01:00', 'departure_time' => '10:01:00', 'stop_sequence' => 2],
+        ['trip_id' => 'T-east', 'stop_id' => 'HM1', 'arrival_time' => '10:02:00', 'departure_time' => '10:02:00', 'stop_sequence' => 3],
+        ['trip_id' => 'T-east', 'stop_id' => 'DM1', 'arrival_time' => '10:05:00', 'departure_time' => '10:05:00', 'stop_sequence' => 4],
         ['trip_id' => 'T-west', 'stop_id' => 'NM1', 'arrival_time' => '10:01:00', 'departure_time' => '10:01:00', 'stop_sequence' => 5],
         ['trip_id' => 'T-west', 'stop_id' => 'RP1', 'arrival_time' => '10:03:00', 'departure_time' => '10:03:00', 'stop_sequence' => 6],
+        ...collect(['T-7', 'T-9'])->flatMap(fn (string $trip) => collect(['HM1', 'DM1', 'RP1'])->map(fn (string $stop, int $i) => [
+            'trip_id' => $trip, 'stop_id' => $stop, 'arrival_time' => "11:0{$i}:00", 'departure_time' => "11:0{$i}:00", 'stop_sequence' => $i + 1,
+        ]))->all(),
     ]);
 });
 
-test('routeContext resolves the travel direction and the next stops ridden', function () {
+test('routeContext resolves the travel direction and the big stops further on, never a small one', function () {
+    // The owner's board, 20 Nov 2026: "via Fordwerke Nord", the next stop, said nothing. Gürzenichstr. comes
+    // first but only the 1 stops there; Heumarkt and Deutz/Messe are where riders change.
     $context = app(GtfsDepartureService::class)->routeContext('Neumarkt', '1', 'Köln Bensberg');
 
     expect($context['direction'])->toBe(0);
