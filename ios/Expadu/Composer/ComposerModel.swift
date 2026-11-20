@@ -34,7 +34,11 @@ final class ComposerModel {
     private var noteTask: Task<Void, Never>?
 
     var conversation: ComposerConversation? { workspace?.current }
-    var messages: [ComposerMessage] { conversation?.messages ?? [] }
+    /// While a new conversation is being made: none of the last one shows (the owner, 20 Nov 2026: the old
+    /// answer stood above a new question until the server said the fresh one was there).
+    var messages: [ComposerMessage] { starting ? [] : conversation?.messages ?? [] }
+    /// A new conversation asked for and not made yet.
+    private(set) var starting = false
     /// A conversation is on the paper: they asked, or opened one. Composer opens on the wall.
     private(set) var showing = false
     var talking: Bool { (showing && !messages.isEmpty) || pending != nil }
@@ -145,14 +149,18 @@ final class ComposerModel {
         guard !text.isEmpty, pending == nil, let workspace else { return }
         // From the wall, a question starts its own conversation; on the paper it continues this one.
         let fresh = fresh || !showing
+        let replacing = fresh && !(conversation?.messages.isEmpty ?? true)
+        starting = replacing
+        defer { starting = false }
         showing = true
         collection = nil
         pending = Pending(text: text, words: "Reading your request…")
         do {
             var revision = workspace.revision
-            if fresh, !(conversation?.messages.isEmpty ?? true) {
+            if replacing {
                 let reply = try await api.composerCommand("fresh", revision: revision)
                 if let next = reply.workspace { self.workspace = next; revision = next.revision }
+                starting = false
             }
             let stored = try await api.composerCommand("message", revision: revision, ["text": text])
             guard let next = stored.workspace else {
