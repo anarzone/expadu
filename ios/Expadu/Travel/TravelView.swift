@@ -340,14 +340,27 @@ struct Band: View {
                     }
                     .font(.geist(17, .bold)).tracking(-0.2)
                     HStack(spacing: 6) {
-                        Text(via).lineLimit(1)
-                        status
+                        // An everyday KVB notice on its line: the reason, in place of "via" (agreed 22 Oct 2026:
+                        // everyday trouble small and in place, the big one a headline).
+                        if let reason {
+                            status
+                            Text(reason).lineLimit(1)
+                        } else {
+                            Text(via).lineLimit(1)
+                            status
+                        }
                     }
                     .font(.geist(12, .medium)).opacity(0.92)
                 }
                 Spacer(minLength: 4)
                 // Minutes on the flaps; an hour or more away, its clock time (a capped "99" said nothing).
-                if run.minutes(from: now) >= 60 {
+                if run.cancelled {
+                    // Cancelled: no countdown (it said "now" for a tram that won't come, the owner, 20 Nov 2026).
+                    Text("—").font(.geist(20, .bold)).foregroundStyle(Color(hex: 0xBDB39F))
+                        .frame(width: 48, height: 40)
+                        .background(LinearGradient(colors: [Color(hex: 0x2A2620), Color(hex: 0x1B1812)], startPoint: .top, endPoint: .bottom), in: .rect(cornerRadius: 5))
+                        .accessibilityHidden(true)
+                } else if run.minutes(from: now) >= 60 {
                     HStack(spacing: 1.5) {
                         ForEach(Array(run.time.enumerated()), id: \.offset) { _, ch in
                             if ch == ":" {
@@ -385,6 +398,13 @@ struct Band: View {
         .accessibilityHint("Shows its stops and next times")
     }
 
+    /// KVB's everyday notice on this line, said on the rows it explains (a tram late or cancelled; on every
+    /// row it was noise); a major one has its own headline above the board.
+    private var reason: String? {
+        guard let notice, !notice.isMajor, departure.run.cancelled || late != nil else { return nil }
+        return notice.headline
+    }
+
     private var via: String {
         // "via Merkenich" on a tram to Merkenich says nothing.
         let stops = departure.dir.via.filter { !$0.isEmpty && !TravelModel.same($0, departure.dir.dest) }
@@ -412,6 +432,7 @@ struct Band: View {
         let minutes = run.minutes(from: now)
         var text = "Line \(departure.line.line) to \(departure.dir.dest), " + (minutes == 0 ? "now" : minutes >= 60 ? "at \(run.time)" : "in \(minutes) minutes")
         if run.cancelled { text += ", cancelled" } else if let late { text += ", \(late) minutes late" }
+        if let reason { text += ". KVB: \(reason)" }
         if grey { text += ", timetable time" }
         return text
     }
